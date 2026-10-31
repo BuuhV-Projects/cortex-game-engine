@@ -8,7 +8,7 @@
 
 > **smoothGrade**(`samples`, `refY`, `opts?`): `number`[]
 
-Defined in: src/road/RoadGrade.ts:47
+Defined in: [src/road/RoadGrade.ts:47](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/RoadGrade.ts#L47)
 
 **Greide** da estrada: a partir da altura de referência sob cada amostra (`refY`, mesmo
 tamanho de `samples` — a base do terreno ou o Y da curva), alisa por média móvel em

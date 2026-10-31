@@ -9,6 +9,8 @@ import { z } from 'zod/v3';
 export const ROAD_DEFAULT_WIDTH = 8;
 /** Largura default do talude por lado (m). */
 export const ROAD_DEFAULT_TALUDE = 6;
+/** Faixa default (m) além da borda da pista sem vegetação. */
+export const ROAD_DEFAULT_CLEARANCE = 2;
 
 const point = z.tuple([z.number(), z.number(), z.number()]);
 const color = z.union([z.number(), z.string()]);
@@ -35,6 +37,8 @@ export const roadFieldsSchema = z.object({
   color: color.optional(),
   /** Chão do carro (`userData.cortexRoad`). Default true. */
   drivable: z.boolean().optional(),
+  /** Faixa (m) além da borda da pista sem vegetação (SPEC-0631 §3b). Default {@link ROAD_DEFAULT_CLEARANCE}. */
+  clearance: z.number().nonnegative().optional(),
   /** Amostras por 90° de curva. Default 16. */
   steps: z.number().int().positive().optional(),
 });

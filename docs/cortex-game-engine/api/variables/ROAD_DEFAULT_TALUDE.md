@@ -8,6 +8,6 @@
 
 > `const` **ROAD\_DEFAULT\_TALUDE**: `6` = `6`
 
-Defined in: src/road/roadFields.ts:11
+Defined in: [src/road/roadFields.ts:11](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/roadFields.ts#L11)
 
 Largura default do talude por lado (m).

@@ -8,7 +8,7 @@
 
 > **ribbonToGeometry**(`r`): `BufferGeometry`
 
-Defined in: src/road/RoadMesh.ts:95
+Defined in: [src/road/RoadMesh.ts:95](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/RoadMesh.ts#L95)
 
 Converte um [RoadRibbon](../interfaces/RoadRibbon.md) numa `BufferGeometry` (normais recalculadas da superfície).
 

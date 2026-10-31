@@ -8,7 +8,7 @@
 
 > **makeRoad**(`node`): `Mesh`
 
-Defined in: src/scene/RoadBuild.ts:73
+Defined in: [src/scene/RoadBuild.ts:75](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/RoadBuild.ts#L75)
 
 Cria a malha (ainda vazia) da estrada; a geometria sai no [buildRoads](buildRoads.md).
 
@@ -114,6 +114,12 @@ Piso plano de fallback (se não houver geometria embaixo). Default `0`. O chão 
 #### character.stepHeight?
 
 `number` = `...`
+
+#### clearance?
+
+`number` = `...`
+
+Faixa (m) além da borda da pista sem vegetação (SPEC-0631 §3b). Default [ROAD\_DEFAULT\_CLEARANCE](../variables/ROAD_DEFAULT_CLEARANCE.md).
 
 #### collider?
 

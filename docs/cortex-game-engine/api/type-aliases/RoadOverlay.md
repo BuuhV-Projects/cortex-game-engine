@@ -8,4 +8,4 @@
 
 > **RoadOverlay** = `z.infer`\<*typeof* [`roadOverlaySchema`](../variables/roadOverlaySchema.md)\>
 
-Defined in: src/road/roadFields.ts:47
+Defined in: [src/road/roadFields.ts:51](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/roadFields.ts#L51)

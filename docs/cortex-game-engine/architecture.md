@@ -229,7 +229,9 @@ senão o **editor do Studio** não resolve o tipo (runtime funciona, IntelliSens
   por vértice (`moldHeightfield`, só células perto de cada segmento) somado à base
   (`Terrain.setRoadMolding`): `getHeights()`/overlay salvam só a base, sem cicatriz.
   Molda **todo ladrilho** que a estrada cruza; o delta depende só da posição no mundo,
-  então bordas de ladrilho casam. A fita leva `userData.cortexRoad` (chão do carro:
+  então bordas de ladrilho casam. Junto da moldagem, `clearRoadVegetation` esconde (escala 0,
+  `Vegetation.setHidden`) as árvores a menos de `width/2 + clearance` do eixo — busca por
+  grade de hash (`RoadCorridor`), dado das instâncias intacto. A fita leva `userData.cortexRoad` (chão do carro:
   `setupVehicle` faz trimesh; o merge estático preserva). Overlay `data.road[id]` vence
   o nó. ⚠️ O trimesh do carro é montado no `setupVehicle`: editar a estrada no F2 só
   vale pra física do carro depois de recarregar.

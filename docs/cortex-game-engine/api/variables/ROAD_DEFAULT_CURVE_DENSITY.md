@@ -8,6 +8,6 @@
 
 > `const` **ROAD\_DEFAULT\_CURVE\_DENSITY**: `16` = `16`
 
-Defined in: src/road/RoadSpline.ts:20
+Defined in: [src/road/RoadSpline.ts:20](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/RoadSpline.ts#L20)
 
 Amostras por 90° de curvatura (default de [sampleSpline](../functions/sampleSpline.md)).

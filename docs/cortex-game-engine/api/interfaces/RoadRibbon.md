@@ -6,7 +6,7 @@
 
 # Interface: RoadRibbon
 
-Defined in: src/road/RoadMesh.ts:23
+Defined in: [src/road/RoadMesh.ts:23](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/RoadMesh.ts#L23)
 
 Dados crus da fita (flat arrays) + índices dos triângulos.
 
@@ -16,7 +16,7 @@ Dados crus da fita (flat arrays) + índices dos triângulos.
 
 > **indices**: `number`[]
 
-Defined in: src/road/RoadMesh.ts:27
+Defined in: [src/road/RoadMesh.ts:27](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/RoadMesh.ts#L27)
 
 ***
 
@@ -24,7 +24,7 @@ Defined in: src/road/RoadMesh.ts:27
 
 > **normals**: `number`[]
 
-Defined in: src/road/RoadMesh.ts:26
+Defined in: [src/road/RoadMesh.ts:26](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/RoadMesh.ts#L26)
 
 ***
 
@@ -32,7 +32,7 @@ Defined in: src/road/RoadMesh.ts:26
 
 > **positions**: `number`[]
 
-Defined in: src/road/RoadMesh.ts:24
+Defined in: [src/road/RoadMesh.ts:24](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/RoadMesh.ts#L24)
 
 ***
 
@@ -40,4 +40,4 @@ Defined in: src/road/RoadMesh.ts:24
 
 > **uvs**: `number`[]
 
-Defined in: src/road/RoadMesh.ts:25
+Defined in: [src/road/RoadMesh.ts:25](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/RoadMesh.ts#L25)

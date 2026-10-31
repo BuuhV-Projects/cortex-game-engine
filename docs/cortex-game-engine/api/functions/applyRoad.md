@@ -8,7 +8,7 @@
 
 > **applyRoad**(`mesh`, `node`, `three`, `terrains?`): `void`
 
-Defined in: src/scene/RoadBuild.ts:158
+Defined in: [src/scene/RoadBuild.ts:160](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/RoadBuild.ts#L160)
 
 (Re)gera a pista de `mesh` a partir do nó: spline → greide (base do terreno ou Y dos
 pontos, alisado e limitado) → fita + material. Guarda o eixo pro corte e liga/desliga
@@ -123,6 +123,12 @@ Piso plano de fallback (se não houver geometria embaixo). Default `0`. O chão 
 #### character.stepHeight?
 
 `number` = `...`
+
+#### clearance?
+
+`number` = `...`
+
+Faixa (m) além da borda da pista sem vegetação (SPEC-0631 §3b). Default [ROAD\_DEFAULT\_CLEARANCE](../variables/ROAD_DEFAULT_CLEARANCE.md).
 
 #### collider?
 

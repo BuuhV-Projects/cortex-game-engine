@@ -8,7 +8,7 @@
 
 > **buildRoads**(`three`): `void`
 
-Defined in: src/scene/RoadBuild.ts:223
+Defined in: [src/scene/RoadBuild.ts:272](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/RoadBuild.ts#L272)
 
 Gera todas as estradas da cena e molda os terrenos — o pós-passo do `buildScene`.
 

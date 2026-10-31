@@ -3,7 +3,7 @@ import type { EditorAuthoringContext } from './AuthoringContext.js';
 import { applyRoad, moldTerrainToRoads, roadNodeOf } from '../../scene/RoadBuild.js';
 import { ROAD_DEFAULT_MAX_SLOPE, ROAD_DEFAULT_SMOOTH_METERS } from '../../road/RoadGrade.js';
 import { ROAD_DEFAULT_TILE_METERS } from '../../road/RoadMesh.js';
-import { ROAD_DEFAULT_TALUDE, ROAD_DEFAULT_WIDTH, type RoadOverlay } from '../../road/roadFields.js';
+import { ROAD_DEFAULT_CLEARANCE, ROAD_DEFAULT_TALUDE, ROAD_DEFAULT_WIDTH, type RoadOverlay } from '../../road/roadFields.js';
 import type { RoadVec3 } from '../../road/RoadSpline.js';
 
 /** Mínimo de pontos de uma estrada (a curva precisa de 2). */
@@ -21,6 +21,8 @@ export interface RoadEditState {
   tile: number;
   color: string | number | null;
   drivable: boolean;
+  /** Faixa sem vegetação além da borda (m). */
+  clearance: number;
   points: number;
 }
 
@@ -81,6 +83,7 @@ export function createRoadApi(ctx: EditorAuthoringContext): { roadApi: RoadApi; 
         tile: n.tile ?? ROAD_DEFAULT_TILE_METERS,
         color: n.color ?? null,
         drivable: n.drivable !== false,
+        clearance: n.clearance ?? ROAD_DEFAULT_CLEARANCE,
         points: n.points.length,
       };
     },

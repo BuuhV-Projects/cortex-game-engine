@@ -8,7 +8,7 @@
 
 > **resolveRoadNode**(`node`, `ov?`): `object`
 
-Defined in: src/scene/RoadBuild.ts:68
+Defined in: [src/scene/RoadBuild.ts:70](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/RoadBuild.ts#L70)
 
 Nó efetivo: `{ ...nó, ...overlay }` — **o overlay vence** (SPEC-0631 §5).
 
@@ -114,6 +114,12 @@ Piso plano de fallback (se não houver geometria embaixo). Default `0`. O chão 
 #### character.stepHeight?
 
 `number` = `...`
+
+#### clearance?
+
+`number` = `...`
+
+Faixa (m) além da borda da pista sem vegetação (SPEC-0631 §3b). Default [ROAD\_DEFAULT\_CLEARANCE](../variables/ROAD_DEFAULT_CLEARANCE.md).
 
 #### collider?
 
@@ -531,6 +537,12 @@ Largura total da pista (m). Default [ROAD\_DEFAULT\_WIDTH](../variables/ROAD_DEF
 
 ### ov?
 
+#### clearance?
+
+`number` = `...`
+
+Faixa (m) além da borda da pista sem vegetação (SPEC-0631 §3b). Default [ROAD\_DEFAULT\_CLEARANCE](../variables/ROAD_DEFAULT_CLEARANCE.md).
+
 #### color?
 
 `string` \| `number` = `...`
@@ -697,6 +709,12 @@ Piso plano de fallback (se não houver geometria embaixo). Default `0`. O chão 
 #### character.stepHeight?
 
 > `optional` **stepHeight?**: `number`
+
+### clearance?
+
+> `optional` **clearance?**: `number`
+
+Faixa (m) além da borda da pista sem vegetação (SPEC-0631 §3b). Default [ROAD\_DEFAULT\_CLEARANCE](../variables/ROAD_DEFAULT_CLEARANCE.md).
 
 ### collider?
 

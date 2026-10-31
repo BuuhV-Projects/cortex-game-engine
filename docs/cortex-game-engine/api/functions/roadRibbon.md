@@ -8,7 +8,7 @@
 
 > **roadRibbon**(`samples`, `width`, `tileMeters?`, `gradeY?`, `lift?`): [`RoadRibbon`](../interfaces/RoadRibbon.md)
 
-Defined in: src/road/RoadMesh.ts:45
+Defined in: [src/road/RoadMesh.ts:45](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/RoadMesh.ts#L45)
 
 Gera a fita. `gradeY[i]` (opcional) é o Y da linha `i`; sem ele, usa o Y da amostra.
 `lift` soma ao Y (a pista fica um tico acima do platô do terreno).

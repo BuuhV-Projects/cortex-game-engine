@@ -1199,7 +1199,7 @@ pontos, Delete remove). Edições vão para `overlay.data.road[id]` e vencem o n
   "width": 8, "talude": 6, "maxSlope": 0.25,               // m, m por lado, razão (25%)
   "grade": "terrain",                                       // "terrain" (base do terreno) | "points" (Y dos pontos)
   "texture": "assets/textures/asfalto.png", "tile": 8,      // "" = sem textura explícito
-  "drivable": true }
+  "drivable": true, "clearance": 2 }                         // m além da borda sem árvores
 ```
 ```ts
 import { sampleSpline, smoothGrade, roadRibbon, moldHeightfield, buildRoads } from 'cortex-game-engine'
@@ -1211,7 +1211,9 @@ buildRoads(scene.getThreeScene())  // refaz todas as estradas + corte (o buildSc
 
 Gerador de jogo: um ponto a cada 20–40 m; raio de curva ≥ `width`; com `grade: "terrain"`
 o Y dos pontos só vale onde não há terreno. **Não** escave o heightmap no gerador — a
-engine molda. Fora: perfis de via, cruzamentos, marcações, pontes, superelevação.
+engine molda. **Árvore não fica na pista:** instâncias de `vegetation` a menos de
+`width/2 + clearance` do eixo somem (`Vegetation.setHidden`, escala 0), sem sair do dado —
+mover/apagar a estrada traz de volta (`clearRoadVegetation`, chamado junto da moldagem). Fora: perfis de via, cruzamentos, marcações, pontes, superelevação.
 
 ## Character controller (player/NPC com cápsula — estilo UPBGE)
 

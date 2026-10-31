@@ -6,7 +6,7 @@
 
 # Interface: HeightfieldGrid
 
-Defined in: src/road/RoadGrade.ts:99
+Defined in: [src/road/RoadGrade.ts:99](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/RoadGrade.ts#L99)
 
 Descritor da grade do terreno (espelha [Terrain](../classes/Terrain.md): plano XZ centrado na origem local).
 
@@ -16,7 +16,7 @@ Descritor da grade do terreno (espelha [Terrain](../classes/Terrain.md): plano X
 
 > **base**: `ArrayLike`\<`number`\>
 
-Defined in: src/road/RoadGrade.ts:107
+Defined in: [src/road/RoadGrade.ts:107](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/RoadGrade.ts#L107)
 
 Heightmap **base** (row-major, `(res+1)²`).
 
@@ -26,7 +26,7 @@ Heightmap **base** (row-major, `(res+1)²`).
 
 > **depth**: `number`
 
-Defined in: src/road/RoadGrade.ts:103
+Defined in: [src/road/RoadGrade.ts:103](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/RoadGrade.ts#L103)
 
 Profundidade (Z) em metros.
 
@@ -36,7 +36,7 @@ Profundidade (Z) em metros.
 
 > **resolution**: `number`
 
-Defined in: src/road/RoadGrade.ts:105
+Defined in: [src/road/RoadGrade.ts:105](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/RoadGrade.ts#L105)
 
 Segmentos por lado (grade `(resolution+1)²`).
 
@@ -46,6 +46,6 @@ Segmentos por lado (grade `(resolution+1)²`).
 
 > **width**: `number`
 
-Defined in: src/road/RoadGrade.ts:101
+Defined in: [src/road/RoadGrade.ts:101](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/RoadGrade.ts#L101)
 
 Largura (X) em metros.

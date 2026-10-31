@@ -27,6 +27,7 @@ terreno é cortado e aterrado e como a pista vira chão do carro.
   "tile": 8,                              // m de pista por repetição da textura. Default 8
   "color": "#4a4a4a",                     // cor da pista sem textura (com textura, o default é branco)
   "drivable": true,                       // chão do carro (userData.cortexRoad). Default true
+  "clearance": 2,                         // m além da borda da pista sem vegetação. Default 2
   "steps": 16                             // amostras por 90° de curva. Default 16
 }
 ```
@@ -84,6 +85,16 @@ a base**. Não fica cicatriz salva: apagar ou mover a estrada e reconstruir devo
 - Escultura no F2 (`sculpt`) muda a base; o corte é recalculado sobre a base nova na próxima moldagem.
 - Moldagem roda no fim do `buildScene` (depois de todos os nós no lugar e do overlay aplicado) e, no F2, a cada
   edição da estrada.
+
+### 3b. Vegetação fora da pista (não destrutivo)
+
+Nenhuma árvore fica na pista: toda instância de nó `vegetation` (3D ou sprite) cujo pé (XZ, no mundo) cai a menos de
+`width/2 + clearance` do eixo some (matriz com escala 0 — some do desenho, da sombra e do raycast). Como o corte no
+terreno, **não mexe no dado**: `getInstances()` e o overlay continuam com todas as árvores; mover ou apagar a estrada
+traz de volta as que saíram do corredor. Roda junto da moldagem (fim do `buildScene` e a cada edição no F2). Busca por
+grade de hash dos segmentos do eixo: O(instâncias + segmentos) por estrada, não instâncias × segmentos.
+
+O gerador do jogo **não precisa** tirar as árvores do corredor (pode, para economizar instâncias).
 
 ### 4. Malha e colisão
 

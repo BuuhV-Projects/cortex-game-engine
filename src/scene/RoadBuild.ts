@@ -26,7 +26,9 @@ import {
   ROAD_DEFAULT_SMOOTH_METERS,
   type GradePoint,
 } from '../road/RoadGrade.js';
-import { roadOverlaySchema, ROAD_DEFAULT_TALUDE, ROAD_DEFAULT_WIDTH, type RoadOverlay } from '../road/roadFields.js';
+import { roadOverlaySchema, ROAD_DEFAULT_CLEARANCE, ROAD_DEFAULT_TALUDE, ROAD_DEFAULT_WIDTH, type RoadOverlay } from '../road/roadFields.js';
+import { RoadCorridor } from '../road/RoadCorridor.js';
+import { FLOATS_PER_INSTANCE, type Vegetation } from './Vegetation.js';
 import { loadTexture } from './SceneAssets.js';
 import type { SceneFileV1 } from './SceneFile.js';
 import type { RoadNode } from './SceneDefinition.js';
@@ -182,9 +184,55 @@ export function applyRoad(mesh: Mesh, node: RoadNode, three: Object3D, terrains 
 }
 
 /**
+ * **Árvore não fica na pista** (SPEC-0631 §3b): esconde (sem apagar) toda instância de
+ * nó `vegetation` a menos de `width/2 + clearance` do eixo de alguma estrada. Recalcula a
+ * máscara inteira a cada chamada, então mover/apagar a estrada traz as árvores de volta.
+ */
+export function clearRoadVegetation(three: Object3D): void {
+  const corridors: { c: RoadCorridor; box: Box3 }[] = [];
+  const vegs: { obj: Object3D; veg: Vegetation }[] = [];
+  three.traverse((o) => {
+    const ud = o.userData as Record<string, unknown>;
+    const veg = ud['cortexVegetation'] as Vegetation | undefined;
+    if (veg) vegs.push({ obj: o, veg });
+    const node = ud[ROAD_NODE_KEY] as RoadNode | undefined;
+    const centerline = ud[ROAD_CENTERLINE_KEY] as GradePoint[] | undefined;
+    if (!node || !centerline || centerline.length < 2) return;
+    const radius = (node.width ?? ROAD_DEFAULT_WIDTH) / 2 + (node.clearance ?? ROAD_DEFAULT_CLEARANCE);
+    const box = new Box3();
+    for (const p of centerline) box.expandByPoint(tmp.set(p.x, 0, p.z));
+    box.expandByScalar(radius);
+    corridors.push({ c: new RoadCorridor(centerline, radius), box });
+  });
+  if (vegs.length === 0) return;
+  const p = new Vector3();
+  let hiddenTotal = 0;
+  for (const { obj, veg } of vegs) {
+    obj.updateMatrixWorld(true);
+    const flat = veg.getInstances();
+    const n = veg.count;
+    let mask: Uint8Array | null = null;
+    for (let i = 0; i < n && corridors.length > 0; i++) {
+      obj.localToWorld(p.set(flat[i * FLOATS_PER_INSTANCE]!, 0, flat[i * FLOATS_PER_INSTANCE + 2]!));
+      for (const { c, box } of corridors) {
+        if (p.x < box.min.x || p.x > box.max.x || p.z < box.min.z || p.z > box.max.z) continue;
+        if (!c.contains(p.x, p.z)) continue;
+        mask ??= new Uint8Array(n);
+        mask[i] = 1;
+        hiddenTotal++;
+        break;
+      }
+    }
+    veg.setHidden(mask);
+  }
+  debug('road', `vegetação: ${hiddenTotal} instância(s) escondida(s) no corredor`);
+}
+
+/**
  * **Corte e aterro** (SPEC-0631 §3): para cada terreno, junta o delta de toda estrada cuja
  * caixa (± alcance) encosta nele e aplica com {@link Terrain.setRoadMolding} (não
- * destrutivo). Terreno sem estrada perto fica sem moldagem (idempotente).
+ * destrutivo). Terreno sem estrada perto fica sem moldagem (idempotente). Também tira a
+ * vegetação do corredor ({@link clearRoadVegetation}).
  */
 export function moldTerrainToRoads(three: Object3D, terrains = collectTerrains(three)): void {
   const roads: { node: RoadNode; centerline: GradePoint[]; box: Box3; reach: number }[] = [];
@@ -216,6 +264,7 @@ export function moldTerrainToRoads(three: Object3D, terrains = collectTerrains(t
     }
     t.terrain.setRoadMolding(mergeDeltas(deltas));
   }
+  clearRoadVegetation(three); // §3b: a mata sai do corredor junto com o corte
   debug('road', `moldagem: ${roads.length} estrada(s), ${terrains.length} terreno(s)`);
 }
 

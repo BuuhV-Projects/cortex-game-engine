@@ -175,6 +175,7 @@ export * from './road/RoadSpline.js';
 export * from './road/RoadMesh.js';
 export * from './road/RoadGrade.js';
 export * from './road/roadFields.js';
+export * from './road/RoadCorridor.js';
 
 export * from './io/SceneFileWriter.js';
 export * from './io/HttpSceneFileWriter.js';

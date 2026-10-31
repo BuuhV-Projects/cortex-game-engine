@@ -52,6 +52,7 @@ export function describeRoadSection(
     { kind: 'number', id: fid('roadTile'), label: 'Repetição (m)', value: r.tile, step: TILE_STEP },
     { kind: 'color', id: fid('roadColor'), label: 'Cor', value: r.color === null ? DEFAULT_COLOR_HEX : `#${new Color(r.color).getHexString()}` },
     { kind: 'checkbox', id: fid('roadDrivable'), label: 'Chão do carro', value: r.drivable },
+    { kind: 'number', id: fid('roadClear'), label: 'Faixa sem árvores (m)', value: r.clearance, step: TALUDE_STEP },
     { kind: 'note', id: fid('roadInfo'), text: `${r.points} pontos na curva`, tone: 'muted' },
   );
   if (api.editPoints) fields.push({ kind: 'button', id: fid('roadEdit'), label: '✏ Editar traçado', variant: 'primary' });
@@ -80,6 +81,10 @@ export function describeRoadSection(
   });
   handlers.set(fid('roadDrivable'), (v) => {
     api.set(obj, { drivable: v === true || v === 'true' });
+  });
+  handlers.set(fid('roadClear'), (v) => {
+    const n = num(v);
+    if (n !== null) api.set(obj, { clearance: Math.max(0, n) });
   });
   handlers.set(fid('roadPick'), () => api.pickTexture?.(obj));
   handlers.set(fid('roadNoTex'), () => {
