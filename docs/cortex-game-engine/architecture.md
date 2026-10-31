@@ -144,6 +144,10 @@ senão o **editor do Studio** não resolve o tipo (runtime funciona, IntelliSens
   `createRenderPipelineAsync`, todos no mesmo quadro — e o `precompile()` espera
   as promessas. Antes o Chrome compilava em série DEPOIS do retorno e o 1º quadro
   do jogo congelava atrás (DDD 61: ~6 s). Host nativo: síncrono, como antes.
+  **Armadilha (SPEC-0617):** só os objetos da cena aquecida ficam assíncronos. Os
+  renders internos do three (panorama→cubemap do fundo, PMREM, transformação de
+  cor) rodam em OUTRA cena, uma vez só; assíncronos, eram pulados e o céu ficava
+  preto em cache.
   **Armadilha do renderer próprio (SPEC-0585):** o espelho de cena e a projeção
   em C++ só se instalam no 1º tick do loop. Um `precompile()` chamado antes do
   `start()` (o DDD 61 faz assim) desenhava o aquecimento todo pelo three, e os
