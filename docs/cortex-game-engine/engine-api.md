@@ -179,10 +179,6 @@ O player no JSON: `{ "type":"model", "id":"player", "url":"assets/characters/pla
 são auto-mapeadas pelos nomes dos clipes (idle/walk/run/jump/fall). Opção `facingOffset`
 se o modelo nascer virado ao contrário.
 
-**Câmera não atravessa (SPEC-0625):** o braço usa o raio da câmera (5 raios + peito),
-encolhe na hora ao bater e, colado numa parede no modo `free`, gira o yaw rápido pro lado
-livre (no sentido em que o jogador gira, nunca contra). `cameraAvoid: false` desliga o desvio.
-
 **Tiro em 3ª pessoa (SPEC-0297):** `shoulderOffset` (m, + = ombro direito) tira o
 personagem do centro da tela (onde fica a mira) e `faceCamera: true` faz ele encarar
 a câmera (strafe). Ambos são propriedades mutáveis do sistema. Mirar = trocar em runtime:

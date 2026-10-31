@@ -243,9 +243,7 @@ describe('ThirdPersonControlSystem — braço estável (SPEC-0311)', () => {
     world.tick(FRAME_MS);
     expect(dist()).toBeCloseTo(FULL, 1);
     let prev = dist();
-    // encolher é imediato (SPEC-0625): degrau só quando a viga ENTRA, e sempre pra dentro;
-    // pra fora nunca salta (segura e volta devagar)
-    let badJumps = 0;
+    let maxStep = 0;
     let minDist = FULL;
     const BEAM_PERIOD = 20; // quadros: viga aparece 5 e some 15, várias vezes
     const BEAM_ON = 5;
@@ -253,12 +251,11 @@ describe('ThirdPersonControlSystem — braço estável (SPEC-0311)', () => {
     for (let f = 0; f < FRAMES; f++) {
       setBeam(beam, f % BEAM_PERIOD < BEAM_ON);
       world.tick(FRAME_MS);
-      const step = dist() - prev;
-      if (Math.abs(step) >= MAX_STEP && (step > 0 || f % BEAM_PERIOD !== 0)) badJumps++;
+      maxStep = Math.max(maxStep, Math.abs(dist() - prev));
       minDist = Math.min(minDist, dist());
       prev = dist();
     }
-    expect(badJumps).toBe(0);
+    expect(maxStep).toBeLessThan(MAX_STEP);
     expect(minDist).toBeLessThan(FULL - 1); // encolheu de verdade (não ignorou a viga)
   });
 

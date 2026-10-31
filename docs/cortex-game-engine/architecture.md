@@ -423,11 +423,7 @@ alvo é **Rapier** (WASM) como motor dinâmico único, estilo Unity.
   cujos triângulos tocam a caixa que eles varrem (`touchingBox`: 1 `intersectsBox` da
   BVH por candidata, exato; sem árvore ou instanciada passa direto) — no meio da rua não
   sai raio de parede nenhum (SPEC-0323); o spring arm da 3ª pessoa faz o mesmo e tem um
-  2º raio na altura do peito (parede baixa). **Braço sem atravessar (SPEC-0625,
-  `systems/thirdPersonCameraArm.ts`):** raio da câmera (centro + 4 raios deslocados de
-  `CAM_RADIUS`), sem mínimo que empurre pra dentro da parede, encolher imediato (só a
-  volta é suavizada, SPEC-0311) e desvio de yaw quando nem 0,8 m cabe (modo `free`,
-  no sentido do giro do jogador); o ombro encurta antes de bater na parede ao lado. **Raio × índice (SPEC-0328):** o índice
+  2º raio na altura do peito (parede baixa). **Raio × índice (SPEC-0328):** o índice
   tem uma grade XZ (células de `GRID_CELL` = 8 m; malha que cobre > 16 células fica
   numa lista "larga" testada sempre), então `nearXZ`/`alongRay` não varrem os ~900
   alvos. Câmera, chão e anti-clip usam `firstHit(raycaster, índice, skip?)`: só as

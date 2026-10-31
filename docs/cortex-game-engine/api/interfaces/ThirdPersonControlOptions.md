@@ -26,18 +26,6 @@ fixo mesmo indo pelo `setupThirdPerson` (que injeta `game.actions`).
 
 ***
 
-### cameraAvoid?
-
-> `optional` **cameraAvoid?**: `boolean`
-
-Defined in: [src/systems/ThirdPersonControlSystem.ts:81](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L81)
-
-**Desvio da câmera** (SPEC-0625): sem espaço pro braço mínimo atrás do personagem
-(colado na parede), a câmera gira rápido pro lado livre — no sentido em que o
-jogador gira, nunca contra. Só no modo `free`. Default true.
-
-***
-
 ### cameraDistance?
 
 > `optional` **cameraDistance?**: `number`
