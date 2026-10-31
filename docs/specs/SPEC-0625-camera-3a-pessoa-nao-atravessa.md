@@ -1,7 +1,7 @@
 # SPEC-0625 - Câmera de 3ª pessoa não atravessa objeto (raio da câmera, encolher na hora, desvio)
 
 **Data:** 2026-10-31
-**Status:** aceito (substitui em parte a SPEC-0311: o encolhimento deixa de ser suavizado)
+**Status:** revertido (pedido do usuário, 31/10/2026) — o braço volta à SPEC-0302/0311
 
 ## Contexto
 
@@ -76,3 +76,15 @@ Alternativas consideradas:
   sondas de desvio (até 22 × 6 raios curtos) só rodam quando o braço está bloqueado.
 - A sonda de desvio usa o alvo do quadro atual (o deslocamento do ombro muda com o
   yaw): aproximação; o quadro seguinte refaz o teste completo no yaw novo.
+
+## Reversão (31/10/2026)
+
+O usuário pediu para remover o ajuste: o comportamento (encolher imediato + desvio
+de yaw quando nem 0,8 m cabe) "não funciona como eu gostaria" e será repensado
+depois. Além disso, no Port Hollow (export nativo) o sistema custava ~5 ms/quadro
+pelos 6 raios + sondas de desvio. O código da `7b32f59a` foi revertido: o braço
+volta a ser o da SPEC-0302/0311 (raio central + raio do peito, mínimo de 0,8 m,
+encolher suavizado, sem sondas de desvio), sai `systems/thirdPersonCameraArm.ts` e a
+opção `cameraAvoid` de `ThirdPersonControlOptions`. Os problemas do §Contexto
+(câmera dentro da parede com o jogador colado nela) voltam a existir até um novo
+desenho.

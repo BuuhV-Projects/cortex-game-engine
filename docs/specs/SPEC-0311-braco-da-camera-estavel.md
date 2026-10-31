@@ -1,7 +1,7 @@
 # SPEC-0311 - Braço da câmera de 3ª pessoa estável (encolhe rápido, volta devagar)
 
 **Data:** 2026-10-07
-**Status:** aceito — o encolhimento suavizado foi substituído por encolher imediato na SPEC-0625
+**Status:** aceito
 
 ## Contexto
 
