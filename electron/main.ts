@@ -1130,7 +1130,7 @@ ipcMain.handle('project:writeConfig', async (_event, projectDir: unknown, patch:
 })
 
 // Pacotes de textura (ADR-0640 / SPEC-0641): instalar/listar/remover em assets/packages/.
-const packageCacheDir = defaultPackageCacheDir(process.env.LOCALAPPDATA ?? app.getPath('userData'))
+const packageCacheDir = (): string => defaultPackageCacheDir(process.env.LOCALAPPDATA ?? app.getPath('userData'))
 registerPackageIpc(ipcMain, { validatePath, cacheDir: packageCacheDir })
 
 /** Diálogo pra escolher um PNG (ícone do jogo). Retorna o caminho ou null. */
@@ -1633,7 +1633,7 @@ ipcMain.handle('project:setActive', async (event, projectDir: unknown) => {
   } else {
     currentProjectDir = validatePath(projectDir)
     // Pacote declarado no cortex.json e ainda não instalado → instala em segundo plano.
-    void syncOnOpen(event.sender, currentProjectDir, packageCacheDir).catch(() => {})
+    void syncOnOpen(event.sender, currentProjectDir, packageCacheDir()).catch(() => {})
   }
   // O menu "Projeto" só faz sentido com projeto aberto — reconstrói pra mostrar/ocultar.
   Menu.setApplicationMenu(buildAppMenu())

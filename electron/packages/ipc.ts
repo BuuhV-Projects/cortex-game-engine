@@ -15,8 +15,8 @@ import { PACKAGE_ID_RE, PACKAGE_VERSION_RE } from '../../src/io/packages/manifes
 
 export interface PackageIpcOptions {
   validatePath: (p: unknown) => string
-  /** Pasta do cache global (`%LOCALAPPDATA%/cortex/packages`). */
-  cacheDir: string
+  /** Pasta do cache global (`%LOCALAPPDATA%/cortex/packages`); resolvida só no uso — `app.getPath` não vale antes do `ready`. */
+  cacheDir: () => string
 }
 
 function depsFor(sender: WebContents, cacheDir: string): InstallerDeps {
@@ -49,7 +49,7 @@ export function registerPackageIpc(ipcMain: IpcMain, opts: PackageIpcOptions): v
   })
 
   ipcMain.handle('packages:sync', async (event, projectDir: unknown) =>
-    syncPackages(opts.validatePath(projectDir), depsFor(event.sender, opts.cacheDir)),
+    syncPackages(opts.validatePath(projectDir), depsFor(event.sender, opts.cacheDir())),
   )
 
   ipcMain.handle('packages:add', async (event, projectDir: unknown, id: unknown, version: unknown) => {
@@ -59,7 +59,7 @@ export function registerPackageIpc(ipcMain: IpcMain, opts: PackageIpcOptions): v
     await setDeclaredPackage(dir, id, version)
     const pkg = (await readDeclaredPackages(dir)).packages.find((p) => p.id === id)
     if (!pkg) throw new Error(`não consegui declarar ${id}`)
-    return installPackage(dir, pkg, depsFor(event.sender, opts.cacheDir))
+    return installPackage(dir, pkg, depsFor(event.sender, opts.cacheDir()))
   })
 
   ipcMain.handle('packages:remove', async (_event, projectDir: unknown, id: unknown) => {
