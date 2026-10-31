@@ -1,5 +1,6 @@
 import { t } from './i18n'
 import { strongCodingStorageKey } from './chatTask'
+import { PackagesModal } from './PackagesModal'
 
 /** App id da Steam cabe em uint32 — 10 dígitos é o teto absoluto. */
 const STEAM_APP_ID_MAX_DIGITS = 10
@@ -158,7 +159,13 @@ export class ProjectSettingsModal {
     this.saveBtn.className = 'export-modal__btn export-modal__btn--primary'
     this.saveBtn.textContent = t('gameSettings.save')
     this.saveBtn.addEventListener('click', () => void this.save())
-    footer.append(cancelBtn, this.saveBtn)
+    // Pacotes de textura (SPEC-0641): modal próprio, cortex.json#packages.
+    const packagesBtn = document.createElement('button')
+    packagesBtn.type = 'button'
+    packagesBtn.className = 'export-modal__btn export-modal__btn--secondary'
+    packagesBtn.textContent = t('packages.open_button')
+    packagesBtn.addEventListener('click', () => new PackagesModal(projectDir))
+    footer.append(packagesBtn, cancelBtn, this.saveBtn)
 
     this.dialog.append(header, nameField, iconField, steamField, strongField, note, footer)
     document.body.appendChild(this.dialog)
