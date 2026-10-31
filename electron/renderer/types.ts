@@ -31,6 +31,23 @@ export interface TurnStats {
   sessionId: string | null
 }
 
+export interface PackageListItem {
+  id: string
+  version: string
+  repo: string
+  installedVersion: string | null
+  name: string
+  materials: number
+  redistributable: boolean | null
+}
+
+export interface PackageInstallResult {
+  id: string
+  version: string
+  status: 'installed' | 'up-to-date' | 'error'
+  error?: string
+}
+
 export interface ElectronAPI {
   // Sistema de arquivos
   readDir(dirPath: string): Promise<FileEntry[]>
@@ -94,6 +111,14 @@ export interface ElectronAPI {
   exportNative(projectDir: string, mode?: string, debug?: boolean, outDir?: string, editor?: boolean): Promise<{ ok: boolean; output: string; distDir?: string }>
   /** Progresso do export (etapas). Retorna função de cancelamento do listener. */
   onExportProgress(callback: (step: string) => void): () => void
+
+  /** Pacotes de textura (SPEC-0641) declarados no cortex.json + estado instalado. */
+  listPackages(projectDir: string): Promise<{ items: PackageListItem[]; errors: string[] }>
+  /** Instala o que falta (cortex.json → assets/packages/). */
+  syncPackages(projectDir: string): Promise<{ results: PackageInstallResult[]; errors: string[] }>
+  addPackage(projectDir: string, id: string, version: string): Promise<PackageInstallResult>
+  removePackage(projectDir: string, id: string): Promise<{ ok: boolean }>
+  onPackagesProgress(callback: (msg: { id: string; stage: string; error?: string }) => void): () => void
   /** Auto-rig de personagem (SPEC-0349): roda o `prepare-character.sh` do projeto. */
   characterRigRun(projectDir: string, configRel: string, action?: 'generate' | 'approve' | 'revert'): Promise<{ code: number }>
   /** Mata o auto-rig em andamento. */

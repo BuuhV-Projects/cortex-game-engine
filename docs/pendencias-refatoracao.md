@@ -6,3 +6,5 @@ refatorar tira a linha.
 
 src/ui/runtime/RendererUiBackend.ts
 src/core/Game.ts
+electron/main.ts
+src/editor/attachEditor.ts

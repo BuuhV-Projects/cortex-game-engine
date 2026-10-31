@@ -31,6 +31,26 @@
     "chat_strong_label": "AI Chat: Orchestrator with the strongest model (Coding always uses it)",
     "chat_strong_hint": "Better code on hard tasks, but uses up the usage quota much faster. Applies only to this project, on this computer."
   },
+  "packages": {
+    "title": "Texture packages",
+    "subtitle": "Material libraries downloaded from GitHub into assets/packages/ (cortex.json).",
+    "empty": "No packages declared.",
+    "id_placeholder": "id (e.g. cortex-yughues-ground-textures)",
+    "version_placeholder": "version (1.0.0)",
+    "add": "Add",
+    "remove": "Remove",
+    "sync": "Install missing",
+    "close": "Close",
+    "installed": "installed",
+    "missing": "not installed",
+    "materials": "{n} materials",
+    "private": "license does not allow a public repo",
+    "stage_download": "downloading…",
+    "stage_extract": "extracting…",
+    "stage_done": "done",
+    "error": "Error: {msg}",
+    "open_button": "Texture packages…"
+  },
   "fileTree": {
     "no_project": "No project open",
     "open_project": "Open Project",

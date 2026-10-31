@@ -12,6 +12,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { packDir } from './pak.mjs';
 import { cookAssets } from './cook-assets.mjs';
+import { usedPackageMaterials, packageAssetFilter } from './package-usage.mjs';
 import { prepareDist } from './fs-clean.mjs';
 import { whoLocks } from './who-locks.mjs';
 import { readGameConfig, steamAppIdOf } from './game-config.mjs';
@@ -247,9 +248,14 @@ if (fs.existsSync(assetsDir)) {
     console.log('[export] CORTEX_NO_COOK=1 — pulando cook, empacotando assets CRUS (PNG)');
     packSrc = assetsDir;
   } else {
+    // Pacotes de textura (SPEC-0641 §6): só os materiais citados pelo jogo entram.
+    // CORTEX_EXPORT_ALL_PACKAGES=1 desliga o filtro (diagnóstico).
+    const usedMaterials = usedPackageMaterials(gameDir);
+    const include = process.env.CORTEX_EXPORT_ALL_PACKAGES === '1' ? undefined : packageAssetFilter(usedMaterials);
     const cs = await cookAssets(assetsDir, cookedDir, cacheDir, (done, total) => {
       if (done === total || done % 3 === 0) console.log(`[export:cook] ${done}/${total}`);
-    });
+    }, include);
+    if (cs.skipped) console.log(`[export] pacotes: ${usedMaterials.size} materiais usados, ${cs.skipped} arquivos de pacote fora do pak`);
     console.log(
       `[export] cook: ${cs.glbConverted} GLB convertidos (+${cs.glbCached} do cache, ${cs.glbNoTex} sem textura) · ` +
         `assets ${(cs.before / 1e6).toFixed(1)} → ${(cs.after / 1e6).toFixed(1)} MB`,
