@@ -1045,6 +1045,13 @@ adiciona sol (com sombras) + hemisphere + ambient. Encapsula a config de
 shadow-camera/tone-mapping (que crua exige mexer no `WebGPURenderer` e no
 `DirectionalLight.shadow`). Retorna as luzes pra ajuste em runtime.
 
+**Export nativo (`nativeRenderer: true`)**: o preset se adapta sozinho (ADR-0644,
+SPEC-0645) — ACES vai pro composite do host (sem bloom) e ambient + environment
+uniforme (o derivado de `sky`) viram constante no hemisfério, sem nada no código do
+jogo. No host `lights.ambient` fica fora da cena e `lights.hemisphere` já traz o
+ambiente somado (intensidade 1). Céu não uniforme (`hdri`, `skyTop/Middle/Bottom`,
+`skyboxLighting`) ainda faz o renderer próprio recusar a cena.
+
 ```ts
 import { setupOutdoorLighting, setShadows } from 'cortex-game-engine'
 

@@ -36,8 +36,8 @@ Uso manual: `sh .claude/hooks/native-contract.sh .` (relatório; sai 1 com ERRO)
 
 - Heurístico: olha o asset em disco e o texto do código, não o que chega ao renderer. Não substitui medir no host.
 - Quando a engine ganhar uma das features, a regra correspondente sai do `.mjs` do template (e dos jogos que o copiaram).
-- Débito da ENGINE: `outdoorLighting` deveria se adaptar sozinho no host (ACES no composite; ambient + environment
-  uniforme no hemisfério — hoje o Port Hollow faz isso em `game/nativeTone.ts`); modelo `standard` nativo sem normal
-  map / metal-rugosidade / físico com só specular-ior; sombra C++ sem recorte alfa (SPEC-0642).
-- Projeto novo já nasce com 1 débito de base (o `outdoorLighting` sem adaptação no host), que a 1ª execução do hook
-  grava sem bloquear.
+- Débito da ENGINE: modelo `standard` nativo sem normal map / metal-rugosidade / físico com só specular-ior; sombra C++
+  sem recorte alfa (SPEC-0642). (O `outdoorLighting` se adapta sozinho no host desde a SPEC-0645/ADR-0644: a regra
+  "sem adaptação no host" saiu do `.mjs`; ficou só "céu não uniforme" — `hdri`, `skyTop/Middle/Bottom`,
+  `skyboxLighting` ou sem `sky` —, que a engine não converte.)
+- Projeto novo nasce com 0 erros e 0 débitos.

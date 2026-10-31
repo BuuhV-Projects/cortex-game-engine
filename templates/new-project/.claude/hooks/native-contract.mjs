@@ -31,6 +31,9 @@ const UNSUPPORTED_TEXTURES = { normalTexture: 'normal map', metallicRoughnessTex
 /** Sombra do sol em C++ recusa caster com recorte alfa (`recorte-alfa`) até a SPEC-0642 da engine entrar: vire `true`. */
 const SHADOW_ALPHA_CLIP = false;
 
+/** Campos do `outdoorLighting` que geram environment não uniforme (a engine só adapta o uniforme, SPEC-0645). */
+const NON_UNIFORM_SKY = ['hdri', 'skyTop', 'skyMiddle', 'skyBottom', 'skyboxLighting'];
+
 // ── Regras de código ─────────────────────────────────────────────────────────
 const CODE_RULES = [
   { re: /new\s+AmbientLight\s*\(/, debt: 'AmbientLight: o bloco de luz nativo só tem sol + hemisfério + spots; o renderer próprio recusa a cena inteira' },
@@ -97,9 +100,6 @@ function checkConfig(root, errors, debt) {
     }
   }
   const scenes = existsSync(join(root, 'scenes')) ? walk(join(root, 'scenes'), ['.json']) : [];
-  const code = walk(root, ['.ts']).map((f) => readFileSync(f, 'utf8')).join('\n');
-  // adaptação do outdoorLighting no host (ACES no composite + ambient/environment no hemisfério), SPEC-0033 do Port Hollow
-  const adapted = /__cortexBloom/.test(code) && /PostFX/.test(code);
   for (const file of scenes) {
     let scene;
     try { scene = JSON.parse(readFileSync(file, 'utf8')); } catch { continue; }
@@ -107,7 +107,11 @@ function checkConfig(root, errors, debt) {
     if (!o) continue;
     const rel = relative(root, file).split(sep).join('/');
     if (o.csm !== true) errors.push({ where: rel, what: '`outdoorLighting.csm: true` ausente: sem CSM a sombra do sol é refeita pelo three em JS todo quadro (só o CSM tem o passe em C++, SPEC-0289)' });
-    if (!adapted) debt.push({ where: rel, what: 'outdoorLighting liga ACES + AmbientLight + environment no three: o renderer próprio recusa a cena até o jogo (ou a engine) adaptar no host (ver SPEC-0033 do Port Hollow)' });
+    // a engine adapta ACES + ambient + environment UNIFORME no host (SPEC-0645); céu não uniforme continua environment
+    const sky = NON_UNIFORM_SKY.filter((k) => o[k]);
+    if (o.environment !== false && (sky.length || o.sky === undefined)) {
+      debt.push({ where: rel, what: `outdoorLighting com céu não uniforme (${sky.join(', ') || 'sem sky'}): o environment fica e o renderer próprio recusa a cena (lights:environment)` });
+    }
   }
 }
 

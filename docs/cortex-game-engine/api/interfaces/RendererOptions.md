@@ -6,7 +6,7 @@
 
 # Interface: RendererOptions
 
-Defined in: [src/core/Renderer.ts:54](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L54)
+Defined in: [src/core/Renderer.ts:55](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L55)
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: [src/core/Renderer.ts:54](https://github.com/BuuhV-Projects/cortex-g
 
 > `optional` **antialias?**: `boolean`
 
-Defined in: [src/core/Renderer.ts:65](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L65)
+Defined in: [src/core/Renderer.ts:66](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L66)
 
 Habilita anti-aliasing.
 
@@ -30,7 +30,7 @@ true
 
 > **canvas**: `HTMLCanvasElement`
 
-Defined in: [src/core/Renderer.ts:56](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L56)
+Defined in: [src/core/Renderer.ts:57](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L57)
 
 Elemento `<canvas>` onde a cena será renderizada.
 
@@ -40,7 +40,7 @@ Elemento `<canvas>` onde a cena será renderizada.
 
 > `optional` **forceWebGL?**: `boolean`
 
-Defined in: [src/core/Renderer.ts:72](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L72)
+Defined in: [src/core/Renderer.ts:73](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L73)
 
 Escape hatch: usa o backend WebGL2 em vez de WebGPU. Por padrão o engine
 **exige** WebGPU e lança se ele não estiver disponível (sem fallback
@@ -58,7 +58,7 @@ false
 
 > **height**: `number`
 
-Defined in: [src/core/Renderer.ts:60](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L60)
+Defined in: [src/core/Renderer.ts:61](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L61)
 
 Altura inicial em pixels.
 
@@ -68,6 +68,6 @@ Altura inicial em pixels.
 
 > **width**: `number`
 
-Defined in: [src/core/Renderer.ts:58](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L58)
+Defined in: [src/core/Renderer.ts:59](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L59)
 
 Largura inicial em pixels.
