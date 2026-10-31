@@ -127,7 +127,7 @@ export class CameraArmProbe {
       this.shared = undefined;
       traverseCollidable(root, (o, hidden) => {
         if (hidden) return false; // nada lá dentro é alvo: não desce (SPEC-0320)
-        if (!(o as { isMesh?: boolean }).isMesh || isSkinned(o)) return;
+        if (!(o as { isMesh?: boolean }).isMesh || isSkinned(o) || o.userData['cortexVegetationSub']) return; // copa: SPEC-0647
         if (isUnderSelf(o, self)) return;
         this.targets.push(o);
       });

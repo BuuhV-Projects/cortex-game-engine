@@ -98,8 +98,9 @@ function collectScene(
         if ((o as { isMesh?: boolean }).isMesh && !ud['cortexVegetationSub'] && !ud['cortexWater'] && !isSkinned(o)) ensureBoundsTree(o);
         return;
       }
-      // toda malha visível não skinada: a câmera da 3ª pessoa reaproveita (SPEC-0328)
-      if ((o as { isMesh?: boolean }).isMesh && !isSkinned(o)) visibleMeshes.push(o);
+      // toda malha visível não skinada: a câmera da 3ª pessoa reaproveita (SPEC-0328); a copa da
+      // vegetação fica de fora, a câmera passa por ela (SPEC-0647)
+      if ((o as { isMesh?: boolean }).isMesh && !isSkinned(o) && !ud['cortexVegetationSub']) visibleMeshes.push(o);
       if (ud['cortexVegetation'] && ud['cortexSolid'] === true) {
         const inst = (ud['cortexVegetation'] as { getInstances(): number[] }).getInstances();
         for (let i = 0; i < inst.length; i += 5) trunks.push(inst[i]!, inst[i + 2]!, TRUNK_RADIUS * inst[i + 4]!);
