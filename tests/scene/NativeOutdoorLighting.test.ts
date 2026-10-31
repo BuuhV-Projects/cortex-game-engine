@@ -119,6 +119,17 @@ describe('foldIntoHemisphere / uniformEnvironmentFill', () => {
     expect(h.groundColor.toArray()).toEqual([0.1, 0.1, 2.1]);
   });
 
+  it('acumula o fill em userData.cortexAmbientFill para o jogo reaplicar', () => {
+    const h = new HemisphereLight(new Color(1, 1, 1), new Color(0, 0, 0), 1);
+    const fill = new Color(0.1, 0.2, 0.3);
+    foldIntoHemisphere(h, fill);
+    foldIntoHemisphere(h, new Color(0.1, 0.1, 0.1));
+    const total = h.userData['cortexAmbientFill'] as Color;
+    expect(total.r).toBeCloseTo(0.2);
+    expect(total.b).toBeCloseTo(0.4);
+    expect(fill.toArray()).toEqual([0.1, 0.2, 0.3]); // não muta o argumento
+  });
+
   it('environment uniforme vale céu · k · π (convenção do three)', () => {
     const k = 0.5;
     const fill = uniformEnvironmentFill(new Color(0.2, 0.4, 0.6), k);
