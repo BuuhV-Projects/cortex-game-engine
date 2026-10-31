@@ -45,6 +45,11 @@ renderer do three, `AmbientLight`, `scene.environment`). No navegador/Studio o v
 `setupOutdoorLighting` continua devolvendo `{ sun, hemisphere, ambient }`; no host `ambient` volta fora da cena (só
 para não quebrar quem o lê) e o `hemisphere` já tem o ambiente somado.
 
+O total somado (ambient + environment uniforme) fica em `hemisphere.userData['cortexAmbientFill']` (`Color`, RGB
+linear, acumulado a cada `foldIntoHemisphere`; constante `AMBIENT_FILL_KEY`). Quem reescreve `color`/`groundColor`/
+`intensity` do hemisfério em runtime (ex.: clima/dia-noite do jogo) deve reaplicar `cor·I + fill`, `chão·I + fill` e
+`intensity = 1` — senão o ambiente some no host. Fora do host a chave não existe (o `AmbientLight` está na cena).
+
 ### Hook do template
 
 Sai a regra "outdoorLighting sem adaptação no host" (`adapted`/`__cortexBloom`); entra "environment não uniforme"

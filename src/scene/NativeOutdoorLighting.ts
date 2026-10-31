@@ -21,12 +21,22 @@ export function adaptsOutdoorLightingToNativeHost(): boolean {
  * intensidade) ao hemisfério. Ele dá `mix(chão, céu, w)`: somar a mesma
  * constante às duas pontas soma a constante em todo `w` — o difuso fica igual
  * ao de um `AmbientLight` de `fill`. A intensidade vai para dentro das cores.
+ *
+ * O total somado fica em `hemisphere.userData[AMBIENT_FILL_KEY]` (Color, RGB
+ * linear, acumulado a cada chamada). Quem reescreve o hemisfério em runtime
+ * (ex.: ciclo dia/noite) deve reaplicar `cor·I + fill` / `chão·I + fill` e
+ * `intensity = 1`, senão o ambiente some no host.
  */
 export function foldIntoHemisphere(hemisphere: HemisphereLight, fill: Color): void {
   hemisphere.color.multiplyScalar(hemisphere.intensity).add(fill);
   hemisphere.groundColor.multiplyScalar(hemisphere.intensity).add(fill);
   hemisphere.intensity = 1;
+  const total = hemisphere.userData[AMBIENT_FILL_KEY];
+  hemisphere.userData[AMBIENT_FILL_KEY] = total instanceof Color ? total.add(fill) : fill.clone();
 }
+
+/** Chave do `userData` do hemisfério com o ambiente somado por `foldIntoHemisphere`. */
+export const AMBIENT_FILL_KEY = 'cortexAmbientFill';
 
 /**
  * Ambiente equivalente a um environment UNIFORME de cor `sky` e intensidade
