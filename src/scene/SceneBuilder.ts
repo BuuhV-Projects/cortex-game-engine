@@ -62,6 +62,8 @@ import { Terrain, type TerrainPaintData } from './Terrain.js';
 import { applyRoad, buildRoads, makeRoad, moldTerrainToRoads, overlayRoad, resolveRoadNode } from './RoadBuild.js';
 import { Vegetation, makePlaceholderVegetation } from './Vegetation.js';
 import { setupOutdoorLighting } from './OutdoorLighting.js';
+import { adaptsOutdoorLightingToNativeHost, foldIntoHemisphere, uniformEnvironmentFill } from './NativeOutdoorLighting.js';
+
 import { Skybox } from '../core/Skybox.js';
 import { debug } from '../core/debug.js';
 import {
@@ -538,6 +540,9 @@ function endBuilding(scene: Scene): void {
   else _building.delete(scene);
 }
 
+/** Intensidade do environment uniforme derivado do céu (sem `skyGradientIntensity`). */
+const DEFAULT_ENVIRONMENT_INTENSITY = 0.5;
+
 /**
  * Constrói a cena. `defs` pode ser uma definição ou um array (multi-arquivo —
  * os `nodes` são concatenados; configs de cena como `background`/`fog`/
@@ -625,7 +630,7 @@ async function buildSceneInner(
     r.shadowMap.enabled = true;
     r.shadowMap.type = PCFSoftShadowMap;
     if (outdoor) {
-      setupOutdoorLighting(options.renderer, scene, outdoor);
+      const lights = setupOutdoorLighting(options.renderer, scene, outdoor);
       // HDRI (céu visível + luz por imagem). Sobrepõe o `background` de cor.
       if (outdoor.environment === false) {
         // O jogo instala o próprio skybox/IBL após o buildScene — não gerar o
@@ -643,6 +648,9 @@ async function buildSceneInner(
           bottom: outdoor.skyBottom,
           environmentIntensity: outdoor.skyGradientIntensity ?? 1,
         }, options.renderer);
+      } else if (outdoor.sky !== undefined && adaptsOutdoorLightingToNativeHost()) {
+        // Host com o renderer próprio: o environment uniforme vira ambiente no hemisfério (SPEC-0645).
+        foldIntoHemisphere(lights.hemisphere, uniformEnvironmentFill(outdoor.sky, outdoor.skyGradientIntensity ?? DEFAULT_ENVIRONMENT_INTENSITY));
       } else {
         // Environment DEFAULT derivado do céu (IBL suave): sem environment,
         // materiais metálicos/reflexivos ficam PRETOS (fisicamente correto,
@@ -653,7 +661,7 @@ async function buildSceneInner(
           top: outdoor.sky,
           middle: outdoor.sky,
           bottom: outdoor.sky, // uniforme: mesmo tom do background de cor
-          environmentIntensity: outdoor.skyGradientIntensity ?? 0.5,
+          environmentIntensity: outdoor.skyGradientIntensity ?? DEFAULT_ENVIRONMENT_INTENSITY,
         }, options.renderer);
       }
       // Céu desenhado (SPEC-0296): fundo por cima do degradê; luz só se pedida.

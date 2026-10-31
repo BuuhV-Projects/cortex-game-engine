@@ -26,6 +26,7 @@ import * as THREE from 'three';
 import { WebGPURenderer } from 'three/webgpu';
 import { setKtx2Renderer } from './loadKtx2.js';
 import { isNativeHost } from '../scene/StaticMerge.js';
+import { renderNativeToneMapped } from './nativePostFX.js';
 import { dynamicLightingRequested, installDynamicLighting } from '../render/DynamicLightingSwitch.js';
 import { installSharedShadowFilter, sharedShadowFilterRequested } from '../render/SharedShadowFilter.js';
 import {
@@ -281,6 +282,7 @@ export class Renderer {
    */
   render(scene: THREE.Scene, camera: THREE.Camera): void {
     if (!this._initialized || this._width <= 0 || this._height <= 0) return; // canvas 0×0 → WebGPU recusa
+    if (renderNativeToneMapped(this, scene, camera)) return; // ACES do outdoorLighting no host (SPEC-0645)
     this._renderer.clear();
     this._renderer.render(scene, camera);
   }
