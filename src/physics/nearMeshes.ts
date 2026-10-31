@@ -79,6 +79,9 @@ export function traverseCollidable(
 export interface SceneScan {
   readonly meshes: readonly Object3D[];
   readonly at: number;
+  /** Índice já montado de parte de `meshes` (o de chão da física) e o resto delas — SPEC-0646. */
+  readonly ground?: NearMeshIndex;
+  readonly rest?: readonly Object3D[];
 }
 
 const scans = new WeakMap<Object3D, SceneScan>();
@@ -89,8 +92,13 @@ const scans = new WeakMap<Object3D, SceneScan>();
  * logo depois (a câmera da 3ª pessoa, depois do `CharacterPhysicsSystem`) reaproveita
  * em vez de descer na cena de novo. A lista é do publicador: copie, não guarde.
  */
-export function publishScan(root: Object3D, meshes: readonly Object3D[]): void {
-  scans.set(root, { meshes, at: performance.now() });
+export function publishScan(
+  root: Object3D,
+  meshes: readonly Object3D[],
+  ground?: NearMeshIndex,
+  rest?: readonly Object3D[],
+): void {
+  scans.set(root, { meshes, at: performance.now(), ground, rest });
 }
 
 /** A varredura publicada de `root` com até `maxAgeMs` de idade, ou `undefined`. */

@@ -32,8 +32,9 @@ nas **mesmas** candidatas: o trabalho JS se repetia 6 vezes (e 132 vezes no desv
 2. **Braço** (`CameraArmProbe.clearance`): um `alongRay` com folga `pad` = `CAM_RADIUS`
    (caixa e esfera de cada malha infladas) dá as candidatas dos 5 raios paralelos —
    conservador: um raio deslocado ≤ `pad` do central só cruza malhas cuja caixa inflada o
-   central cruza. O raio do peito (deslocado `lowDrop`, maior que `pad`) segue com o
-   `firstHit` normal. Por quadro: 2 consultas ao índice em vez de 6.
+   central cruza. O raio do peito (deslocado `lowDrop`) entra na mesma lista: a consulta
+   sai da **linha média** (origem `lowDrop/2` abaixo) com `pad = lowDrop/2 + r` — todo
+   raio do feixe fica a no máximo isso dela. Por quadro: 1 consulta ao índice em vez de 6.
 3. **Desvio** (`CameraArmProbe.swing`): todas as sondas têm comprimento `need + r` e saem
    do alvo ou do peito, então cabem num cilindro em volta do alvo: um `nearXZ(alvo, need
    + 2r)` com faixa de Y preparado uma vez serve os 6 raios de todos os ângulos.
@@ -43,8 +44,8 @@ nas **mesmas** candidatas: o trabalho JS se repetia 6 vezes (e 132 vezes no desv
    (`publishScan`) passa a levar também esse índice (`ground`) e o **resto** (`rest`:
    visível que não é chão — vegetação, água, marcação de rua; `groundMeshes` é
    subsequência de `visibleMeshes`, então sai num passe O(n)). A câmera consulta o
-   `ground` compartilhado (o próprio jogador sai por `skip`, como no raio de chão da
-   física) e só reconstrói um índice pequeno do `rest`. Mesmo conjunto de alvos de antes
+   `ground` compartilhado (o próprio jogador sai por um `Set` das malhas dele, montado a
+   cada varredura — sem subir a hierarquia por candidata) e só reconstrói um índice pequeno do `rest`. Mesmo conjunto de alvos de antes
    (visível − skinada − jogador). Sem varredura publicada (sem `CharacterPhysicsSystem`
    ou com várias raízes), segue o índice próprio de antes.
 5. Comportamento, constantes e testes da SPEC-0625 não mudam; o desvio continua só

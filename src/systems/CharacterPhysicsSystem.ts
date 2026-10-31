@@ -61,6 +61,17 @@ const TRUNK_RADIUS = 0.4;
  * marcação ficam de fora (SPEC-0307). Subárvore escondida só é percorrida na 1ª vez
  * (pra montar o BVH) — `prepared` guarda as raízes já preparadas (SPEC-0320).
  */
+/** `visible` − `ground` em `out`; `ground` é subsequência de `visible` (mesma travessia), O(n). */
+export function splitRest(visible: readonly Object3D[], ground: readonly Object3D[], out: Object3D[]): Object3D[] {
+  out.length = 0;
+  let j = 0;
+  for (let i = 0; i < visible.length; i++) {
+    if (visible[i] === ground[j]) j++;
+    else out.push(visible[i]!);
+  }
+  return out;
+}
+
 function collectScene(
   roots: Object3D[],
   trunks: number[],
@@ -170,6 +181,8 @@ export class CharacterPhysicsSystem extends System {
   private readonly groundMeshes: Object3D[] = []; // tudo pisável (alvo do raycast de chão), sem vegetação
   /** Toda malha visível não skinada — publicada pra câmera não varrer a cena de novo (SPEC-0328). */
   private readonly visibleMeshes: Object3D[] = [];
+  /** Visíveis que não são chão (vegetação, água, marcação): com o `groundIndex`, cobrem a câmera (SPEC-0646). */
+  private readonly restMeshes: Object3D[] = [];
   // paredes filtradas pro personagem da vez (só o que algum raio pode tocar, SPEC-0302)
   private readonly nearSolid: Object3D[] = [];
   /** As paredes cujos triângulos tocam a caixa dos raios de parede (SPEC-0323). */
@@ -201,8 +214,11 @@ export class CharacterPhysicsSystem extends System {
     this.sinceCollect += deltaTime;
     if (this.sinceCollect >= COLLECT_INTERVAL_MS) {
       collectScene(this.roots, this.trunks, this.solidMeshes, this.terrainMeshes, this.groundMeshes, this.prepared, this.visibleMeshes);
-      if (this.roots.length === 1) publishScan(this.roots[0]!, this.visibleMeshes);
       this.groundIndex.rebuild(this.groundMeshes);
+      if (this.roots.length === 1) {
+        splitRest(this.visibleMeshes, this.groundMeshes, this.restMeshes);
+        publishScan(this.roots[0]!, this.visibleMeshes, this.groundIndex, this.restMeshes);
+      }
       this.terrainIndex.rebuild(this.terrainMeshes);
       this.solidIndex.rebuild(this.solidMeshes);
       this.sinceCollect = 0;
