@@ -14,19 +14,28 @@ const RES = 64;
 const SIZE = 128;
 const BANK = 10;
 const RIVER_HALF = 15;
-/** Margens a `BANK` m e um rio (|x| < 15) no fundo, a 0. */
-const valley = (): number[] => {
+const HUMP = 14;
+/**
+ * Margens a `BANK` m e um rio (|x| < 15) no fundo, a 0. Com `hump`, um rochedo a `HUMP` m
+ * no meio do vão (x de −9 a −6), longe das cabeceiras: só a regra do vão o alcança.
+ */
+const valley = (hump = false): number[] => {
   const n = RES + 1;
   const h: number[] = [];
-  for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) h.push(Math.abs((i / RES - 0.5) * SIZE) < RIVER_HALF ? 0 : BANK);
+  for (let j = 0; j < n; j++) {
+    for (let i = 0; i < n; i++) {
+      const x = (i / RES - 0.5) * SIZE;
+      h.push(hump && x > -9 && x < -6 ? HUMP : Math.abs(x) < RIVER_HALF ? 0 : BANK);
+    }
+  }
   return h;
 };
 
-function def(bridge?: [number, number][]): SceneDefinition {
+function def(bridge?: [number, number][], hump = false): SceneDefinition {
   return {
     version: 1,
     nodes: [
-      { type: 'terrain', id: 't', size: SIZE, resolution: RES, heights: valley() },
+      { type: 'terrain', id: 't', size: SIZE, resolution: RES, heights: valley(hump) },
       { type: 'road', id: 'r', points: [[-60, 0, 0], [-20, 0, 0], [20, 0, 0], [60, 0, 0]], width: 6, talude: 4, maxSlope: 0, smooth: 0, ...(bridge ? { bridge } : {}) },
     ],
   };
@@ -60,5 +69,13 @@ describe('ponte na estrada', () => {
     const road = h.byId.get('r') as Mesh;
     road.geometry.computeBoundingBox();
     expect(road.geometry.boundingBox!.min.y).toBeLessThan(1);
+  });
+
+  it('encosta acima da pista dentro do vão é cortada até o greide (ponte não fica enterrada)', async () => {
+    const h = await buildScene(new Scene(), def([[1, 2]], true));
+    const t = terrainOf(h);
+    expect(t.baseHeightAt(-8, 0)).toBeCloseTo(HUMP, 5);
+    expect(t.heightAt(-8, 0)).toBeCloseTo(BANK, 3);
+    expect(t.heightAt(0, 0)).toBeCloseTo(0, 5); // o rio continua sem aterro
   });
 });

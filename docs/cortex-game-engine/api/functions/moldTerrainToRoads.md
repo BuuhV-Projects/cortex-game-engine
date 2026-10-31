@@ -8,7 +8,7 @@
 
 > **moldTerrainToRoads**(`three`, `terrains?`): `void`
 
-Defined in: [src/scene/RoadBuild.ts:290](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/RoadBuild.ts#L290)
+Defined in: [src/scene/RoadBuild.ts:288](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/RoadBuild.ts#L288)
 
 **Corte e aterro** (SPEC-0631 §3): para cada terreno, junta o delta de toda estrada cuja
 caixa (± alcance) encosta nele e aplica com [Terrain.setRoadMolding](../classes/Terrain.md#setroadmolding) (não

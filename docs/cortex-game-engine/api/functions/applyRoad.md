@@ -8,7 +8,7 @@
 
 > **applyRoad**(`mesh`, `node`, `three`, `terrains?`): `void`
 
-Defined in: [src/scene/RoadBuild.ts:210](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/RoadBuild.ts#L210)
+Defined in: [src/scene/RoadBuild.ts:208](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/RoadBuild.ts#L208)
 
 (Re)gera a pista de `mesh` a partir do nó: spline → greide (base do terreno ou Y dos
 pontos, alisado e limitado) → fita + material. Guarda o eixo pro corte e liga/desliga

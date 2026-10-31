@@ -105,8 +105,10 @@ o ponto `i0` e o ponto `i1` é ponte. Par inválido (fora do intervalo ou `i0 �
 - **Greide no vão:** reto (por distância) entre a altura de referência das duas cabeceiras (pontos `i0` e `i1`), então
   o vale ou o rio embaixo não puxa a pista para baixo. Com `grade: "points"` vale o Y da curva, como no resto. A média
   móvel e o `maxSlope` rodam depois sobre o perfil inteiro, então a entrada e a saída da ponte ficam suaves.
-- **Terreno:** os segmentos do eixo com as duas pontas dentro do vão **não moldam** (delta zero embaixo da ponte). As
-  cabeceiras moldam normalmente, e o talude da estrada encosta nelas.
+- **Terreno:** os segmentos do eixo com as duas pontas dentro do vão **não aterram**: onde o terreno está abaixo da
+  pista (o vale, o rio), fica intacto. Onde ele estaria **acima** da pista (encosta convexa logo depois da cabeceira), é
+  cortado até o greide, como no resto da estrada, para a ponte nunca ficar enterrada. As cabeceiras moldam
+  normalmente, e o talude da estrada encosta nelas.
 - **Malha:** a mesma fita, desenhada dos dois lados (vista de baixo não some), e continua `cortexRoad` (chão do carro).
   Pilares e guarda-corpo ficam com o jogo (nós comuns); estão fora do escopo da engine por ora.
 - A vegetação sai do corredor também sob a ponte (§3b).

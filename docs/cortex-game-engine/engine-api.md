@@ -1223,7 +1223,7 @@ engine molda. **Árvore não fica na pista:** instâncias de `vegetation` a meno
 `width/2 + clearance` do eixo somem (`Vegetation.setHidden`, escala 0), sem sair do dado —
 mover/apagar a estrada traz de volta (`clearRoadVegetation`, chamado junto da moldagem).
 **Ponte:** `bridge: [[i0, i1]]` (índices de `points`) deixa o vão com greide reto entre as
-cabeceiras e sem corte/aterro embaixo (rio/vale intactos); a fita fica dupla face e segue
+cabeceiras e sem aterro embaixo (rio/vale intactos; só o terreno acima da pista é cortado); a fita fica dupla face e segue
 chão do carro. Pilares/guarda-corpo são nós do jogo. Fora: perfis de via, cruzamentos,
 marcações, superelevação.
 

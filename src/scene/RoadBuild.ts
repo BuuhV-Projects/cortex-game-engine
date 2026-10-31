@@ -155,20 +155,18 @@ function flattenBridges(samples: readonly RoadSample[], refY: number[], onBridge
   }
 }
 
-/** Trechos do eixo que moldam o terreno: corta os segmentos com as duas pontas num vão. */
-function moldRuns(centerline: readonly CenterPoint[]): GradePoint[][] {
-  const runs: GradePoint[][] = [];
-  let run: GradePoint[] = [];
-  for (let i = 0; i < centerline.length; i++) {
-    const p = centerline[i]!;
-    if (i > 0 && p.bridge && centerline[i - 1]!.bridge) {
-      if (run.length >= 2) runs.push(run);
-      run = [p];
-      continue;
-    }
-    run.push(p);
+/**
+ * Divide o eixo em trechos contínuos de estrada e de vão (segmento com as duas pontas num
+ * vão é de ponte); trechos vizinhos dividem o ponto da cabeceira.
+ */
+function moldRuns(centerline: readonly CenterPoint[]): { points: GradePoint[]; bridge: boolean }[] {
+  const runs: { points: GradePoint[]; bridge: boolean }[] = [];
+  for (let i = 1; i < centerline.length; i++) {
+    const bridge = centerline[i]!.bridge && centerline[i - 1]!.bridge;
+    const last = runs[runs.length - 1];
+    if (last && last.bridge === bridge) last.points.push(centerline[i]!);
+    else runs.push({ points: [centerline[i - 1]!, centerline[i]!], bridge });
   }
-  if (run.length >= 2) runs.push(run);
   return runs;
 }
 
@@ -310,11 +308,13 @@ export function moldTerrainToRoads(three: Object3D, terrains = collectTerrains(t
       if (r.box.min.z - pad > t.box.max.z || r.box.max.z + pad < t.box.min.z) continue;
       grid ??= { width: t.terrain.width, depth: t.terrain.depth, resolution: t.terrain.resolution, base: t.terrain.getHeights() };
       for (const run of moldRuns(r.centerline)) {
-        const local = run.map((p) => {
+        const local = run.points.map((p) => {
           t.obj.worldToLocal(v.set(p.x, p.y, p.z));
           return { x: v.x, z: v.z, y: v.y };
         });
-        deltas.push(moldHeightfield(grid, local, (r.node.width ?? ROAD_DEFAULT_WIDTH) / 2, r.node.talude ?? ROAD_DEFAULT_TALUDE));
+        const delta = moldHeightfield(grid, local, (r.node.width ?? ROAD_DEFAULT_WIDTH) / 2, r.node.talude ?? ROAD_DEFAULT_TALUDE);
+        if (run.bridge) for (let i = 0; i < delta.length; i++) delta[i] = Math.min(0, delta[i]!); // vão: só corta (§3c)
+        deltas.push(delta);
       }
     }
     t.terrain.setRoadMolding(mergeDeltas(deltas));
