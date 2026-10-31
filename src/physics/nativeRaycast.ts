@@ -6,6 +6,7 @@ import {
   type BufferGeometry,
   type InterleavedBufferAttribute,
   type Intersection,
+  type Layers,
   type Object3D,
   type Raycaster,
 } from 'three';
@@ -224,8 +225,8 @@ const jsCandidates: Object3D[] = [];
 const rayBuf = new Float64Array(RAY_DOUBLES);
 const outBuf = new Float64Array(OUT_DOUBLES);
 
-/** Grava a candidata `o` no slot `n` se o nativo a reproduz fielmente. */
-function route(bridge: RaycastBridge, o: Object3D, n: number): Route {
+/** Grava a candidata `o` no slot `n` (de `s`/`mats`) se o nativo a reproduz fielmente. */
+function route(bridge: RaycastBridge, o: Object3D, n: number, s = slots, mats = matrices): Route {
   const m = o as Mesh & { isInstancedMesh?: boolean; isBatchedMesh?: boolean };
   if (!m.isMesh || m.isBatchedMesh) return Route.Js;
   const instanced = m.isInstancedMesh === true;
@@ -241,10 +242,10 @@ function route(bridge: RaycastBridge, o: Object3D, n: number): Route {
   const inst = instanced ? instancesId(bridge, o as InstancedMesh) : NO_INSTANCES;
   if (instanced && inst < 0) return Route.Js;
   const k = n * SLOT_INTS;
-  slots[k] = g;
-  slots[k + 1] = mat.side;
-  slots[k + 2] = inst;
-  matrices[n] = elements;
+  s[k] = g;
+  s[k + 1] = mat.side;
+  s[k + 2] = inst;
+  mats[n] = elements;
   return Route.Native;
 }
 
@@ -276,20 +277,7 @@ function nativeFirstHit(
     objects[n] = o;
     n++;
   }
-  let best: Intersection | null = null;
-  if (n > 0) {
-    const { origin, direction } = raycaster.ray;
-    rayBuf[0] = origin.x;
-    rayBuf[1] = origin.y;
-    rayBuf[2] = origin.z;
-    rayBuf[XYZ] = direction.x;
-    rayBuf[XYZ + 1] = direction.y;
-    rayBuf[XYZ + 2] = direction.z;
-    rayBuf[RAY_NEAR] = raycaster.near;
-    rayBuf[RAY_FAR] = raycaster.far;
-    const k = bridge.first(rayBuf, n, slots, matrices, entries, outBuf);
-    if (k >= 0) best = toIntersection(objects[k]!);
-  }
+  const best = castNative(bridge, raycaster, n, slots, matrices, entries, objects);
   if (checkMode) {
     checks.nativeCandidates += n;
     checks.jsCandidates += jsCandidates.length;
@@ -297,6 +285,75 @@ function nativeFirstHit(
   objects.length = 0;
   // as que o nativo não reproduz: caminho JS, sem ordem (são poucas), o menor vence
   return jsCandidates.length > 0 ? jsFirstHit(raycaster, jsCandidates, null, skip, best) : best;
+}
+
+/** Um raio contra `n` candidatas já roteadas: UMA chamada ao C++. */
+function castNative(
+  bridge: RaycastBridge,
+  raycaster: Raycaster,
+  n: number,
+  s: Int32Array,
+  mats: readonly Float64Array[],
+  ent: Float64Array,
+  objs: readonly Object3D[],
+): Intersection | null {
+  if (n === 0) return null;
+  const { origin, direction } = raycaster.ray;
+  rayBuf[0] = origin.x;
+  rayBuf[1] = origin.y;
+  rayBuf[2] = origin.z;
+  rayBuf[XYZ] = direction.x;
+  rayBuf[XYZ + 1] = direction.y;
+  rayBuf[XYZ + 2] = direction.z;
+  rayBuf[RAY_NEAR] = raycaster.near;
+  rayBuf[RAY_FAR] = raycaster.far;
+  const k = bridge.first(rayBuf, n, s, mats, ent, outBuf);
+  return k >= 0 ? toIntersection(objs[k]!) : null;
+}
+
+/**
+ * Candidatas roteadas UMA vez para vários raios (SPEC-0646): o braço da câmera dispara
+ * 5–6 raios quase iguais contra a mesma lista, e o roteamento por candidata (JS) se
+ * repetia em cada um. Reaproveite a instância entre quadros (os buffers crescem sob demanda).
+ */
+export class PreparedCandidates {
+  n = 0;
+  slots = new Int32Array(INITIAL_CAPACITY * SLOT_INTS);
+  /** Entradas zeradas: sem ordem, o C++ testa todas (a lista já é só a do feixe). */
+  entries = new Float64Array(INITIAL_CAPACITY);
+  readonly matrices: Float64Array[] = [];
+  readonly objects: Object3D[] = [];
+  /** As que o nativo não reproduz (todas, fora do host). */
+  readonly js: Object3D[] = [];
+}
+
+/** Roteia `cand` (só as da camada `layers`) em `out` — ver {@link PreparedCandidates}. */
+export function prepareCandidates(cand: readonly Object3D[], layers: Layers, out: PreparedCandidates): PreparedCandidates {
+  const bridge = nativeRaycastBridge();
+  out.n = 0;
+  out.js.length = out.objects.length = out.matrices.length = 0;
+  if (bridge && out.entries.length < cand.length) {
+    const cap = Math.max(cand.length, out.entries.length * 2);
+    out.slots = new Int32Array(cap * SLOT_INTS);
+    out.entries = new Float64Array(cap);
+  }
+  for (let i = 0; i < cand.length; i++) {
+    const o = cand[i]!;
+    if (!o.layers.test(layers)) continue;
+    const r = bridge ? route(bridge, o, out.n, out.slots, out.matrices) : Route.Js;
+    if (r === Route.Js) out.js.push(o);
+    if (r === Route.Native) out.objects[out.n++] = o;
+  }
+  return out;
+}
+
+/** O 1º acerto do `raycaster` entre candidatas preparadas por {@link prepareCandidates}. */
+export function firstHitPrepared(raycaster: Raycaster, p: PreparedCandidates): Intersection | null {
+  const bridge = nativeRaycastBridge();
+  const native = bridge ? castNative(bridge, raycaster, p.n, p.slots, p.matrices, p.entries, p.objects) : null;
+  const hit = p.js.length > 0 ? jsFirstHit(raycaster, p.js, null, undefined, native) : native;
+  if (checkMode) check(hit, jsFirstHit(raycaster, p.objects.concat(p.js), null, undefined));
+  return hit;
 }
 
 function toIntersection(object: Object3D): Intersection {

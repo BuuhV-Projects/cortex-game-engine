@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { NearMeshIndex, firstHit, recentScan, traverseCollidable } from '../physics/nearMeshes.js';
 import { isSkinned } from '../physics/raycastAccel.js';
+import { PreparedCandidates, firstHitPrepared, prepareCandidates } from '../physics/nativeRaycast.js';
 import { COLLECT_INTERVAL_MS } from './CharacterPhysicsSystem.js';
 
 /** Distância mínima PREFERIDA alvo↔câmera (m): abaixo dela a câmera tenta desviar (SPEC-0625). */
@@ -87,6 +88,11 @@ export class CameraArmProbe {
   private readonly probeDir = new THREE.Vector3();
   /** Lado do desvio em andamento (−1/1), 0 = nenhum. */
   private swingSign = 0;
+  /** Candidatas do feixe do braço e as em volta do alvo (desvio), roteadas 1× por quadro (SPEC-0646). */
+  private readonly beam = new PreparedCandidates();
+  private readonly around = new PreparedCandidates();
+  private readonly cand: THREE.Object3D[] = [];
+  private readonly entry: number[] = [];
 
   /**
    * Atualiza os alvos: a cada `COLLECT_INTERVAL_MS` (SPEC-0302), reaproveitando a varredura
@@ -125,24 +131,39 @@ export class CameraArmProbe {
     return firstHit(this.ray, this.index)?.distance ?? Infinity;
   }
 
+  /** Como {@link hit}, contra candidatas já preparadas. */
+  private cast(origin: THREE.Vector3, dir: THREE.Vector3, far: number, p: PreparedCandidates): number {
+    this.ray.far = far;
+    this.ray.set(origin, dir);
+    return firstHitPrepared(this.ray, p)?.distance ?? Infinity;
+  }
+
   /**
    * Distância livre (m, em [0, `want`]) do centro da câmera ao longo de `dir` a partir de
    * `origin`: menor acerto entre o raio central, 4 deslocados de {@link CAM_RADIUS} e o do
-   * peito (`lowDrop` m abaixo), menos {@link CAM_RADIUS}.
+   * peito (`lowDrop` m abaixo), menos {@link CAM_RADIUS}. Os 5 paralelos usam UMA lista de
+   * candidatas (`alongRay` com folga do raio, SPEC-0646); `near` = candidatas do desvio.
    */
-  clearance(origin: THREE.Vector3, dir: THREE.Vector3, want: number, lowDrop: number): number {
+  clearance(origin: THREE.Vector3, dir: THREE.Vector3, want: number, lowDrop: number, near?: PreparedCandidates): number {
     const far = want + CAM_RADIUS;
-    let h = this.hit(origin, dir, far);
     this.o.copy(origin);
     this.o.y -= lowDrop;
-    h = Math.min(h, this.hit(this.o, dir, far));
+    let h = near ? this.cast(this.o, dir, far, near) : this.hit(this.o, dir, far);
+    let p = near;
+    if (!p) {
+      this.ray.far = far;
+      this.ray.set(origin, dir);
+      const c = this.index.alongRay(this.ray.ray, this.ray.near, far, this.cand, this.entry, CAM_RADIUS);
+      p = prepareCandidates(c, this.ray.layers, this.beam);
+    }
+    h = Math.min(h, this.cast(origin, dir, far, p));
     this.right.crossVectors(dir, WORLD_UP);
     if (this.right.lengthSq() < 1e-8) this.right.set(1, 0, 0); // olhando reto pra cima/baixo
     this.right.normalize();
     this.up.crossVectors(this.right, dir).normalize();
     for (const [r, u] of OFFSETS) {
       this.o.copy(origin).addScaledVector(this.right, r * CAM_RADIUS).addScaledVector(this.up, u * CAM_RADIUS);
-      h = Math.min(h, this.hit(this.o, dir, far));
+      h = Math.min(h, this.cast(this.o, dir, far, p));
     }
     return Math.max(0, Math.min(want, h - CAM_RADIUS));
   }
@@ -157,10 +178,14 @@ export class CameraArmProbe {
       this.swingSign = 0;
       return null;
     }
+    // toda sonda (comprimento need + r, do alvo ou do peito) cabe neste cilindro (SPEC-0646)
+    const reach = need + 2 * CAM_RADIUS;
+    this.index.nearXZ(target.x, target.z, reach, this.cand, target.y - lowDrop - reach, target.y + reach);
+    const near = prepareCandidates(this.cand, this.ray.layers, this.around);
     const cp = Math.cos(pitch), sp = Math.sin(pitch);
     const freeAt = (off: number): number => {
       this.probeDir.set(Math.sin(yaw + off) * cp, sp, Math.cos(yaw + off) * cp);
-      return this.clearance(target, this.probeDir, need, lowDrop);
+      return this.clearance(target, this.probeDir, need, lowDrop, near);
     };
     let off = pickSwing(freeAt, need, playerSign || this.swingSign, this.swingSign);
     if (off === null && playerSign === 0 && this.swingSign !== 0) off = pickSwing(freeAt, need, 0, this.swingSign);
