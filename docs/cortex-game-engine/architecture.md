@@ -555,6 +555,16 @@ alvo é **Rapier** (WASM) como motor dinâmico único, estilo Unity.
   o agente lê a seção completa sob demanda via Read (ADR-0114). Mantenha o doc ao
   mudar a API — o índice deriva dele automaticamente, sem passo de build.
 
+- **Pacotes de textura** (ADR-0640 / SPEC-0641): bibliotecas de material ficam
+  FORA da engine e do template — um repo GitHub por pacote, texturas num zip do
+  Release. O jogo declara em `cortex.json#packages` (versão exata); o Studio
+  (`electron/packages/`, IPC `packages:*`) baixa (HTTPS público → `gh` pra repo
+  privado; nunca lê token), confere o SHA-256, instala em `assets/packages/<id>/`
+  e grava `cortex-packages.lock.json`. Abrir projeto (`project:setActive`) instala
+  o que falta. O editor mostra um item por material (`src/editor/packageTextures.ts`)
+  e o export só leva os materiais citados pelo jogo (`native/scripts/package-usage.mjs`
+  → filtro do `cookAssets`).
+
 ## 6a-bis. Chat IA tem DUAS cabecas (ADR-0191 → modos por tarefa, ADR-0265 → Orquestrador, ADR-0269)
 
 **Padrao desde o ADR-0269: modo Orquestrador.** O botao cicla Orquestrador →

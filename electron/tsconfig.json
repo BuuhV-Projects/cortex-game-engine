@@ -21,5 +21,5 @@
     // falso TS6059. noEmit porque ninguém consome dist-electron.
     "noEmit": true
   },
-  "include": ["main.ts", "preload.ts", "agent/**/*.ts"]
+  "include": ["main.ts", "preload.ts", "agent/**/*.ts", "packages/**/*.ts"]
 }

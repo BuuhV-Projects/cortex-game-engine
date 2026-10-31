@@ -133,7 +133,7 @@ export function createSceneSavePlugin(options: SceneSavePluginOptions = {}): Plu
 
 /**
  * Plugin de Vite (Node-only, **dev**) que expõe um GET listando os assets sob
- * `assets/` (`.glb` + imagens) — o painel "Add" do editor (F2) usa os `.glb`;
+ * `assets/` (`.glb` + imagens + `cortex-package.json` dos pacotes) — o painel "Add" do editor (F2) usa os `.glb`;
  * o pincel de texturizar terreno usa as imagens. Só roda em `vite dev`; no
  * build não há editor.
  *
@@ -176,7 +176,9 @@ async function walk(base: string, current: string, out: string[]): Promise<void>
     if (e.isDirectory()) await walk(base, full, out);
     else {
       const ext = extname(e.name).toLowerCase();
-      if (ext === '.glb' || IMAGE_EXTS.includes(ext)) out.push(relative(base, full));
+      // cortex-package.json: manifesto de pacote de textura (SPEC-0641) — o editor
+      // lê pra mostrar um item por material no seletor.
+      if (ext === '.glb' || IMAGE_EXTS.includes(ext) || e.name === 'cortex-package.json') out.push(relative(base, full));
     }
   }
 }

@@ -36,12 +36,16 @@ function walk(dir, out = []) {
  * Cozinha `assetsDir` → `cookedDir` (GLB com texturas KTX2; resto copiado).
  * `cacheDir` guarda GLB cozidos por hash da fonte (persiste entre exports).
  * `onProgress(done, total)` é chamado por arquivo processado (pro modal do export).
+ * `include(rel)` (opcional) deixa arquivos de fora — ex.: material de pacote de
+ * textura que o jogo não usa (SPEC-0641 §6). Os ignorados contam em `skipped`.
  */
-export async function cookAssets(assetsDir, cookedDir, cacheDir, onProgress) {
+export async function cookAssets(assetsDir, cookedDir, cacheDir, onProgress, include) {
   fs.mkdirSync(cacheDir, { recursive: true });
-  const stats = { glbConverted: 0, glbCached: 0, glbNoTex: 0, copied: 0, before: 0, after: 0 };
+  const stats = { glbConverted: 0, glbCached: 0, glbNoTex: 0, copied: 0, skipped: 0, before: 0, after: 0 };
 
-  const all = walk(assetsDir);
+  const every = walk(assetsDir);
+  const all = include ? every.filter((f) => include(path.relative(assetsDir, f))) : every;
+  stats.skipped = every.length - all.length;
   const total = all.length;
   let done = 0;
   for (const full of all) {
