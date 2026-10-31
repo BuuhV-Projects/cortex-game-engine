@@ -8,7 +8,7 @@
 
 > **setupOutdoorLighting**(`renderer`, `scene`, `options?`): [`OutdoorLighting`](../interfaces/OutdoorLighting.md)
 
-Defined in: [src/scene/OutdoorLighting.ts:486](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/OutdoorLighting.ts#L486)
+Defined in: [src/scene/OutdoorLighting.ts:491](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/OutdoorLighting.ts#L491)
 
 Preset de iluminação exterior "verão": configura o tone mapping cinematográfico
 (ACES Filmic) e soft shadows (PCF) no renderer, e adiciona à cena um sol
