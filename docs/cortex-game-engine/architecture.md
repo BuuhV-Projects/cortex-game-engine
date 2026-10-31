@@ -438,7 +438,9 @@ alvo é **Rapier** (WASM) como motor dinâmico único, estilo Unity.
   `firstHitPrepared` — uma chamada ao C++ por raio, sem o laço JS por candidata. A câmera
   não refaz índice da cena: a varredura publicada (`publishScan`) leva o `groundIndex`
   da física e o resto (`rest` = visível que não é chão), e a câmera só indexa o resto
-  (o próprio jogador sai por um `Set`). **Raio × índice (SPEC-0328):** o índice
+  (o próprio jogador sai por um `Set`). A copa da vegetação (`cortexVegetationSub`) não
+  entra na varredura visível nem nos alvos do braço: a câmera passa pela folhagem (SPEC-0647;
+  antes ela encolhia até dentro do jogador embaixo de árvore). **Raio × índice (SPEC-0328):** o índice
   tem uma grade XZ (células de `GRID_CELL` = 8 m; malha que cobre > 16 células fica
   numa lista "larga" testada sempre), então `nearXZ`/`alongRay` não varrem os ~900
   alvos. Câmera, chão e anti-clip usam `firstHit(raycaster, índice, skip?)`: só as
