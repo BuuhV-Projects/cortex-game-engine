@@ -8,13 +8,18 @@
 
 > **setupOutdoorLighting**(`renderer`, `scene`, `options?`): [`OutdoorLighting`](../interfaces/OutdoorLighting.md)
 
-Defined in: [src/scene/OutdoorLighting.ts:479](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/OutdoorLighting.ts#L479)
+Defined in: [src/scene/OutdoorLighting.ts:491](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/OutdoorLighting.ts#L491)
 
 Preset de iluminação exterior "verão": configura o tone mapping cinematográfico
 (ACES Filmic) e soft shadows (PCF) no renderer, e adiciona à cena um sol
 direcional com sombras + um hemisphere (preenchimento céu/chão) + um ambient
 discreto. Encapsula a configuração de shadow-camera/tone-mapping que, crua,
 exige mexer no `WebGPURenderer` e no `DirectionalLight.shadow`.
+
+No **host nativo com o renderer próprio** (`nativeRenderer: true`, ADR-0644) o
+preset se adapta sozinho: o ACES vai para o composite do host (sem bloom) e o
+ambient é somado às cores do hemisfério — `ambient` volta fora da cena e o
+`hemisphere` com intensidade 1. No navegador/Studio nada muda.
 
 Retorna as luzes pra ajuste fino (ex.: desligar a sombra do sol, mudar
 intensidade, reposicionar). Pra excluir um objeto específico do shadowMap,

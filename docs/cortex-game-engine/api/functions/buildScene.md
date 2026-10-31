@@ -8,7 +8,7 @@
 
 > **buildScene**(`scene`, `defs`, `options?`): `Promise`\<[`SceneHandle`](../interfaces/SceneHandle.md)\>
 
-Defined in: [src/scene/SceneBuilder.ts:546](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L546)
+Defined in: [src/scene/SceneBuilder.ts:551](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L551)
 
 Constrói a cena. `defs` pode ser uma definição ou um array (multi-arquivo —
 os `nodes` são concatenados; configs de cena como `background`/`fog`/

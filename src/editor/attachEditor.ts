@@ -56,6 +56,7 @@ import { createMatteApi } from './authoring/MatteAuthoring.js';
 import { createMaterialApi } from './authoring/MaterialAuthoring.js';
 import { createMeshApi } from './authoring/MeshAuthoring.js';
 import { createEditorTexturePicker, type TextureItem } from './EditorTexturePicker.js';
+import { loadPackageTextureItems, isPackageAsset } from './packageTextures.js';
 import { MeshEditSystem } from './MeshEditSystem.js';
 import { createMeshEditToolbar } from './MeshEditToolbar.js';
 import { ShapeDrawSystem } from './ShapeDrawSystem.js';
@@ -1113,12 +1114,20 @@ export function attachEditor(game: Game): GameEditor {
             value: p,
           })),
         ];
-        terrain.setAvailableTextures(list.filter(isImage));
+        // Arquivos de pacote de textura (SPEC-0641) ficam fora da lista solta: entram
+        // como UM item por material, lido do cortex-package.json de cada pacote.
+        const loose = list.filter((p) => isImage(p) && !isPackageAsset(p));
+        terrain.setAvailableTextures(loose);
         // Texturas do terreno pro modal (imagens; sem normal maps — não são superfícies).
-        terrainTextures = list
-          .filter((p) => isImage(p) && !/normal\.(png|jpe?g|webp)$/i.test(p))
+        terrainTextures = loose
+          .filter((p) => !/normal\.(png|jpe?g|webp)$/i.test(p))
           .sort()
           .map((p) => ({ name: p.split('/').pop() ?? p, thumb: p, value: p }));
+        return loadPackageTextureItems(list, (url) => fetch(url).then((r) => r.json())).then((items) => {
+          if (!items.length) return;
+          terrainTextures = [...terrainTextures, ...items];
+          terrain.setAvailableTextures([...loose, ...items.map((i) => i.value)]);
+        });
       })
       .catch(() => addPanel.setAssets([]));
   }

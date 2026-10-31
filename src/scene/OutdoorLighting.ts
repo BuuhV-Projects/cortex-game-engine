@@ -20,6 +20,9 @@ import { cullShadowCasters, DEFAULT_SHADOW_CASTER_MIN_RATIO } from './ShadowCast
 import { debug } from '../core/debug.js';
 import { activeSceneMirror } from '../core/NativeSceneMirror.js';
 import { CasterGeometryRegistry } from '../render/CasterGeometryRegistry.js';
+import { enableNativeToneMapping } from '../core/nativePostFX.js';
+import { adaptsOutdoorLightingToNativeHost, foldIntoHemisphere } from './NativeOutdoorLighting.js';
+import { ShadowAlphaClipSync } from '../render/ShadowAlphaClipSync.js';
 
 /**
  * CSM que SEGUE a câmera que está renderizando (a do frame), não a cacheada no 1º render.
@@ -129,6 +132,8 @@ class CameraFollowingCSM extends CSMShadowNode {
 
   /** Registro de geometria dos casters (SPEC-0245, E2). Preguiçoso por frame. */
   private readonly _registroDeCasters = new CasterGeometryRegistry();
+  /** Recorte alfa dos casters no host (SPEC-0642). */
+  private readonly _recorteAlfa = new ShadowAlphaClipSync();
 
   /**
    * O passe nativo assumiu o último frame? (SPEC-0245, E7.)
@@ -282,6 +287,8 @@ class CameraFollowingCSM extends CSMShadowNode {
     // As geometrias que o streaming trouxe desde o frame passado entram na
     // fila aqui (SPEC-0289) — antes só a cena do primeiro frame era varrida.
     this._registroDeCasters.atualizar(cena, backend, espelho.drainNewGeometries());
+    // SPEC-0642: textura + UV de quem tem `alphaTest`, antes da 1ª cascata.
+    this._recorteAlfa.sync(espelho, backend);
 
     const cascatas = (this as unknown as { lights?: CascataDoCsm[] }).lights;
     if (!cascatas || cascatas.length === 0) {
@@ -463,6 +470,11 @@ export interface OutdoorLighting {
  * discreto. Encapsula a configuração de shadow-camera/tone-mapping que, crua,
  * exige mexer no `WebGPURenderer` e no `DirectionalLight.shadow`.
  *
+ * No **host nativo com o renderer próprio** (`nativeRenderer: true`, ADR-0644) o
+ * preset se adapta sozinho: o ACES vai para o composite do host (sem bloom) e o
+ * ambient é somado às cores do hemisfério — `ambient` volta fora da cena e o
+ * `hemisphere` com intensidade 1. No navegador/Studio nada muda.
+ *
  * Retorna as luzes pra ajuste fino (ex.: desligar a sombra do sol, mudar
  * intensidade, reposicionar). Pra excluir um objeto específico do shadowMap,
  * use `setShadows(obj, { castShadow: false })`.
@@ -503,8 +515,11 @@ export function setupOutdoorLighting(
     shadowCasterMinRatio = DEFAULT_SHADOW_CASTER_MIN_RATIO,
   } = options;
 
+  // Host com o renderer próprio: ACES no composite e ambiente no hemisfério (SPEC-0645).
+  const native = adaptsOutdoorLightingToNativeHost() && enableNativeToneMapping(exposure);
+  debug('scene', `outdoorLighting: adaptado ao host nativo = ${native}`);
   const three = renderer.threeRenderer;
-  three.toneMapping = ACESFilmicToneMapping;
+  if (!native) three.toneMapping = ACESFilmicToneMapping;
   three.toneMappingExposure = exposure;
   three.shadowMap.enabled = shadows;
   three.shadowMap.type = PCFSoftShadowMap;
@@ -513,7 +528,8 @@ export function setupOutdoorLighting(
   scene.add(hemisphere);
 
   const ambient = new AmbientLight(0xffffff, ambientIntensity);
-  scene.add(ambient);
+  if (native) foldIntoHemisphere(hemisphere, ambient.color.clone().multiplyScalar(ambientIntensity));
+  else scene.add(ambient);
 
   const sun = new DirectionalLight(new Color(sunColor), sunIntensity);
   sun.position.set(sunPosition[0], sunPosition[1], sunPosition[2]);

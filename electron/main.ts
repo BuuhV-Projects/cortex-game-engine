@@ -10,6 +10,7 @@ import { resolvePluginDir } from './agent/plugin.js'
 import { writePlaceholderIcons } from './installer-icons.js'
 import { recoverCacheIfUnclean, markSessionEnd } from './cacheHygiene.js'
 import { APP_DATA_NAME, APP_DISPLAY_NAME } from './appIdentity.js'
+import { registerPackageIpc, syncOnOpen, defaultPackageCacheDir } from './packages/ipc.js'
 
 // ---------------------------------------------------------------------------
 // Identidade de dados + instância única + higiene de cache
@@ -1130,6 +1131,10 @@ ipcMain.handle('project:writeConfig', async (_event, projectDir: unknown, patch:
   return { ok: true, id, name: next.name, icon: icon ?? null, steamAppId }
 })
 
+// Pacotes de textura (ADR-0640 / SPEC-0641): instalar/listar/remover em assets/packages/.
+const packageCacheDir = (): string => defaultPackageCacheDir(process.env.LOCALAPPDATA ?? app.getPath('userData'))
+registerPackageIpc(ipcMain, { validatePath, cacheDir: packageCacheDir })
+
 /** Diálogo pra escolher um PNG (ícone do jogo). Retorna o caminho ou null. */
 ipcMain.handle('dialog:openImage', async () => {
   const opts = {
@@ -1624,11 +1629,13 @@ ipcMain.handle('characterRig:stop', () => {
 const sessionStartedFor = new Set<string>()
 let currentAgentAbort: AbortController | null = null
 
-ipcMain.handle('project:setActive', async (_event, projectDir: unknown) => {
+ipcMain.handle('project:setActive', async (event, projectDir: unknown) => {
   if (projectDir === null || projectDir === undefined) {
     currentProjectDir = null
   } else {
     currentProjectDir = validatePath(projectDir)
+    // Pacote declarado no cortex.json e ainda não instalado → instala em segundo plano.
+    void syncOnOpen(event.sender, currentProjectDir, packageCacheDir()).catch(() => {})
   }
   // O menu "Projeto" só faz sentido com projeto aberto — reconstrói pra mostrar/ocultar.
   Menu.setApplicationMenu(buildAppMenu())

@@ -593,6 +593,7 @@
 - [smoothGrade](functions/smoothGrade.md)
 - [spawnParticles](functions/spawnParticles.md)
 - [splineLength](functions/splineLength.md)
+- [splitRest](functions/splitRest.md)
 - [startDialogue](functions/startDialogue.md)
 - [t](functions/t.md)
 - [toBufferGeometry](functions/toBufferGeometry.md)

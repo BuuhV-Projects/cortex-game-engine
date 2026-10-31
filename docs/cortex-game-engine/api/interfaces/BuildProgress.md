@@ -6,7 +6,7 @@
 
 # Interface: BuildProgress
 
-Defined in: [src/scene/SceneBuilder.ts:183](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L183)
+Defined in: [src/scene/SceneBuilder.ts:185](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L185)
 
 Progresso da montagem da cena (SPEC-0219).
 
@@ -16,7 +16,7 @@ Progresso da montagem da cena (SPEC-0219).
 
 > **done**: `number`
 
-Defined in: [src/scene/SceneBuilder.ts:185](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L185)
+Defined in: [src/scene/SceneBuilder.ts:187](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L187)
 
 Nós já instanciados.
 
@@ -26,7 +26,7 @@ Nós já instanciados.
 
 > **fraction**: `number`
 
-Defined in: [src/scene/SceneBuilder.ts:189](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L189)
+Defined in: [src/scene/SceneBuilder.ts:191](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L191)
 
 Fração `0..1` da etapa de instanciação (0 fora dela, 1 depois dela).
 
@@ -36,7 +36,7 @@ Fração `0..1` da etapa de instanciação (0 fora dela, 1 depois dela).
 
 > **phase**: [`BuildPhase`](../type-aliases/BuildPhase.md)
 
-Defined in: [src/scene/SceneBuilder.ts:191](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L191)
+Defined in: [src/scene/SceneBuilder.ts:193](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L193)
 
 Em que etapa o build está.
 
@@ -46,6 +46,6 @@ Em que etapa o build está.
 
 > **total**: `number`
 
-Defined in: [src/scene/SceneBuilder.ts:187](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L187)
+Defined in: [src/scene/SceneBuilder.ts:189](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L189)
 
 Total de nós a instanciar.

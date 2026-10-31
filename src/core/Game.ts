@@ -990,7 +990,7 @@ export class Game {
         this._nativeWarmupBorn += precompileNative(root, this._activeCamera, draw);
         return [];
       }
-      return drawWithParallelPipelines(this.renderer.threeRenderer, draw);
+      return drawWithParallelPipelines(this.renderer.threeRenderer, draw, root);
     } finally {
       restore();
     }

@@ -144,6 +144,10 @@ senão o **editor do Studio** não resolve o tipo (runtime funciona, IntelliSens
   `createRenderPipelineAsync`, todos no mesmo quadro — e o `precompile()` espera
   as promessas. Antes o Chrome compilava em série DEPOIS do retorno e o 1º quadro
   do jogo congelava atrás (DDD 61: ~6 s). Host nativo: síncrono, como antes.
+  **Armadilha (SPEC-0617):** só os objetos da cena aquecida ficam assíncronos. Os
+  renders internos do three (panorama→cubemap do fundo, PMREM, transformação de
+  cor) rodam em OUTRA cena, uma vez só; assíncronos, eram pulados e o céu ficava
+  preto em cache.
   **Armadilha do renderer próprio (SPEC-0585):** o espelho de cena e a projeção
   em C++ só se instalam no 1º tick do loop. Um `precompile()` chamado antes do
   `start()` (o DDD 61 faz assim) desenhava o aquecimento todo pelo three, e os
@@ -428,7 +432,16 @@ alvo é **Rapier** (WASM) como motor dinâmico único, estilo Unity.
   `systems/thirdPersonCameraArm.ts`):** raio da câmera (centro + 4 raios deslocados de
   `CAM_RADIUS`), sem mínimo que empurre pra dentro da parede, encolher imediato (só a
   volta é suavizada, SPEC-0311) e desvio de yaw quando nem 0,8 m cabe (modo `free`,
-  no sentido do giro do jogador); o ombro encurta antes de bater na parede ao lado. **Raio × índice (SPEC-0328):** o índice
+  no sentido do giro do jogador); o ombro encurta antes de bater na parede ao lado. Custo
+  (SPEC-0646): os 6 raios do braço usam UMA lista de candidatas (`alongRay` pela linha
+  média com `pad` = `lowDrop/2 + CAM_RADIUS`) e as sondas do desvio uma lista em volta do
+  alvo (`nearXZ`), roteadas uma vez (`prepareCandidates`) e disparadas com
+  `firstHitPrepared` — uma chamada ao C++ por raio, sem o laço JS por candidata. A câmera
+  não refaz índice da cena: a varredura publicada (`publishScan`) leva o `groundIndex`
+  da física e o resto (`rest` = visível que não é chão), e a câmera só indexa o resto
+  (o próprio jogador sai por um `Set`). A copa da vegetação (`cortexVegetationSub`) não
+  entra na varredura visível nem nos alvos do braço: a câmera passa pela folhagem (SPEC-0647;
+  antes ela encolhia até dentro do jogador embaixo de árvore). **Raio × índice (SPEC-0328):** o índice
   tem uma grade XZ (células de `GRID_CELL` = 8 m; malha que cobre > 16 células fica
   numa lista "larga" testada sempre), então `nearXZ`/`alongRay` não varrem os ~900
   alvos. Câmera, chão e anti-clip usam `firstHit(raycaster, índice, skip?)`: só as
@@ -543,6 +556,16 @@ alvo é **Rapier** (WASM) como motor dinâmico único, estilo Unity.
   o agente lê a seção completa sob demanda via Read (ADR-0114). Mantenha o doc ao
   mudar a API — o índice deriva dele automaticamente, sem passo de build.
 
+- **Pacotes de textura** (ADR-0640 / SPEC-0641): bibliotecas de material ficam
+  FORA da engine e do template — um repo GitHub por pacote, texturas num zip do
+  Release. O jogo declara em `cortex.json#packages` (versão exata); o Studio
+  (`electron/packages/`, IPC `packages:*`) baixa (HTTPS público → `gh` pra repo
+  privado; nunca lê token), confere o SHA-256, instala em `assets/packages/<id>/`
+  e grava `cortex-packages.lock.json`. Abrir projeto (`project:setActive`) instala
+  o que falta. O editor mostra um item por material (`src/editor/packageTextures.ts`)
+  e o export só leva os materiais citados pelo jogo (`native/scripts/package-usage.mjs`
+  → filtro do `cookAssets`).
+
 ## 6a-bis. Chat IA tem DUAS cabecas (ADR-0191 → modos por tarefa, ADR-0265 → Orquestrador, ADR-0269)
 
 **Padrao desde o ADR-0269: modo Orquestrador.** O botao cicla Orquestrador →
@@ -609,6 +632,16 @@ proibidos agora vivem no `AGENTS.md` de `templates/new-project/` (com um
 **Divida conhecida:** projetos criados ANTES desta mudanca nao tem esse arquivo —
 e como o prompt tambem nao tem mais as regras, aquele projeto fica sem contrato
 ate receber o `AGENTS.md`.
+
+**Contrato do export nativo no template** (SPEC-0643): `templates/new-project/.claude/`
+traz um hook `Stop` + `SubagentStop` (`settings.json` → `hooks/native-contract.sh` →
+`native-contract.mjs`, Node sem deps) que ao fim de cada implementacao do agente checa,
+sem rodar o host, o que o nativo exige: ERRO (exit 2) sem `nativeRenderer: true` no
+`new Game` ou com `outdoorLighting` sem `csm: true`; DEBITO novo (material fisico,
+normal map, `MASK`, `AmbientLight`, `environment`, `toneMapping`...) tambem bloqueia, e
+a lista fica em `docs/debito-nativo.md` do jogo. O template ja nasce dentro do contrato.
+O `cp` recursivo do `fs:createProject` leva a pasta oculta. ⚠️ e heuristico (asset em
+disco e texto do codigo): quando a engine ganhar a feature, apague a regra do `.mjs`.
 
 ## 6b. Chat IA: prompt enxuto, skills do plugin e validação geométrica
 
@@ -1339,6 +1372,12 @@ Substitui o `three` no desenho do export **por objeto**, a caminho de 0 recusas 
   do quadro (`renderList.pushLight` na projeção), então o bloco varre a cena só quando a raiz muda e
   filtra visibilidade/camadas por quadro; luz que os modelos não reproduzem (pontual, ambiente,
   spot com sombra, `scene.environment`) faz os modelos recusarem (`lightsRefusal()`).
+- **`outdoorLighting` no host (ADR-0644, SPEC-0645)**: com `__cortexBloom` + `nativeRendererRequested()`, o preset
+  não liga ACES no three (vai pro composite do host: `enableNativeToneMapping` em `core/nativePostFX.ts`, e o
+  `Renderer.render` passa a desenhar na RT HDR e entregar ao `__cortexSceneHdr`, como o `PostFX` nativo) e soma
+  ambient + environment uniforme ao hemisfério (`scene/NativeOutdoorLighting.ts`; o environment entra ×π, a
+  convenção do three). Um `PostFX` dono do composite (`configureNativePostFX`) tira o tone mapping do preset; o
+  `reset` também. **Armadilha**: céu não uniforme (HDRI/degradê/panorama com luz) ainda põe `scene.environment`.
 - **Armadilha**: a saída é LINEAR (no DDD 61 a passada `outputColorTransform` do `three` aplica o
   sRGB no quadro); a névoa do `three` é `smoothstep(near, far, -z)`, não rampa linear.
 - **Paridade**: `?parityFreeze` alterna renderer próprio × `three` sem código novo (o braço
@@ -1496,7 +1535,7 @@ no logo da splash enquanto montava os seis carros.
 | Narrativa (diálogo/UI/flags) | `src/dialogue/` · `src/narrative/` (ADR-0070) |
 | Blockout / ProBuilder | `src/probuilder/` (formas + `EditableMesh`) · editor: `MeshAuthoring`, `MeshEditSystem`, `EditorShapePanel` (SPEC-0071) |
 | Estrada por spline | `src/road/` (spline, fita, greide/corte puros, `roadFields`) · `src/scene/RoadBuild.ts` (nó → pista + corte) · editor: `RoadAuthoring`, `RoadDrawSystem`, `RoadEditSystem`, `RoadInspectorSection` (ADR-0630/SPEC-0631) |
-| Vegetação (instanciada) | `src/scene/Vegetation.ts` (InstancedMesh + placeholder) · editor: `VegetationAuthoring` (pincel de espalhar) · nó `vegetation` (SPEC-0077) · culling por esfera das instâncias, por nó (SPEC-0299; a sombra nativa não corta instanced) |
+| Vegetação (instanciada) | `src/scene/Vegetation.ts` (InstancedMesh + placeholder) · editor: `VegetationAuthoring` (pincel de espalhar) · nó `vegetation` (SPEC-0077) · culling por esfera das instâncias, por nó (SPEC-0299; a sombra nativa não corta instanced; folhagem com `alphaTest` projeta sombra recortada no passe nativo — SPEC-0642, `src/render/ShadowAlphaClipSync.ts`) |
 | Input por ação + remapeamento | `src/input/` (`InputActions`, `bindings`, `ControlsScreen`) · gate: `src/core/gamePlatform.ts` (ADR-0164/SPEC-0165) |
 | Editor (F2) + autorias | `src/editor/` · `src/editor/authoring/` |
 | Física Rapier | `src/physics/` |

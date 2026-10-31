@@ -40,6 +40,7 @@ add_executable(cortex_host
   src/shims/main_pass_shim.cpp
   src/shims/draw_batch_shim.cpp
   src/shims/geometry_registry_shim.cpp
+  src/shims/shadow_alpha_clip_shim.cpp
   src/shims/audio.cpp
   src/shims/files.cpp
   src/shims/image_decode.cpp
@@ -81,6 +82,7 @@ add_executable(cortex_host
   src/render/geometry_registry.cpp
   src/render/shadow_pass.cpp
   src/render/instance_buffer_store.cpp
+  src/render/alpha_clip_store.cpp
   src/scene/scene_mirror.cpp
   src/scene/shadow_caster_enumerator.cpp
   src/scene/main_pass_culler.cpp

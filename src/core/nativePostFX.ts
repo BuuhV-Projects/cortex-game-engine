@@ -54,5 +54,64 @@ export function nativeSceneHdrSink(): NativeSceneHdrSink | null {
  * herdaria um bloom que nunca pediu.
  */
 export function resetNativePostFX(): void {
-  nativePostFXHost()?.(null);
+  configureNativePostFX(null);
+}
+
+/** Alguém (um `PostFX`) configurou o composite do host? */
+let ownedByPostFX = false;
+/** O composite do host está fazendo só o tone mapping do `outdoorLighting` (SPEC-0645)? */
+let toneOnly = false;
+
+/**
+ * Configura (ou desliga, com `null`) o composite do host em nome de um `PostFX`.
+ * Tira o tone mapping do preset ({@link enableNativeToneMapping}): o `PostFX`
+ * renderiza pelo próprio caminho HDR e o composite dele já aplica ACES.
+ */
+export function configureNativePostFX(config: NativePostFXConfig | null): void {
+  ownedByPostFX = config !== null;
+  toneOnly = false;
+  nativePostFXHost()?.(config);
+}
+
+/** Composite sem bloom nem vinheta: só exposição + ACES do host. */
+const TONE_ONLY_CONFIG: NativePostFXConfig = {
+  strength: 0,
+  threshold: 0,
+  radius: 0,
+  exposure: 1,
+  vignette: false,
+  vignetteIntensity: 0,
+  vignetteInner: 0,
+  vignetteOuter: 0,
+};
+
+/**
+ * ACES do `outdoorLighting` no composite do host, em vez do `toneMapping` do
+ * three (que o renderer próprio recusa — SPEC-0645). Devolve `false` fora do
+ * host. Se um `PostFX` já é dono do composite, não mexe (ele já faz ACES).
+ */
+export function enableNativeToneMapping(exposure: number): boolean {
+  const host = nativePostFXHost();
+  if (!host) return false;
+  if (ownedByPostFX) return true;
+  host({ ...TONE_ONLY_CONFIG, exposure });
+  toneOnly = true;
+  return true;
+}
+
+/**
+ * Com o tone mapping do preset ativo, desenha a cena na RT HDR e a entrega ao
+ * host (o mesmo caminho do `PostFX` nativo). `false` = desenhe do jeito normal.
+ */
+export function renderNativeToneMapped(
+  renderer: { renderSceneHDR(scene: never, camera: never): unknown },
+  scene: unknown,
+  camera: unknown,
+): boolean {
+  if (!toneOnly) return false;
+  const sink = nativeSceneHdrSink();
+  const texture = sink ? renderer.renderSceneHDR(scene as never, camera as never) : null;
+  if (!sink || !texture) return false;
+  sink(texture);
+  return true;
 }

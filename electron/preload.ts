@@ -42,6 +42,18 @@ contextBridge.exposeInMainWorld('electronAPI', {
     return () => ipcRenderer.removeListener('export:progress', handler)
   },
 
+  // Pacotes de textura (SPEC-0641): assets/packages/<id>/ a partir do cortex.json.
+  listPackages: (projectDir: string) => ipcRenderer.invoke('packages:list', projectDir),
+  syncPackages: (projectDir: string) => ipcRenderer.invoke('packages:sync', projectDir),
+  addPackage: (projectDir: string, id: string, version: string) =>
+    ipcRenderer.invoke('packages:add', projectDir, id, version),
+  removePackage: (projectDir: string, id: string) => ipcRenderer.invoke('packages:remove', projectDir, id),
+  onPackagesProgress: (callback: (msg: { id: string; stage: string; error?: string }) => void): (() => void) => {
+    const handler = (_event: unknown, msg: { id: string; stage: string; error?: string }): void => callback(msg)
+    ipcRenderer.on('packages:progress', handler)
+    return () => ipcRenderer.removeListener('packages:progress', handler)
+  },
+
   /**
    * Auto-rig de personagem (SPEC-0349): roda `bash tools/prepare-character.sh
    * --config <configRel>` no projeto; resolve com o código de saída do script.

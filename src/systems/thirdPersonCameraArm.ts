@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { NearMeshIndex, firstHit, recentScan, traverseCollidable } from '../physics/nearMeshes.js';
 import { isSkinned } from '../physics/raycastAccel.js';
+import { PreparedCandidates, firstHitPrepared, prepareCandidates } from '../physics/nativeRaycast.js';
 import { COLLECT_INTERVAL_MS } from './CharacterPhysicsSystem.js';
 
 /** Distância mínima PREFERIDA alvo↔câmera (m): abaixo dela a câmera tenta desviar (SPEC-0625). */
@@ -87,6 +88,18 @@ export class CameraArmProbe {
   private readonly probeDir = new THREE.Vector3();
   /** Lado do desvio em andamento (−1/1), 0 = nenhum. */
   private swingSign = 0;
+  /** Candidatas do feixe do braço e as em volta do alvo (desvio), roteadas 1× por quadro (SPEC-0646). */
+  private readonly beam = new PreparedCandidates();
+  private readonly around = new PreparedCandidates();
+  private readonly cand: THREE.Object3D[] = [];
+  private readonly entry: number[] = [];
+  /** Índice de chão da física, compartilhado pela varredura publicada; `index` fica só com o resto (SPEC-0646). */
+  private shared?: NearMeshIndex;
+  private readonly sharedCand: THREE.Object3D[] = [];
+  private readonly sharedEntry: number[] = [];
+  /** O compartilhado inclui o próprio jogador: as malhas dele (refeitas a cada varredura) saem por `skip`. */
+  private readonly selfMeshes = new Set<THREE.Object3D>();
+  private readonly isSelf = (o: THREE.Object3D): boolean => this.selfMeshes.has(o);
 
   /**
    * Atualiza os alvos: a cada `COLLECT_INTERVAL_MS` (SPEC-0302), reaproveitando a varredura
@@ -99,16 +112,22 @@ export class CameraArmProbe {
     const selfChanged = this.self !== self;
     if (shared && (shared.at !== this.scanAt || selfChanged)) {
       this.targets.length = 0;
-      for (let i = 0; i < shared.meshes.length; i++) {
-        const o = shared.meshes[i]!;
+      // com o índice de chão publicado, o próprio só precisa do resto (SPEC-0646)
+      const own = shared.ground && shared.rest ? shared.rest : shared.meshes;
+      this.shared = own === shared.rest ? shared.ground : undefined;
+      this.selfMeshes.clear();
+      self?.traverse((o) => void this.selfMeshes.add(o));
+      for (let i = 0; i < own.length; i++) {
+        const o = own[i]!;
         if (!isUnderSelf(o, self)) this.targets.push(o);
       }
       this.scanAt = shared.at;
     } else if (!shared && (this.sinceCollect >= COLLECT_INTERVAL_MS || selfChanged)) {
       this.targets.length = 0;
+      this.shared = undefined;
       traverseCollidable(root, (o, hidden) => {
         if (hidden) return false; // nada lá dentro é alvo: não desce (SPEC-0320)
-        if (!(o as { isMesh?: boolean }).isMesh || isSkinned(o)) return;
+        if (!(o as { isMesh?: boolean }).isMesh || isSkinned(o) || o.userData['cortexVegetationSub']) return; // copa: SPEC-0647
         if (isUnderSelf(o, self)) return;
         this.targets.push(o);
       });
@@ -122,27 +141,58 @@ export class CameraArmProbe {
   hit(origin: THREE.Vector3, dir: THREE.Vector3, far: number): number {
     this.ray.far = far;
     this.ray.set(origin, dir);
-    return firstHit(this.ray, this.index)?.distance ?? Infinity;
+    const h = firstHit(this.ray, this.index)?.distance ?? Infinity;
+    if (!this.shared) return h;
+    return Math.min(h, firstHit(this.ray, this.shared, this.isSelf)?.distance ?? Infinity);
+  }
+
+  /** Acrescenta a `this.cand` as candidatas do compartilhado (em `sharedCand`), sem o próprio. */
+  private addShared(): THREE.Object3D[] {
+    for (let i = 0; i < this.sharedCand.length; i++) {
+      const o = this.sharedCand[i]!;
+      if (!this.isSelf(o)) this.cand.push(o);
+    }
+    return this.cand;
+  }
+
+  /** Como {@link hit}, contra candidatas já preparadas. */
+  private cast(origin: THREE.Vector3, dir: THREE.Vector3, far: number, p: PreparedCandidates): number {
+    this.ray.far = far;
+    this.ray.set(origin, dir);
+    return firstHitPrepared(this.ray, p)?.distance ?? Infinity;
   }
 
   /**
    * Distância livre (m, em [0, `want`]) do centro da câmera ao longo de `dir` a partir de
    * `origin`: menor acerto entre o raio central, 4 deslocados de {@link CAM_RADIUS} e o do
-   * peito (`lowDrop` m abaixo), menos {@link CAM_RADIUS}.
+   * peito (`lowDrop` m abaixo), menos {@link CAM_RADIUS}. Os 6 usam UMA lista de candidatas
+   * (`alongRay` pela linha média com folga, SPEC-0646); `near` = candidatas do desvio.
    */
-  clearance(origin: THREE.Vector3, dir: THREE.Vector3, want: number, lowDrop: number): number {
+  clearance(origin: THREE.Vector3, dir: THREE.Vector3, want: number, lowDrop: number, near?: PreparedCandidates): number {
     const far = want + CAM_RADIUS;
-    let h = this.hit(origin, dir, far);
+    let p = near;
+    if (!p) {
+      // linha média entre o centro e o peito: todo raio do feixe fica a até `pad` dela
+      const pad = lowDrop / 2 + CAM_RADIUS;
+      this.o.copy(origin);
+      this.o.y -= lowDrop / 2;
+      this.ray.far = far;
+      this.ray.set(this.o, dir);
+      this.index.alongRay(this.ray.ray, this.ray.near, far, this.cand, this.entry, pad);
+      this.shared?.alongRay(this.ray.ray, this.ray.near, far, this.sharedCand, this.sharedEntry, pad);
+      p = prepareCandidates(this.shared ? this.addShared() : this.cand, this.ray.layers, this.beam);
+    }
     this.o.copy(origin);
     this.o.y -= lowDrop;
-    h = Math.min(h, this.hit(this.o, dir, far));
+    let h = this.cast(this.o, dir, far, p);
+    h = Math.min(h, this.cast(origin, dir, far, p));
     this.right.crossVectors(dir, WORLD_UP);
     if (this.right.lengthSq() < 1e-8) this.right.set(1, 0, 0); // olhando reto pra cima/baixo
     this.right.normalize();
     this.up.crossVectors(this.right, dir).normalize();
     for (const [r, u] of OFFSETS) {
       this.o.copy(origin).addScaledVector(this.right, r * CAM_RADIUS).addScaledVector(this.up, u * CAM_RADIUS);
-      h = Math.min(h, this.hit(this.o, dir, far));
+      h = Math.min(h, this.cast(this.o, dir, far, p));
     }
     return Math.max(0, Math.min(want, h - CAM_RADIUS));
   }
@@ -157,10 +207,16 @@ export class CameraArmProbe {
       this.swingSign = 0;
       return null;
     }
+    // toda sonda (comprimento need + r, do alvo ou do peito) cabe neste cilindro (SPEC-0646)
+    const reach = need + 2 * CAM_RADIUS;
+    const minY = target.y - lowDrop - reach, maxY = target.y + reach;
+    this.index.nearXZ(target.x, target.z, reach, this.cand, minY, maxY);
+    this.shared?.nearXZ(target.x, target.z, reach, this.sharedCand, minY, maxY);
+    const near = prepareCandidates(this.shared ? this.addShared() : this.cand, this.ray.layers, this.around);
     const cp = Math.cos(pitch), sp = Math.sin(pitch);
     const freeAt = (off: number): number => {
       this.probeDir.set(Math.sin(yaw + off) * cp, sp, Math.cos(yaw + off) * cp);
-      return this.clearance(target, this.probeDir, need, lowDrop);
+      return this.clearance(target, this.probeDir, need, lowDrop, near);
     };
     let off = pickSwing(freeAt, need, playerSign || this.swingSign, this.swingSign);
     if (off === null && playerSign === 0 && this.swingSign !== 0) off = pickSwing(freeAt, need, 0, this.swingSign);

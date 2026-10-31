@@ -29,6 +29,7 @@
 
 #include <webgpu/webgpu.h>
 
+#include "alpha_clip_store.h"
 #include "shadow_math.h"
 
 struct HostGpu;
@@ -64,6 +65,11 @@ struct ShadowDrawItem {
   WGPUBuffer instanceBuffer = nullptr;
   /** Quantas instâncias desenhar; 1 para malha comum. */
   uint32_t instanceCount = 1;
+  /**
+   * Recorte alfa do nó (SPEC-0642), do `AlphaClipStore`; `nullptr` = depth-only.
+   * Com ele o caster vai para a variante com fragmento que descarta pela textura.
+   */
+  const AlphaClipEntry* alphaClip = nullptr;
 };
 
 /**

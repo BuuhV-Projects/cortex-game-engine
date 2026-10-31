@@ -276,6 +276,15 @@ describe('SPEC-0328: raio só contra o que ele cruza, mais perto primeiro', () =
     expect(entry[1]).toBeCloseTo(9 - STATIC_MARGIN, 5);
   });
 
+  it('alongRay com pad: pega a malha que um raio paralelo a até pad acertaria (SPEC-0646)', () => {
+    // caixa (com a folga de movimento) começa em z = 1,2: o raio em z = 0 não cruza, o feixe de 1,5 m sim
+    const side = box(5, 0, 6.2 + MOVING_MARGIN - 4);
+    const idx = index([side]);
+    const ray = new Ray(new Vector3(0, 0, 0), new Vector3(1, 0, 0));
+    expect(idx.alongRay(ray, 0, 15, [], [])).toEqual([]);
+    expect(idx.alongRay(ray, 0, 15, [], [], 1.5)).toEqual([side]);
+  });
+
   it('alongRay com direção 0 num eixo (raio vertical) e origem dentro da caixa', () => {
     const floor = box(0, -1, 0);
     const roof = box(0, 50, 0);

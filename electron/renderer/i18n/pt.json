@@ -31,6 +31,26 @@
     "chat_strong_label": "Chat IA: Orquestrador com o modelo mais forte (o Codificar já usa sempre)",
     "chat_strong_hint": "Código melhor em tarefas difíceis, mas consome a cota de uso bem mais rápido. Vale só para este projeto, neste computador."
   },
+  "packages": {
+    "title": "Pacotes de textura",
+    "subtitle": "Bibliotecas de material baixadas do GitHub para assets/packages/ (cortex.json).",
+    "empty": "Nenhum pacote declarado.",
+    "id_placeholder": "id (ex.: cortex-yughues-ground-textures)",
+    "version_placeholder": "versão (1.0.0)",
+    "add": "Adicionar",
+    "remove": "Remover",
+    "sync": "Instalar faltantes",
+    "close": "Fechar",
+    "installed": "instalado",
+    "missing": "não instalado",
+    "materials": "{n} materiais",
+    "private": "licença não permite repo público",
+    "stage_download": "baixando…",
+    "stage_extract": "extraindo…",
+    "stage_done": "pronto",
+    "error": "Erro: {msg}",
+    "open_button": "Pacotes de textura…"
+  },
   "fileTree": {
     "no_project": "Nenhum projeto aberto",
     "open_project": "Abrir Projeto",

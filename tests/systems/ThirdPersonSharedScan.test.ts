@@ -10,11 +10,14 @@ import { CharacterBodyComponent } from '../../src/components/CharacterBodyCompon
 import { ThirdPersonControlSystem } from '../../src/systems/ThirdPersonControlSystem.js';
 import { CharacterPhysicsSystem, COLLECT_INTERVAL_MS } from '../../src/systems/CharacterPhysicsSystem.js';
 import { publishScan, recentScan } from '../../src/physics/nearMeshes.js';
+import { Vegetation } from '../../src/scene/Vegetation.js';
 
 const noKeys = { isKeyDown: () => false, getMouseDelta: () => ({ x: 0, y: 0 }) };
 const FULL = 5.5;
 const target = new THREE.Vector3(0, 1.5, 0);
 const FRAME_MS = 16;
+/** Lado da copa de teste (m): cerca o alvo com as folhas a 1,5 m, bem dentro do braço. */
+const CANOPY = 3;
 
 function setup(scene: THREE.Scene) {
   const world = new World();
@@ -81,5 +84,35 @@ describe('SPEC-0328: câmera reaproveita a varredura do CharacterPhysics', () =>
     now.mockReturnValue(1001 + COLLECT_INTERVAL_MS);
     expect(recentScan(root, COLLECT_INTERVAL_MS)).toBeUndefined();
     now.mockRestore();
+  });
+});
+
+describe('SPEC-0647: a copa da vegetação não é alvo da câmera', () => {
+  /** Copa da `Vegetation` (InstancedMesh com `cortexVegetationSub`) envolvendo o alvo; folha é dupla face, como no jogo. */
+  const addCanopy = (scene: THREE.Scene): void => {
+    const veg = new Vegetation(new THREE.Mesh(new THREE.BoxGeometry(CANOPY, CANOPY, CANOPY), new THREE.MeshBasicMaterial({ side: THREE.DoubleSide })));
+    veg.add(0, target.y, 0, 0, 1);
+    scene.add(veg.group);
+    scene.updateMatrixWorld(true);
+  };
+
+  it.each([true, false])('braço não encolhe dentro da copa (CharacterPhysics: %s)', (withPhysics) => {
+    const scene = new THREE.Scene();
+    const world = new World();
+    if (withPhysics) world.addSystem(new CharacterPhysicsSystem([scene]));
+    const camera = new THREE.PerspectiveCamera();
+    world.addSystem(
+      new ThirdPersonControlSystem(camera, noKeys as never, {} as HTMLElement, { cameraDistance: FULL, cameraHeight: 1.5 }, undefined, scene),
+    );
+    const e = world.createEntity();
+    e.addComponent(new TransformComponent(0, 0, 0, 0));
+    e.addComponent(new CharacterBodyComponent({ footOffset: 0 }));
+    const floor = new THREE.Mesh(new THREE.BoxGeometry(40, 2, 40));
+    floor.position.y = -1; // topo em y = 0
+    scene.add(floor);
+    addCanopy(scene);
+    for (let ms = 0; ms <= COLLECT_INTERVAL_MS + FRAME_MS; ms += FRAME_MS) world.tick(FRAME_MS);
+    for (let i = 0; i < 30; i++) world.tick(FRAME_MS);
+    expect(camera.position.distanceTo(target)).toBeCloseTo(FULL, 1);
   });
 });
