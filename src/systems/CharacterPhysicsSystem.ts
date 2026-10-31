@@ -237,6 +237,8 @@ export class CharacterPhysicsSystem extends System {
 
       c.velocityY -= c.gravity * dt;
       if (c.velocityY < -c.fallSpeedMax) c.velocityY = -c.fallSpeedMax;
+      // a queda do quadro inteiro entra no raio de chão: num quadro longo ela passa do stepHeight (SPEC-0648)
+      const fell = Math.max(0, -c.velocityY * dt);
       t.y += c.velocityY * dt;
       const wasGrounded = c.grounded; // estado do tick anterior (pro snap de descida)
       c.grounded = false;
@@ -252,7 +254,7 @@ export class CharacterPhysicsSystem extends System {
       let groundHeight = -Infinity;
       if (this.groundMeshes.length > 0 && c.velocityY <= 0) {
         // Origem um pouco ACIMA dos pés (até `stepHeight`) pra subir degraus.
-        this.origin.set(t.x, feet + c.stepHeight + SKIN, t.z);
+        this.origin.set(t.x, feet + fell + c.stepHeight + SKIN, t.z);
         this.ray.set(this.origin, DOWN);
         this.ray.far = Infinity;
         const self = e.getComponent(Object3DComponent)?.object;
