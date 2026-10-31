@@ -79,6 +79,9 @@ export function traverseCollidable(
 export interface SceneScan {
   readonly meshes: readonly Object3D[];
   readonly at: number;
+  /** Índice já montado de parte de `meshes` (o de chão da física) e o resto delas — SPEC-0646. */
+  readonly ground?: NearMeshIndex;
+  readonly rest?: readonly Object3D[];
 }
 
 const scans = new WeakMap<Object3D, SceneScan>();
@@ -89,8 +92,13 @@ const scans = new WeakMap<Object3D, SceneScan>();
  * logo depois (a câmera da 3ª pessoa, depois do `CharacterPhysicsSystem`) reaproveita
  * em vez de descer na cena de novo. A lista é do publicador: copie, não guarde.
  */
-export function publishScan(root: Object3D, meshes: readonly Object3D[]): void {
-  scans.set(root, { meshes, at: performance.now() });
+export function publishScan(
+  root: Object3D,
+  meshes: readonly Object3D[],
+  ground?: NearMeshIndex,
+  rest?: readonly Object3D[],
+): void {
+  scans.set(root, { meshes, at: performance.now(), ground, rest });
 }
 
 /** A varredura publicada de `root` com até `maxAgeMs` de idade, ou `undefined`. */
@@ -356,8 +364,10 @@ export class NearMeshIndex {
    * e devolve as duas listas ORDENADAS por ela (mais perto primeiro). Conservador: todo
    * acerto possível entre `near` e `far` está nas candidatas, e acontece a uma distância
    * >= a entrada da caixa dela. `ray.direction` tem que ser unitária (como no Raycaster).
+   * `pad` (SPEC-0646) infla caixa e esfera: a lista vale pra todo raio paralelo a até
+   * `pad` deste (o feixe do braço da câmera).
    */
-  alongRay(ray: Ray, near: number, far: number, out: Object3D[], entry: number[]): Object3D[] {
+  alongRay(ray: Ray, near: number, far: number, out: Object3D[], entry: number[], pad = 0): Object3D[] {
     out.length = 0;
     entry.length = 0;
     const d = this.data;
@@ -366,7 +376,7 @@ export class NearMeshIndex {
     // retângulo XZ do segmento (direção 0 no eixo: fica na origem, mesmo com `far` infinito)
     const ex = v.x === 0 ? o.x : o.x + v.x * far;
     const ez = v.z === 0 ? o.z : o.z + v.z * far;
-    const list = this.gather(Math.min(o.x, ex), Math.min(o.z, ez), Math.max(o.x, ex), Math.max(o.z, ez));
+    const list = this.gather(Math.min(o.x, ex) - pad, Math.min(o.z, ez) - pad, Math.max(o.x, ex) + pad, Math.max(o.z, ez) + pad);
     const n = list ? list.length : this.meshes.length;
     for (let q = 0; q < n; q++) {
       const i = list ? list[q]! : q;
@@ -376,33 +386,33 @@ export class NearMeshIndex {
       let t1 = far;
       // slab por eixo; direção 0 = só confere se a origem está dentro da faixa
       if (v.x === 0) {
-        if (o.x < d[b]! || o.x > d[b + 3]!) continue;
+        if (o.x < d[b]! - pad || o.x > d[b + 3]! + pad) continue;
       } else {
-        const ta = (d[b]! - o.x) / v.x;
-        const tb = (d[b + 3]! - o.x) / v.x;
+        const ta = (d[b]! - pad - o.x) / v.x;
+        const tb = (d[b + 3]! + pad - o.x) / v.x;
         t0 = Math.max(t0, Math.min(ta, tb));
         t1 = Math.min(t1, Math.max(ta, tb));
         if (t0 > t1) continue;
       }
       if (v.y === 0) {
-        if (o.y < d[b + 1]! || o.y > d[b + 4]!) continue;
+        if (o.y < d[b + 1]! - pad || o.y > d[b + 4]! + pad) continue;
       } else {
-        const ta = (d[b + 1]! - o.y) / v.y;
-        const tb = (d[b + 4]! - o.y) / v.y;
+        const ta = (d[b + 1]! - pad - o.y) / v.y;
+        const tb = (d[b + 4]! + pad - o.y) / v.y;
         t0 = Math.max(t0, Math.min(ta, tb));
         t1 = Math.min(t1, Math.max(ta, tb));
         if (t0 > t1) continue;
       }
       if (v.z === 0) {
-        if (o.z < d[b + 2]! || o.z > d[b + 5]!) continue;
+        if (o.z < d[b + 2]! - pad || o.z > d[b + 5]! + pad) continue;
       } else {
-        const ta = (d[b + 2]! - o.z) / v.z;
-        const tb = (d[b + 5]! - o.z) / v.z;
+        const ta = (d[b + 2]! - pad - o.z) / v.z;
+        const tb = (d[b + 5]! + pad - o.z) / v.z;
         t0 = Math.max(t0, Math.min(ta, tb));
         t1 = Math.min(t1, Math.max(ta, tb));
         if (t0 > t1) continue;
       }
-      if (!rayMayHitSphere(o, v, far, d[k]!, d[k + 1]!, d[k + 2]!, d[k + 3]!)) continue;
+      if (!rayMayHitSphere(o, v, far, d[k]!, d[k + 1]!, d[k + 2]!, d[k + 3]! + pad)) continue;
       // inserção ordenada: a lista é curta (o que o raio cruza)
       let j = out.length;
       out.push(this.meshes[i]!);

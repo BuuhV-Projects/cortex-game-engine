@@ -16,3 +16,4 @@ electron/main.ts
 native/src/shims/scene_mirror_shim.cpp
 src/core/NativeSceneMirror.ts
 src/scene/OutdoorLighting.ts
+src/physics/nearMeshes.ts

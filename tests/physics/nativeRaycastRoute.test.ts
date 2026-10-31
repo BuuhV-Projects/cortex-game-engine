@@ -9,7 +9,14 @@ import {
   Vector3,
   type Object3D,
 } from 'three';
-import { firstHitAmong, setNativeRaycastBridge, type RaycastBridge } from '../../src/physics/nativeRaycast.js';
+import {
+  PreparedCandidates,
+  firstHitAmong,
+  firstHitPrepared,
+  prepareCandidates,
+  setNativeRaycastBridge,
+  type RaycastBridge,
+} from '../../src/physics/nativeRaycast.js';
 
 // SPEC-0347: routing of firstHitAmong when the host bridge exists (fake bridge).
 
@@ -101,5 +108,33 @@ describe('firstHitAmong com a ponte nativa (SPEC-0347)', () => {
     im.instanceMatrix.needsUpdate = true;
     firstHitAmong(rayDown(), [im], null);
     expect(calls.setInstances).toBe(1);
+  });
+
+  it('candidatas preparadas: roteia uma vez e cada raio é uma chamada nativa (SPEC-0646)', () => {
+    const { bridge, calls } = fakeBridge({ k: 1, distance: 7 });
+    setNativeRaycastBridge(bridge);
+    const a = box(0);
+    const b = box(2);
+    const js = box(5, [new MeshBasicMaterial()]); // array de material: caminho JS
+    js.geometry.groups.length = 0;
+    js.geometry.addGroup(0, Infinity, 0);
+    const ray = rayDown();
+    const p = prepareCandidates([a, b, js], ray.layers, new PreparedCandidates());
+    expect(p.n).toBe(2);
+    expect(p.js).toEqual([js]);
+    expect(firstHitPrepared(ray, p)?.object).toBe(js); // JS a 4,5 vence o nativo a 7
+    js.position.z = -50;
+    js.updateMatrixWorld(true);
+    expect(firstHitPrepared(ray, p)?.object).toBe(b);
+    expect(calls.first).toEqual([2, 2]);
+    expect(calls.addGeometry).toBe(2); // não re-roteia por raio
+  });
+
+  it('candidatas preparadas sem a ponte: tudo pelo JS', () => {
+    setNativeRaycastBridge(null);
+    const near = box(5);
+    const p = prepareCandidates([box(0), near], rayDown().layers, new PreparedCandidates());
+    expect(p.n).toBe(0);
+    expect(firstHitPrepared(rayDown(), p)?.object).toBe(near);
   });
 });

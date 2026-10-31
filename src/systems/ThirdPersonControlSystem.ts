@@ -9,9 +9,9 @@ import type { GamepadManager } from '../core/GamepadManager.js';
 import type { InputActions } from '../input/InputActions.js';
 import type { SceneAnimator } from '../scene/SceneAnimator.js';
 import { deriveLocomotion, autoMapPlayerClips } from './PlatformerAnimationSystem.js';
-import { isSkinned } from '../physics/raycastAccel.js';
-import { NearMeshIndex, firstHit, recentScan, traverseCollidable } from '../physics/nearMeshes.js';
-import { COLLECT_INTERVAL_MS } from './CharacterPhysicsSystem.js';
+import {
+  CameraArmProbe, CAM_MIN_DIST, CAM_RADIUS, CAM_SWING_SPEED, stepArm, type ArmState,
+} from './thirdPersonCameraArm.js';
 
 /** Opções do {@link ThirdPersonControlSystem} (porta o ThirdPersonController do Unity StarterAssets). */
 export interface ThirdPersonControlOptions {
@@ -73,13 +73,16 @@ export interface ThirdPersonControlOptions {
    * runtime via {@link ThirdPersonControlSystem.faceCamera}.
    */
   faceCamera?: boolean;
+  /**
+   * **Desvio da câmera** (SPEC-0625): sem espaço pro braço mínimo atrás do personagem
+   * (colado na parede), a câmera gira rápido pro lado livre — no sentido em que o
+   * jogador gira, nunca contra. Só no modo `free`. Default true.
+   */
+  cameraAvoid?: boolean;
 }
 
 const TOP_CLAMP = (70 * Math.PI) / 180; // Unity TopClamp 70°
 const BOTTOM_CLAMP = (-30 * Math.PI) / 180; // Unity BottomClamp -30°
-/** Distância mínima alvo↔câmera (não entra dentro do personagem) e folga da colisão. */
-const CAM_MIN_DIST = 0.8;
-const CAM_SKIN = 0.3;
 /**
  * Distância abaixo da qual o PERSONAGEM é ocultado (occlusion fade estilo Unity):
  * quando o spring arm puxa a câmera pra muito perto (parede/árvore atrás), sem
@@ -92,23 +95,8 @@ const CAM_HIDE_DIST = 1.05;
  * mureta), deixando a câmera atrás dela e o personagem escondido.
  */
 const CAM_LOW_RAY_FRACTION = 0.5;
-/**
- * Estabilidade do braço (SPEC-0311): o raio dá o ALVO da distância; o braço encolhe
- * rápido (m/s), segura `CAM_RELEASE_HOLD` s depois de encolher e só então volta devagar
- * (m/s). Sem isso, viga/poste que passa pelo raio vira salto de distância a cada quadro.
- */
-const CAM_PULL_IN_SPEED = 12;
-const CAM_RELEASE_HOLD = 1;
-const CAM_RELEASE_SPEED = 3;
 /** Duração (s) que o clipe `run_stop` segura antes de cair pro idle. */
 const RUN_STOP_DUR = 0.45;
-
-/** A câmera ignora (não colide com) o próprio player (gizmo e escondido saem na poda, SPEC-0307). */
-function isUnderSelf(obj: THREE.Object3D, self?: THREE.Object3D): boolean {
-  if (!self) return false;
-  for (let p: THREE.Object3D | null = obj; p; p = p.parent) if (p === self) return true;
-  return false;
-}
 
 /** Interpola um ângulo (rad) em direção a `target` pelo menor caminho (smoothing exponencial). */
 function approachAngle(current: number, target: number, t: number): number {
@@ -179,22 +167,16 @@ export class ThirdPersonControlSystem extends System {
   /** Handler do `mousedown` no canvas — guardado pra remover no {@link dispose}. */
   private onCanvasMouseDown?: () => void;
   private readonly lookTarget = new THREE.Vector3();
-  /** Só o acerto mais próximo de cada malha interessa: a árvore BVH para no 1º triângulo (SPEC-0328). */
-  private readonly camRay = Object.assign(new THREE.Raycaster(), { firstHitOnly: true });
   private readonly camBack = new THREE.Vector3();
-  private readonly camTargets: THREE.Object3D[] = []; // alvos do spring arm (sem skinned/self)
-  private readonly camIndex = new NearMeshIndex();
-  private readonly lowOrigin = new THREE.Vector3();
-  /** ms desde a última varredura da cena pros alvos (começa vencido; SPEC-0302). */
-  private sinceCamCollect = Infinity;
-  /** Distância atual do braço (SPEC-0311); `Infinity` = encaixa no próximo quadro (corte). */
-  private armDist = Infinity;
-  /** Segundos que o braço ainda segura antes de voltar. */
-  private armHold = 0;
-  /** `at` da varredura compartilhada já usada (SPEC-0328); `NaN` = nenhuma. */
-  private camScanAt = NaN;
-  /** Dono dos alvos coletados (o `self` muda → recoleta). */
-  private camSelf?: THREE.Object3D;
+  private readonly camAux = new THREE.Vector3(); // direção do ombro / da sonda de desvio
+  private readonly arm = new CameraArmProbe();
+  /** Braço (SPEC-0311/0625); `dist` não finito = encaixa no próximo quadro (corte). */
+  private readonly armState: ArmState = { dist: Infinity, hold: 0 };
+  private readonly avoid: boolean;
+  /** ms do quadro atual (idade da varredura dos alvos do braço). */
+  private frameMs = 0;
+  /** Quanto o jogador girou o yaw neste quadro (rad) — o desvio não briga com ele. */
+  private yawInput = 0;
 
   constructor(
     private readonly camera: THREE.PerspectiveCamera,
@@ -226,6 +208,7 @@ export class ThirdPersonControlSystem extends System {
     this.pitch = options.initialPitch ?? 0.35;
     this.shoulderOffset = options.shoulderOffset ?? 0;
     this.faceCamera = options.faceCamera ?? false;
+    this.avoid = options.cameraAvoid ?? true;
 
     if (typeof document !== 'undefined') {
       this.onCanvasMouseDown = (): void => {
@@ -261,7 +244,7 @@ export class ThirdPersonControlSystem extends System {
     if (angles?.yaw !== undefined) this.yaw = angles.yaw;
     if (angles?.pitch !== undefined) this.pitch = angles.pitch;
     if (angles?.distance !== undefined) this.camDist = angles.distance;
-    this.armDist = Infinity; // corte de câmera: encaixa, sem transição (SPEC-0311)
+    this.armState.dist = Infinity; // corte de câmera: encaixa, sem transição (SPEC-0311)
     if (mode === 'locked' && typeof document !== 'undefined' && document.pointerLockElement === this.canvas) {
       document.exitPointerLock?.();
     }
@@ -278,7 +261,8 @@ export class ThirdPersonControlSystem extends System {
   }
 
   override update(entities: Entity[], deltaTime: number): void {
-    this.sinceCamCollect += deltaTime;
+    this.frameMs = deltaTime;
+    this.yawInput = 0;
     const player = entities[0];
     if (!player) return;
     const t = player.getComponent(TransformComponent)!;
@@ -312,6 +296,7 @@ export class ThirdPersonControlSystem extends System {
     // Modo `locked`: yaw/pitch são FIXOS (câmera de perseguição elevada) — o
     // jogador não pilota a câmera; mouse/stick direito são ignorados.
     if (this.orbitMode === 'free') {
+      const yawBefore = this.yaw;
       if (typeof document !== 'undefined' && (document.pointerLockElement === this.canvas || this.lockUnavailable)) {
         const md = this.input.getMouseDelta();
         this.yaw -= md.x * this.sensitivity;
@@ -325,6 +310,7 @@ export class ThirdPersonControlSystem extends System {
         this.yaw -= lookX * this.padLookSpeed * dt;
         this.pitch += (this.invertLookY ? -1 : 1) * lookY * this.padLookSpeed * dt;
       }
+      this.yawInput = this.yaw - yawBefore;
       if (this.pitch > TOP_CLAMP) this.pitch = TOP_CLAMP;
       if (this.pitch < BOTTOM_CLAMP) this.pitch = BOTTOM_CLAMP;
     }
@@ -408,61 +394,36 @@ export class ThirdPersonControlSystem extends System {
   private placeCamera(t: TransformComponent, self: THREE.Object3D | undefined, dt: number): void {
     const cp = Math.cos(this.pitch);
     this.camBack.set(Math.sin(this.yaw) * cp, Math.sin(this.pitch), Math.cos(this.yaw) * cp);
-    // Ombro: desloca o alvo pela direita da câmera (cos, -sin) no plano XZ.
-    this.lookTarget.set(
-      t.x + Math.cos(this.yaw) * this.shoulderOffset,
-      t.y + this.camHeight,
-      t.z - Math.sin(this.yaw) * this.shoulderOffset,
-    );
-
-    // Colisão (spring arm): se algo (chão/árvore/parede) fica entre o alvo e a câmera,
-    // puxa a câmera pra dentro — nunca atravessa o chão. Raio do alvo na direção da câmera.
+    const rx = Math.cos(this.yaw), rz = -Math.sin(this.yaw); // direita da câmera (XZ)
+    let shoulder = this.shoulderOffset;
     let dist = this.camDist;
-    if (this.collisionRoot) {
-      // Alvos coletados ANTES do raycast, pulando malha skinada: o raio nasce na
-      // cabeça do personagem e raycast em SkinnedMesh computa o skinning por
-      // vértice na CPU a cada raio (ver isSkinned em raycastAccel) — filtrar nos
-      // HITS já pagava esse custo todo frame.
-      // Varre a cena só a cada COLLECT_INTERVAL_MS (SPEC-0302) — e reaproveita a varredura
-      // que o CharacterPhysicsSystem acabou de fazer da mesma raiz, se houver (SPEC-0328).
-      const shared = recentScan(this.collisionRoot, COLLECT_INTERVAL_MS);
-      const selfChanged = this.camSelf !== self;
-      if (shared && (shared.at !== this.camScanAt || selfChanged)) {
-        this.camTargets.length = 0;
-        for (let i = 0; i < shared.meshes.length; i++) {
-          const o = shared.meshes[i]!;
-          if (!isUnderSelf(o, self)) this.camTargets.push(o);
-        }
-        this.camIndex.rebuild(this.camTargets);
-        this.camScanAt = shared.at;
-        this.sinceCamCollect = 0;
-        this.camSelf = self;
-      } else if (!shared && (this.sinceCamCollect >= COLLECT_INTERVAL_MS || selfChanged)) {
-        this.camTargets.length = 0;
-        traverseCollidable(this.collisionRoot, (o, hidden) => {
-          if (hidden) return false; // nada lá dentro é alvo: não desce (SPEC-0320)
-          if (!(o as { isMesh?: boolean }).isMesh || isSkinned(o)) return;
-          if (isUnderSelf(o, self)) return;
-          this.camTargets.push(o);
-        });
-        this.camIndex.rebuild(this.camTargets);
-        this.sinceCamCollect = 0;
-        this.camSelf = self;
+    const root = this.collisionRoot;
+    if (root) {
+      this.arm.collect(root, self, this.frameMs);
+      if (shoulder !== 0) {
+        // ombro: o alvo deslocado não nasce dentro da parede ao lado (SPEC-0625)
+        const side = Math.sign(shoulder);
+        this.lookTarget.set(t.x, t.y + this.camHeight, t.z);
+        this.camAux.set(rx * side, 0, rz * side);
+        const h = this.arm.hit(this.lookTarget, this.camAux, Math.abs(shoulder) + CAM_RADIUS);
+        if (h < Infinity) shoulder = side * Math.max(0, h - CAM_RADIUS);
       }
-      // só o que cada raio cruza, mais perto primeiro (SPEC-0328)
-      this.camRay.far = this.camDist;
-      this.camRay.set(this.lookTarget, this.camBack);
-      const h = firstHit(this.camRay, this.camIndex);
-      if (h) dist = Math.max(h.distance - CAM_SKIN, CAM_MIN_DIST); // 1ª superfície bloqueante
-      // 2º raio, paralelo, do peito: pega parede baixa que o da cabeça passa por cima
-      this.lowOrigin.copy(this.lookTarget);
-      this.lowOrigin.y -= this.camHeight * (1 - CAM_LOW_RAY_FRACTION);
-      this.camRay.set(this.lowOrigin, this.camBack);
-      const low = firstHit(this.camRay, this.camIndex);
-      if (low) dist = Math.min(dist, Math.max(low.distance - CAM_SKIN, CAM_MIN_DIST));
+    }
+    this.lookTarget.set(t.x + rx * shoulder, t.y + this.camHeight, t.z + rz * shoulder);
+
+    // Spring arm (SPEC-0302/0625): raios com o raio da câmera, do alvo pra trás + do peito
+    // (parede baixa); nunca atravessa. Sem espaço pro mínimo → desvia o yaw.
+    if (root) {
+      const lowDrop = this.camHeight * (1 - CAM_LOW_RAY_FRACTION);
+      dist = this.arm.clearance(this.lookTarget, this.camBack, this.camDist, lowDrop);
+      const need = Math.min(CAM_MIN_DIST, this.camDist);
+      const off = dist < need && this.avoid && this.orbitMode === 'free' && Number.isFinite(dt)
+        ? this.arm.swing(this.lookTarget, this.yaw, this.pitch, need, lowDrop, Math.sign(this.yawInput))
+        : this.arm.swing(); // sem desvio: esquece o lado em andamento
+      if (off !== null) this.yaw += Math.sign(off) * Math.min(Math.abs(off), CAM_SWING_SPEED * dt);
     }
 
-    dist = this.smoothArm(dist, dt);
+    dist = stepArm(this.armState, dist, dt);
     this.camera.position.set(
       this.lookTarget.x + this.camBack.x * dist,
       this.lookTarget.y + this.camBack.y * dist,
@@ -474,22 +435,6 @@ export class ThirdPersonControlSystem extends System {
     // em vez de mostrar o interior da cabeça. Restaura assim que afasta. (O editor
     // também restaura ao abrir — proteção pra pausa com o player oculto.)
     if (self) self.visible = dist > CAM_HIDE_DIST;
-  }
-
-  /** Leva o braço até `target` (SPEC-0311): encolhe rápido, segura, volta devagar. */
-  private smoothArm(target: number, dt: number): number {
-    const arm = this.armDist;
-    if (!Number.isFinite(arm) || !Number.isFinite(dt)) {
-      this.armDist = target;
-    } else if (target < arm) {
-      this.armDist = Math.max(target, arm - CAM_PULL_IN_SPEED * dt);
-      this.armHold = CAM_RELEASE_HOLD;
-    } else if (this.armHold > 0) {
-      this.armHold -= dt;
-    } else {
-      this.armDist = Math.min(target, arm + CAM_RELEASE_SPEED * dt);
-    }
-    return this.armDist;
   }
 
   /**
