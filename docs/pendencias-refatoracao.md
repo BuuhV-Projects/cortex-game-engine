@@ -14,3 +14,4 @@ src/editor/EditorInspector.ts
 src/editor/ObjectEditSystem.ts
 electron/main.ts
 src/scene/OutdoorLighting.ts
+src/physics/nearMeshes.ts

@@ -427,7 +427,11 @@ alvo é **Rapier** (WASM) como motor dinâmico único, estilo Unity.
   `systems/thirdPersonCameraArm.ts`):** raio da câmera (centro + 4 raios deslocados de
   `CAM_RADIUS`), sem mínimo que empurre pra dentro da parede, encolher imediato (só a
   volta é suavizada, SPEC-0311) e desvio de yaw quando nem 0,8 m cabe (modo `free`,
-  no sentido do giro do jogador); o ombro encurta antes de bater na parede ao lado. **Raio × índice (SPEC-0328):** o índice
+  no sentido do giro do jogador); o ombro encurta antes de bater na parede ao lado. Custo
+  (SPEC-0646): os 5 raios paralelos usam UMA lista de candidatas (`alongRay` com `pad` =
+  `CAM_RADIUS`) e as sondas do desvio uma lista em volta do alvo (`nearXZ`), roteadas
+  uma vez (`prepareCandidates`) e disparadas com `firstHitPrepared` — uma chamada ao C++
+  por raio, sem o laço JS por candidata. **Raio × índice (SPEC-0328):** o índice
   tem uma grade XZ (células de `GRID_CELL` = 8 m; malha que cobre > 16 células fica
   numa lista "larga" testada sempre), então `nearXZ`/`alongRay` não varrem os ~900
   alvos. Câmera, chão e anti-clip usam `firstHit(raycaster, índice, skip?)`: só as
