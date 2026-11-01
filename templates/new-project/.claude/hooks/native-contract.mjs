@@ -50,6 +50,8 @@ const CODE_RULES = [
  * das mesmas texturas (SPEC-0652 da engine). `loadTexture`/`loadGLB` da engine têm cache por URL.
  */
 const DIRECT_LOADER = /new\s+(TextureLoader|ImageLoader|ImageBitmapLoader|GLTFLoader|KTX2Loader)\s*\(/;
+/** Marca de quem cria o loader mas guarda o resultado num cache por URL (SPEC-0652): o hook não acusa. */
+const CACHED_LOADER_MARK = /native-contract:\s*cached-loader/;
 
 function walk(dir, ext, out = []) {
   for (const e of readdirSync(dir, { withFileTypes: true })) {
@@ -95,8 +97,8 @@ function checkCode(root, errors, debt) {
     const text = readFileSync(file, 'utf8');
     const rel = relative(root, file).split(sep).join('/');
     for (const r of CODE_RULES) if (r.re.test(text) && !(r.unless && r.unless.test(text))) debt.push({ where: rel, what: r.debt });
-    const loader = text.match(DIRECT_LOADER);
-    if (loader) errors.push({ where: rel, what: `\`new ${loader[1]}()\` fora do cache: cada objeto relê e redecodifica o arquivo e o export estoura a memória (SPEC-0652 da engine) — use \`loadTexture\`/\`loadGLB\` da engine (cache por URL) ou guarde o resultado num Map por URL` });
+    const loader = !CACHED_LOADER_MARK.test(text) && text.match(DIRECT_LOADER);
+    if (loader) errors.push({ where: rel, what: `\`new ${loader[1]}()\` fora do cache: cada objeto relê e redecodifica o arquivo e o export estoura a memória (SPEC-0652 da engine) — use \`loadTexture\`/\`loadGLB\` da engine (cache por URL) ou guarde o resultado num Map por URL e marque o arquivo com o comentário \`native-contract: cached-loader\`` });
   }
 }
 
