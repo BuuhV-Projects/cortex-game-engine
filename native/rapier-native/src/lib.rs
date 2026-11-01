@@ -371,7 +371,7 @@ pub unsafe extern "C" fn rn_body_set(
         13 => rb.enable_ccd(x != 0.0),
         14 => rb.set_linear_damping(x as f32),
         15 => rb.set_angular_damping(x as f32),
-        // 16 = dormir (o carro parado da frota, SPEC-0654).
+        // 16 = dormir (o carro parado da frota, SPEC-0655).
         16 => rb.sleep(),
         _ => rb.set_translation(v, wake_up),
     }
@@ -838,7 +838,7 @@ mod tests {
         }
     }
 
-    /// Corpo apoiado posto para dormir pelo código 16 continua dormindo nos passos seguintes (SPEC-0654).
+    /// Corpo apoiado posto para dormir pelo código 16 continua dormindo nos passos seguintes (SPEC-0655).
     #[test]
     fn sleep_code_keeps_a_resting_body_asleep() {
         const SLEEP: f64 = 16.0;

@@ -313,7 +313,7 @@ Velocidade LATERAL (eixo +X local) do chassi, m/s — alto = derrapando/drift.
 
 Defined in: [src/physics/RapierPhysics.ts:537](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L537)
 
-Velocidade linear² do chassi (m²/s²) — a regra de repouso da SPEC-0654.
+Velocidade linear² do chassi (m²/s²) — a regra de repouso da SPEC-0655.
 
 #### Returns
 
@@ -371,7 +371,7 @@ Freio em todas as rodas.
 
 Defined in: [src/physics/RapierPhysics.ts:514](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L514)
 
-Força do motor nas rodas com tração (N). 0 = desliga. Força ≠ 0 acorda o chassi (SPEC-0654).
+Força do motor nas rodas com tração (N). 0 = desliga. Força ≠ 0 acorda o chassi (SPEC-0655).
 
 #### Parameters
 
@@ -421,7 +421,7 @@ com `centerOfMass` (collider sem massa).
 
 Defined in: [src/physics/RapierPhysics.ts:530](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L530)
 
-Ângulo de esterço (rad) nas rodas que esterçam. Ângulo ≠ 0 acorda o chassi (SPEC-0654).
+Ângulo de esterço (rad) nas rodas que esterçam. Ângulo ≠ 0 acorda o chassi (SPEC-0655).
 
 #### Parameters
 

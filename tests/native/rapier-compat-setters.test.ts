@@ -67,7 +67,7 @@ describe('rapier-compat: setters do BreakableProps (SPEC-0394)', () => {
     ]);
   });
 
-  it('sleep dorme o corpo pelo código 16 (SPEC-0654)', () => {
+  it('sleep dorme o corpo pelo código 16 (SPEC-0655)', () => {
     const world = new World({ x: 0, y: -9.81, z: 0 });
     world.createRigidBody(RigidBodyDesc.dynamic()).sleep();
     expect(argsOf('bodySet')).toEqual([[BODY, 16, 0, 0, 0, 0, 0]]);

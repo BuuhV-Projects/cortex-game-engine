@@ -1,4 +1,4 @@
-# SPEC-0654 - Veículo parado dorme (o `VehicleArcadeSystem` não simula carro estacionado)
+# SPEC-0655 - Veículo parado dorme (o `VehicleArcadeSystem` não simula carro estacionado)
 
 **Data:** 2026-11-01
 **Status:** aceito

@@ -18,7 +18,7 @@ import { REST_STEPS, nextRestSteps } from '../physics/VehicleRest.js';
  *
  * Carro parado (sem motor, sem velocidade, rodas no chão por `REST_STEPS`
  * subpassos) DORME e sai da simulação até algo acordá-lo; chassi cinemático
- * (trânsito no trilho) só recebe a pose na malha (SPEC-0654).
+ * (trânsito no trilho) só recebe a pose na malha (SPEC-0655).
  *
  * Não combine com `RapierPhysicsSystem` no mesmo `RapierPhysics` (os dois
  * avançam o mundo), e passe `stepPhysics: false` ao `VehicleControlSystem` do
@@ -36,7 +36,7 @@ export class VehicleArcadeSystem extends System {
     for (const entity of this.cars) {
       const car = entity.getComponent(ArcadeVehicleComponent)!;
       const body = car.vehicle.body;
-      // Parado dorme (SPEC-0654): sem aderência nem controlador, e fora do passo do mundo.
+      // Parado dorme (SPEC-0655): sem aderência nem controlador, e fora do passo do mundo.
       // Cinemático (trânsito no trilho) idem: a pose vem do trilho, e ele nunca dorme.
       if (body.isSleeping() || !body.isDynamic()) continue;
       car.adhesion?.apply(step);

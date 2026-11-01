@@ -18,7 +18,7 @@ import type { GroundAdhesion } from '../physics/GroundAdhesion.js';
  *   .addComponent(new ArcadeVehicleComponent(vehicle, new GroundAdhesion(physics, vehicle)));
  */
 export class ArcadeVehicleComponent extends Component {
-  /** Subpassos seguidos em repouso; ao chegar em `REST_STEPS` o chassi dorme (SPEC-0654). */
+  /** Subpassos seguidos em repouso; ao chegar em `REST_STEPS` o chassi dorme (SPEC-0655). */
   restSteps = 0;
 
   constructor(

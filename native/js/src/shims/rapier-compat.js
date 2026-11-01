@@ -238,7 +238,7 @@ RigidBody.prototype.wakeUp = function () {
   __rapierNative.bodySet(this.__world, this.handle, 7, 0, 0, 0, 0, 1);
 };
 
-/** Põe o corpo para dormir (API do browser). O carro parado dorme (SPEC-0654). */
+/** Põe o corpo para dormir (API do browser). O carro parado dorme (SPEC-0655). */
 RigidBody.prototype.sleep = function () {
   __rapierNative.bodySet(this.__world, this.handle, 16, 0, 0, 0, 0, 0);
 };

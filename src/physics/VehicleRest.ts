@@ -17,7 +17,7 @@ export const REST_SPIN = 0.2;
 /** Subpassos seguidos em repouso até dormir (0,5 s com o passo de 1/60 s). */
 export const REST_STEPS = 30;
 
-/** Em repouso neste subpasso: sem motor, parado, sem girar e com todas as rodas no chão (SPEC-0654). */
+/** Em repouso neste subpasso: sem motor, parado, sem girar e com todas as rodas no chão (SPEC-0655). */
 export function atRest(v: RestingVehicle): boolean {
   if (v.engineForce !== 0) return false;
   if (v.linvelSquared() >= REST_SPEED * REST_SPEED || v.angvelSquared() >= REST_SPIN * REST_SPIN) return false;

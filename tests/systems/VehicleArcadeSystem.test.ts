@@ -104,7 +104,7 @@ describe('VehicleArcadeSystem', () => {
     expect(update).toHaveBeenCalledTimes(1);
     expect(stepSpy).toHaveBeenCalledTimes(1);
   });
-  it('carro parado dorme pelo próprio sistema e continua dormindo (SPEC-0654)', async () => {
+  it('carro parado dorme pelo próprio sistema e continua dormindo (SPEC-0655)', async () => {
     const { world, entries } = await fleet(1);
     const { vehicle } = entries[0]!;
     vehicle.setBrake(50);
@@ -116,7 +116,7 @@ describe('VehicleArcadeSystem', () => {
     expect(update).not.toHaveBeenCalled();
   });
 
-  it('chassi cinemático não roda o controlador, mas a malha segue a pose (SPEC-0654)', async () => {
+  it('chassi cinemático não roda o controlador, mas a malha segue a pose (SPEC-0655)', async () => {
     const { world, entries } = await fleet(1);
     const { vehicle, object } = entries[0]!;
     vehicle.body.setBodyType(RAPIER.RigidBodyType.KinematicPositionBased, true);

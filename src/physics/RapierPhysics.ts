@@ -367,7 +367,7 @@ export class RapierPhysics {
     const he = spec.chassisHalfExtents;
     const desc = R.RigidBodyDesc.dynamic();
     if (spec.position) desc.setTranslation(spec.position.x, spec.position.y, spec.position.z);
-    // Pode dormir (SPEC-0654): o VehicleArcadeSystem põe o carro parado para dormir, e
+    // Pode dormir (SPEC-0655): o VehicleArcadeSystem põe o carro parado para dormir, e
     // `setEngineForce`/`setSteering` o acordam. Com `setCanSleep(false)` o Rapier o acordava no passo seguinte.
     const chassis = this.world.createRigidBody(desc);
     const mass = spec.mass ?? 1200;
@@ -510,7 +510,7 @@ export class Vehicle {
     );
   }
 
-  /** Força do motor nas rodas com tração (N). 0 = desliga. Força ≠ 0 acorda o chassi (SPEC-0654). */
+  /** Força do motor nas rodas com tração (N). 0 = desliga. Força ≠ 0 acorda o chassi (SPEC-0655). */
   setEngineForce(force: number): void {
     this._engineForce = force;
     if (force !== 0) this.wakeIfSleeping();
@@ -526,14 +526,14 @@ export class Vehicle {
   setBrake(force: number): void {
     for (let i = 0; i < this.wheels.length; i++) this.ctrl.setWheelBrake(i, force);
   }
-  /** Ângulo de esterço (rad) nas rodas que esterçam. Ângulo ≠ 0 acorda o chassi (SPEC-0654). */
+  /** Ângulo de esterço (rad) nas rodas que esterçam. Ângulo ≠ 0 acorda o chassi (SPEC-0655). */
   setSteering(angle: number): void {
     if (angle !== 0) this.wakeIfSleeping();
     for (let i = 0; i < this.wheels.length; i++) {
       if (this.wheels[i]!.steering) this.ctrl.setWheelSteering(i, angle);
     }
   }
-  /** Velocidade linear² do chassi (m²/s²) — a regra de repouso da SPEC-0654. */
+  /** Velocidade linear² do chassi (m²/s²) — a regra de repouso da SPEC-0655. */
   linvelSquared(): number {
     const v = this.body.linvel();
     return v.x * v.x + v.y * v.y + v.z * v.z;

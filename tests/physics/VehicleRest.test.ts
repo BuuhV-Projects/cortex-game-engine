@@ -1,4 +1,4 @@
-/** SPEC-0654 — carro parado dorme: a regra de repouso do VehicleArcadeSystem. */
+/** SPEC-0655 — carro parado dorme: a regra de repouso do VehicleArcadeSystem. */
 import { describe, it, expect } from 'vitest';
 import { REST_SPEED, REST_STEPS, atRest, nextRestSteps, type RestingVehicle } from '../../src/physics/VehicleRest.js';
 
@@ -13,7 +13,7 @@ function car(over: Partial<{ force: number; speed: number; spin: number; grounde
   };
 }
 
-describe('VehicleRest (SPEC-0654)', () => {
+describe('VehicleRest (SPEC-0655)', () => {
   it('parado, sem motor e com as rodas no chão está em repouso', () => {
     expect(atRest(car())).toBe(true);
   });

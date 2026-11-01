@@ -20,7 +20,7 @@ atraso para todos; a câmera (30) vê a pose recém-calculada.
 
 Carro parado (sem motor, sem velocidade, rodas no chão por `REST_STEPS`
 subpassos) DORME e sai da simulação até algo acordá-lo; chassi cinemático
-(trânsito no trilho) só recebe a pose na malha (SPEC-0654).
+(trânsito no trilho) só recebe a pose na malha (SPEC-0655).
 
 Não combine com `RapierPhysicsSystem` no mesmo `RapierPhysics` (os dois
 avançam o mundo), e passe `stepPhysics: false` ao `VehicleControlSystem` do

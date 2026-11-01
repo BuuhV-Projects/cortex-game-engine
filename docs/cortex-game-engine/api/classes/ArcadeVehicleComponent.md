@@ -89,7 +89,7 @@ Indica se o componente está ativo. Systems podem ignorar componentes desativado
 
 Defined in: [src/components/ArcadeVehicleComponent.ts:22](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/ArcadeVehicleComponent.ts#L22)
 
-Subpassos seguidos em repouso; ao chegar em `REST_STEPS` o chassi dorme (SPEC-0654).
+Subpassos seguidos em repouso; ao chegar em `REST_STEPS` o chassi dorme (SPEC-0655).
 
 ***
 

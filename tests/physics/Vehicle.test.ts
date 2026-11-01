@@ -48,7 +48,7 @@ describe('Vehicle (Rapier raycast)', () => {
     phys.dispose();
   });
 
-  it('dormindo fica dormindo e parado sem o controlador, e o motor acorda (SPEC-0654)', async () => {
+  it('dormindo fica dormindo e parado sem o controlador, e o motor acorda (SPEC-0655)', async () => {
     const phys = await RapierPhysics.create();
     phys.addBody({
       type: 'fixed',
