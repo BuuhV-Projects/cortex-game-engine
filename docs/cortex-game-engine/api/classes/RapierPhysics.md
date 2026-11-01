@@ -160,7 +160,7 @@ rodas por raycast com suspensão/esterço/motor/freio, via o
 
 > **dispose**(): `void`
 
-Defined in: [src/physics/RapierPhysics.ts:411](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L411)
+Defined in: [src/physics/RapierPhysics.ts:412](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L412)
 
 Libera o mundo (memória WASM).
 
