@@ -1,3 +1,16 @@
+# [0.94.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.93.0...v0.94.0) (2026-11-01)
+
+
+### Bug Fixes
+
+* **native:** inflate lê o tamanho de saída do stb depois da chamada ([711bf52](https://github.com/BuuhV-Projects/cortex-game-engine/commit/711bf5281fdfee89fc9f1497f01b126b1c1e9b79))
+
+
+### Features
+
+* **native:** __cortexInflate no host (deflate, deflate-raw e gzip via stb_image) ([538075b](https://github.com/BuuhV-Projects/cortex-game-engine/commit/538075b7cc48734d35f9201f01e5a2d37d3c50ab))
+* **native:** DecompressionStream, ReadableStream, Blob.stream e Response(stream) no prelude do host ([96ff352](https://github.com/BuuhV-Projects/cortex-game-engine/commit/96ff352263a1397c87278c22830dbdc1bff48ec5))
+
 # [0.93.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.92.0...v0.93.0) (2026-11-01)
 
 
