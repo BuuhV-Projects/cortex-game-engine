@@ -28,6 +28,26 @@ export function revealForWarmup(root: Object3D): () => void {
   };
 }
 
+/**
+ * Roda `draw` com `castShadow = false` nos objetos de `root` (as luzes ficam) e devolve cada valor (SPEC-0653). No host, o quadro de
+ * preparo do aquecimento: o three cria o mapa de sombra do sol VAZIO (sem caster, sem pipeline), e no quadro revelado
+ * o passe de sombra em C++ já encontra o mapa — senão o three desenhava a sombra da cena inteira.
+ */
+export function withoutShadowCasters(root: Object3D, draw: () => void): void {
+  const saved: Array<[Object3D, boolean]> = [];
+  root.traverse((object) => {
+    // a luz fica: sem ela o three não cria o mapa e o bloco de sombra perde o sol
+    if ((object as Object3D & { isLight?: boolean }).isLight) return;
+    saved.push([object, object.castShadow]);
+    object.castShadow = false;
+  });
+  try {
+    draw();
+  } finally {
+    for (const [object, castShadow] of saved) object.castShadow = castShadow;
+  }
+}
+
 /** O pedaço interno do `Pipelines` do three que o aquecimento usa. */
 interface PipelinesLike {
   updateForRender(renderObject: unknown): void;

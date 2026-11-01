@@ -4,8 +4,8 @@
  * nasceram escondidos ou sem culling de propósito (efeitos, chama do escape).
  */
 import { describe, it, expect } from 'vitest';
-import { Group, Mesh, Scene } from 'three';
-import { drawWithParallelPipelines, revealForWarmup } from '../../src/core/WarmupFrame.js';
+import { DirectionalLight, Group, Mesh, Scene } from 'three';
+import { drawWithParallelPipelines, revealForWarmup, withoutShadowCasters } from '../../src/core/WarmupFrame.js';
 
 function tree() {
   const scene = new Scene();
@@ -102,5 +102,24 @@ describe('drawWithParallelPipelines (ADR-0310)', () => {
     expect(drawWithParallelPipelines({}, () => drawn++)).toEqual([]);
     expect(drawWithParallelPipelines(null, () => drawn++)).toEqual([]);
     expect(drawn).toBe(2);
+  });
+});
+
+describe('withoutShadowCasters (SPEC-0653)', () => {
+  it('desenha sem nenhum caster e devolve cada castShadow, mesmo se o draw lançar', () => {
+    const { scene, flame, child } = tree();
+    flame.castShadow = true;
+    child.castShadow = true;
+    const sun = new DirectionalLight();
+    sun.castShadow = true;
+    scene.add(sun);
+    let seen = 0;
+    withoutShadowCasters(scene, () => scene.traverse((o) => { if (o.castShadow && o !== sun) seen++; }));
+    expect(seen).toBe(0);
+    expect(sun.castShadow).toBe(true); // a luz fica: é ela que faz o three criar o mapa
+    expect(flame.castShadow).toBe(true);
+    expect(child.castShadow).toBe(true);
+    expect(() => withoutShadowCasters(scene, () => { throw new Error('falhou'); })).toThrow('falhou');
+    expect(child.castShadow).toBe(true);
   });
 });

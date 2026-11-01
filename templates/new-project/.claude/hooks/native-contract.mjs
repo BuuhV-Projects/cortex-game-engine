@@ -44,6 +44,15 @@ const CODE_RULES = [
   { re: /\b(colorNode|positionNode|normalNode|emissiveNode)\s*=/, debt: 'nó TSL no material sem `userData.nativeMaterial` (WGSL do jogo): o renderer próprio recusa', unless: /nativeMaterial/ },
 ];
 
+/**
+ * Loader do three direto no jogo: cada chamada relê e redecodifica o arquivo e o objeto guarda a sua cópia (RGBA na
+ * memória externa do Hermes, teto de 2 GB no host). Foi o OOM do Port Hollow: 176 terrenos × 4 camadas = 704 cópias
+ * das mesmas texturas (SPEC-0652 da engine). `loadTexture`/`loadGLB` da engine têm cache por URL.
+ */
+const DIRECT_LOADER = /new\s+(TextureLoader|ImageLoader|ImageBitmapLoader|GLTFLoader|KTX2Loader)\s*\(/;
+/** Marca de quem cria o loader mas guarda o resultado num cache por URL (SPEC-0652): o hook não acusa. */
+const CACHED_LOADER_MARK = /native-contract:\s*cached-loader/;
+
 function walk(dir, ext, out = []) {
   for (const e of readdirSync(dir, { withFileTypes: true })) {
     if (e.isDirectory()) { if (!SKIP_DIRS.has(e.name) && !e.name.startsWith('.')) walk(join(dir, e.name), ext, out); }
@@ -83,11 +92,13 @@ function checkAssets(root, debt) {
   }
 }
 
-function checkCode(root, debt) {
+function checkCode(root, errors, debt) {
   for (const file of walk(root, ['.ts', '.tsx', '.js', '.mjs'])) {
     const text = readFileSync(file, 'utf8');
     const rel = relative(root, file).split(sep).join('/');
     for (const r of CODE_RULES) if (r.re.test(text) && !(r.unless && r.unless.test(text))) debt.push({ where: rel, what: r.debt });
+    const loader = !CACHED_LOADER_MARK.test(text) && text.match(DIRECT_LOADER);
+    if (loader) errors.push({ where: rel, what: `\`new ${loader[1]}()\` fora do cache: cada objeto relê e redecodifica o arquivo e o export estoura a memória (SPEC-0652 da engine) — use \`loadTexture\`/\`loadGLB\` da engine (cache por URL) ou guarde o resultado num Map por URL e marque o arquivo com o comentário \`native-contract: cached-loader\`` });
   }
 }
 
@@ -120,7 +131,7 @@ function report(root) {
   const debt = [];
   checkConfig(root, errors, debt);
   checkAssets(root, debt);
-  checkCode(root, debt);
+  checkCode(root, errors, debt);
   return { errors, debt };
 }
 

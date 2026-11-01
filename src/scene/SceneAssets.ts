@@ -6,6 +6,7 @@ import { AssetLoader, disposeObjectResources, type GLTF } from '../core/AssetLoa
 import { loadKtx2 } from '../core/loadKtx2.js';
 import { Scene } from '../core/Scene.js';
 import { clearMaterialPresetCache } from './Materials.js';
+import { clearTerrainLayerTextures } from './terrainLayerTextures.js';
 
 /**
  * Helpers pra montar cena com modelos `.glb`: carregar (com cache), instanciar
@@ -86,6 +87,7 @@ export function clearSceneAssetCaches(): void {
   _cache.clear();
   for (const tex of _texCache.values()) tex.dispose();
   _texCache.clear();
+  clearTerrainLayerTextures(); // camadas do terreno (SPEC-0652)
   _loader.disposeCache();
   (globalThis as { __cortexClearObjectUrls?: () => void }).__cortexClearObjectUrls?.();
 }

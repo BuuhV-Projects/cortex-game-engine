@@ -6,15 +6,13 @@ import {
   Mesh,
   MeshStandardMaterial,
   Color,
-  RepeatWrapping,
   RGBAFormat,
-  SRGBColorSpace,
-  TextureLoader,
   UnsignedByteType,
   type ColorRepresentation,
 } from 'three';
 import { MeshStandardNodeMaterial } from 'three/webgpu';
 import { texture as textureNode, uv, uniform, mix, clamp, max } from 'three/tsl';
+import { terrainLayerTexture } from './terrainLayerTextures.js';
 
 /** Helper só pra extrair o tipo concreto do nó uniform numérico (TS). */
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
@@ -446,11 +444,7 @@ export class Terrain {
     if (!layer || !node) return;
     this.syncRepeat();
     if (typeof document === 'undefined') return; // testes/SSR: sem ImageLoader
-    const texture = new TextureLoader().load(layer.url);
-    texture.wrapS = RepeatWrapping;
-    texture.wrapT = RepeatWrapping;
-    texture.colorSpace = SRGBColorSpace;
-    node.value = texture;
+    node.value = terrainLayerTexture(layer.url); // compartilhada por URL (SPEC-0652)
   }
 
   /** Espelha o `repeat` das camadas nos uniforms (tiling ao vivo, sem rebuild). */
