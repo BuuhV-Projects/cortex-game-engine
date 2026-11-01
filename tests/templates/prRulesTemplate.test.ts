@@ -41,6 +41,7 @@ describe('pr-rules: revisão do PR (pendências exatas, console.log, leitura do 
   it('pendência só libera o caminho exato', () => {
     const big = MAX_LINES + 1
     expect(run([file('game/city.ts', big)], [], 'game/city.tsx\n').errors).toHaveLength(1)
+    expect(run([file('main.ts', big)], [], 'systems/main.ts\n').errors).toHaveLength(1)
     expect(run([file('game/city.ts', big)], [], '- `game/city.ts`\n').errors).toHaveLength(0)
   })
 
