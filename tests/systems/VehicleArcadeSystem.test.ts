@@ -104,4 +104,27 @@ describe('VehicleArcadeSystem', () => {
     expect(update).toHaveBeenCalledTimes(1);
     expect(stepSpy).toHaveBeenCalledTimes(1);
   });
+  it('carro parado dorme pelo próprio sistema e continua dormindo (SPEC-0654)', async () => {
+    const { world, entries } = await fleet(1);
+    const { vehicle } = entries[0]!;
+    vehicle.setBrake(50);
+    for (let i = 0; i < 90 && !vehicle.body.isSleeping(); i++) world.tick(FRAME_MS_30FPS); // assenta e dorme
+    expect(vehicle.body.isSleeping()).toBe(true);
+    const update = vi.spyOn(vehicle, 'update');
+    for (let i = 0; i < 10; i++) world.tick(FRAME_MS_30FPS);
+    expect(vehicle.body.isSleeping()).toBe(true);
+    expect(update).not.toHaveBeenCalled();
+  });
+
+  it('chassi cinemático não roda o controlador, mas a malha segue a pose (SPEC-0654)', async () => {
+    const { world, entries } = await fleet(1);
+    const { vehicle, object } = entries[0]!;
+    vehicle.body.setBodyType(RAPIER.RigidBodyType.KinematicPositionBased, true);
+    const update = vi.spyOn(vehicle, 'update');
+    vehicle.body.setNextKinematicTranslation({ x: 3, y: 1, z: 4 });
+    world.tick(FRAME_MS_30FPS);
+    expect(update).not.toHaveBeenCalled();
+    expect(object.position.x).toBeCloseTo(3, 5);
+    expect(object.position.z).toBeCloseTo(4, 5);
+  });
 });

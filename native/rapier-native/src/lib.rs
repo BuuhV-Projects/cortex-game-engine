@@ -838,6 +838,34 @@ mod tests {
         }
     }
 
+    /// Corpo apoiado posto para dormir pelo código 16 continua dormindo nos passos seguintes (SPEC-0654).
+    #[test]
+    fn sleep_code_keeps_a_resting_body_asleep() {
+        const SLEEP: f64 = 16.0;
+        const SETTLE_STEPS: usize = 120;
+        const AFTER_STEPS: usize = 30;
+        unsafe {
+            let w = rn_world_new(0.0, GRAVITY, 0.0);
+            let ground = unpack_handle(rn_body_create(w, 1.0, 0.0, -0.5, 0.0, 1.0));
+            let body = rn_body_create(w, 0.0, 0.0, 0.6, 0.0, 1.0);
+            let handle = unpack_handle(body);
+            {
+                let world = &mut *w;
+                world.colliders.insert_with_parent(ColliderBuilder::cuboid(50.0, 0.5, 50.0).build(), ground, &mut world.bodies);
+                world.colliders.insert_with_parent(ColliderBuilder::cuboid(1.0, 0.5, 2.0).build(), handle, &mut world.bodies);
+            }
+            for _ in 0..SETTLE_STEPS {
+                rn_world_step(w);
+            }
+            rn_body_set(w, body, SLEEP, 0.0, 0.0, 0.0, 0.0, 0.0);
+            for i in 0..AFTER_STEPS {
+                rn_world_step(w);
+                assert!((&*w).bodies[handle].is_sleeping(), "acordou no passo {i}");
+            }
+            rn_world_free(w);
+        }
+    }
+
     /// Corpo desligado não cai (sai da simulação) e o `is_enabled` volta pelo
     /// código 7; religado, volta a integrar (SPEC-0314).
     #[test]

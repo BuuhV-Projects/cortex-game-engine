@@ -7,10 +7,13 @@ export interface RestingVehicle {
   wheelIsInContact(i: number): boolean;
 }
 
-/** Abaixo disto (m/s) o chassi está parado. */
-export const REST_SPEED = 0.05;
-/** Abaixo disto (rad/s) o chassi não gira. */
-export const REST_SPIN = 0.05;
+/**
+ * Abaixo disto (m/s) o chassi está parado. Folgado: o carro freado oscila na suspensão (~0,09 m/s medido no Port
+ * Hollow), e um limite apertado zerava a contagem a cada oscilação — quase nenhum carro dormia.
+ */
+export const REST_SPEED = 0.2;
+/** Abaixo disto (rad/s) o chassi não gira (folgado pelo mesmo motivo). */
+export const REST_SPIN = 0.2;
 /** Subpassos seguidos em repouso até dormir (0,5 s com o passo de 1/60 s). */
 export const REST_STEPS = 30;
 

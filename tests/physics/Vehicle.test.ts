@@ -48,6 +48,26 @@ describe('Vehicle (Rapier raycast)', () => {
     phys.dispose();
   });
 
+  it('dormindo fica dormindo e parado sem o controlador, e o motor acorda (SPEC-0654)', async () => {
+    const phys = await RapierPhysics.create();
+    phys.addBody({
+      type: 'fixed',
+      position: { x: 0, y: -0.5, z: 0 },
+      shape: { kind: 'box', halfExtents: { x: 50, y: 0.5, z: 50 } },
+    });
+    const veh = makeVehicle(phys);
+    for (let i = 0; i < 120; i++) { veh.update(1 / 60); phys.step(); } // assenta
+    veh.body.sleep();
+    const y = veh.chassisTranslation().y;
+    // o VehicleArcadeSystem pula o controlador de corpo dormindo: só o mundo anda
+    for (let i = 0; i < 30; i++) phys.step();
+    expect(veh.body.isSleeping()).toBe(true);
+    expect(veh.chassisTranslation().y).toBeCloseTo(y, 5); // não afundou sem a suspensão
+    veh.setEngineForce(3000);
+    expect(veh.body.isSleeping()).toBe(false);
+    phys.dispose();
+  });
+
   it('apoia num chão TRIMESH (addTrimesh) — pro terreno virar collider', async () => {
     const phys = await RapierPhysics.create();
     // quad plano 100×100 em y=0 (2 triângulos)

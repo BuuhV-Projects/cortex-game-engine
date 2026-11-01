@@ -367,7 +367,8 @@ export class RapierPhysics {
     const he = spec.chassisHalfExtents;
     const desc = R.RigidBodyDesc.dynamic();
     if (spec.position) desc.setTranslation(spec.position.x, spec.position.y, spec.position.z);
-    desc.setCanSleep(false); // veículo do player nunca "dorme"
+    // Pode dormir (SPEC-0654): o VehicleArcadeSystem põe o carro parado para dormir, e
+    // `setEngineForce`/`setSteering` o acordam. Com `setCanSleep(false)` o Rapier o acordava no passo seguinte.
     const chassis = this.world.createRigidBody(desc);
     const mass = spec.mass ?? 1200;
     const cd = R.ColliderDesc.cuboid(he.x, he.y, he.z).setFriction(spec.chassisFriction ?? 0.4);
