@@ -41,9 +41,22 @@ jobs:
             if [ "$(jq -r .isCrossRepository <<<"$info")" = "true" ]; then
               echo "PR #$pr: vem de fork, não aprova"; continue
             fi
-            score=$(jq -r .body <<<"$info" | grep -oE 'greptile_confidence_score:[0-9]+' | tail -1 | cut -d: -f2)
+            # O corpo é editável pelo autor: só vale se a ÚLTIMA edição foi do
+            # Greptile e houver um único marcador (marcador plantado antes da
+            # revisão vira dois; edição depois dela troca o editor).
+            editor=$(gh api graphql -F n="$pr" -f o="${REPO%/*}" -f r="${REPO#*/}" \
+              -f query='query($o:String!,$r:String!,$n:Int!){repository(owner:$o,name:$r){pullRequest(number:$n){editor{login}}}}' \
+              --jq '.data.repository.pullRequest.editor.login // ""')
+            if [ "$editor" != "greptile-apps" ]; then
+              echo "PR #$pr: corpo editado por último por '${editor:-ninguém}', não pelo Greptile"; continue
+            fi
+            marks=$(jq -r .body <<<"$info" | grep -oE 'greptile_confidence_score:[0-9]+' || true)
+            if [ "$(grep -c . <<<"$marks")" != "1" ]; then
+              echo "PR #$pr: esperado 1 marcador de nota, achou $(grep -c . <<<"$marks")"; continue
+            fi
+            score=${marks#*:}
             if [ "$score" != "5" ]; then
-              echo "PR #$pr: nota ${score:-ausente}, precisa de 5"; continue
+              echo "PR #$pr: nota $score, precisa de 5"; continue
             fi
             done=$(gh api "repos/$REPO/pulls/$pr/reviews" --paginate \
               --jq ".[] | select(.user.login == \"github-actions[bot]\" and .state == \"APPROVED\" and .commit_id == \"$SHA\") | .id")

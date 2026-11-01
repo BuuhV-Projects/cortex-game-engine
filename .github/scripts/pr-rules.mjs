@@ -52,19 +52,38 @@ export function checkRules({ files, added, pendencias }) {
   return { errors, warnings }
 }
 
-/** Linhas adicionadas por arquivo, a partir de `git diff -U0`. */
+/** Caminho do cabeçalho `+++`; o git põe entre aspas os que têm caractere especial. */
+function headerPath(raw) {
+  const unquoted = raw.startsWith('"') && raw.endsWith('"') ? raw.slice(1, -1).replace(/\\(["\\])/g, '$1') : raw
+  return unquoted.startsWith('b/') ? unquoted.slice(2) : ''
+}
+
+/**
+ * Linhas adicionadas por arquivo, a partir de `git diff -U0`. `+++` só é
+ * cabeçalho antes do primeiro `@@` de cada arquivo: dentro do trecho, uma
+ * linha adicionada `++ x` também começa com `+++ `.
+ */
 export function parseAddedLines(patch) {
   const added = []
   let path = ''
+  let inHeader = false
   for (const line of patch.split('\n')) {
-    if (line.startsWith('+++ ')) path = line.startsWith('+++ b/') ? line.slice(6) : ''
-    else if (line.startsWith('+') && path) added.push({ path, text: line.slice(1) })
+    if (line.startsWith('diff --git ')) {
+      inHeader = true
+      path = ''
+    } else if (inHeader && line.startsWith('+++ ')) path = headerPath(line.slice(4))
+    else if (line.startsWith('@@')) inHeader = false
+    else if (!inHeader && line.startsWith('+') && path) added.push({ path, text: line.slice(1) })
   }
   return added
 }
 
 function git(...args) {
-  return execFileSync('git', args, { encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 })
+  // quotePath=false: caminho com acento sai cru, não escapado entre aspas.
+  return execFileSync('git', ['-c', 'core.quotePath=false', ...args], {
+    encoding: 'utf8',
+    maxBuffer: 256 * 1024 * 1024,
+  })
 }
 
 function countLines(path) {
@@ -80,13 +99,13 @@ function main() {
     process.exit(2)
   }
   const range = `${base}...${head}`
-  const files = git('diff', '--name-status', '--no-renames', range)
-    .split('\n')
-    .filter(Boolean)
-    .map((l) => {
-      const [status, path] = l.split('\t')
-      return { status, path, lines: status === 'D' ? 0 : countLines(path) }
-    })
+  // -z: pares status\0caminho\0, sem aspas nem escape em nenhum caminho.
+  const fields = git('diff', '--name-status', '--no-renames', '-z', range).split('\0').filter(Boolean)
+  const files = []
+  for (let i = 0; i + 1 < fields.length; i += 2) {
+    const [status, path] = [fields[i], fields[i + 1]]
+    files.push({ status, path, lines: status === 'D' ? 0 : countLines(path) })
+  }
   const added = parseAddedLines(git('diff', '-U0', '--no-renames', range))
   const pendencias = existsSync('docs/pendencias-refatoracao.md')
     ? readFileSync('docs/pendencias-refatoracao.md', 'utf8')

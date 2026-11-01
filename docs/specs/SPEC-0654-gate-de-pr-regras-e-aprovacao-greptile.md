@@ -46,10 +46,16 @@ Disparo: `check_run` `completed`. Roda só se o check é `Greptile Review`, do a
 `greptile-apps`, com conclusão `success`. Para cada PR do evento:
 
 1. o head do PR é o `head_sha` do check e o PR não vem de fork;
-2. o corpo do PR tem `<!-- greptile_confidence_score:5 -->`;
-3. o `github-actions[bot]` ainda não aprovou esse commit.
+2. a **última edição** do corpo do PR é do `greptile-apps` (GraphQL
+   `pullRequest.editor`) — o autor não pode ter editado depois da revisão;
+3. o corpo tem **exatamente um** `<!-- greptile_confidence_score:N -->` e N = 5
+   (um marcador plantado antes da revisão vira dois);
+4. o `github-actions[bot]` ainda não aprovou esse commit.
 
-Cumpridos os três, publica review `APPROVE` no commit. Qualquer outra situação
+O diff é lido com `-z` e `core.quotePath=false` (caminho com acento ou aspas
+não escapa), e `+++` só conta como cabeçalho antes do primeiro `@@` do arquivo.
+
+Cumpridos os quatro, publica review `APPROVE` no commit. Qualquer outra situação
 só registra o motivo no log. Permissões: `pull-requests: write`, nada mais; sem
 checkout.
 

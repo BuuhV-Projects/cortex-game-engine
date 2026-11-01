@@ -37,7 +37,23 @@ describe('pr-rules (SPEC-0654)', () => {
   })
 
   it('extrai linhas adicionadas do diff -U0', () => {
-    const patch = ['+++ b/src/a.ts', '@@ -1 +1 @@', '-old', '+new', '+++ /dev/null', '+ignored'].join('\n')
+    const patch = [
+      'diff --git a/src/a.ts b/src/a.ts', '--- a/src/a.ts', '+++ b/src/a.ts', '@@ -1 +1 @@', '-old', '+new',
+      'diff --git a/src/b.ts b/src/b.ts', '--- a/src/b.ts', '+++ /dev/null', '@@ -1 +0,0 @@', '-gone',
+    ].join('\n')
     expect(parseAddedLines(patch)).toEqual([{ path: 'src/a.ts', text: 'new' }])
+  })
+
+  it('não confunde linha adicionada "++ x" com cabeçalho', () => {
+    const patch = [
+      'diff --git a/src/a.ts b/src/a.ts', '--- a/src/a.ts', '+++ b/src/a.ts', '@@ -0,0 +1,2 @@',
+      '+++ counter', '+console.log(counter)',
+    ].join('\n')
+    expect(parseAddedLines(patch).map((a: { path: string }) => a.path)).toEqual(['src/a.ts', 'src/a.ts'])
+  })
+
+  it('lê caminho entre aspas no cabeçalho', () => {
+    const patch = ['diff --git "a/src/x\\"y.ts" "b/src/x\\"y.ts"', '+++ "b/src/x\\"y.ts"', '@@ -0,0 +1 @@', '+a'].join('\n')
+    expect(parseAddedLines(patch)).toEqual([{ path: 'src/x"y.ts', text: 'a' }])
   })
 })
