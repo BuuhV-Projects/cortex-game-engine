@@ -7,6 +7,8 @@ import { readFileSync, existsSync } from 'node:fs'
 import { pathToFileURL } from 'node:url'
 
 export const MAX_LINES = 500
+/** Teto da saída do `git diff` lida pelo script (256 MiB): PR grande com binários não estoura o buffer. */
+const MAX_DIFF_BUFFER_BYTES = 256 * 1024 * 1024
 const CODE_EXT = /\.(ts|tsx|js|mjs|cjs|c|cc|cpp|h|hpp|py|sh|ps1|rs)$/
 const EXEMPT = /(^|\/)(third_party|vendor|node_modules|dist|public|src-tauri)\//
 /** Ferramentas de Node (scripts, testes, CI) podem usar console.log; o código do jogo usa debug(). */
@@ -240,7 +242,7 @@ function git(...args) {
   // quotePath=false: caminho com acento sai cru, não escapado entre aspas.
   return execFileSync('git', ['-c', 'core.quotePath=false', ...args], {
     encoding: 'utf8',
-    maxBuffer: 256 * 1024 * 1024,
+    maxBuffer: MAX_DIFF_BUFFER_BYTES,
   })
 }
 
