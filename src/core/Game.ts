@@ -37,8 +37,9 @@ import { applyParityLighting } from '../render/DynamicLightingSwitch.js';
 import { PerfTrace } from './PerfTrace.js';
 import { installRendererInstruments, type RendererCensus } from '../render/native/RendererCensus.js';
 import { autopilotFromQuery, type InputAutopilot } from '../input/InputAutopilot.js';
-import { drawWithParallelPipelines, revealForWarmup } from './WarmupFrame.js';
+import { drawWithParallelPipelines, revealForWarmup, withoutShadowCasters } from './WarmupFrame.js';
 import { isNativeHost } from '../scene/StaticMerge.js';
+import { canInstallSceneMirror } from './sceneMirrorGate.js';
 import { FrameProfiler } from './FrameProfiler.js';
 import { setRenderSections } from '../render/RenderSections.js';
 import {
@@ -727,7 +728,8 @@ export class Game {
     }
     const inspectCamera = this._inspect?.active ? this._inspect : null;
     const editorCamera = this._editor?.activeCamera() ?? null;
-    this._installSceneMirror();
+    // Quadro de aquecimento instala mesmo sob a tela de carregamento (SPEC-0653).
+    this._installSceneMirror(this._warmupRequests.length > 0);
     p.begin('render');
     // DIAGNOSTICO TEMPORARIO (SPEC-0241, passo 0) — remover.
     {
@@ -921,7 +923,7 @@ export class Game {
       // and with it the native renderer, whose pipelines were then born in the first game frames
       // (SPEC-0585). Same order as the tick: install, update, draw.
       if (nativePrecompileRequested()) {
-        this._installSceneMirror();
+        this._installSceneMirror(true);
         if (this._sceneMirror.installed) this._sceneMirror.update(this._activeCamera);
       }
       pending = this._renderWarmupFrame();
@@ -951,15 +953,15 @@ export class Game {
    * cena já existe — instalar antes pegaria a árvore vazia, e ela não cresce
    * depois do build (o JS passa a segurar ponteiros para a memória do C++).
    */
-  private _installSceneMirror(): void {
-    if (
-      this._sceneMirrorTried ||
-      this._loading ||
-      isSceneBuilding(this._activeScene) ||
-      !nativeSceneMirrorAvailable()
-    ) {
-      return;
-    }
+  private _installSceneMirror(warmup = false): void {
+    const gate = {
+      tried: this._sceneMirrorTried,
+      loading: this._loading,
+      warmup,
+      building: isSceneBuilding(this._activeScene),
+      available: nativeSceneMirrorAvailable(),
+    };
+    if (!canInstallSceneMirror(gate)) return;
     this._sceneMirrorTried = true;
     this._sceneMirror.install(this._activeScene.getThreeScene());
     // Etapa (a) do ADR-0330: a projeção da cena espelhada sai do JS.
@@ -978,11 +980,13 @@ export class Game {
    */
   private _renderWarmupFrame(): Promise<unknown>[] {
     const root = this._activeScene.getThreeScene();
-    const restore = revealForWarmup(root);
     const draw = (): void => {
       if (this._postfx && this._activeScene === this.scene) this._postfx.render();
       else this.renderer.render(root, this._activeCamera);
     };
+    // Host: o mapa de sombra nasce vazio antes do quadro revelado (SPEC-0653).
+    if (isNativeHost()) withoutShadowCasters(root, draw);
+    const restore = revealForWarmup(root);
     try {
       // Host nativo: criação síncrona, como no ADR-0262 (lá o async não ganha nada).
       if (isNativeHost()) {
