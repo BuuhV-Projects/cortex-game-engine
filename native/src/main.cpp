@@ -24,6 +24,7 @@
 #include "shims/animation_frame.h"
 #include "shims/audio.h"
 #include "shims/files.h"
+#include "shims/decompression.h"
 #include "shims/image_decode.h"
 #include "shims/input.h"
 #include "shims/io_pool.h"
@@ -284,6 +285,7 @@ int main(int argc, char** argv) {
     shims::registerFilesAsync(js.env());  // __cortexReadFileAsync + workers (M-perf-3)
     shims::registerUserStorage(js.env(), game.id);
     shims::registerImageDecode(js.env());
+    shims::registerDecompression(js.env());  // DecompressionStream (ADR-0650)
     shims::registerKtx2(js.env());
     shims::registerClock(js.env());  // SPEC-0226
     shims::registerSceneMirror(js.env(), &gpu);  // SPEC-0234 (+ passe de sombra, SPEC-0245)

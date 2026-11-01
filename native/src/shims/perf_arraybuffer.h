@@ -19,6 +19,7 @@ enum class ArrayBufferSource {
   kIoPool,       // io_pool.cpp: leitura assíncrona (worker pool)
   kFiles,        // files.cpp: leitura síncrona de arquivo
   kTextRaster,   // text_raster.cpp: rasterização de texto (stb_truetype)
+  kInflate,      // decompression.cpp: DecompressionStream (SPEC-0651)
   kCount,        // sentinela — nº de fontes
 };
 

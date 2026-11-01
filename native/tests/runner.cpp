@@ -88,9 +88,11 @@ void testPipelineCacheSeparaChavesDiferentes();
 void testPipelineCacheNaoCriaNadaEmRegime();
 void testPipelineCacheClearEsqueceTudo();
 void testGeometryRegistry();
+void testInflate();
 }  // namespace tests
 
 int main() {
+  tests::testInflate();
   tests::testFormatFromString();
   tests::testWindowSizeParse();
   tests::testFormatToStringRoundtrip();
