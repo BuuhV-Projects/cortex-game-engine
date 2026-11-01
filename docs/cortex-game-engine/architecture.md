@@ -156,6 +156,14 @@ senão o **editor do Studio** não resolve o tipo (runtime funciona, IntelliSens
   `precompile()` instala e atualiza o espelho antes do quadro, e depois dele
   `precompileNative` percorre a cena inteira (visível ou não) e cria a receita
   de cada malha elegível em todos os passes.
+  **Armadilha 2 (SPEC-0653):** o espelho também não se instalava sob
+  `setLoading(true)` — e é aí que o template e os jogos chamam o `precompile()`.
+  O aquecimento ia todo pelo three: no Port Hollow, ~290 ms por pipeline no host
+  (um shader por `InstancedMesh`) e minutos de tela parada. Agora o quadro de
+  aquecimento instala o espelho mesmo na carga (`canInstallSceneMirror`) e, no
+  host, desenha antes um quadro de preparo sem casters (`withoutShadowCasters`):
+  o three cria o mapa de sombra vazio e o passe em C++ assume a sombra no quadro
+  revelado (senão ele devolvia com `sem-mapa` e o three sombreava a cena inteira).
 
 - **Acabamento toon (`Materials.ts`, SPEC-0194):** `shading: 'cel'` usa dois
   patamares e uma transição curta filtrada na rampa de luz. Sem o campo, mantém
