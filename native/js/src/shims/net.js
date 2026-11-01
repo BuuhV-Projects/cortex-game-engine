@@ -35,6 +35,19 @@ function BlobLite(parts, options) {
 BlobLite.prototype.arrayBuffer = function () {
   return Promise.resolve(this.__bytes);
 };
+BlobLite.prototype.text = function () {
+  return Promise.resolve(new TextDecoder().decode(new Uint8Array(this.__bytes)));
+};
+// Um chunk só com os bytes inteiros (SPEC-0651).
+BlobLite.prototype.stream = function () {
+  const bytes = new Uint8Array(this.__bytes);
+  return new globalThis.ReadableStream({
+    start: function (controller) {
+      controller.enqueue(bytes);
+      controller.close();
+    },
+  });
+};
 
 function HeadersLite(init) {
   this.__map = {};
@@ -61,30 +74,86 @@ function RequestLite(input, init) {
   this.signal = init && init.signal;
 }
 
-function ResponseLite(url, bytes, ok, status) {
-  this.url = url;
-  this.ok = ok;
-  this.status = status;
-  this.statusText = ok ? 'OK' : 'Not Found';
-  this.headers = new HeadersLite();
-  this.__bytes = bytes;
+const HTTP_OK = 200;
+const HTTP_NOT_FOUND = 404;
+const HTTP_SUCCESS_END = 300;
+
+function isStream(body) {
+  return !!body && typeof body.getReader === 'function';
+}
+
+function bodyBytes(body) {
+  if (body === null || body === undefined) return new ArrayBuffer(0);
+  if (body instanceof ArrayBuffer) return body;
+  if (body instanceof BlobLite) return body.__bytes;
+  return new BlobLite([body]).__bytes;
+}
+
+function readStreamBytes(stream) {
+  const reader = stream.getReader();
+  const parts = [];
+  function step() {
+    return reader.read().then(function (result) {
+      if (result.done) return new BlobLite(parts).__bytes;
+      parts.push(result.value);
+      return step();
+    });
+  }
+  return step();
+}
+
+// Assinatura do navegador: new Response(body?, init?) — body pode ser
+// ReadableStream (SPEC-0651). ⚠️ `body` só existe quando o corpo é stream: o
+// FileLoader do three troca pro caminho de streaming se `response.body.getReader`
+// existir, e o fetch do host entrega bytes prontos.
+function ResponseLite(body, init) {
+  const options = init || {};
+  this.status = options.status === undefined ? HTTP_OK : options.status;
+  this.ok = this.status >= HTTP_OK && this.status < HTTP_SUCCESS_END;
+  this.statusText = options.statusText === undefined ? '' : String(options.statusText);
+  this.headers = options.headers instanceof HeadersLite
+    ? options.headers
+    : new HeadersLite(options.headers);
+  this.url = '';
+  if (isStream(body)) {
+    this.body = body;
+    this.__bytes = null;
+  } else {
+    this.__bytes = bodyBytes(body);
+  }
 }
 ResponseLite.prototype.arrayBuffer = function () {
-  return Promise.resolve(this.__bytes);
+  if (this.__bytes !== null) return Promise.resolve(this.__bytes);
+  const response = this;
+  return readStreamBytes(this.body).then(function (bytes) {
+    response.__bytes = bytes;
+    return bytes;
+  });
 };
 ResponseLite.prototype.text = function () {
-  const decoder = new TextDecoder();
-  return Promise.resolve(decoder.decode(new Uint8Array(this.__bytes)));
+  return this.arrayBuffer().then(function (bytes) {
+    return new TextDecoder().decode(new Uint8Array(bytes));
+  });
 };
 ResponseLite.prototype.json = function () {
   return this.text().then(JSON.parse);
 };
 ResponseLite.prototype.blob = function () {
-  return Promise.resolve(new BlobLite(this.__bytes));
+  return this.arrayBuffer().then(function (bytes) { return new BlobLite(bytes); });
 };
 ResponseLite.prototype.clone = function () {
-  return new ResponseLite(this.url, this.__bytes, this.ok, this.status);
+  if (this.__bytes === null) throw new TypeError('Response.clone: stream body is not supported');
+  const copy = new ResponseLite(this.__bytes, this);
+  copy.url = this.url;
+  return copy;
 };
+
+// Resposta do fetch do host (arquivo do pacote, data:, blob:).
+function makeResponse(url, bytes, ok, status) {
+  const response = new ResponseLite(bytes, { status: status, statusText: ok ? 'OK' : 'Not Found' });
+  response.url = url;
+  return response;
+}
 
 // URL-lite + object URLs (blob:) — o GLTFLoader cria object URLs pra
 // texturas EMBUTIDAS (bufferView → Blob → createObjectURL → fetch).
@@ -160,20 +229,20 @@ export function installNetShims() {
   globalThis.fetch = function (input) {
     const url = typeof input === 'string' ? input : input.url;
     if (url.indexOf('data:') === 0) {
-      return Promise.resolve(new ResponseLite(url, dataUriToBytes(url), true, 200));
+      return Promise.resolve(makeResponse(url, dataUriToBytes(url), true, HTTP_OK));
     }
     if (url.indexOf('blob:') === 0) {
       const blob = objectUrls.get(url);
       if (!blob) {
-        return Promise.resolve(new ResponseLite(url, new ArrayBuffer(0), false, 404));
+        return Promise.resolve(makeResponse(url, new ArrayBuffer(0), false, HTTP_NOT_FOUND));
       }
-      return Promise.resolve(new ResponseLite(url, blob.__bytes, true, 200));
+      return Promise.resolve(makeResponse(url, blob.__bytes, true, HTTP_OK));
     }
     const bytes = __cortexReadFile(url);
     if (bytes === null) {
       print('[fetch] NAO ENCONTRADO: ' + url);
-      return Promise.resolve(new ResponseLite(url, new ArrayBuffer(0), false, 404));
+      return Promise.resolve(makeResponse(url, new ArrayBuffer(0), false, HTTP_NOT_FOUND));
     }
-    return Promise.resolve(new ResponseLite(url, bytes, true, 200));
+    return Promise.resolve(makeResponse(url, bytes, true, HTTP_OK));
   };
 }
