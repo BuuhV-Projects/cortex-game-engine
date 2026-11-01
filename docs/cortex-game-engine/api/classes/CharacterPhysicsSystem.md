@@ -6,7 +6,7 @@
 
 # Class: CharacterPhysicsSystem
 
-Defined in: [src/systems/CharacterPhysicsSystem.ts:170](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/CharacterPhysicsSystem.ts#L170)
+Defined in: [src/systems/CharacterPhysicsSystem.ts:184](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/CharacterPhysicsSystem.ts#L184)
 
 Física vertical do [CharacterBodyComponent](CharacterBodyComponent.md) (character controller estilo
 UPBGE/Unity): aplica **gravidade** (limitada por `fallSpeedMax`), processa o
@@ -44,7 +44,7 @@ world.addSystem(new CharacterPhysicsSystem())
 
 > **new CharacterPhysicsSystem**(`roots?`): `CharacterPhysicsSystem`
 
-Defined in: [src/systems/CharacterPhysicsSystem.ts:201](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/CharacterPhysicsSystem.ts#L201)
+Defined in: [src/systems/CharacterPhysicsSystem.ts:218](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/CharacterPhysicsSystem.ts#L218)
 
 #### Parameters
 
@@ -106,7 +106,7 @@ a gameplay (física/input) enquanto o editor está ativo
 
 > **priority**: `number` = `5`
 
-Defined in: [src/systems/CharacterPhysicsSystem.ts:172](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/CharacterPhysicsSystem.ts#L172)
+Defined in: [src/systems/CharacterPhysicsSystem.ts:186](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/CharacterPhysicsSystem.ts#L186)
 
 Prioridade de execução deste sistema.
 
@@ -123,7 +123,7 @@ Sistemas com valores menores executam antes. Padrão: `0`.
 
 > `static` **requiredComponents**: (*typeof* [`TransformComponent`](TransformComponent.md) \| *typeof* [`CharacterBodyComponent`](CharacterBodyComponent.md))[]
 
-Defined in: [src/systems/CharacterPhysicsSystem.ts:171](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/CharacterPhysicsSystem.ts#L171)
+Defined in: [src/systems/CharacterPhysicsSystem.ts:185](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/CharacterPhysicsSystem.ts#L185)
 
 Construtores dos componentes que este sistema requer.
 
@@ -170,7 +170,7 @@ handles nativos que o GC não coleta sozinho (ex.: o mundo do Rapier em
 
 > **refresh**(): `void`
 
-Defined in: [src/systems/CharacterPhysicsSystem.ts:207](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/CharacterPhysicsSystem.ts#L207)
+Defined in: [src/systems/CharacterPhysicsSystem.ts:224](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/CharacterPhysicsSystem.ts#L224)
 
 Força varrer a cena de novo no próximo quadro (muita coisa trocada de uma vez).
 
@@ -184,7 +184,7 @@ Força varrer a cena de novo no próximo quadro (muita coisa trocada de uma vez)
 
 > **update**(`entities`, `deltaTime`): `void`
 
-Defined in: [src/systems/CharacterPhysicsSystem.ts:212](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/CharacterPhysicsSystem.ts#L212)
+Defined in: [src/systems/CharacterPhysicsSystem.ts:229](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/CharacterPhysicsSystem.ts#L229)
 
 Executa a lógica do sistema para o frame/passo atual.
 

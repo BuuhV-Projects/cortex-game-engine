@@ -8,7 +8,7 @@
 
 > **mergeDeltas**(`deltas`): `Float32Array`\<`ArrayBufferLike`\> \| `null`
 
-Defined in: [src/road/RoadGrade.ts:199](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/RoadGrade.ts#L199)
+Defined in: [src/road/RoadGrade.ts:210](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/RoadGrade.ts#L210)
 
 Combina deltas de **várias estradas** na mesma grade: vence o de **maior módulo** em
 cada vértice (o corte fundo de uma não é apagado pelo talude suave de outra).

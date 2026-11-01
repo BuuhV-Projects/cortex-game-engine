@@ -8,7 +8,7 @@
 
 > **moldHeightfield**(`grid`, `centerline`, `halfWidth`, `taludeWidth`): `Float32Array`
 
-Defined in: [src/road/RoadGrade.ts:128](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/RoadGrade.ts#L128)
+Defined in: [src/road/RoadGrade.ts:139](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/RoadGrade.ts#L139)
 
 **Molda o terreno à estrada**: para cada vértice perto do eixo, a altura-alvo é o
 greide no **platô** (`halfWidth` + acostamento ≥ 1,5 célula — a borda da pista nunca
