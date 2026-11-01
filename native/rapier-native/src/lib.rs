@@ -371,6 +371,8 @@ pub unsafe extern "C" fn rn_body_set(
         13 => rb.enable_ccd(x != 0.0),
         14 => rb.set_linear_damping(x as f32),
         15 => rb.set_angular_damping(x as f32),
+        // 16 = dormir (o carro parado da frota, SPEC-0654).
+        16 => rb.sleep(),
         _ => rb.set_translation(v, wake_up),
     }
 }

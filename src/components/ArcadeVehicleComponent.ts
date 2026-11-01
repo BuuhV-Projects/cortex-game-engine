@@ -18,6 +18,9 @@ import type { GroundAdhesion } from '../physics/GroundAdhesion.js';
  *   .addComponent(new ArcadeVehicleComponent(vehicle, new GroundAdhesion(physics, vehicle)));
  */
 export class ArcadeVehicleComponent extends Component {
+  /** Subpassos seguidos em repouso; ao chegar em `REST_STEPS` o chassi dorme (SPEC-0654). */
+  restSteps = 0;
+
   constructor(
     readonly vehicle: Vehicle,
     /** Aderência arcade. `null` = simulação pura, ainda no passo compartilhado. */
