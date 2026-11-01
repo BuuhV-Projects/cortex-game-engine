@@ -15,6 +15,8 @@ export const ROAD_DEFAULT_SMOOTH_METERS = 12;
 /** O acostamento mínimo cobre tantas células da grade além da borda da pista. */
 const SHOULDER_CELLS = 1.5;
 const MIN_HALF_WIDTH = 0.05;
+/** Janela menor que isto (m) não tira média: a amostra fica com a própria referência. */
+const WINDOW_EPS = 1e-6;
 
 /** Opções do greide suavizado. */
 export interface GradeOptions {
@@ -54,21 +56,30 @@ export function smoothGrade(samples: readonly RoadSample[], refY: readonly numbe
   for (let i = 1; i < n; i++) seg[i] = horiz(samples[i]!.pos, samples[i - 1]!.pos);
 
   // (1) Média móvel por distância real (a tessellation é adaptativa: índices não são equiespaçados).
+  // Janela simétrica que encolhe nas pontas: a ponta fica no Y de referência (nós encadeados
+  // emendam no mesmo Y) e rampa reta passa intacta (SPEC-0631 §2).
+  const cum = new Array<number>(n).fill(0);
+  for (let i = 1; i < n; i++) cum[i] = cum[i - 1]! + seg[i]!;
+  const total = cum[n - 1]!;
+  // Integral da referência (linear por partes na distância) de 0 até `d`.
+  const prefix = new Array<number>(n).fill(0);
+  for (let i = 1; i < n; i++) prefix[i] = prefix[i - 1]! + ((refY[i]! + refY[i - 1]!) / 2) * seg[i]!;
+  const integralTo = (d: number): number => {
+    let lo = 0;
+    let hi = n - 1;
+    while (hi - lo > 1) {
+      const mid = (lo + hi) >> 1;
+      if (cum[mid]! <= d) lo = mid;
+      else hi = mid;
+    }
+    const t = seg[hi]! > 0 ? (d - cum[lo]!) / seg[hi]! : 0;
+    const yd = refY[lo]! + (refY[hi]! - refY[lo]!) * t;
+    return prefix[lo]! + ((refY[lo]! + yd) / 2) * (d - cum[lo]!);
+  };
   const y = new Array<number>(n);
   for (let i = 0; i < n; i++) {
-    let sum = refY[i]!;
-    let w = 1;
-    if (half > 0) {
-      for (let k = i - 1, d = seg[i]!; k >= 0 && d <= half; d += seg[k]!, k--) {
-        sum += refY[k]!;
-        w++;
-      }
-      for (let k = i + 1, d = seg[k] ?? Infinity; k < n && d <= half; k++, d += seg[k] ?? Infinity) {
-        sum += refY[k]!;
-        w++;
-      }
-    }
-    y[i] = sum / w;
+    const h = Math.min(half, cum[i]!, total - cum[i]!);
+    y[i] = h > WINDOW_EPS ? (integralTo(cum[i]! + h) - integralTo(cum[i]! - h)) / (2 * h) : refY[i]!;
   }
 
   // (2) Limite de inclinação nas duas direções; a média das duas passadas fica dentro do limite.
@@ -93,6 +104,8 @@ export interface GradePoint {
   x: number;
   z: number;
   y: number;
+  /** No vão de uma ponte: o segmento entre dois pontos `bridge` só corta, nunca aterra (SPEC-0631 §3c). */
+  bridge?: boolean;
 }
 
 /** Descritor da grade do terreno (espelha {@link Terrain}: plano XZ centrado na origem local). */
@@ -111,6 +124,9 @@ export interface HeightfieldGrid {
  * **Molda o terreno à estrada**: para cada vértice perto do eixo, a altura-alvo é o
  * greide no **platô** (`halfWidth` + acostamento ≥ 1,5 célula — a borda da pista nunca
  * cai no talude), um `smoothstep` do greide até a base no **talude**, e a base fora.
+ *
+ * Vértice cujo segmento mais próximo é de **ponte** (as duas pontas com `bridge`) só é
+ * cortado (delta ≤ 0): o vale embaixo fica, a encosta acima da pista sai (SPEC-0631 §3c).
  *
  * Custo O(segmentos × células perto de cada segmento) + O(vértices): cada segmento só
  * visita a caixa dele ± alcance.
@@ -139,6 +155,7 @@ export function moldHeightfield(
 
   const bestD2 = new Float64Array(n * n).fill(Infinity);
   const bestY = new Float64Array(n * n);
+  const bestCutOnly = new Uint8Array(n * n);
   const toI = (x: number): number => (x / grid.width + 0.5) * res;
   const toJ = (z: number): number => (z / grid.depth + 0.5) * res;
 
@@ -152,6 +169,7 @@ export function moldHeightfield(
     const abx = b.x - a.x;
     const abz = b.z - a.z;
     const len2 = abx * abx + abz * abz;
+    const cutOnly = a.bridge === true && b.bridge === true ? 1 : 0;
     for (let j = j0; j <= j1; j++) {
       const lz = (j / res - 0.5) * grid.depth;
       for (let i = i0; i <= i1; i++) {
@@ -165,6 +183,7 @@ export function moldHeightfield(
         if (d2 < bestD2[idx]!) {
           bestD2[idx] = d2;
           bestY[idx] = a.y + (b.y - a.y) * t;
+          bestCutOnly[idx] = cutOnly;
         }
       }
     }
@@ -177,7 +196,7 @@ export function moldHeightfield(
     const base = grid.base[idx]!;
     const y = bestY[idx]!;
     const target = d <= flat || talude === 0 ? y : y + (base - y) * smoothstep((d - flat) / talude);
-    delta[idx] = target - base;
+    delta[idx] = bestCutOnly[idx] ? Math.min(0, target - base) : target - base;
   }
   return delta;
 }

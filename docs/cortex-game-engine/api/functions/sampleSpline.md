@@ -8,7 +8,7 @@
 
 > **sampleSpline**(`points`, `curveDensity?`): [`RoadSample`](../interfaces/RoadSample.md)[]
 
-Defined in: [src/road/RoadSpline.ts:80](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/RoadSpline.ts#L80)
+Defined in: [src/road/RoadSpline.ts:82](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/RoadSpline.ts#L82)
 
 Amostra a spline que passa pelos `points` (≥2) com **tessellation adaptativa**
 (`curveDensity` amostras por 90° de curva). Pontas presas no primeiro/último ponto.

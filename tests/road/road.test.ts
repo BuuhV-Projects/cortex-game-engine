@@ -77,6 +77,14 @@ describe('smoothGrade', () => {
     const g = smoothGrade(samples, bump, { maxSlope: 0, smoothMeters: 20 });
     expect(Math.max(...g)).toBeLessThan(4);
   });
+
+  it('com média, a rampa passa intacta e as pontas ficam no Y de referência (nós encadeados emendam)', () => {
+    const ramp = dist.map((z) => 3 + z * 0.06);
+    const g = smoothGrade(samples, ramp, { maxSlope: 0.25, smoothMeters: 12 });
+    expect(g[0]).toBeCloseTo(ramp[0]!, 6);
+    expect(g[g.length - 1]).toBeCloseTo(ramp[ramp.length - 1]!, 6);
+    g.forEach((y, i) => expect(y).toBeCloseTo(ramp[i]!, 2));
+  });
 });
 
 describe('moldHeightfield', () => {

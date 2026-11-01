@@ -24,6 +24,8 @@ export interface RoadEditState {
   /** Faixa sem vegetação além da borda (m). */
   clearance: number;
   points: number;
+  /** Vãos de ponte `[i0, i1]` por índice de ponto (SPEC-0631 §3c). */
+  bridge: [number, number][];
 }
 
 /**
@@ -63,7 +65,7 @@ export function createRoadApi(ctx: EditorAuthoringContext): { roadApi: RoadApi; 
     if (!node) return;
     const s = store();
     s[obj.name] = { ...s[obj.name], ...patch };
-    applyRoad(obj as Mesh, { ...node, ...patch }, ctx.three);
+    void applyRoad(obj as Mesh, { ...node, ...patch }, ctx.three);
     if (!mold) return;
     moldTerrainToRoads(ctx.three);
     ctx.persist();
@@ -85,6 +87,7 @@ export function createRoadApi(ctx: EditorAuthoringContext): { roadApi: RoadApi; 
         drivable: n.drivable !== false,
         clearance: n.clearance ?? ROAD_DEFAULT_CLEARANCE,
         points: n.points.length,
+        bridge: n.bridge ?? [],
       };
     },
     set(obj, patch) {
@@ -106,7 +109,10 @@ export function createRoadApi(ctx: EditorAuthoringContext): { roadApi: RoadApi; 
     removePoint(obj, index) {
       const n = roadNodeOf(obj);
       if (!n || n.points.length <= MIN_ROAD_POINTS || !n.points[index]) return false;
-      update(obj, { points: n.points.filter((_, i) => i !== index) }, true);
+      // Os vãos de ponte são por índice: os pontos depois do removido descem um.
+      const shift = (i: number): number => (i > index ? i - 1 : i);
+      const bridge = n.bridge?.map(([a, b]): [number, number] => [shift(a), shift(b)]).filter(([a, b]) => a < b);
+      update(obj, { points: n.points.filter((_, i) => i !== index), ...(bridge ? { bridge } : {}) }, true);
       return true;
     },
     commit(obj) {

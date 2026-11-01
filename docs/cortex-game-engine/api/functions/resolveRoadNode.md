@@ -8,7 +8,7 @@
 
 > **resolveRoadNode**(`node`, `ov?`): `object`
 
-Defined in: [src/scene/RoadBuild.ts:70](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/RoadBuild.ts#L70)
+Defined in: [src/scene/RoadBuild.ts:72](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/RoadBuild.ts#L72)
 
 Nó efetivo: `{ ...nó, ...overlay }` — **o overlay vence** (SPEC-0631 §5).
 
@@ -70,6 +70,48 @@ Socket PRÓPRIO (nome de âncora no `kit.json` deste asset).
 `string` = `...`
 
 Socket do ALVO (nome de âncora no `kit.json` do asset do alvo).
+
+#### bridge?
+
+\[`number`, `number`\][] = `...`
+
+Trechos de ponte `[i0, i1]` por índice de `points`: sem corte/aterro, greide reto (SPEC-0631 §3c).
+
+#### bridgeParts?
+
+\{ `deck?`: `string`; `pillar?`: `string`; `pillarEvery?`: `number`; `rail?`: `string`; `scale?`: `number`; \} = `...`
+
+Peças da ponte nos vãos `bridge` (SPEC-0631 §3d, ADR-0648). Sem isto, o vão é só a fita.
+
+#### bridgeParts.deck?
+
+`string` = `...`
+
+Peça de pista (topo em y = 0, comprimento em Z), repetida e esticada para fechar o vão.
+
+#### bridgeParts.pillar?
+
+`string` = `...`
+
+Pilar (topo em y = 0, cresce para baixo), esticado até o chão nas juntas.
+
+#### bridgeParts.pillarEvery?
+
+`number` = `...`
+
+Pilar a cada N peças de pista. Default 2.
+
+#### bridgeParts.rail?
+
+`string` = `...`
+
+Guarda-corpo (base em y = 0), repetido nas duas bordas.
+
+#### bridgeParts.scale?
+
+`number` = `...`
+
+Escala de pista e pilar. Default 1.
 
 #### castShadow?
 
@@ -537,6 +579,48 @@ Largura total da pista (m). Default [ROAD\_DEFAULT\_WIDTH](../variables/ROAD_DEF
 
 ### ov?
 
+#### bridge?
+
+\[`number`, `number`\][] = `...`
+
+Trechos de ponte `[i0, i1]` por índice de `points`: sem corte/aterro, greide reto (SPEC-0631 §3c).
+
+#### bridgeParts?
+
+\{ `deck?`: `string`; `pillar?`: `string`; `pillarEvery?`: `number`; `rail?`: `string`; `scale?`: `number`; \} = `...`
+
+Peças da ponte nos vãos `bridge` (SPEC-0631 §3d, ADR-0648). Sem isto, o vão é só a fita.
+
+#### bridgeParts.deck?
+
+`string` = `...`
+
+Peça de pista (topo em y = 0, comprimento em Z), repetida e esticada para fechar o vão.
+
+#### bridgeParts.pillar?
+
+`string` = `...`
+
+Pilar (topo em y = 0, cresce para baixo), esticado até o chão nas juntas.
+
+#### bridgeParts.pillarEvery?
+
+`number` = `...`
+
+Pilar a cada N peças de pista. Default 2.
+
+#### bridgeParts.rail?
+
+`string` = `...`
+
+Guarda-corpo (base em y = 0), repetido nas duas bordas.
+
+#### bridgeParts.scale?
+
+`number` = `...`
+
+Escala de pista e pilar. Default 1.
+
 #### clearance?
 
 `number` = `...`
@@ -665,6 +749,48 @@ Socket PRÓPRIO (nome de âncora no `kit.json` deste asset).
 > **toSocket**: `string`
 
 Socket do ALVO (nome de âncora no `kit.json` do asset do alvo).
+
+### bridge?
+
+> `optional` **bridge?**: \[`number`, `number`\][]
+
+Trechos de ponte `[i0, i1]` por índice de `points`: sem corte/aterro, greide reto (SPEC-0631 §3c).
+
+### bridgeParts?
+
+> `optional` **bridgeParts?**: `object`
+
+Peças da ponte nos vãos `bridge` (SPEC-0631 §3d, ADR-0648). Sem isto, o vão é só a fita.
+
+#### bridgeParts.deck?
+
+> `optional` **deck?**: `string`
+
+Peça de pista (topo em y = 0, comprimento em Z), repetida e esticada para fechar o vão.
+
+#### bridgeParts.pillar?
+
+> `optional` **pillar?**: `string`
+
+Pilar (topo em y = 0, cresce para baixo), esticado até o chão nas juntas.
+
+#### bridgeParts.pillarEvery?
+
+> `optional` **pillarEvery?**: `number`
+
+Pilar a cada N peças de pista. Default 2.
+
+#### bridgeParts.rail?
+
+> `optional` **rail?**: `string`
+
+Guarda-corpo (base em y = 0), repetido nas duas bordas.
+
+#### bridgeParts.scale?
+
+> `optional` **scale?**: `number`
+
+Escala de pista e pilar. Default 1.
 
 ### castShadow?
 

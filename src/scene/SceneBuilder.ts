@@ -794,7 +794,7 @@ async function buildSceneInner(
   resolveAttachments(placed, byId, options.kit, overrides);
   // Estradas (SPEC-0631): pista + corte/aterro nos terrenos, com todos os nós no lugar
   // e o heightmap do overlay já aplicado (o greide parte da base final).
-  buildRoads(three);
+  await buildRoads(three);
 
   bootMark('buildScene: nós instanciados');
   await tick('física', 1);
@@ -1020,7 +1020,7 @@ export async function addSceneNode(scene: Scene, node: SceneNode): Promise<Objec
   const obj = await instantiate(node, scene, three);
   // Estrada criada ao vivo (F2): gera a pista e remolda os terrenos (SPEC-0631 §6).
   if (obj && node.type === 'road') {
-    applyRoad(obj as Mesh, node, three);
+    await applyRoad(obj as Mesh, node, three);
     moldTerrainToRoads(three);
   }
   // Mesma garantia do buildScene: o objeto pode ser raycastado no mesmo tick em
