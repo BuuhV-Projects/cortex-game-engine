@@ -34,4 +34,16 @@ describe('hook de contrato do nativo: loader fora do cache (SPEC-0652)', () => {
     expect(r.status).toBe(0);
     expect(r.out).toContain('ERROS: nenhum');
   });
+
+  it('loader guardado num cache por URL e marcado com native-contract: cached-loader passa', () => {
+    const cached = [
+      '// native-contract: cached-loader',
+      "import { TextureLoader } from 'three';",
+      'const cache = new Map();',
+      'export const tex = (u: string) => cache.get(u) ?? cache.set(u, new TextureLoader().load(u)).get(u);',
+    ].join('\n');
+    const r = run({ 'main.ts': MAIN, 'chao.ts': cached });
+    expect(r.status).toBe(0);
+    expect(r.out).toContain('ERROS: nenhum');
+  });
 });
