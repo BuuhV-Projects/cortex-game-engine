@@ -1,0 +1,71 @@
+name: Greptile approve
+
+# Aprova o PR quando o Greptile dá Confidence Score 5/5 no commit atual
+# (SPEC-0654, TDR-0008). É a aprovação que o ruleset da `main` exige; com ela
+# e o CI verde, o auto-merge mergeia sozinho.
+#
+# Segurança: `check_run` sempre roda o workflow da branch PADRÃO, então um PR
+# não consegue editar este arquivo para se aprovar. Não há checkout nem
+# execução de código do PR. A nota vem do comentário que o próprio Greptile
+# grava no corpo do PR (`<!-- greptile_confidence_score:N -->`); sem ele, não
+# aprova.
+
+on:
+  check_run:
+    types: [completed]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  approve:
+    name: Aprovar com 5/5
+    if: >-
+      github.event.check_run.name == 'Greptile Review' &&
+      github.event.check_run.app.slug == 'greptile-apps' &&
+      github.event.check_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Aprovar
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.event.check_run.head_sha }}
+          PRS: ${{ toJSON(github.event.check_run.pull_requests) }}
+        run: |
+          for pr in $(jq -r '.[].number' <<<"$PRS"); do
+            info=$(gh pr view "$pr" -R "$REPO" --json headRefOid,isCrossRepository,body)
+            if [ "$(jq -r .headRefOid <<<"$info")" != "$SHA" ]; then
+              echo "PR #$pr: o commit revisado não é mais o head"; continue
+            fi
+            if [ "$(jq -r .isCrossRepository <<<"$info")" = "true" ]; then
+              echo "PR #$pr: vem de fork, não aprova"; continue
+            fi
+            # O corpo é editável pelo autor: só vale se a ÚLTIMA edição foi do
+            # Greptile e houver um único marcador (marcador plantado antes da
+            # revisão vira dois; edição depois dela troca o editor). No GraphQL o
+            # login do bot vem SEM o sufixo `[bot]` da API REST; o tipo `Bot`
+            # descarta uma conta humana com o mesmo nome.
+            editor=$(gh api graphql -F n="$pr" -f o="${REPO%/*}" -f r="${REPO#*/}" \
+              -f query='query($o:String!,$r:String!,$n:Int!){repository(owner:$o,name:$r){pullRequest(number:$n){editor{__typename login}}}}' \
+              --jq '.data.repository.pullRequest.editor | if . then "\(.__typename):\(.login)" else "" end')
+            if [ "$editor" != "Bot:greptile-apps" ]; then
+              echo "PR #$pr: corpo editado por último por '${editor:-ninguém}', não pelo Greptile"; continue
+            fi
+            marks=$(jq -r .body <<<"$info" | grep -oE 'greptile_confidence_score:[0-9]+' || true)
+            if [ "$(grep -c . <<<"$marks")" != "1" ]; then
+              echo "PR #$pr: esperado 1 marcador de nota, achou $(grep -c . <<<"$marks")"; continue
+            fi
+            score=${marks#*:}
+            if [ "$score" != "5" ]; then
+              echo "PR #$pr: nota $score, precisa de 5"; continue
+            fi
+            done=$(gh api "repos/$REPO/pulls/$pr/reviews" --paginate \
+              --jq ".[] | select(.user.login == \"github-actions[bot]\" and .state == \"APPROVED\" and .commit_id == \"$SHA\") | .id")
+            if [ -n "$done" ]; then
+              echo "PR #$pr: já aprovado neste commit"; continue
+            fi
+            gh api "repos/$REPO/pulls/$pr/reviews" -f commit_id="$SHA" -f event=APPROVE \
+              -f body="Greptile Confidence Score 5/5 neste commit." >/dev/null
+            echo "PR #$pr: aprovado (5/5)"
+          done
