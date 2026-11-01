@@ -87,6 +87,7 @@ describe('pr-rules: revisão do PR (pendências exatas, console.log, leitura do 
     // depois de um literal (string), `/` é divisão: não vira regex que engula a chamada
     expect(logErrs("const n = '12' / (console.log('x'), 2) / 3")).toBe(1)
     expect(logErrs("const n = `12` / (console.log('x'), 2) / 3")).toBe(1)
+    expect(logErrs("const ratio = '12' / 2; console.log('x'); const re = /ok/")).toBe(1)
     // o apóstrofo da regex não abre string que engula a linha seguinte
     expect(logErrs("const rx = /'/;\nconsole.log('x')", [2])).toBe(1)
   })
