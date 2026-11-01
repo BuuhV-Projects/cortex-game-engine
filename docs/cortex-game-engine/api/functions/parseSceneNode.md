@@ -2132,7 +2132,7 @@ Trechos de ponte `[i0, i1]` por índice de `points`: sem corte/aterro, greide re
 
 > `optional` **bridgeParts?**: `object`
 
-Peças da ponte nos vãos `bridge` (SPEC-0631 §3d, ADR-0648). Sem isto, o vão é só a fita.
+Peças da ponte nos vãos `bridge` (SPEC-0631 §3d, ADR-0649). Sem isto, o vão é só a fita.
 
 ##### bridgeParts.deck?
 

@@ -1,5 +1,5 @@
 /**
- * **Peças da ponte** (SPEC-0631 §3d, ADR-0648): pista, pilar e guarda-corpo distribuídos
+ * **Peças da ponte** (SPEC-0631 §3d, ADR-0649): pista, pilar e guarda-corpo distribuídos
  * ao longo de cada vão (`bridge`) da estrada, no greide que a engine calculou. As peças
  * são filhas da malha da estrada (que fica em coordenadas de mundo) e herdam o
  * `cortexRoad` dela: o guarda-corpo segura o carro, o pilar é obstáculo.

@@ -56,7 +56,7 @@ export const roadFieldsSchema = z.object({
   clearance: z.number().nonnegative().optional(),
   /** Trechos de ponte `[i0, i1]` por índice de `points`: sem corte/aterro, greide reto (SPEC-0631 §3c). */
   bridge: z.array(z.tuple([z.number().int().nonnegative(), z.number().int().nonnegative()])).optional(),
-  /** Peças da ponte nos vãos `bridge` (SPEC-0631 §3d, ADR-0648). Sem isto, o vão é só a fita. */
+  /** Peças da ponte nos vãos `bridge` (SPEC-0631 §3d, ADR-0649). Sem isto, o vão é só a fita. */
   bridgeParts: bridgePartsSchema.optional(),
   /** Amostras por 90° de curva. Default 16. */
   steps: z.number().int().positive().optional(),

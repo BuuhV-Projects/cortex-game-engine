@@ -119,7 +119,7 @@ o ponto `i0` e o ponto `i1` é ponte. Par inválido (fora do intervalo ou `i0 �
   A estrutura (pista, pilares, guarda-corpo) vem de `bridgeParts` (§3d).
 - A vegetação sai do corredor também sob a ponte (§3b).
 
-### 3d. Peças da ponte (`bridgeParts`, ADR-0648)
+### 3d. Peças da ponte (`bridgeParts`, ADR-0649)
 
 ```jsonc
 "bridgeParts": {

@@ -1,7 +1,8 @@
-# ADR-0648 - Ponte montada por peças no próprio nó `road`
+# ADR-0649 - Ponte montada por peças no próprio nó `road`
 
 **Data:** 2026-10-31
 **Status:** aceito
+**Numeração:** era ADR-0648 (colidia com a SPEC-0648 do raio de chão); renumerado em 31/10/2026
 
 ## Contexto
 
