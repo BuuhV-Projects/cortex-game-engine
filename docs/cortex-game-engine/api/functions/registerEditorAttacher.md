@@ -8,7 +8,7 @@
 
 > **registerEditorAttacher**(`attacher`): `void`
 
-Defined in: [src/core/Game.ts:108](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L108)
+Defined in: [src/core/Game.ts:109](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L109)
 
 ## Parameters
 
