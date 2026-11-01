@@ -1,1 +1,5 @@
-npx vitest run
+# Leve de propósito (TDR-0008): só os testes ligados aos arquivos staged.
+# Suíte inteira, typecheck e host nativo rodam no PR.
+files=$(git diff --cached --name-only --diff-filter=AM -- '*.ts' '*.tsx' '*.js' '*.mjs')
+[ -z "$files" ] && exit 0
+yarn -s vitest related --run --passWithNoTests $files

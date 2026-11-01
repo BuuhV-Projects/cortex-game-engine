@@ -15,6 +15,10 @@ name: PR checks
 #                   "compatibilidade de build": bundle.mjs real sobre o engine,
 #                   hermesc, link do cortex_host.exe) e roda os testes
 #                   unitários do C++ (`cortex_host_tests`, TDR-0004).
+#                   Pulado quando o PR só toca docs (job `changes`).
+#  3. `rules`     — regras do CLAUDE.md sobre o diff (SPEC-0654, TDR-0008).
+#
+# A aprovação exigida pelo ruleset vem do `greptile-approve.yml` (5/5).
 #
 # `release.yml` e `build-ide.yml` NÃO foram alterados — o caminho que publica
 # os instaladores do Studio segue idêntico.
@@ -48,6 +52,54 @@ env:
   TIMEOUT_NATIVE_TESTS_MINUTES: '15'
 
 jobs:
+  # PR que só toca docs/markdown pula o host nativo (TDR-0008). O pulo é por
+  # `if` no job, nunca por `paths` no `on:` — job pulado conta como verde no
+  # check obrigatório; workflow não disparado deixa o check pendente.
+  changes:
+    name: Detectar mudanças
+    runs-on: ubuntu-latest
+    outputs:
+      native: ${{ steps.diff.outputs.native }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          filter: blob:none
+
+      - name: Diff do PR
+        id: diff
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [ -z "$BASE" ]; then echo "native=true" >> "$GITHUB_OUTPUT"; exit 0; fi
+          files=$(git diff --name-only "$BASE...$HEAD")
+          if echo "$files" | grep -qvE '^(docs/|graft/|\.claude/)|\.md$'; then native=true; else native=false; fi
+          echo "native=$native" >> "$GITHUB_OUTPUT"
+          echo "host nativo necessário: $native"
+
+  # Regras do CLAUDE.md sobre o diff do PR (SPEC-0654).
+  rules:
+    name: Regras do repo
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          filter: blob:none
+
+      - name: Setup Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Checar regras no diff
+        run: node .github/scripts/pr-rules.mjs "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}"
+
   test:
     name: Tests (Vitest)
     runs-on: ubuntu-latest
@@ -80,6 +132,11 @@ jobs:
         working-directory: native/export-toolchain
         run: yarn install --frozen-lockfile
 
+      # Só `src/` (tsconfig.engine.json): o typecheck completo tem erros
+      # herdados em `tests/` (TDR-0008).
+      - name: Typecheck do engine
+        run: yarn -s tsc -p tsconfig.engine.json --noEmit
+
       - name: Run unit tests
         timeout-minutes: ${{ fromJSON(env.TIMEOUT_VITEST_MINUTES) }}
         env:
@@ -89,6 +146,8 @@ jobs:
 
   native-host:
     name: Host nativo (Windows) + cortex_host_tests
+    needs: changes
+    if: needs.changes.outputs.native == 'true'
     runs-on: windows-latest
     steps:
       - name: Checkout
