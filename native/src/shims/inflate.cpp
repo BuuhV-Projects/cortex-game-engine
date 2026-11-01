@@ -61,7 +61,9 @@ std::optional<size_t> gzipPayloadOffset(const uint8_t* data, size_t size) {
   return at;
 }
 
-std::optional<std::vector<uint8_t>> takeStbOutput(char* out, int outLen) {
+// `outLen` por referência: lido DEPOIS da chamada do stb no argumento ao lado
+// (a ordem de avaliação dos argumentos não é especificada; por valor, saía 0).
+std::optional<std::vector<uint8_t>> takeStbOutput(char* out, const int& outLen) {
   if (!out) return std::nullopt;
   std::vector<uint8_t> bytes(out, out + outLen);
   std::free(out);  // STBI_FREE padrão = free
