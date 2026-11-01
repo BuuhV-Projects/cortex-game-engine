@@ -30,11 +30,13 @@ Port Hollow tem CI próprio sem esse job.
 
 - A pendência vale só para o caminho EXATO: `docs/pendencias-refatoracao.md` é lido um caminho por linha (aceita `- ` e
   crases). Registrar `game/city.tsx` não libera `game/city.ts`.
-- `console.log`: as linhas adicionadas de cada arquivo são lidas juntas, sem strings nem comentários (`codeOnly`), e a
-  chamada é `console . log (` com espaço ou quebra de linha entre os pedaços. Comentário no fim da linha e texto dentro
-  de string não reprovam; `console.log ('x')` e a chamada quebrada em duas linhas reprovam. A limpeza é LINHA A LINHA: um
-  `/*` cujo `*/` ficou fora do diff esconde só o resto da própria linha, não o `console.log` da seguinte.
-- `parseAddedLines` tem teste com vários arquivos, exclusão, caminho entre aspas e linha adicionada começando com `++`.
+- `console.log`: o arquivo INTEIRO do head decide o que é comentário ou string (`codeOnly` troca os dois por espaços
+  mantendo as quebras de linha) e o diff decide o que é novo: só reprova a chamada (`console . log (`, com espaço ou
+  quebra de linha entre os pedaços) que cai numa linha adicionada (número da linha pelos cabeçalhos `@@ … +c,d @@`).
+  Bloco `/* … */` de várias linhas, string e comentário no fim da linha não reprovam; uma chamada antiga fora das
+  linhas adicionadas também não. O job faz checkout do head (`ref: head.sha`) para o arquivo no disco ser o do diff.
+- `parseAddedLines` tem teste com vários arquivos, exclusão, caminho entre aspas, linha adicionada começando com `++` e
+  o número da linha no arquivo novo.
 
 ## Consequências
 

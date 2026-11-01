@@ -14,15 +14,17 @@ const TOOLING = /^(scripts|tests|\.github)\//
 const CONSOLE_EXT = /\.(ts|tsx|js|mjs|cjs)$/
 const RECORD_AREAS = /^docs\/(specs|adrs|tdrs)\//
 /** Chamada de `console.log`, com espaço ou quebra de linha entre os pedaços. */
-const CONSOLE_CALL = /\bconsole\s*\.\s*log\s*\(/
+const CONSOLE_CALL = /\bconsole\s*\.\s*log\s*\(/g
 
 /**
  * @param {{ files: { status: string, path: string, lines: number }[],
- *           added: { path: string, text: string }[],
- *           pendencias: string }} diff
+ *           added: { path: string, text: string, line: number }[],
+ *           pendencias: string,
+ *           sources?: Record<string, string> }} diff
+ *   `sources`: o texto do arquivo inteiro no head, por caminho (comentário e string só se distinguem no arquivo todo).
  * @returns {{ errors: { path: string, msg: string }[], warnings: { path: string, msg: string }[] }}
  */
-export function checkRules({ files, added, pendencias }) {
+export function checkRules({ files, added, pendencias, sources = {} }) {
   const errors = []
   const warnings = []
   const touched = files.filter((f) => f.status !== 'D')
@@ -40,16 +42,18 @@ export function checkRules({ files, added, pendencias }) {
     }
   }
 
-  // As linhas adicionadas de cada arquivo juntas: a chamada pode quebrar em várias linhas.
-  const byFile = new Map()
+  // Linhas adicionadas por arquivo; a chamada é achada no arquivo INTEIRO (sem strings nem comentários) e só reprova
+  // se cair numa linha adicionada.
+  const addedLines = new Map()
   for (const a of added) {
     if (!CONSOLE_EXT.test(a.path) || TOOLING.test(a.path) || EXEMPT.test(a.path)) continue
-    if (a.text.trim().startsWith('*')) continue // meio de bloco de comentário (o `/*` pode estar fora do diff)
-    byFile.set(a.path, [...(byFile.get(a.path) ?? []), a.text])
+    if (!addedLines.has(a.path)) addedLines.set(a.path, new Set())
+    addedLines.get(a.path).add(a.line)
   }
-  for (const [path, lines] of byFile) {
-    // limpa LINHA A LINHA: um `/*` cujo `*/` ficou fora do diff esconde só o resto da própria linha
-    if (CONSOLE_CALL.test(lines.map(codeOnly).join('\n'))) {
+  for (const [path, lines] of addedLines) {
+    const source = sources[path]
+    if (source === undefined) continue
+    if (consoleCallLines(codeOnly(source)).some((l) => lines.has(l))) {
       errors.push({ path, msg: 'console.log no jogo: use debug(escopo, …) da cortex-game-engine.' })
     }
   }
@@ -67,30 +71,51 @@ export function pendingPaths(text) {
   return new Set(paths.filter(Boolean))
 }
 
-/** O texto sem strings (`'` `"` e crase) nem comentários (`//`, bloco): o que sobra é código. */
+/** Espaços no lugar de `text`, mantendo as quebras de linha (o número das linhas não muda). */
+const blank = (text) => text.replace(/[^\n]/g, ' ')
+
+/**
+ * O código sem strings (`'` `"` e crase) nem comentários (`//`, bloco), trocados por espaços: as quebras de linha
+ * ficam, então a linha de cada trecho é a mesma do arquivo. ponytail: crase com `${…}` aninhado conta como string
+ * inteira (o código dentro da interpolação fica de fora da busca).
+ */
 export function codeOnly(src) {
   let out = ''
   let i = 0
   while (i < src.length) {
     const c = src[i]
     const next = src[i + 1]
+    let end = i
     if (c === '/' && next === '/') {
-      while (i < src.length && src[i] !== '\n') i++
+      end = src.indexOf('\n', i)
+      if (end < 0) end = src.length
     } else if (c === '/' && next === '*') {
-      const end = src.indexOf('*/', i + 2)
-      i = end < 0 ? src.length : end + 2
-      out += ' '
+      end = src.indexOf('*/', i + 2)
+      end = end < 0 ? src.length : end + 2
     } else if (c === '"' || c === "'" || c === '`') {
-      i++
-      while (i < src.length && src[i] !== c) i += src[i] === '\\' ? 2 : 1
-      i++
-      out += ' '
+      end = i + 1
+      while (end < src.length && src[end] !== c) end += src[end] === '\\' ? 2 : 1
+      end = Math.min(end + 1, src.length)
     } else {
       out += c
       i++
+      continue
     }
+    out += blank(src.slice(i, end))
+    i = end
   }
   return out
+}
+
+/** Linhas (a partir de 1) que cada chamada de `console.log` ocupa no código já limpo por {@link codeOnly}. */
+export function consoleCallLines(code) {
+  const lines = []
+  for (const m of code.matchAll(CONSOLE_CALL)) {
+    const first = code.slice(0, m.index).split('\n').length
+    const span = m[0].split('\n').length
+    for (let l = first; l < first + span; l++) lines.push(l)
+  }
+  return lines
 }
 
 /** Caminho do cabeçalho `+++`; o git põe entre aspas os que têm caractere especial. */
@@ -99,22 +124,29 @@ function headerPath(raw) {
   return unquoted.startsWith('b/') ? unquoted.slice(2) : ''
 }
 
+/** Início do trecho no arquivo novo: o `+c` de `@@ -a,b +c,d @@`. */
+const HUNK_START = /^@@ -\d+(?:,\d+)? \+(\d+)/
+
 /**
- * Linhas adicionadas por arquivo, a partir de `git diff -U0`. `+++` só é
- * cabeçalho antes do primeiro `@@` de cada arquivo: dentro do trecho, uma
- * linha adicionada `++ x` também começa com `+++ `.
+ * Linhas adicionadas por arquivo, com o número da linha no arquivo novo, a partir de `git diff -U0`. `+++` só é
+ * cabeçalho antes do primeiro `@@` de cada arquivo: dentro do trecho, uma linha adicionada `++ x` também começa
+ * com `+++ `.
  */
 export function parseAddedLines(patch) {
   const added = []
   let path = ''
   let inHeader = false
-  for (const line of patch.split('\n')) {
-    if (line.startsWith('diff --git ')) {
+  let line = 0
+  for (const raw of patch.split('\n')) {
+    if (raw.startsWith('diff --git ')) {
       inHeader = true
       path = ''
-    } else if (inHeader && line.startsWith('+++ ')) path = headerPath(line.slice(4))
-    else if (line.startsWith('@@')) inHeader = false
-    else if (!inHeader && line.startsWith('+') && path) added.push({ path, text: line.slice(1) })
+    } else if (inHeader && raw.startsWith('+++ ')) path = headerPath(raw.slice(4))
+    else if (raw.startsWith('@@')) {
+      inHeader = false
+      line = Number(HUNK_START.exec(raw)?.[1] ?? 0)
+    } else if (!inHeader && raw.startsWith('+') && path) added.push({ path, text: raw.slice(1), line: line++ })
+    else if (!inHeader && raw.startsWith(' ')) line++ // contexto (com -U0 não vem; vale para qualquer -U)
   }
   return added
 }
@@ -148,10 +180,15 @@ function main() {
     files.push({ status, path, lines: status === 'D' ? 0 : countLines(path) })
   }
   const added = parseAddedLines(git('diff', '-U0', '--no-renames', range))
+  // o checkout é o head (workflow com `ref: head.sha`): o arquivo no disco é o que o diff descreve
+  const sources = {}
+  for (const path of new Set(added.map((a) => a.path))) {
+    if (CONSOLE_EXT.test(path) && existsSync(path)) sources[path] = readFileSync(path, 'utf8')
+  }
   const pendencias = existsSync('docs/pendencias-refatoracao.md')
     ? readFileSync('docs/pendencias-refatoracao.md', 'utf8')
     : ''
-  const { errors, warnings } = checkRules({ files, added, pendencias })
+  const { errors, warnings } = checkRules({ files, added, pendencias, sources })
   for (const w of warnings) console.log(`::warning${w.path ? ` file=${w.path}` : ''}::${w.msg}`)
   for (const e of errors) console.log(`::error file=${e.path}::${e.msg}`)
   console.log(`regras do repo: ${files.length} arquivo(s), ${errors.length} erro(s), ${warnings.length} aviso(s)`)
