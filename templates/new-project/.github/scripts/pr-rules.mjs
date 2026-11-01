@@ -74,37 +74,110 @@ export function pendingPaths(text) {
 /** Espaços no lugar de `text`, mantendo as quebras de linha (o número das linhas não muda). */
 const blank = (text) => text.replace(/[^\n]/g, ' ')
 
+/** Antes de um destes (ou no começo), `/` abre expressão regular; depois de nome, número, `)` ou `]`, é divisão. */
+const REGEX_AFTER = /[(,=:[!&|?{};+\-*%<>~^]/
+const REGEX_AFTER_WORD = /\b(return|typeof|case|in|of|yield|await|delete|void|throw|new)\s*$/
+const IN_TEMPLATE = 'tpl'
+const IN_BRACE = 'code'
+
 /**
- * O código sem strings (`'` `"` e crase) nem comentários (`//`, bloco), trocados por espaços: as quebras de linha
- * ficam, então a linha de cada trecho é a mesma do arquivo. ponytail: crase com `${…}` aninhado conta como string
- * inteira (o código dentro da interpolação fica de fora da busca).
+ * Fim (exclusivo) da expressão regular que começa no `/` em `start`, ou `-1` se não fecha na mesma linha (então era
+ * divisão). Aspas dentro dela não abrem string.
+ */
+function regexEnd(src, start) {
+  let inClass = false
+  for (let k = start + 1; k < src.length; k++) {
+    const ch = src[k]
+    if (ch === '\\') k++
+    else if (ch === '\n') return -1
+    else if (ch === '[') inClass = true
+    else if (ch === ']') inClass = false
+    else if (ch === '/' && !inClass) {
+      let end = k + 1
+      while (end < src.length && /[a-z]/i.test(src[end])) end++
+      return end
+    }
+  }
+  return -1
+}
+
+/**
+ * Fim (exclusivo) do texto de template que começa em `start` (logo depois da crase ou do `}` de uma interpolação):
+ * para na crase final ou logo depois de `${`. `opened` diz qual dos dois.
+ */
+function templateTextEnd(src, start) {
+  for (let k = start; k < src.length; k++) {
+    if (src[k] === '\\') k++
+    else if (src[k] === '`') return { end: k + 1, opened: false }
+    else if (src[k] === '$' && src[k + 1] === '{') return { end: k + 2, opened: true }
+  }
+  return { end: src.length, opened: false }
+}
+
+/**
+ * O código sem strings (`'` `"` e o texto de crases) nem comentários (`//`, bloco), trocados por espaços: as quebras
+ * de linha ficam, então a linha de cada trecho é a mesma do arquivo. O código dentro de `${…}` continua código, e
+ * expressões regulares saem inteiras (aspas nelas não abrem string).
  */
 export function codeOnly(src) {
   let out = ''
   let i = 0
+  const braces = [] // IN_BRACE para `{` comum, IN_TEMPLATE para o `${` de uma crase
+  const enterTemplateText = (start) => {
+    const { end, opened } = templateTextEnd(src, start)
+    out += blank(src.slice(i, end))
+    if (opened) braces.push(IN_TEMPLATE)
+    i = end
+  }
   while (i < src.length) {
     const c = src[i]
     const next = src[i + 1]
-    let end = i
     if (c === '/' && next === '/') {
-      end = src.indexOf('\n', i)
+      let end = src.indexOf('\n', i)
       if (end < 0) end = src.length
+      out += blank(src.slice(i, end))
+      i = end
     } else if (c === '/' && next === '*') {
-      end = src.indexOf('*/', i + 2)
+      let end = src.indexOf('*/', i + 2)
       end = end < 0 ? src.length : end + 2
-    } else if (c === '"' || c === "'" || c === '`') {
-      end = i + 1
-      while (end < src.length && src[end] !== c) end += src[end] === '\\' ? 2 : 1
+      out += blank(src.slice(i, end))
+      i = end
+    } else if (c === '"' || c === "'") {
+      // string comum termina na linha (sem `\` no fim, o JS também não deixa passar dela)
+      let end = i + 1
+      while (end < src.length && src[end] !== c && src[end] !== '\n') end += src[end] === '\\' ? 2 : 1
       end = Math.min(end + 1, src.length)
+      out += blank(src.slice(i, end))
+      i = end
+    } else if (c === '`') {
+      enterTemplateText(i + 1)
+    } else if (c === '}' && braces[braces.length - 1] === IN_TEMPLATE) {
+      braces.pop()
+      enterTemplateText(i + 1)
+    } else if (c === '/' && regexStarts(out)) {
+      const end = regexEnd(src, i)
+      if (end < 0) {
+        out += c
+        i++
+      } else {
+        out += blank(src.slice(i, end))
+        i = end
+      }
     } else {
+      if (c === '{') braces.push(IN_BRACE)
+      else if (c === '}') braces.pop()
       out += c
       i++
-      continue
     }
-    out += blank(src.slice(i, end))
-    i = end
   }
   return out
+}
+
+/** Um `/` aqui abre expressão regular? Decide pelo último caractere de código antes dele. */
+function regexStarts(code) {
+  const trimmed = code.trimEnd()
+  if (trimmed === '') return true
+  return REGEX_AFTER.test(trimmed[trimmed.length - 1]) || REGEX_AFTER_WORD.test(trimmed)
 }
 
 /** Linhas (a partir de 1) que cada chamada de `console.log` ocupa no código já limpo por {@link codeOnly}. */

@@ -75,6 +75,17 @@ describe('pr-rules: revisão do PR (pendências exatas, console.log, leitura do 
     expect(logErrs("console.log('velho')\nconst novo = 1", [2])).toBe(0)
   })
 
+  it('console.log: interpolação é código, texto de crase não; aspas em regex não abrem string', () => {
+    expect(logErrs("const msg = `${console.log('x')}`")).toBe(1)
+    expect(logErrs("const msg = `a ${b ? `c ${console.log('x')}` : ''} d`")).toBe(1)
+    expect(logErrs("const msg = `use console.log('x') no navegador`")).toBe(0)
+    expect(logErrs("const re = /['\"]/; console.log('x')")).toBe(1)
+    expect(logErrs("const re = /[/]/g; console.log('x')")).toBe(1)
+    // divisão não é regex: a chamada depois dela continua achada
+    expect(logErrs("const half = a / 2; console.log('x')")).toBe(1)
+    expect(logErrs("const ok = a / b / c")).toBe(0)
+  })
+
   it('parseAddedLines: vários arquivos, exclusão, caminho entre aspas, ++ e o número da linha', () => {
     const patch = [
       'diff --git a/game/a.ts b/game/a.ts',
