@@ -104,4 +104,43 @@ describe('VehicleArcadeSystem', () => {
     expect(update).toHaveBeenCalledTimes(1);
     expect(stepSpy).toHaveBeenCalledTimes(1);
   });
+  it('carro parado dorme pelo próprio sistema e continua dormindo (SPEC-0655)', async () => {
+    const { world, entries } = await fleet(1);
+    const { vehicle } = entries[0]!;
+    vehicle.setBrake(50);
+    for (let i = 0; i < 90 && !vehicle.body.isSleeping(); i++) world.tick(FRAME_MS_30FPS); // assenta e dorme
+    expect(vehicle.body.isSleeping()).toBe(true);
+    const update = vi.spyOn(vehicle, 'update');
+    for (let i = 0; i < 10; i++) world.tick(FRAME_MS_30FPS);
+    expect(vehicle.body.isSleeping()).toBe(true);
+    expect(update).not.toHaveBeenCalled();
+  });
+
+  it('carro que dorme no meio do quadro leva a pose final para a malha (SPEC-0655)', async () => {
+    const { world, entries } = await fleet(1);
+    const { vehicle, object } = entries[0]!;
+    vehicle.setBrake(50);
+    for (let i = 0; i < 90 && !vehicle.body.isSleeping(); i++) world.tick(FRAME_MS_30FPS);
+    expect(vehicle.body.isSleeping()).toBe(true);
+    const t = vehicle.chassisTranslation();
+    expect(object.position.x).toBeCloseTo(t.x, 6);
+    expect(object.position.y).toBeCloseTo(t.y, 6);
+    expect(object.position.z).toBeCloseTo(t.z, 6);
+    // dormindo, a malha fica onde está: pose mexida à mão não é copiada de novo
+    object.position.set(0, 0, 0);
+    world.tick(FRAME_MS_30FPS);
+    expect(object.position.y).toBe(0);
+  });
+
+  it('chassi cinemático não roda o controlador, mas a malha segue a pose (SPEC-0655)', async () => {
+    const { world, entries } = await fleet(1);
+    const { vehicle, object } = entries[0]!;
+    vehicle.body.setBodyType(RAPIER.RigidBodyType.KinematicPositionBased, true);
+    const update = vi.spyOn(vehicle, 'update');
+    vehicle.body.setNextKinematicTranslation({ x: 3, y: 1, z: 4 });
+    world.tick(FRAME_MS_30FPS);
+    expect(update).not.toHaveBeenCalled();
+    expect(object.position.x).toBeCloseTo(3, 5);
+    expect(object.position.z).toBeCloseTo(4, 5);
+  });
 });

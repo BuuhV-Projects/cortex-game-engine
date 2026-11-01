@@ -238,6 +238,11 @@ RigidBody.prototype.wakeUp = function () {
   __rapierNative.bodySet(this.__world, this.handle, 7, 0, 0, 0, 0, 1);
 };
 
+/** Põe o corpo para dormir (API do browser). O carro parado dorme (SPEC-0655). */
+RigidBody.prototype.sleep = function () {
+  __rapierNative.bodySet(this.__world, this.handle, 16, 0, 0, 0, 0, 0);
+};
+
 function World(gravity) {
   this.__ptr = __rapierNative.worldNew(gravity.x, gravity.y, gravity.z);
   // O Rapier do browser expõe a gravidade como propriedade, e jogos LEEM dela

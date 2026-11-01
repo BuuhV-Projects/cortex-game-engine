@@ -35,7 +35,7 @@ entity
 
 > **new ArcadeVehicleComponent**(`vehicle`, `adhesion?`): `ArcadeVehicleComponent`
 
-Defined in: [src/components/ArcadeVehicleComponent.ts:21](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/ArcadeVehicleComponent.ts#L21)
+Defined in: [src/components/ArcadeVehicleComponent.ts:24](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/ArcadeVehicleComponent.ts#L24)
 
 #### Parameters
 
@@ -63,7 +63,7 @@ Aderência arcade. `null` = simulação pura, ainda no passo compartilhado.
 
 > `readonly` **adhesion**: [`GroundAdhesion`](GroundAdhesion.md) \| `null` = `null`
 
-Defined in: [src/components/ArcadeVehicleComponent.ts:24](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/ArcadeVehicleComponent.ts#L24)
+Defined in: [src/components/ArcadeVehicleComponent.ts:27](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/ArcadeVehicleComponent.ts#L27)
 
 Aderência arcade. `null` = simulação pura, ainda no passo compartilhado.
 
@@ -83,11 +83,21 @@ Indica se o componente está ativo. Systems podem ignorar componentes desativado
 
 ***
 
+### restSteps
+
+> **restSteps**: `number` = `0`
+
+Defined in: [src/components/ArcadeVehicleComponent.ts:22](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/ArcadeVehicleComponent.ts#L22)
+
+Subpassos seguidos em repouso; ao chegar em `REST_STEPS` o chassi dorme (SPEC-0655).
+
+***
+
 ### vehicle
 
 > `readonly` **vehicle**: [`Vehicle`](Vehicle.md)
 
-Defined in: [src/components/ArcadeVehicleComponent.ts:22](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/ArcadeVehicleComponent.ts#L22)
+Defined in: [src/components/ArcadeVehicleComponent.ts:25](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/ArcadeVehicleComponent.ts#L25)
 
 ## Accessors
 

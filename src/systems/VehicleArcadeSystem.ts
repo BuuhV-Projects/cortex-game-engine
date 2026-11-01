@@ -3,6 +3,7 @@ import type { Entity } from '../ecs/Entity.js';
 import { Object3DComponent } from '../components/Object3DComponent.js';
 import { ArcadeVehicleComponent } from '../components/ArcadeVehicleComponent.js';
 import type { RapierPhysics } from '../physics/RapierPhysics.js';
+import { REST_STEPS, nextRestSteps } from '../physics/VehicleRest.js';
 
 /**
  * Avança VÁRIOS carros no mesmo mundo Rapier (ADR-0256 / SPEC-0259).
@@ -14,6 +15,10 @@ import type { RapierPhysics } from '../physics/RapierPhysics.js';
  * Prioridade 8 (o slot da física): pilotos — input do jogador (30) e scripts de
  * IA (50) — escrevem forças que valem no passo do frame seguinte, com o mesmo
  * atraso para todos; a câmera (30) vê a pose recém-calculada.
+ *
+ * Carro parado (sem motor, sem velocidade, rodas no chão por `REST_STEPS`
+ * subpassos) DORME e sai da simulação até algo acordá-lo; chassi cinemático
+ * (trânsito no trilho) só recebe a pose na malha (SPEC-0655).
  *
  * Não combine com `RapierPhysicsSystem` no mesmo `RapierPhysics` (os dois
  * avançam o mundo), e passe `stepPhysics: false` ao `VehicleControlSystem` do
@@ -27,11 +32,22 @@ export class VehicleArcadeSystem extends System {
   override priority = 8;
 
   private cars: Entity[] = [];
+  /** Carros dormindo cuja pose já foi copiada para a malha depois de dormir. */
+  private readonly restingPose = new WeakSet<Entity>();
   private readonly beforeStep = (step: number): void => {
     for (const entity of this.cars) {
       const car = entity.getComponent(ArcadeVehicleComponent)!;
+      const body = car.vehicle.body;
+      // Parado dorme (SPEC-0655): sem aderência nem controlador, e fora do passo do mundo.
+      // Cinemático (trânsito no trilho) idem: a pose vem do trilho, e ele nunca dorme.
+      if (body.isSleeping() || !body.isDynamic()) continue;
       car.adhesion?.apply(step);
       car.vehicle.update(step);
+      car.restSteps = nextRestSteps(car.restSteps, car.vehicle);
+      if (car.restSteps >= REST_STEPS) {
+        car.restSteps = 0;
+        body.sleep();
+      }
     }
   };
 
@@ -44,6 +60,9 @@ export class VehicleArcadeSystem extends System {
     this.physics.advance(deltaTime / 1000, this.beforeStep);
     for (const entity of entities) {
       const body = entity.getComponent(ArcadeVehicleComponent)!.vehicle.body;
+      if (!body.isSleeping()) this.restingPose.delete(entity);
+      else if (this.restingPose.has(entity)) continue; // a pose não muda dormindo
+      else this.restingPose.add(entity); // dormiu neste quadro: copia a pose final uma vez
       const object = entity.getComponent(Object3DComponent)!.object;
       const t = body.translation();
       const r = body.rotation();

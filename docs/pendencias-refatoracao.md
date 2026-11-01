@@ -17,3 +17,6 @@ src/core/NativeSceneMirror.ts
 src/scene/OutdoorLighting.ts
 src/physics/nearMeshes.ts
 electron/main.ts
+src/physics/RapierPhysics.ts
+native/js/src/shims/rapier-compat.js
+native/rapier-native/src/lib.rs

@@ -367,7 +367,8 @@ export class RapierPhysics {
     const he = spec.chassisHalfExtents;
     const desc = R.RigidBodyDesc.dynamic();
     if (spec.position) desc.setTranslation(spec.position.x, spec.position.y, spec.position.z);
-    desc.setCanSleep(false); // veículo do player nunca "dorme"
+    // Pode dormir (SPEC-0655): o VehicleArcadeSystem põe o carro parado para dormir, e
+    // `setEngineForce`/`setSteering` o acordam. Com `setCanSleep(false)` o Rapier o acordava no passo seguinte.
     const chassis = this.world.createRigidBody(desc);
     const mass = spec.mass ?? 1200;
     const cd = R.ColliderDesc.cuboid(he.x, he.y, he.z).setFriction(spec.chassisFriction ?? 0.4);
@@ -452,6 +453,7 @@ export class Vehicle {
 
   private _suspensionRestLength: number;
   private _suspensionStiffness: number;
+  private _engineForce = 0;
 
   constructor(
     private readonly ctrl: RAPIER.DynamicRayCastVehicleController,
@@ -508,21 +510,41 @@ export class Vehicle {
     );
   }
 
-  /** Força do motor nas rodas com tração (N). 0 = desliga. */
+  /** Força do motor nas rodas com tração (N). 0 = desliga. Força ≠ 0 acorda o chassi (SPEC-0655). */
   setEngineForce(force: number): void {
+    this._engineForce = force;
+    if (force !== 0) this.wakeIfSleeping();
     for (let i = 0; i < this.wheels.length; i++) {
       if (this.wheels[i]!.powered) this.ctrl.setWheelEngineForce(i, force);
     }
+  }
+  /** A última força do motor pedida (N). */
+  get engineForce(): number {
+    return this._engineForce;
   }
   /** Freio em todas as rodas. */
   setBrake(force: number): void {
     for (let i = 0; i < this.wheels.length; i++) this.ctrl.setWheelBrake(i, force);
   }
-  /** Ângulo de esterço (rad) nas rodas que esterçam. */
+  /** Ângulo de esterço (rad) nas rodas que esterçam. Ângulo ≠ 0 acorda o chassi (SPEC-0655). */
   setSteering(angle: number): void {
+    if (angle !== 0) this.wakeIfSleeping();
     for (let i = 0; i < this.wheels.length; i++) {
       if (this.wheels[i]!.steering) this.ctrl.setWheelSteering(i, angle);
     }
+  }
+  /** Velocidade linear² do chassi (m²/s²) — a regra de repouso da SPEC-0655. */
+  linvelSquared(): number {
+    const v = this.body.linvel();
+    return v.x * v.x + v.y * v.y + v.z * v.z;
+  }
+  /** Velocidade angular² do chassi (rad²/s²). */
+  angvelSquared(): number {
+    const w = this.body.angvel();
+    return w.x * w.x + w.y * w.y + w.z * w.z;
+  }
+  private wakeIfSleeping(): void {
+    if (this.body.isSleeping()) this.body.wakeUp();
   }
   /** Avança a física do veículo. Chame DEPOIS de `physics.step()`. */
   update(dt: number): void {
