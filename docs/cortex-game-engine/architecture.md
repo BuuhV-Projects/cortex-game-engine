@@ -426,7 +426,13 @@ alvo é **Rapier** (WASM) como motor dinâmico único, estilo Unity.
   usa `STATIC_MARGIN` = 0,5 m, SPEC-0323). Os 12 raios de parede só vão contra a malha
   cujos triângulos tocam a caixa que eles varrem (`touchingBox`: 1 `intersectsBox` da
   BVH por candidata, exato; sem árvore ou instanciada passa direto) — no meio da rua não
-  sai raio de parede nenhum (SPEC-0323); o spring arm da 3ª pessoa faz o mesmo e tem um
+  sai raio de parede nenhum (SPEC-0323). **Quadro longo (SPEC-0648):** o `GameLoop`
+  corta o passo em 100 ms, e no export isso acontece. O raio de chão sai acima dos pés de
+  ANTES da queda do quadro, e o passo horizontal maior que meio raio é varrido eixo a eixo
+  contra os sólidos (a partir da XZ resolvida no quadro anterior), antes do chão.
+  Armadilha: de dentro de uma caixa `cortexSolid` nem o empurrão nem o raio de chão a veem
+  (`FrontSide`), e o personagem cai no que houver embaixo. Foi o "afunda no chão" do Port Hollow,
+  que só aparecia no nativo; o spring arm da 3ª pessoa faz o mesmo e tem um
   2º raio na altura do peito (parede baixa). **Braço sem atravessar (SPEC-0625,
   `systems/thirdPersonCameraArm.ts`):** raio da câmera (centro + 4 raios deslocados de
   `CAM_RADIUS`), sem mínimo que empurre pra dentro da parede, encolher imediato (só a
