@@ -3,6 +3,20 @@
 Instruções específicas deste projeto. Decisões de arquitetura/tooling ficam em
 `docs/adrs/` (ADR) e `docs/tdrs/` (TDR) — leia os relevantes antes de mudar uma área.
 
+## REGRA ABSOLUTA: toda mudança entra via PR (Greptile + auto-fix + auto-merge)
+
+**Nada vai direto pra `main`.** Todo trabalho (código, docs, specs) sai de uma
+branch/worktree e entra por **PR no GitHub** (`BuuhV-Projects/cortex-game-engine`).
+
+1. Abra o PR e ligue o **Auto-fix** da sessão: o **Greptile** revisa e você corrige
+   os comentários dele (e falhas de CI) nas suas próprias modificações.
+2. Repita até o Greptile dar **Confidence Score 5/5** no resumo do PR.
+3. Só com **5/5** ative o **auto-merge** — ele mergeia sozinho quando o CI passar.
+   Abaixo de 5/5, não ative: corrija e espere nova revisão.
+
+PR e commits sem menção ao Claude (sem "Generated with Claude Code", sem
+`Co-Authored-By`).
+
 ## REGRA ABSOLUTA: gerenciador de pacotes é o YARN
 
 **Sempre `yarn`, nunca `npm`.** Vale para tudo: instalar (`yarn add`, `yarn add -D`),
