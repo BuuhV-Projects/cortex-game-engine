@@ -26,6 +26,15 @@ Port Hollow tem CI próprio sem esse job.
 - O Port Hollow ganha o mesmo script e um passo "Regras do repo" no job do seu `ci.yml` (o auto-merge dele espera esse
   CI), registrado na SPEC do próprio jogo.
 
+## Detalhes (revisão do PR)
+
+- A pendência vale só para o caminho EXATO: `docs/pendencias-refatoracao.md` é lido um caminho por linha (aceita `- ` e
+  crases). Registrar `game/city.tsx` não libera `game/city.ts`.
+- `console.log`: as linhas adicionadas de cada arquivo são lidas juntas, sem strings nem comentários (`codeOnly`), e a
+  chamada é `console . log (` com espaço ou quebra de linha entre os pedaços. Comentário no fim da linha e texto dentro
+  de string não reprovam; `console.log ('x')` e a chamada quebrada em duas linhas reprovam.
+- `parseAddedLines` tem teste com vários arquivos, exclusão, caminho entre aspas e linha adicionada começando com `++`.
+
 ## Consequências
 
 - Projeto novo já nasce com a checagem; jogo existente copia os dois arquivos (ou o passo, se já tem CI).

@@ -13,6 +13,8 @@ const EXEMPT = /(^|\/)(third_party|vendor|node_modules|dist|public|src-tauri)\//
 const TOOLING = /^(scripts|tests|\.github)\//
 const CONSOLE_EXT = /\.(ts|tsx|js|mjs|cjs)$/
 const RECORD_AREAS = /^docs\/(specs|adrs|tdrs)\//
+/** Chamada de `console.log`, com espaço ou quebra de linha entre os pedaços. */
+const CONSOLE_CALL = /\bconsole\s*\.\s*log\s*\(/
 
 /**
  * @param {{ files: { status: string, path: string, lines: number }[],
@@ -24,12 +26,13 @@ export function checkRules({ files, added, pendencias }) {
   const errors = []
   const warnings = []
   const touched = files.filter((f) => f.status !== 'D')
+  const pending = pendingPaths(pendencias)
 
   for (const f of touched) {
     if (/(^|\/)package-lock\.json$/.test(f.path)) {
       errors.push({ path: f.path, msg: 'package-lock.json no PR: o repo usa yarn (yarn.lock).' })
     }
-    if (CODE_EXT.test(f.path) && !EXEMPT.test(f.path) && f.lines > MAX_LINES && !pendencias.includes(f.path)) {
+    if (CODE_EXT.test(f.path) && !EXEMPT.test(f.path) && f.lines > MAX_LINES && !pending.has(f.path)) {
       errors.push({
         path: f.path,
         msg: `${f.lines} linhas (máx. ${MAX_LINES}): refatore ou registre em docs/pendencias-refatoracao.md.`,
@@ -37,12 +40,16 @@ export function checkRules({ files, added, pendencias }) {
     }
   }
 
+  // As linhas adicionadas de cada arquivo juntas: a chamada pode quebrar em várias linhas.
+  const byFile = new Map()
   for (const a of added) {
     if (!CONSOLE_EXT.test(a.path) || TOOLING.test(a.path) || EXEMPT.test(a.path)) continue
-    const code = a.text.trim()
-    if (code.startsWith('//') || code.startsWith('*')) continue
-    if (code.includes('console.log(')) {
-      errors.push({ path: a.path, msg: 'console.log no jogo: use debug(escopo, …) da cortex-game-engine.' })
+    if (a.text.trim().startsWith('*')) continue // meio de bloco de comentário (o `/*` pode estar fora do diff)
+    byFile.set(a.path, [...(byFile.get(a.path) ?? []), a.text])
+  }
+  for (const [path, lines] of byFile) {
+    if (CONSOLE_CALL.test(codeOnly(lines.join('\n')))) {
+      errors.push({ path, msg: 'console.log no jogo: use debug(escopo, …) da cortex-game-engine.' })
     }
   }
 
@@ -51,6 +58,38 @@ export function checkRules({ files, added, pendencias }) {
     warnings.push({ path: '', msg: 'Código mudou sem SPEC/ADR/TDR no PR (ok só para correção trivial).' })
   }
   return { errors, warnings }
+}
+
+/** Caminhos registrados em `docs/pendencias-refatoracao.md`: um por linha, com ou sem `- ` e crases. */
+export function pendingPaths(text) {
+  const paths = text.split('\n').map((l) => l.trim().replace(/^[-*]\s+/, '').replace(/`/g, '').trim())
+  return new Set(paths.filter(Boolean))
+}
+
+/** O texto sem strings (`'` `"` e crase) nem comentários (`//`, bloco): o que sobra é código. */
+export function codeOnly(src) {
+  let out = ''
+  let i = 0
+  while (i < src.length) {
+    const c = src[i]
+    const next = src[i + 1]
+    if (c === '/' && next === '/') {
+      while (i < src.length && src[i] !== '\n') i++
+    } else if (c === '/' && next === '*') {
+      const end = src.indexOf('*/', i + 2)
+      i = end < 0 ? src.length : end + 2
+      out += ' '
+    } else if (c === '"' || c === "'" || c === '`') {
+      i++
+      while (i < src.length && src[i] !== c) i += src[i] === '\\' ? 2 : 1
+      i++
+      out += ' '
+    } else {
+      out += c
+      i++
+    }
+  }
+  return out
 }
 
 /** Caminho do cabeçalho `+++`; o git põe entre aspas os que têm caractere especial. */
