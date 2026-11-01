@@ -15,7 +15,9 @@ O template de projeto (`templates/new-project/`) nascia fora do contrato.
 
 1. **Validador estático** `templates/new-project/.claude/hooks/native-contract.mjs` (Node puro, sem dependências; o
    `native-contract.sh` acha um node: `$CORTEX_NODE`, o do PATH ou um do nvm).
-   - **ERRO**: `nativeRenderer: true` ausente no `new Game(...)` do `main.ts`; `outdoorLighting` de cena sem `csm: true`.
+   - **ERRO**: `nativeRenderer: true` ausente no `new Game(...)` do `main.ts`; `outdoorLighting` de cena sem `csm: true`;
+     loader do three direto no código (`new TextureLoader/ImageLoader/ImageBitmapLoader/GLTFLoader/KTX2Loader()`), fora
+     do cache por URL da engine — cópia por objeto estoura a memória do host (SPEC-0652).
    - **DÉBITO** (o nativo ainda não tem; o objeto cai no three em JS): material físico (`KHR_materials_specular/ior/
      clearcoat/...`), normal map, mapa de metal/rugosidade, `alphaMode: MASK` (sombra C++ sem recorte alfa até a
      SPEC-0642), vegetação com várias malhas, e no código `AmbientLight`/luz pontual/`scene.environment =`/
