@@ -84,6 +84,15 @@ describe('pr-rules: revisão do PR (pendências exatas, console.log, leitura do 
     // divisão não é regex: a chamada depois dela continua achada
     expect(logErrs("const half = a / 2; console.log('x')")).toBe(1)
     expect(logErrs("const ok = a / b / c")).toBe(0)
+    // o apóstrofo da regex não abre string que engula a linha seguinte
+    expect(logErrs("const rx = /'/;\nconsole.log('x')", [2])).toBe(1)
+  })
+
+  it('console.log antigo: comentário inserido entre os pedaços da chamada não reprova', () => {
+    expect(logErrs("console\n// explicação\n.log(x)", [2])).toBe(0)
+    expect(logErrs("console\n\n.log(x)", [2])).toBe(0)
+    // mas um pedaço novo da chamada reprova
+    expect(logErrs("console\n.log(x)", [2])).toBe(1)
   })
 
   it('parseAddedLines: vários arquivos, exclusão, caminho entre aspas, ++ e o número da linha', () => {

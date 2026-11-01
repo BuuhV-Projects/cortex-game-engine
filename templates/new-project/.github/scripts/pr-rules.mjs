@@ -180,13 +180,17 @@ function regexStarts(code) {
   return REGEX_AFTER.test(trimmed[trimmed.length - 1]) || REGEX_AFTER_WORD.test(trimmed)
 }
 
-/** Linhas (a partir de 1) que cada chamada de `console.log` ocupa no código já limpo por {@link codeOnly}. */
+/**
+ * Linhas (a partir de 1) com pedaços de cada chamada de `console.log`, no código já limpo por {@link codeOnly}. Só
+ * as linhas onde a chamada tem código: um comentário ou uma linha vazia no meio dela não conta.
+ */
 export function consoleCallLines(code) {
   const lines = []
   for (const m of code.matchAll(CONSOLE_CALL)) {
     const first = code.slice(0, m.index).split('\n').length
-    const span = m[0].split('\n').length
-    for (let l = first; l < first + span; l++) lines.push(l)
+    m[0].split('\n').forEach((piece, k) => {
+      if (piece.trim() !== '') lines.push(first + k)
+    })
   }
   return lines
 }

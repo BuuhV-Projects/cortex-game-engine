@@ -38,6 +38,8 @@ Port Hollow tem CI próprio sem esse job.
   O código dentro de `${…}` de uma crase continua código, e expressões regulares saem inteiras (um `/` depois de
   operador, `(`, `,`, `=` ou `return` abre regex; depois de nome, número, `)` ou `]` é divisão), então aspas nelas
   não abrem string. Varredura conferida em todo o código da engine (126 chamadas = 126 do grep) e do jogo.
+  Uma chamada quebrada em linhas só conta nas linhas onde tem código: comentário ou linha vazia inserida entre os
+  pedaços de uma chamada antiga não reprova.
 - `parseAddedLines` tem teste com vários arquivos, exclusão, caminho entre aspas, linha adicionada começando com `++` e
   o número da linha no arquivo novo.
 
