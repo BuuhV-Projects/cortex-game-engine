@@ -123,10 +123,14 @@ export function codeOnly(src) {
   let out = ''
   let i = 0
   const braces = [] // IN_BRACE para `{` comum, IN_TEMPLATE para o `${` de uma crase
+  // O último elemento de código foi um literal (string, crase fechada, regex)? Depois de um valor, `/` é divisão —
+  // e o texto que sobra no `out` não diz isso, porque o literal já virou espaço.
+  let afterLiteral = false
   const enterTemplateText = (start) => {
     const { end, opened } = templateTextEnd(src, start)
     out += blank(src.slice(i, end))
     if (opened) braces.push(IN_TEMPLATE)
+    afterLiteral = !opened
     i = end
   }
   while (i < src.length) {
@@ -148,24 +152,28 @@ export function codeOnly(src) {
       while (end < src.length && src[end] !== c && src[end] !== '\n') end += src[end] === '\\' ? 2 : 1
       end = Math.min(end + 1, src.length)
       out += blank(src.slice(i, end))
+      afterLiteral = true
       i = end
     } else if (c === '`') {
       enterTemplateText(i + 1)
     } else if (c === '}' && braces[braces.length - 1] === IN_TEMPLATE) {
       braces.pop()
       enterTemplateText(i + 1)
-    } else if (c === '/' && regexStarts(out)) {
+    } else if (c === '/' && !afterLiteral && regexStarts(out)) {
       const end = regexEnd(src, i)
       if (end < 0) {
         out += c
+        afterLiteral = false
         i++
       } else {
         out += blank(src.slice(i, end))
+        afterLiteral = true
         i = end
       }
     } else {
       if (c === '{') braces.push(IN_BRACE)
       else if (c === '}') braces.pop()
+      if (!/\s/.test(c)) afterLiteral = false
       out += c
       i++
     }
@@ -173,7 +181,7 @@ export function codeOnly(src) {
   return out
 }
 
-/** Um `/` aqui abre expressão regular? Decide pelo último caractere de código antes dele. */
+/** Um `/` aqui abre expressão regular? Decide pelo último caractere de código antes dele (fora literal: ver `afterLiteral`). */
 function regexStarts(code) {
   const trimmed = code.trimEnd()
   if (trimmed === '') return true

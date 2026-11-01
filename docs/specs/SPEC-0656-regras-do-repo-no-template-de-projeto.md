@@ -36,7 +36,8 @@ Port Hollow tem CI próprio sem esse job.
   Bloco `/* … */` de várias linhas, string e comentário no fim da linha não reprovam; uma chamada antiga fora das
   linhas adicionadas também não. O job faz checkout do head (`ref: head.sha`) para o arquivo no disco ser o do diff.
   O código dentro de `${…}` de uma crase continua código, e expressões regulares saem inteiras (um `/` depois de
-  operador, `(`, `,`, `=` ou `return` abre regex; depois de nome, número, `)` ou `]` é divisão), então aspas nelas
+  operador, `(`, `,`, `=` ou `return` abre regex; depois de nome, número, `)`, `]` ou de um literal — string, crase,
+  regex — é divisão), então aspas nelas
   não abrem string. Varredura conferida em todo o código da engine (126 chamadas = 126 do grep) e do jogo.
   Uma chamada quebrada em linhas só conta nas linhas onde tem código: comentário ou linha vazia inserida entre os
   pedaços de uma chamada antiga não reprova.
