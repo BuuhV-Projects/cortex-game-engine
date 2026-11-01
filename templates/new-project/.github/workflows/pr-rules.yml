@@ -1,0 +1,29 @@
+# Regras do CLAUDE.md no diff do PR (SPEC-0656 da cortex-game-engine): 500 linhas por arquivo,
+# yarn (sem package-lock.json), debug() em vez de console.log, e aviso de código sem SPEC.
+name: Regras do repo
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-rules-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  rules:
+    name: Regras do repo
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.23.4
+      - name: Checar regras no diff
+        run: node .github/scripts/pr-rules.mjs "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}"
