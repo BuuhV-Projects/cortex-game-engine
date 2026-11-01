@@ -1,3 +1,19 @@
+# [0.93.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.92.0...v0.93.0) (2026-11-01)
+
+
+### Bug Fixes
+
+* **física:** passo horizontal de quadro longo não entra em sólido (SPEC-0648) ([30d701e](https://github.com/BuuhV-Projects/cortex-game-engine/commit/30d701e40f8a73cbfb7712b5092c5631bdb6b9b5))
+* **física:** raio de chão cobre a queda do quadro inteiro (SPEC-0648) ([27f16a1](https://github.com/BuuhV-Projects/cortex-game-engine/commit/27f16a1f83bd0ef1f0ba210e751d81ab59bd6920))
+* **road:** greide sem degrau na emenda — média por integral em janela simétrica que encolhe nas pontas (SPEC-0631 §2) ([088e137](https://github.com/BuuhV-Projects/cortex-game-engine/commit/088e1372c1c3f3ba4a563dfc8064b5088268f4dd))
+* **road:** ponte não fica enterrada — sob o vão o terreno acima da pista é cortado, sem aterro (SPEC-0631 §3c) ([18ca430](https://github.com/BuuhV-Projects/cortex-game-engine/commit/18ca430a7738191a269dfd4a8489c2a1bb6adfd6))
+
+
+### Features
+
+* **road:** ponte montada por peças do jogo (bridgeParts) e acesso que não invade o vão (SPEC-0631 §3c-§3d, ADR-0648) ([f82285a](https://github.com/BuuhV-Projects/cortex-game-engine/commit/f82285aa09492e7f4328a91abf5a1932ed51aca5))
+* **road:** ponte no nó road — vão sem corte/aterro e greide reto entre as cabeceiras (SPEC-0631 §3c) ([9144f55](https://github.com/BuuhV-Projects/cortex-game-engine/commit/9144f55c59f34494ee15a711f8d64368a241f3b2))
+
 # [0.92.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.91.0...v0.92.0) (2026-10-31)
 
 
