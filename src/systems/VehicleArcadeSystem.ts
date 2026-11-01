@@ -32,6 +32,8 @@ export class VehicleArcadeSystem extends System {
   override priority = 8;
 
   private cars: Entity[] = [];
+  /** Carros dormindo cuja pose já foi copiada para a malha depois de dormir. */
+  private readonly restingPose = new WeakSet<Entity>();
   private readonly beforeStep = (step: number): void => {
     for (const entity of this.cars) {
       const car = entity.getComponent(ArcadeVehicleComponent)!;
@@ -58,7 +60,9 @@ export class VehicleArcadeSystem extends System {
     this.physics.advance(deltaTime / 1000, this.beforeStep);
     for (const entity of entities) {
       const body = entity.getComponent(ArcadeVehicleComponent)!.vehicle.body;
-      if (body.isSleeping()) continue; // a pose não muda dormindo
+      if (!body.isSleeping()) this.restingPose.delete(entity);
+      else if (this.restingPose.has(entity)) continue; // a pose não muda dormindo
+      else this.restingPose.add(entity); // dormiu neste quadro: copia a pose final uma vez
       const object = entity.getComponent(Object3DComponent)!.object;
       const t = body.translation();
       const r = body.rotation();

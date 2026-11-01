@@ -116,6 +116,22 @@ describe('VehicleArcadeSystem', () => {
     expect(update).not.toHaveBeenCalled();
   });
 
+  it('carro que dorme no meio do quadro leva a pose final para a malha (SPEC-0655)', async () => {
+    const { world, entries } = await fleet(1);
+    const { vehicle, object } = entries[0]!;
+    vehicle.setBrake(50);
+    for (let i = 0; i < 90 && !vehicle.body.isSleeping(); i++) world.tick(FRAME_MS_30FPS);
+    expect(vehicle.body.isSleeping()).toBe(true);
+    const t = vehicle.chassisTranslation();
+    expect(object.position.x).toBeCloseTo(t.x, 6);
+    expect(object.position.y).toBeCloseTo(t.y, 6);
+    expect(object.position.z).toBeCloseTo(t.z, 6);
+    // dormindo, a malha fica onde está: pose mexida à mão não é copiada de novo
+    object.position.set(0, 0, 0);
+    world.tick(FRAME_MS_30FPS);
+    expect(object.position.y).toBe(0);
+  });
+
   it('chassi cinemático não roda o controlador, mas a malha segue a pose (SPEC-0655)', async () => {
     const { world, entries } = await fleet(1);
     const { vehicle, object } = entries[0]!;

@@ -30,7 +30,9 @@ e o quadro JS de 82 para 68 ms. O resto do custo do sistema é o passo do mundo 
   entra na contagem de repouso: no Rapier ele nunca dorme (os ~345 `sleep()` "acordados" medidos eram carros de
   trânsito parados no semáforo).
 - **Corpo dormindo** no `VehicleArcadeSystem`: pula aderência, `updateVehicle` e a cópia da pose para o `Object3D`
-  (a pose não muda). O Rapier tira a ilha dormindo do passo do mundo.
+  (a pose não muda). O Rapier tira a ilha dormindo do passo do mundo. A cópia só é pulada **depois** de feita uma vez
+  com o carro já dormindo: num quadro de vários subpassos o chassi pode andar nos primeiros e dormir num seguinte, e
+  a malha ficaria parada na pose do quadro anterior até ele acordar.
 - **Acordar**: `Vehicle.setEngineForce` com força ≠ 0 e `setSteering` com ângulo ≠ 0 acordam o chassi; colisão de
   outro corpo (carro, personagem) o Rapier já acorda sozinho. Corpo dormindo não integra gravidade: o carro fica
   exatamente onde parou, sem afundar sem a suspensão.
