@@ -52,6 +52,8 @@ describe('pr-rules: revisão do PR (pendências exatas, console.log, leitura do 
     expect(errs('/* console.log(x) */ const a = 1')).toBe(0)
     expect(errs("console.log ('speed')")).toBe(1)
     expect(errs('console', "  .log('speed')")).toBe(1)
+    // bloco aberto numa linha do diff com o `*/` fora dele não esconde o log da linha seguinte
+    expect(errs('/* cabeçalho novo', "console.log('x')")).toBe(1)
   })
 
   it('parseAddedLines: vários arquivos, exclusão, caminho entre aspas e linha que começa com ++', () => {

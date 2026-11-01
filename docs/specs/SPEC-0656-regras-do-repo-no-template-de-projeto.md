@@ -32,7 +32,8 @@ Port Hollow tem CI próprio sem esse job.
   crases). Registrar `game/city.tsx` não libera `game/city.ts`.
 - `console.log`: as linhas adicionadas de cada arquivo são lidas juntas, sem strings nem comentários (`codeOnly`), e a
   chamada é `console . log (` com espaço ou quebra de linha entre os pedaços. Comentário no fim da linha e texto dentro
-  de string não reprovam; `console.log ('x')` e a chamada quebrada em duas linhas reprovam.
+  de string não reprovam; `console.log ('x')` e a chamada quebrada em duas linhas reprovam. A limpeza é LINHA A LINHA: um
+  `/*` cujo `*/` ficou fora do diff esconde só o resto da própria linha, não o `console.log` da seguinte.
 - `parseAddedLines` tem teste com vários arquivos, exclusão, caminho entre aspas e linha adicionada começando com `++`.
 
 ## Consequências

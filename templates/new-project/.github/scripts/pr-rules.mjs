@@ -48,7 +48,8 @@ export function checkRules({ files, added, pendencias }) {
     byFile.set(a.path, [...(byFile.get(a.path) ?? []), a.text])
   }
   for (const [path, lines] of byFile) {
-    if (CONSOLE_CALL.test(codeOnly(lines.join('\n')))) {
+    // limpa LINHA A LINHA: um `/*` cujo `*/` ficou fora do diff esconde só o resto da própria linha
+    if (CONSOLE_CALL.test(lines.map(codeOnly).join('\n'))) {
       errors.push({ path, msg: 'console.log no jogo: use debug(escopo, …) da cortex-game-engine.' })
     }
   }
