@@ -44,6 +44,9 @@ add_executable(cortex_host
   src/shims/audio.cpp
   src/shims/files.cpp
   src/shims/image_decode.cpp
+  src/shims/stb_image_impl.cpp
+  src/shims/inflate.cpp
+  src/shims/decompression.cpp
   src/shims/input.cpp
   src/shims/io_pool.cpp
   src/shims/pak.cpp
@@ -322,6 +325,9 @@ add_executable(cortex_host_tests
   tests/raycast_test.cpp
   tests/raycast_parity_test.cpp
   tests/window_size_test.cpp
+  tests/inflate_test.cpp
+  src/shims/inflate.cpp
+  src/shims/stb_image_impl.cpp
   src/physics/raycast/triangle_bvh.cpp
   src/physics/raycast/instance_set.cpp
   src/physics/raycast/raycast_world.cpp
@@ -339,4 +345,5 @@ add_executable(cortex_host_tests
 )
 target_include_directories(cortex_host_tests PRIVATE
   ${TP}/wgpu/include
+  ${TP}/stb
 )

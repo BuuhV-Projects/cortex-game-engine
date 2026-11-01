@@ -1,6 +1,6 @@
 #include "image_decode.h"
 
-#define STB_IMAGE_IMPLEMENTATION
+// Implementação do stb_image em stb_image_impl.cpp (ADR-0650).
 #define STBI_NO_STDIO
 #include <stb_image.h>
 

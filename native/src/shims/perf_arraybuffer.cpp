@@ -22,6 +22,7 @@ const char* sourceLabel(ArrayBufferSource source) {
     case ArrayBufferSource::kIoPool: return "io";
     case ArrayBufferSource::kFiles: return "files";
     case ArrayBufferSource::kTextRaster: return "text";
+    case ArrayBufferSource::kInflate: return "inflate";
     default: return "?";
   }
 }
