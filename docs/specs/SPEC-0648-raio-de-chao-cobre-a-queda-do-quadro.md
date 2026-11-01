@@ -40,5 +40,33 @@ O raio de chão sai da altura dos pés **antes** da queda deste quadro:
 
 - O pouso independe do tamanho do quadro: a mesma queda pousa igual a 16 ms e a 100 ms.
 - O degrau de subida continua `stepHeight`.
-- Ficou de fora: o passo **horizontal** de um quadro de 100 ms correndo (>0,4 m) também poderia
-  passar o centro da face de uma parede. Não foi visto no Port Hollow; fica registrado como risco.
+
+## Segundo caso: o passo horizontal entra no sólido
+
+Uma segunda rodada da sonda, já com a correção acima, achou o outro caminho. O detetive andava na
+calçada (6,40 m) junto à face do patamar elevado `plat-…`, uma caixa invisível que vai de 4,3 a 7,9 m,
+com a face em z = 9,0. O empurrão de parede o segurava em z = 8,65. Num quadro de 100 ms o passo foi
+de 0,6 m, maior que o raio, e o centro foi para z = 9,13, **dentro** da caixa.
+
+De dentro da caixa, os raios de parede só encontram a face de trás (`FrontSide` descarta), então não
+há empurrão. O raio de chão sai abaixo do topo (7,9 m) e cai no terreno (4,39 m).
+
+**Decisão:** o `CharacterPhysicsSystem` guarda por entidade a posição XZ resolvida no fim do quadro
+anterior. Logo depois da gravidade e **antes** do raio de chão, se o passo do quadro num eixo passa de
+`SWEEP_MIN_STEP` (0,5) × `radius`, ele varre o passo:
+
+- Eixo por eixo (X, depois Z a partir do X já resolvido), raios nas 3 alturas da cápsula partindo da
+  posição anterior, com alcance `|passo| + radius + SKIN`, contra os sólidos perto do segmento.
+- Com acerto, o passo para a `radius + SKIN` da face. O outro eixo segue andando, então o
+  personagem desliza na parede.
+- Passo maior que `SWEEP_MAX_STEP` (8 m) é teletransporte do jogo e não é varrido. O 1º quadro da
+  entidade também não.
+- Quem já está dentro de um sólido não é travado, porque de dentro os raios não acertam a face, e
+  pode sair.
+
+**Custo:** em quadro normal (passo menor que metade do raio), zero raios a mais. Em quadro longo, até
+6 raios contra os sólidos perto, que no host rodam em C++ (SPEC-0347).
+
+**Por que o DDD 61 não sofria:** ele roda a ~50–60 fps no nativo, e o chão dele é a própria malha,
+com meio-fio baixo. O Port Hollow tem quadros de até 100 ms e um chão feito de caixas invisíveis, com
+patamares 1,5 m acima da calçada e o terreno logo abaixo.

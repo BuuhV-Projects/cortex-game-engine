@@ -47,6 +47,20 @@ export const COLLECT_INTERVAL_MS = 250;
 /** Raio-base do tronco (×escala da instância) pra colisão barata com vegetação. */
 const TRUNK_RADIUS = 0.4;
 
+/** Passo do quadro (fração do raio, por eixo) a partir do qual ele é varrido contra as paredes (SPEC-0648). */
+const SWEEP_MIN_STEP = 0.5;
+/** Passo (m) acima do qual o movimento é teletransporte do jogo e não é varrido (SPEC-0648). */
+const SWEEP_MAX_STEP = 8;
+const HALF = 0.5;
+
+/** As 3 alturas da cápsula (pé, meio, cabeça) onde saem os raios de parede, em `out`. */
+function capsuleHeights(feetY: number, c: CharacterBodyComponent, out: number[]): number[] {
+  out[0] = feetY + Math.min(c.radius, c.height * HALF);
+  out[1] = feetY + c.height * HALF;
+  out[2] = feetY + Math.max(c.height - c.radius, c.height * HALF);
+  return out;
+}
+
 /**
  * Varre a cena (a cada `COLLECT_INTERVAL_MS`) e separa o que cada checagem precisa (em
  * vez de cada raycast testar a cena inteira — caro com road/terreno densos):
@@ -196,6 +210,9 @@ export class CharacterPhysicsSystem extends System {
   private sinceCollect = Infinity;
   /** Nós escondidos já preparados (BVH) — a varredura não desce neles de novo (SPEC-0320). */
   private prepared = new WeakSet<Object3D>();
+  /** Posição XZ resolvida no fim do quadro anterior, por entidade (SPEC-0648). */
+  private readonly lastXZ = new WeakMap<Entity, { x: number; z: number }>();
+  private readonly ys: number[] = [0, 0, 0];
 
   /** @param roots Raízes da cena pra colisão de chão (raycast). Vazio = só `groundY`. */
   constructor(roots: Object3D[] = []) {
@@ -246,6 +263,17 @@ export class CharacterPhysicsSystem extends System {
       // no centro). Toda a checagem de chão é feita nos pés; o transform.y volta a ser
       // pés + footOffset ao aterrar — senão o mesh afunda metade da altura.
       const feet = t.y - c.footOffset;
+
+      // Passo horizontal de quadro longo (SPEC-0648): maior que o raio, o centro passaria da face de
+      // um sólido — e de dentro dele nem o empurrão de parede nem o raio de chão o veem. Antes do chão.
+      const last = this.lastXZ.get(e);
+      if (last && this.solidMeshes.length > 0) {
+        const ys = capsuleHeights(feet, c, this.ys);
+        const self = e.getComponent(Object3DComponent)?.object;
+        const skip = self ? (o: Object3D): boolean => isUnder(o, self) : undefined;
+        t.x = last.x + this.sweptStep(last.x, last.z, t.x - last.x, 1, 0, c.radius, ys, skip);
+        t.z = last.z + this.sweptStep(t.x, last.z, t.z - last.z, 0, 1, c.radius, ys, skip);
+      }
 
       // Altura do chão sob os pés. A GEOMETRIA REAL (raycast) VENCE: acha a primeira
       // superfície abaixo (a qualquer distância — ele cai de qualquer altura e pousa
@@ -312,7 +340,7 @@ export class CharacterPhysicsSystem extends System {
         const r = c.radius;
         const feetY = t.y - c.footOffset;
         const self = e.getComponent(Object3DComponent)?.object;
-        const ys = [feetY + Math.min(r, c.height * 0.5), feetY + c.height * 0.5, feetY + Math.max(c.height - r, c.height * 0.5)];
+        const ys = capsuleHeights(feetY, c, this.ys);
         // só a parede com triângulo dentro da caixa que os 12 raios varrem (SPEC-0323)
         const reach = r + SKIN + WALL_BOX_EPSILON;
         this.wallBox.min.set(t.x - reach, ys[0]! - WALL_BOX_EPSILON, t.z - reach);
@@ -357,6 +385,44 @@ export class CharacterPhysicsSystem extends System {
           t.z += dz * k;
         }
       }
+      let resolved = this.lastXZ.get(e);
+      if (!resolved) this.lastXZ.set(e, (resolved = { x: 0, z: 0 }));
+      resolved.x = t.x;
+      resolved.z = t.z;
     }
+  }
+
+  /**
+   * O passo `step` (m) no eixo (`ax`, `az`) a partir de (x, z) que não atravessa sólido (SPEC-0648):
+   * raios nas alturas `ys` na direção do passo; com acerto, o passo para a `r + SKIN` da face.
+   * Eixo por eixo, o outro eixo segue e o personagem desliza. Passo curto (o empurrão de parede
+   * resolve) ou de teletransporte volta inteiro.
+   */
+  private sweptStep(
+    x: number,
+    z: number,
+    step: number,
+    ax: number,
+    az: number,
+    r: number,
+    ys: readonly number[],
+    skip: ((o: Object3D) => boolean) | undefined,
+  ): number {
+    const len = Math.abs(step);
+    if (!(len > SWEEP_MIN_STEP * r) || len > SWEEP_MAX_STEP) return step;
+    const mid = step * HALF;
+    const cand = this.solidIndex.nearXZ(x + ax * mid, z + az * mid, len * HALF + r + SKIN, this.nearSolid, ys[0], ys[ys.length - 1]);
+    if (cand.length === 0) return step;
+    const sign = Math.sign(step);
+    this.wallDir.set(ax * sign, 0, az * sign);
+    let nearest = Infinity;
+    for (const y of ys) {
+      this.origin.set(x, y, z);
+      this.ray.set(this.origin, this.wallDir);
+      this.ray.far = len + r + SKIN;
+      const h = firstHitAmong(this.ray, cand, null, skip);
+      if (h && h.distance < nearest) nearest = h.distance;
+    }
+    return nearest === Infinity ? step : sign * Math.min(len, Math.max(0, nearest - r - SKIN));
   }
 }
