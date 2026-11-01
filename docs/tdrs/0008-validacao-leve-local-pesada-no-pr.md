@@ -81,9 +81,10 @@ Alternativas pesadas:
 
 ## Backlog de pendências
 
-- Ligar "Allow GitHub Actions to create and approve pull requests" (Settings →
-  Actions → General). Sem isso o `greptile-approve.yml` falha ao aprovar; o
-  modo automático do agente recusou a mudança, fica com o dono do repo.
+- Ligar "Allow GitHub Actions to create and approve pull requests" primeiro na
+  **org** (`orgs/BuuhV-Projects/actions/permissions/workflow`; no repo dá 409
+  enquanto a org bloqueia) e depois no repo. Sem isso o `greptile-approve.yml`
+  falha ao aprovar; fica com o dono da org.
 - Validar o gate no primeiro PR depois do merge deste (o `check_run` só roda da
   `main`); se a aprovação do bot não contar no ruleset, partir para o GitHub
   App (alternativa 1).
