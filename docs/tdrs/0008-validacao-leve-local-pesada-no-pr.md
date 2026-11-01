@@ -75,3 +75,19 @@ Alternativas pesadas:
   checa só `src/`. Limpar os testes é pendência.
 - O ddd00-game (repo privado no plano Free, sem ruleset) ganhou CI próprio
   (SPEC-0077 de lá); lá o gate de merge segue sendo a regra, não o GitHub.
+- O hook do husky de toda worktree é o do checkout principal (`core.hooksPath`
+  aponta para `<principal>/.husky/_`): o pre-commit novo só vale depois que a
+  `main` local for atualizada.
+
+## Backlog de pendências
+
+- Ligar "Allow GitHub Actions to create and approve pull requests" (Settings →
+  Actions → General). Sem isso o `greptile-approve.yml` falha ao aprovar; o
+  modo automático do agente recusou a mudança, fica com o dono do repo.
+- Validar o gate no primeiro PR depois do merge deste (o `check_run` só roda da
+  `main`); se a aprovação do bot não contar no ruleset, partir para o GitHub
+  App (alternativa 1).
+- Zerar os 82 erros de typecheck em `tests/` e trocar o step do CI para
+  `yarn typecheck` completo.
+- ddd00-game: auto-merge e ruleset indisponíveis no plano Free para repo
+  privado; merge segue manual após CI verde + 5/5.
