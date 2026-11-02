@@ -1,3 +1,10 @@
+## [0.96.2](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.96.1...v0.96.2) (2026-11-02)
+
+
+### Bug Fixes
+
+* **espelho:** manda ao host o TRS da matrix de nó com matrixAutoUpdate desligado ([b482e0a](https://github.com/BuuhV-Projects/cortex-game-engine/commit/b482e0a2452f5133fafbb236c251c738d631977a))
+
 ## [0.96.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.96.0...v0.96.1) (2026-11-02)
 
 

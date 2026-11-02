@@ -1,0 +1,82 @@
+# Atualização de dependências (TDR-0010). Política e o que ligar no repo: DEPENDABOT.md.
+#
+# O repo crava todas as versões (yarn add -E). Este arquivo é a outra metade dessa regra: sem
+# ele, cada dependência congela na versão do dia em que entrou.
+#
+# Patch e minor vão AGRUPADOS (um PR por dependência vira ruído); major vai individual.
+# O Dependabot não varre subpastas: pasta nova com package.json ou Cargo.toml = bloco novo aqui.
+version: 2
+
+updates:
+  # ------------------------------------------------------------- yarn (npm)
+  - package-ecosystem: npm
+    directories:
+      - /
+      - /web
+      - /native/export-toolchain
+    schedule:
+      interval: weekly
+      day: monday
+    versioning-strategy: increase
+    open-pull-requests-limit: 5
+    labels: [dependencias, npm]
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      npm-patch:
+        update-types: [patch]
+      npm-minor:
+        update-types: [minor]
+
+  # O template vira o package.json de todo jogo novo: velho aqui = jogo novo já nasce velho.
+  - package-ecosystem: npm
+    directory: /templates/new-project
+    schedule:
+      interval: monthly
+    versioning-strategy: increase
+    open-pull-requests-limit: 3
+    labels: [dependencias, npm, template]
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      template-npm-patch-minor:
+        update-types: [patch, minor]
+
+  # ------------------------------------------------------------------ Cargo
+  #
+  # rapier3d: subir a versão exige reaplicar o patch de native/rapier-native/patched/ (ADR-0336)
+  # e recompilar o host (yarn build:host; o export recusa DLL velha, SPEC-0660).
+  - package-ecosystem: cargo
+    directories:
+      - /native/rapier-native
+      - /templates/new-project/src-tauri
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 3
+    labels: [dependencias, cargo]
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      cargo-patch-minor:
+        update-types: [patch, minor]
+
+  # --------------------------------------------------------- GitHub Actions
+  #
+  # Uma action comprometida roda com as permissões do workflow (release publica na main via App).
+  - package-ecosystem: github-actions
+    directories:
+      - /
+      - /.github/actions/*
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels: [dependencias, ci]
+    commit-message:
+      prefix: ci
+    groups:
+      actions:
+        update-types: [patch, minor]
