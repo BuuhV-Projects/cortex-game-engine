@@ -10,14 +10,8 @@ import {
   UnsignedByteType,
   type ColorRepresentation,
 } from 'three';
-import { MeshStandardNodeMaterial } from 'three/webgpu';
-import { texture as textureNode, uv, uniform, mix, clamp, max } from 'three/tsl';
 import { terrainLayerTexture } from './terrainLayerTextures.js';
-
-/** Helper só pra extrair o tipo concreto do nó uniform numérico (TS). */
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-const uniformNumber = (v: number) => uniform(v);
-type RepeatNode = ReturnType<typeof uniformNumber>;
+import { buildTerrainSplatMaterial, type TerrainLayerNode, type TerrainRepeatNode } from './terrainSplatMaterial.js';
 
 /** Opções de {@link Terrain}. */
 export interface TerrainOptions {
@@ -99,9 +93,9 @@ export class Terrain {
   // Nós TSL estáveis do blend (trocar `.value` propaga sem reconstruir o material).
   // O engine renderiza com WebGPURenderer (node-based) — `onBeforeCompile` NÃO
   // existe nesse pipeline; o blend de splat é um `colorNode` de NodeMaterial.
-  private splatTexNode: ReturnType<typeof textureNode> | null = null;
-  private layerTexNodes: ReturnType<typeof textureNode>[] = [];
-  private repeatNodes: RepeatNode[] = [];
+  private splatTexNode: TerrainLayerNode | null = null;
+  private layerTexNodes: TerrainLayerNode[] = [];
+  private repeatNodes: TerrainRepeatNode[] = [];
 
   constructor(options: TerrainOptions = {}) {
     const size = options.size ?? 50;
@@ -374,6 +368,7 @@ export class Terrain {
       this.splatTexture.dispose();
       this.splatTexture = this.createSplatTexture();
       this.splatTexNode!.value = this.splatTexture;
+      (this.mesh.material as MeshStandardMaterial).needsUpdate = true; // o renderer nativo relê as texturas pela versão
     }
     this.layers.length = 0;
     for (const l of data.layers.slice(0, TERRAIN_MAX_LAYERS)) {
@@ -406,32 +401,15 @@ export class Terrain {
   private ensurePaint(): void {
     if (this.splatTexture) return;
     this.splatTexture = this.createSplatTexture();
-
-    const white = new DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1, RGBAFormat, UnsignedByteType);
-    white.needsUpdate = true;
-
-    const uvNode = uv();
-    this.splatTexNode = textureNode(this.splatTexture, uvNode);
-    this.repeatNodes = [uniformNumber(1), uniformNumber(1), uniformNumber(1), uniformNumber(1)];
-    this.layerTexNodes = this.repeatNodes.map((r) => textureNode(white, uvNode.mul(r)));
-    const splat = this.splatTexNode;
-    const [t0, t1, t2, t3] = this.layerTexNodes;
-    const wsum = splat.r.add(splat.g).add(splat.b).add(splat.a);
-    const blended = t0!.rgb
-      .mul(splat.r)
-      .add(t1!.rgb.mul(splat.g))
-      .add(t2!.rgb.mul(splat.b))
-      .add(t3!.rgb.mul(splat.a))
-      .div(max(wsum, 1e-4)); // média ponderada quando a soma estoura 1
-
     const old = this.mesh.material as MeshStandardMaterial;
-    const material = new MeshStandardNodeMaterial();
+    // o mesmo material no Studio (TSL) e no export (modelo nativo terrainSplat, SPEC-0662)
+    const { material, splat, layers, repeats } = buildTerrainSplatMaterial(this.splatTexture);
+    this.splatTexNode = splat;
+    this.layerTexNodes = layers;
+    this.repeatNodes = repeats;
     material.color.copy(old.color);
     material.roughness = old.roughness;
     material.metalness = old.metalness;
-    // Soma < 1 = mistura com a cor base (uniform aponta pro material.color — edições
-    // na MESMA instância de Color propagam ao vivo).
-    material.colorNode = mix(uniform(material.color).rgb, blended, clamp(wsum, 0, 1));
     this.mesh.material = material;
     old.dispose();
     this.syncRepeat();
@@ -444,7 +422,11 @@ export class Terrain {
     if (!layer || !node) return;
     this.syncRepeat();
     if (typeof document === 'undefined') return; // testes/SSR: sem ImageLoader
-    node.value = terrainLayerTexture(layer.url); // compartilhada por URL (SPEC-0652)
+    const texture = terrainLayerTexture(layer.url); // compartilhada por URL (SPEC-0652)
+    if (node.value === texture) return;
+    node.value = texture;
+    // o renderer nativo relê as texturas pela versão do material (SPEC-0662); só quando a camada muda
+    (this.mesh.material as MeshStandardMaterial).needsUpdate = true;
   }
 
   /** Espelha o `repeat` das camadas nos uniforms (tiling ao vivo, sem rebuild). */
