@@ -2,6 +2,7 @@
 
 #include <SDL3/SDL.h>
 #include <webgpu/webgpu.h>
+#include <webgpu/wgpu.h>  // wgpuQueueGetTimestampPeriod (extensão do wgpu-native)
 
 #include <algorithm>
 #include <array>
@@ -19,7 +20,6 @@ constexpr uint64_t kBytesPorTimestamp = sizeof(uint64_t);
 constexpr uint64_t kBytesDoQuerySet = static_cast<uint64_t>(kMaxPassesPorFrame) * kSlotsPorPass * kBytesPorTimestamp;
 /** Quantos passes aparecem no relatório, do mais caro para o menos. */
 constexpr size_t kPassesNoRelatorio = 6;
-constexpr double kNsPorMs = 1'000'000.0;
 /** Percentis da linha `gpu-work`. */
 constexpr double kMediana = 0.5;
 constexpr double kPercentilAlto = 0.95;
@@ -32,6 +32,11 @@ WGPUQuerySet g_querySet = nullptr;
 WGPUBuffer g_resolveBuffer = nullptr;  ///< destino do resolveQuerySet (GPU)
 WGPUBuffer g_readBuffer = nullptr;     ///< cópia mapeável para a CPU
 WGPUDevice g_device = nullptr;
+// ns por tick do timestamp (SPEC-0665): o wgpu-native entrega o valor CRU da GPU. No DX12 da RX 6600 o relógio é
+// de 100 MHz (10 ns/tick), e ler tick como ns mostrava a GPU 10x mais leve (12 "ms" com a GPU a 97%).
+double g_nsPorTick = 1.0;
+
+double msDeTicks(double ticks) { return webgpu::msDeTicks(ticks, g_nsPorTick); }
 bool g_leituraEmVoo = false;
 /** A copia para o buffer de leitura ja foi gravada no encoder deste frame. */
 bool g_copiaGravada = false;
@@ -74,7 +79,7 @@ void aoMapear(WGPUMapAsyncStatus status, WGPUStringView, void*, void*) {
 double percentil(const std::vector<uint64_t>& ordenado, double p) {
   if (ordenado.empty()) return 0.0;
   const size_t i = static_cast<size_t>(p * static_cast<double>(ordenado.size() - 1));
-  return static_cast<double>(ordenado[i]) / kNsPorMs;
+  return msDeTicks(static_cast<double>(ordenado[i]));
 }
 
 /**
@@ -92,7 +97,7 @@ void relatarGpuWork() {
                         percentil(totais, kMaximo), static_cast<double>(g_stats.passesUsados) / quadros);
   for (PassOrigin origem : kOrigensDoRelatorio) {
     if (n < 0 || static_cast<size_t>(n) >= sizeof(buf)) break;
-    const double msPorQuadro = static_cast<double>(g_stats.nsPorOrigem[indiceDaOrigem(origem)]) / kNsPorMs / quadros;
+    const double msPorQuadro = msDeTicks(static_cast<double>(g_stats.nsPorOrigem[indiceDaOrigem(origem)])) / quadros;
     const int k = std::snprintf(buf + n, sizeof(buf) - static_cast<size_t>(n), " %c=%.3f",
                                 static_cast<char>(origem), msPorQuadro);
     if (k > 0) n += k;
@@ -114,6 +119,11 @@ bool adapterSupportsTimestamp(WGPUAdapterImpl* adapter) {
 void setupPassTiming(WGPUDeviceImpl* device) {
   if (!g_enabled || device == nullptr) return;
   g_device = device;
+  WGPUQueue queue = wgpuDeviceGetQueue(device);
+  const float periodo = queue != nullptr ? wgpuQueueGetTimestampPeriod(queue) : 0.0f;
+  if (queue != nullptr) wgpuQueueRelease(queue);
+  g_nsPorTick = nsPorTickDoPeriodo(periodo);
+  core::appendPerfLog("pass-timing: %.3f ns por tick do timestamp", g_nsPorTick);
   WGPUQuerySetDescriptor qsd = WGPU_QUERY_SET_DESCRIPTOR_INIT;
   qsd.type = WGPUQueryType_Timestamp;
   qsd.count = kMaxPassesPorFrame * kSlotsPorPass;
@@ -200,8 +210,8 @@ bool reportPassTiming() {
   for (uint32_t p = 0; p < kMaxPassesPorFrame; ++p) {
     const auto& a = g_stats.porPosicao[p];
     if (a.amostras == 0) continue;
-    linhas.push_back({p, static_cast<double>(a.somaNs) / a.amostras / kNsPorMs,
-                      static_cast<double>(a.maxNs) / kNsPorMs});
+    linhas.push_back({p, msDeTicks(static_cast<double>(a.somaNs) / a.amostras),
+                      msDeTicks(static_cast<double>(a.maxNs))});
   }
   // Do mais caro para o menos: o relatório serve para achar o alvo.
   std::sort(linhas.begin(), linhas.end(), [](const Linha& a, const Linha& b) { return a.mediaMs > b.mediaMs; });

@@ -42,6 +42,18 @@ constexpr std::array<PassOrigin, 5> kOrigensDoRelatorio = {PassOrigin::Js, PassO
 /** Tamanho da tabela por origem: indexada pelo próprio caractere ASCII. */
 constexpr size_t kOrigensPossiveis = 128;
 
+/** ns num ms. */
+constexpr double kNsPorMs = 1'000'000.0;
+
+/**
+ * ns por tick a partir do `wgpuQueueGetTimestampPeriod` (SPEC-0665): o
+ * timestamp chega cru (ticks da GPU). Período inválido (<= 0) cai em 1 ns.
+ */
+inline double nsPorTickDoPeriodo(float periodo) { return periodo > 0.0f ? static_cast<double>(periodo) : 1.0; }
+
+/** Ticks de timestamp para ms. */
+inline double msDeTicks(double ticks, double nsPorTick) { return ticks * nsPorTick / kNsPorMs; }
+
 inline size_t indiceDaOrigem(PassOrigin origem) {
   return static_cast<size_t>(static_cast<unsigned char>(origem)) % kOrigensPossiveis;
 }
