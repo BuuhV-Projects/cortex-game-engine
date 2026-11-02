@@ -24,6 +24,7 @@ import {
   SRGBColorSpace,
   SphereGeometry,
   SpotLight,
+  Vector2,
   Vector3,
   type Material,
 } from 'three';
@@ -72,6 +73,8 @@ const cell = TEXTURE_SIZE / CHECKER_CELLS;
 const checker = texture((x, y) => ((Math.floor(x / cell) + Math.floor(y / cell)) % 2 ? [0.9, 0.8, 0.3] : [0.2, 0.3, 0.8]), true);
 const stripes = texture((x) => (Math.floor(x / cell) % 2 ? [1, 0.5, 0] : [0, 0, 0]), true);
 const bumps = texture((x, y) => [0.5 + 0.4 * Math.sin(x / 3), 0.5 + 0.4 * Math.cos(y / 3), 1], false);
+// glTF metallicRoughness: roughness in G, metalness in B (SPEC-0659).
+const metalRough = texture((x, y) => [0, 0.3 + 0.6 * ((x >> 3) % 2), (y >> 4) % 2], false);
 const holes = texture((x, y) => {
   const keep = (Math.floor(x / cell) + Math.floor(y / cell)) % 2 ? 1 : 0;
   return [keep, keep, keep];
@@ -384,6 +387,12 @@ const entries: Array<[string, Material | ((mesh: Mesh) => void), boolean]> = [
   // SPEC-0535 (2026-10-26): lit models instanced with instanceColor (the Feira stalls, DDD 61).
   ['lambert-instanced-color', cellWith(instancedSpheres(new MeshLambertMaterial({ map: checker }))), false],
   ['standard-instanced-color', cellWith(instancedSpheres(new MeshStandardMaterial({ roughness: 0.5 }))), false],
+  // SPEC-0659: what the GLTFLoader creates from a Blender kit (KHR_materials_specular, one
+  // metallicRoughness texture, normalTexture without tangents: normalScale.y flipped).
+  ['physical-gltf-metalrough-normal', new MeshPhysicalMaterial({
+    map: checker, metalnessMap: metalRough, roughnessMap: metalRough, normalMap: bumps, normalScale: new Vector2(1, -1), side: DoubleSide, ior: 1.5, specularIntensity: 0.8, metalness: 1,
+  }), false],
+  ['physical-ior-vcolor', new MeshPhysicalMaterial({ ior: 1.45, vertexColors: true, roughness: 0.5, side: DoubleSide }), true],
 ];
 
 const canvas = document.getElementById('canvas') as HTMLCanvasElement;
