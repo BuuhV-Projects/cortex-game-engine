@@ -197,6 +197,13 @@ const DEFAULT_SUSPENSION_STIFFNESS = 24;
  */
 const UPRIGHT_MIN_CORRECTION = 1e-5;
 
+/** Índices 0..n−1 de uma malha sem índice, num laço (sem array JS intermediário). */
+function sequentialIndices(n: number): Uint32Array {
+  const out = new Uint32Array(n);
+  for (let i = 0; i < n; i++) out[i] = i;
+  return out;
+}
+
 function rapier(): RapierApi {
   if (!api) throw new Error('Rapier não inicializado — use RapierPhysics.create() (await).');
   return api;
@@ -348,10 +355,10 @@ export class RapierPhysics {
         verts[i * 3 + 1] = v.y;
         verts[i * 3 + 2] = v.z;
       }
+      // Typed → typed, sem array JS no meio: no Hermes o `Uint32Array.from` montava um array do tamanho
+      // da malha e estourava o heap do export com ~1,2 M vértices de rua + terreno (SPEC-0661).
       const idx = mesh.geometry.index;
-      const indices = idx
-        ? Uint32Array.from(idx.array)
-        : Uint32Array.from({ length: pos.count }, (_, i) => i);
+      const indices = idx ? new Uint32Array(idx.array) : sequentialIndices(pos.count);
       this.addTrimesh(verts, indices);
     });
   }
