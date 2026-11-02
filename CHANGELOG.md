@@ -1,3 +1,10 @@
+## [0.98.2](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.98.1...v0.98.2) (2026-11-02)
+
+
+### Bug Fixes
+
+* **scene:** malha do mergeSubtree fica fora da fusão estática global (SPEC-0666) ([#37](https://github.com/BuuhV-Projects/cortex-game-engine/issues/37)) ([a1146b9](https://github.com/BuuhV-Projects/cortex-game-engine/commit/a1146b97a3826e746aed50325066ed5e6d1fd161))
+
 ## [0.98.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.98.0...v0.98.1) (2026-11-02)
 
 
