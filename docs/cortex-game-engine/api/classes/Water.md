@@ -6,7 +6,7 @@
 
 # Class: Water
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/scene/Water.ts:104](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Water.ts#L104)
+Defined in: [src/scene/Water.ts:104](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Water.ts#L104)
 
 Água simples (experimental) pra cenários de ilhas/plataforma: um plano
 horizontal grande com material PBR cartoon e, opcionalmente, uma textura de
@@ -43,7 +43,7 @@ const sea = new Water(scene, { y: -6, camera: game.camera, causticsUrl: '…' })
 
 > **new Water**(`scene`, `options?`): `Water`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/scene/Water.ts:120](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Water.ts#L120)
+Defined in: [src/scene/Water.ts:120](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Water.ts#L120)
 
 #### Parameters
 
@@ -65,7 +65,7 @@ Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/scene/Water.ts:120
 
 > `readonly` **mesh**: `Mesh`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/scene/Water.ts:106](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Water.ts#L106)
+Defined in: [src/scene/Water.ts:106](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Water.ts#L106)
 
 O `Mesh` do plano de água, já adicionado à cena.
 
@@ -75,7 +75,7 @@ O `Mesh` do plano de água, já adicionado à cena.
 
 > **addRipple**(`position`, `strength?`): `boolean`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/scene/Water.ts:225](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Water.ts#L225)
+Defined in: [src/scene/Water.ts:225](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Water.ts#L225)
 
 Cria uma ondulação local em coordenadas do mundo, sem alocar malhas.
 O pool guarda até oito impactos; um novo substitui o mais antigo.
@@ -108,7 +108,7 @@ O pool guarda até oito impactos; um novo substitui o mais antigo.
 
 > **dispose**(): `void`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/scene/Water.ts:241](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Water.ts#L241)
+Defined in: [src/scene/Water.ts:241](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Water.ts#L241)
 
 Remove a superfície e libera a geometria, o material e a textura carregada.
 
@@ -122,7 +122,7 @@ Remove a superfície e libera a geometria, o material e a textura carregada.
 
 > **refreshShoreline**(): `void`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/scene/Water.ts:236](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Water.ts#L236)
+Defined in: [src/scene/Water.ts:236](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Water.ts#L236)
 
 Reconstrói a máscara de espuma onde a geometria visível cruza o nível médio.
 Chame após carregar ou mover terreno; `buildScene` chama no carregamento.
@@ -138,7 +138,7 @@ Não acompanha objetos móveis automaticamente. No modo simples não faz nada.
 
 > **update**(`deltaSeconds`): `void`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/scene/Water.ts:195](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Water.ts#L195)
+Defined in: [src/scene/Water.ts:195](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Water.ts#L195)
 
 Atualiza ondas, perturbações ou cáusticas e acompanha a câmera configurada.
 Chame uma vez por quadro passando o delta em **segundos** (`deltaTime / 1000`).

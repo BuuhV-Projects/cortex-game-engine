@@ -6,7 +6,7 @@
 
 # Class: UiTemplate
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/ui/runtime/UiTemplate.ts:61](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiTemplate.ts#L61)
+Defined in: [src/ui/runtime/UiTemplate.ts:61](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiTemplate.ts#L61)
 
 Template compilado (parse 1x; `build` quantas vezes quiser).
 
@@ -16,7 +16,7 @@ Template compilado (parse 1x; `build` quantas vezes quiser).
 
 > **new UiTemplate**(`roots`, `sheet`): `UiTemplate`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/ui/runtime/UiTemplate.ts:62](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiTemplate.ts#L62)
+Defined in: [src/ui/runtime/UiTemplate.ts:62](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiTemplate.ts#L62)
 
 #### Parameters
 
@@ -38,7 +38,7 @@ Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/ui/runtime/UiTempl
 
 > **build**(`ui`, `options?`): [`UiTemplateInstance`](../interfaces/UiTemplateInstance.md)
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/ui/runtime/UiTemplate.ts:68](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiTemplate.ts#L68)
+Defined in: [src/ui/runtime/UiTemplate.ts:68](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiTemplate.ts#L68)
 
 Instancia os widgets na camada.
 

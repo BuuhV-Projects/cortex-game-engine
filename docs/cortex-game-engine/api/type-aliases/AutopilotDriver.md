@@ -8,7 +8,7 @@
 
 > **AutopilotDriver** = (`dt`) => [`AutopilotDriveInput`](../interfaces/AutopilotDriveInput.md)
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/input/InputAutopilot.ts:69](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputAutopilot.ts#L69)
+Defined in: [src/input/InputAutopilot.ts:69](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputAutopilot.ts#L69)
 
 Game-side closed-loop driver for `driver` steps (SPEC-0595): the game knows where the street is.
 

@@ -6,7 +6,7 @@
 
 # Interface: VehicleDriverHandle
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/scene/VehicleDriver.ts:114](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleDriver.ts#L114)
+Defined in: [src/scene/VehicleDriver.ts:114](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleDriver.ts#L114)
 
 Handle de [setupVehicleDriver](../functions/setupVehicleDriver.md).
 
@@ -16,7 +16,7 @@ Handle de [setupVehicleDriver](../functions/setupVehicleDriver.md).
 
 > **animator**: [`VehicleAnimatorComponent`](../classes/VehicleAnimatorComponent.md)
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/scene/VehicleDriver.ts:120](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleDriver.ts#L120)
+Defined in: [src/scene/VehicleDriver.ts:120](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleDriver.ts#L120)
 
 ***
 
@@ -24,7 +24,7 @@ Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/scene/VehicleDrive
 
 > **entity**: [`Entity`](../classes/Entity.md)
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/scene/VehicleDriver.ts:115](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleDriver.ts#L115)
+Defined in: [src/scene/VehicleDriver.ts:115](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleDriver.ts#L115)
 
 ***
 
@@ -32,7 +32,7 @@ Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/scene/VehicleDrive
 
 > **params**: [`VehicleDriveParams`](VehicleDriveParams.md)
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/scene/VehicleDriver.ts:117](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleDriver.ts#L117)
+Defined in: [src/scene/VehicleDriver.ts:117](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleDriver.ts#L117)
 
 Escreva aqui a cada frame (input ou IA).
 
@@ -42,7 +42,7 @@ Escreva aqui a cada frame (input ou IA).
 
 > **pose**: [`ProceduralDriverPoseComponent`](../classes/ProceduralDriverPoseComponent.md)
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/scene/VehicleDriver.ts:121](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleDriver.ts#L121)
+Defined in: [src/scene/VehicleDriver.ts:121](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleDriver.ts#L121)
 
 ***
 
@@ -50,7 +50,7 @@ Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/scene/VehicleDrive
 
 > **report**: [`VehicleAssetReport`](VehicleAssetReport.md)
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/scene/VehicleDriver.ts:118](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleDriver.ts#L118)
+Defined in: [src/scene/VehicleDriver.ts:118](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleDriver.ts#L118)
 
 ***
 
@@ -58,4 +58,4 @@ Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/scene/VehicleDrive
 
 > **seat**: [`VehicleSeatAttachmentComponent`](../classes/VehicleSeatAttachmentComponent.md)
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/scene/VehicleDriver.ts:119](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleDriver.ts#L119)
+Defined in: [src/scene/VehicleDriver.ts:119](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleDriver.ts#L119)

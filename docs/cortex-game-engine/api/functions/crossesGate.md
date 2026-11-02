@@ -8,7 +8,7 @@
 
 > **crossesGate**(`from`, `to`, `gate`): `boolean`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/scene/Route.ts:147](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Route.ts#L147)
+Defined in: [src/scene/Route.ts:147](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Route.ts#L147)
 
 Cruzou o portal de `from` para `to`, no sentido de percurso, dentro da largura
 e da altura da pista? Varrido (não perde a passagem entre frames) e só para a

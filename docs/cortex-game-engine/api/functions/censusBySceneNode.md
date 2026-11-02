@@ -8,7 +8,7 @@
 
 > **censusBySceneNode**(`scene`, `limit`): \[`string`, `number`\][]
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/PerfTrace.ts:388](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L388)
+Defined in: [src/core/PerfTrace.ts:388](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L388)
 
 Censo da árvore por nó de cena: quantos `Object3D` cada nó do `level.json`
 carrega. Responde "quem são os 1.271 nós" — a pergunta que decide se vale

@@ -6,7 +6,7 @@
 
 # Class: Component
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/ecs/Component.ts:7](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Component.ts#L7)
+Defined in: [src/ecs/Component.ts:7](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Component.ts#L7)
 
 Classe base para todos os componentes do sistema ECS.
 
@@ -52,7 +52,7 @@ A lógica pertence aos Systems — vide ADR-0002.
 
 > **enabled**: `boolean` = `true`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/ecs/Component.ts:9](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Component.ts#L9)
+Defined in: [src/ecs/Component.ts:9](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Component.ts#L9)
 
 Indica se o componente está ativo. Systems podem ignorar componentes desativados.
 
@@ -64,7 +64,7 @@ Indica se o componente está ativo. Systems podem ignorar componentes desativado
 
 > **get** **type**(): `string`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/ecs/Component.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Component.ts#L16)
+Defined in: [src/ecs/Component.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Component.ts#L16)
 
 Identificador do tipo do componente.
 Retorna o nome da classe construtora (ex: "TransformComponent").

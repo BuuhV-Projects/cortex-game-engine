@@ -6,7 +6,7 @@
 
 # Class: Skybox
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/Skybox.ts:101](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Skybox.ts#L101)
+Defined in: [src/core/Skybox.ts:101](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Skybox.ts#L101)
 
 ## Constructors
 
@@ -24,7 +24,7 @@ Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/Skybox.ts:101
 
 > `static` **clear**(`scene`): `void`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/Skybox.ts:227](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Skybox.ts#L227)
+Defined in: [src/core/Skybox.ts:227](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Skybox.ts#L227)
 
 Remove o environment/background da cena (volta ao fundo padrão).
 Não dá `dispose()` na textura — guarde o retorno de `fromHDRI` se quiser.
@@ -45,7 +45,7 @@ Não dá `dispose()` na textura — guarde o retorno de `fromHDRI` se quiser.
 
 > `static` **fromGradient**(`scene`, `options?`, `renderer?`): `DataTexture`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/Skybox.ts:181](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Skybox.ts#L181)
+Defined in: [src/core/Skybox.ts:181](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Skybox.ts#L181)
 
 Céu **gradiente procedural** (sem arquivo) — zênite → horizonte → chão, aplicado
 como `background` visível E `environment` (luz/reflexo suave). Ideal pra um céu
@@ -82,7 +82,7 @@ Skybox.fromGradient(scene, { top: '#1f72d8', middle: '#d6ecfb' }); // céu azul 
 
 > `static` **fromHDRI**(`scene`, `url`, `options?`, `renderer?`): `Promise`\<`DataTexture`\>
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/Skybox.ts:145](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Skybox.ts#L145)
+Defined in: [src/core/Skybox.ts:145](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Skybox.ts#L145)
 
 Carrega um HDRI equiretangular e o aplica como iluminação (e fundo) da cena.
 
@@ -128,7 +128,7 @@ await Skybox.fromHDRI(scene, 'assets/sky.hdr', { backgroundBlurriness: 0.3 });
 
 > `static` **fromPanorama**(`scene`, `texture`, `options?`, `renderer?`): `Texture`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/Skybox.ts:115](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Skybox.ts#L115)
+Defined in: [src/core/Skybox.ts:115](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Skybox.ts#L115)
 
 Aplica um **panorama equiretangular** já carregado (PNG/JPG/KTX2 2:1, céu
 desenhado) como fundo da cena — e, com `lighting`, também como environment.

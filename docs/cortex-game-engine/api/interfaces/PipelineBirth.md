@@ -6,7 +6,7 @@
 
 # Interface: PipelineBirth
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/PipelineBirthLog.ts:17](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PipelineBirthLog.ts#L17)
+Defined in: [src/core/PipelineBirthLog.ts:17](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PipelineBirthLog.ts#L17)
 
 Um pipeline criado, com o que é preciso para aquecê-lo no carregamento.
 
@@ -16,7 +16,7 @@ Um pipeline criado, com o que é preciso para aquecê-lo no carregamento.
 
 > **camera**: `string`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/PipelineBirthLog.ts:25](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PipelineBirthLog.ts#L25)
+Defined in: [src/core/PipelineBirthLog.ts:25](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PipelineBirthLog.ts#L25)
 
 `main` para a câmera do jogo; senão o `type` da câmera (sombra usa a da luz).
 
@@ -26,7 +26,7 @@ Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/PipelineBirth
 
 > **key**: `string`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/PipelineBirthLog.ts:33](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PipelineBirthLog.ts#L33)
+Defined in: [src/core/PipelineBirthLog.ts:33](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PipelineBirthLog.ts#L33)
 
 Chave de cache do three: ids dos shaders de vértice e fragmento + estado
 (blend, depth, face, formato/amostras do alvo, geometria). Duas chaves do
@@ -38,7 +38,7 @@ mesmo objeto dizem se o que variou foi o shader ou o estado.
 
 > **material**: `string`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/PipelineBirthLog.ts:21](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PipelineBirthLog.ts#L21)
+Defined in: [src/core/PipelineBirthLog.ts:21](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PipelineBirthLog.ts#L21)
 
 Nome do material, ou o `type`.
 
@@ -48,7 +48,7 @@ Nome do material, ou o `type`.
 
 > **ms**: `number`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/PipelineBirthLog.ts:27](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PipelineBirthLog.ts#L27)
+Defined in: [src/core/PipelineBirthLog.ts:27](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PipelineBirthLog.ts#L27)
 
 Duração da criação (ms), com a compilação síncrona do host.
 
@@ -58,7 +58,7 @@ Duração da criação (ms), com a compilação síncrona do host.
 
 > **object**: `string`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/PipelineBirthLog.ts:19](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PipelineBirthLog.ts#L19)
+Defined in: [src/core/PipelineBirthLog.ts:19](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PipelineBirthLog.ts#L19)
 
 Nome do objeto, ou do ancestral nomeado mais próximo, ou o `type`.
 
@@ -68,6 +68,6 @@ Nome do objeto, ou do ancestral nomeado mais próximo, ou o `type`.
 
 > **transparent**: `boolean`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/PipelineBirthLog.ts:23](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PipelineBirthLog.ts#L23)
+Defined in: [src/core/PipelineBirthLog.ts:23](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PipelineBirthLog.ts#L23)
 
 Variante translúcida — nasce quando um material muda de opaco para translúcido.

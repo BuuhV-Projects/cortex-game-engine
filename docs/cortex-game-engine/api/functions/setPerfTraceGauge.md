@@ -8,7 +8,7 @@
 
 > **setPerfTraceGauge**(`name`, `read`): `void`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/PerfTrace.ts:155](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L155)
+Defined in: [src/core/PerfTrace.ts:155](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L155)
 
 Registra um medidor do jogo lido a cada amostra do trace (`game.<name>`), ou o remove com `null`.
 Serve para o kit de medição validar o que só o jogo sabe (ex.: câmera dentro da cidade, carros do

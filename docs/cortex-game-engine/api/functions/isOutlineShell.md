@@ -8,7 +8,7 @@
 
 > **isOutlineShell**(`material`): `boolean`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/scene/OutlineCulling.ts:46](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/OutlineCulling.ts#L46)
+Defined in: [src/scene/OutlineCulling.ts:46](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/OutlineCulling.ts#L46)
 
 Esta malha é uma casca de contorno?
 

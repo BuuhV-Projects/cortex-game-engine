@@ -8,7 +8,7 @@
 
 > **DialogueChoice** = `z.infer`\<*typeof* `dialogueChoiceSchema`\> & `object`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/dialogue/DialogueGraph.ts:72](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueGraph.ts#L72)
+Defined in: [src/dialogue/DialogueGraph.ts:72](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueGraph.ts#L72)
 
 ## Type Declaration
 

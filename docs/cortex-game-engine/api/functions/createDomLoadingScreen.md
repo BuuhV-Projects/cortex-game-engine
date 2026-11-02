@@ -8,7 +8,7 @@
 
 > **createDomLoadingScreen**(`options?`): [`LoadingScreen`](../interfaces/LoadingScreen.md)
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/LoadingScreen.ts:215](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/LoadingScreen.ts#L215)
+Defined in: [src/core/LoadingScreen.ts:215](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/LoadingScreen.ts#L215)
 
 ## Parameters
 

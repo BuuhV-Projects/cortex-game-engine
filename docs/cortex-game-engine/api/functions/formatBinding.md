@@ -8,7 +8,7 @@
 
 > **formatBinding**(`binding`): `string`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/input/bindings.ts:95](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/bindings.ts#L95)
+Defined in: [src/input/bindings.ts:95](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/bindings.ts#L95)
 
 Converte um binding no texto do `config.ini`.
 

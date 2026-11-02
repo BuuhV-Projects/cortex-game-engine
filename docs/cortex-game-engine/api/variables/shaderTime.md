@@ -8,7 +8,7 @@
 
 > `const` **shaderTime**: `UniformNode`\<`"float"`, `number`\>
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/render/native/ShaderClock.ts:21](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/render/native/ShaderClock.ts#L21)
+Defined in: [src/render/native/ShaderClock.ts:21](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/render/native/ShaderClock.ts#L21)
 
 TSL uniform with the shader clock, for the three side of a game WGSL material.
 

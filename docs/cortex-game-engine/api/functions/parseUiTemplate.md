@@ -8,7 +8,7 @@
 
 > **parseUiTemplate**(`source`): [`UiTemplate`](../classes/UiTemplate.md)
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/ui/runtime/UiTemplate.ts:221](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiTemplate.ts#L221)
+Defined in: [src/ui/runtime/UiTemplate.ts:221](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiTemplate.ts#L221)
 
 Compila o texto de um template (erros claros de tag/atributo).
 

@@ -8,6 +8,6 @@
 
 > `const` **ROAD\_DEFAULT\_CURVE\_DENSITY**: `16` = `16`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/road/RoadSpline.ts:22](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/RoadSpline.ts#L22)
+Defined in: [src/road/RoadSpline.ts:22](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/RoadSpline.ts#L22)
 
 Amostras por 90° de curvatura (default de [sampleSpline](../functions/sampleSpline.md)).

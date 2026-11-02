@@ -8,7 +8,7 @@
 
 > **buildScene**(`scene`, `defs`, `options?`): `Promise`\<[`SceneHandle`](../interfaces/SceneHandle.md)\>
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/scene/SceneBuilder.ts:551](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L551)
+Defined in: [src/scene/SceneBuilder.ts:551](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L551)
 
 Constrói a cena. `defs` pode ser uma definição ou um array (multi-arquivo —
 os `nodes` são concatenados; configs de cena como `background`/`fog`/

@@ -8,7 +8,7 @@
 
 > **pickRenderCamera**(`editor`, `gameCamera`): `PerspectiveCamera` \| `OrthographicCamera`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/Game.ts:102](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L102)
+Defined in: [src/core/Game.ts:102](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L102)
 
 Câmera que está desenhando a cena (SPEC-0303): a livre do editor quando ele está
 ativo (F2), senão a do jogo. Puro — base de [Game.renderCamera](../classes/Game.md#rendercamera).

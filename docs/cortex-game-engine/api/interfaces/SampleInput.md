@@ -6,7 +6,7 @@
 
 # Interface: SampleInput
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/PerfTrace.ts:467](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L467)
+Defined in: [src/core/PerfTrace.ts:467](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L467)
 
 Dados do frame que a amostra precisa, já lidos pelo chamador.
 
@@ -16,7 +16,7 @@ Dados do frame que a amostra precisa, já lidos pelo chamador.
 
 > `optional` **born?**: `object`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/PerfTrace.ts:475](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L475)
+Defined in: [src/core/PerfTrace.ts:475](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L475)
 
 #### buffers
 
@@ -36,7 +36,7 @@ Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/PerfTrace.ts:
 
 > **camera**: `Camera`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/PerfTrace.ts:482](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L482)
+Defined in: [src/core/PerfTrace.ts:482](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L482)
 
 ***
 
@@ -44,7 +44,7 @@ Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/PerfTrace.ts:
 
 > **cpu**: `Record`\<`string`, `number`\>
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/PerfTrace.ts:470](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L470)
+Defined in: [src/core/PerfTrace.ts:470](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L470)
 
 ***
 
@@ -52,7 +52,7 @@ Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/PerfTrace.ts:
 
 > `optional` **cpuAvg?**: `Record`\<`string`, `number`\>
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/PerfTrace.ts:473](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L473)
+Defined in: [src/core/PerfTrace.ts:473](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L473)
 
 Opcionais porque `buildSample` é pública e já tinha chamadores; ausentes
 viram `{}`, que é o que um trace sem a janela do profiler tem a dizer.
@@ -63,7 +63,7 @@ viram `{}`, que é o que um trace sem a janela do profiler tem a dizer.
 
 > `optional` **cpuP99?**: `Record`\<`string`, `number`\>
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/PerfTrace.ts:474](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L474)
+Defined in: [src/core/PerfTrace.ts:474](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L474)
 
 ***
 
@@ -71,7 +71,7 @@ Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/PerfTrace.ts:
 
 > **draws**: `number`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/PerfTrace.ts:480](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L480)
+Defined in: [src/core/PerfTrace.ts:480](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L480)
 
 ***
 
@@ -79,7 +79,7 @@ Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/PerfTrace.ts:
 
 > **frameMs**: `number`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/PerfTrace.ts:469](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L469)
+Defined in: [src/core/PerfTrace.ts:469](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L469)
 
 ***
 
@@ -87,7 +87,7 @@ Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/PerfTrace.ts:
 
 > `optional` **game?**: `Record`\<`string`, `number`\>
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/PerfTrace.ts:484](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L484)
+Defined in: [src/core/PerfTrace.ts:484](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L484)
 
 ***
 
@@ -95,7 +95,7 @@ Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/PerfTrace.ts:
 
 > `optional` **gc?**: [`GcTotals`](GcTotals.md)
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/PerfTrace.ts:479](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L479)
+Defined in: [src/core/PerfTrace.ts:479](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L479)
 
 ***
 
@@ -103,7 +103,7 @@ Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/PerfTrace.ts:
 
 > `optional` **nativePipelinesBorn?**: [`PipelineBirth`](PipelineBirth.md)[]
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/PerfTrace.ts:477](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L477)
+Defined in: [src/core/PerfTrace.ts:477](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L477)
 
 ***
 
@@ -111,7 +111,7 @@ Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/PerfTrace.ts:
 
 > `optional` **pipelineLookups?**: `number`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/PerfTrace.ts:478](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L478)
+Defined in: [src/core/PerfTrace.ts:478](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L478)
 
 ***
 
@@ -119,7 +119,7 @@ Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/PerfTrace.ts:
 
 > `optional` **pipelinesBorn?**: [`PipelineBirth`](PipelineBirth.md)[]
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/PerfTrace.ts:476](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L476)
+Defined in: [src/core/PerfTrace.ts:476](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L476)
 
 ***
 
@@ -127,7 +127,7 @@ Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/PerfTrace.ts:
 
 > **timeMs**: `number`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/PerfTrace.ts:468](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L468)
+Defined in: [src/core/PerfTrace.ts:468](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L468)
 
 ***
 
@@ -135,7 +135,7 @@ Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/PerfTrace.ts:
 
 > **tris**: `number`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/PerfTrace.ts:481](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L481)
+Defined in: [src/core/PerfTrace.ts:481](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L481)
 
 ***
 
@@ -143,4 +143,4 @@ Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/PerfTrace.ts:
 
 > **visible**: [`VisibleNode`](VisibleNode.md)[]
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/PerfTrace.ts:483](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L483)
+Defined in: [src/core/PerfTrace.ts:483](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L483)

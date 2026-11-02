@@ -6,7 +6,7 @@
 
 # Interface: UiTemplateBuildOptions
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/ui/runtime/UiTemplate.ts:206](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiTemplate.ts#L206)
+Defined in: [src/ui/runtime/UiTemplate.ts:206](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiTemplate.ts#L206)
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/ui/runtime/UiTempl
 
 > `optional` **data?**: `Record`\<`string`, `string` \| `number`\>
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/ui/runtime/UiTemplate.ts:208](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiTemplate.ts#L208)
+Defined in: [src/ui/runtime/UiTemplate.ts:208](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiTemplate.ts#L208)
 
 Valores pra `{{chave}}` nos textos.
 
@@ -24,7 +24,7 @@ Valores pra `{{chave}}` nos textos.
 
 > `optional` **onAction?**: (`action`, `button`) => `void`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/ui/runtime/UiTemplate.ts:210](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiTemplate.ts#L210)
+Defined in: [src/ui/runtime/UiTemplate.ts:210](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiTemplate.ts#L210)
 
 Recebe `onpress="acao"` dos botões.
 

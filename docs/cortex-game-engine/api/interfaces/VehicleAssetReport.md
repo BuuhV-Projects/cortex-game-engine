@@ -6,7 +6,7 @@
 
 # Interface: VehicleAssetReport
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/scene/VehicleDriver.ts:42](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleDriver.ts#L42)
+Defined in: [src/scene/VehicleDriver.ts:42](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleDriver.ts#L42)
 
 Relatório de [validateVehicleAssets](../functions/validateVehicleAssets.md).
 
@@ -16,7 +16,7 @@ Relatório de [validateVehicleAssets](../functions/validateVehicleAssets.md).
 
 > **anchors**: [`AssetCheck`](AssetCheck.md)
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/scene/VehicleDriver.ts:43](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleDriver.ts#L43)
+Defined in: [src/scene/VehicleDriver.ts:43](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleDriver.ts#L43)
 
 ***
 
@@ -24,7 +24,7 @@ Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/scene/VehicleDrive
 
 > **bones**: [`AssetCheck`](AssetCheck.md)
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/scene/VehicleDriver.ts:44](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleDriver.ts#L44)
+Defined in: [src/scene/VehicleDriver.ts:44](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleDriver.ts#L44)
 
 ***
 
@@ -32,7 +32,7 @@ Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/scene/VehicleDrive
 
 > **clips**: [`AssetCheck`](AssetCheck.md)
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/scene/VehicleDriver.ts:45](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleDriver.ts#L45)
+Defined in: [src/scene/VehicleDriver.ts:45](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleDriver.ts#L45)
 
 ***
 
@@ -40,6 +40,6 @@ Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/scene/VehicleDrive
 
 > **ok**: `boolean`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/scene/VehicleDriver.ts:47](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleDriver.ts#L47)
+Defined in: [src/scene/VehicleDriver.ts:47](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleDriver.ts#L47)
 
 `true` se nada da convenção falta.

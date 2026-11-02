@@ -8,7 +8,7 @@
 
 > **autopilotFromQuery**(`search`): [`InputAutopilot`](../classes/InputAutopilot.md) \| `null`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/input/InputAutopilot.ts:223](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputAutopilot.ts#L223)
+Defined in: [src/input/InputAutopilot.ts:223](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputAutopilot.ts#L223)
 
 Builds the autopilot asked by `?autopilot=<profile>`, or `null` without it.
 Throws on an unknown profile: a dead round beats a parked one labelled "moving".

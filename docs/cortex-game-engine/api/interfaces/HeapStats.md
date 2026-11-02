@@ -6,7 +6,7 @@
 
 # Interface: HeapStats
 
-Defined in: .claude/worktrees/gta3-transit-system-4d41b4/src/core/heapStats.ts:7
+Defined in: src/core/heapStats.ts:7
 
 Megabytes do heap do Hermes numa amostra.
 
@@ -16,7 +16,7 @@ Megabytes do heap do Hermes numa amostra.
 
 > **allocMB**: `number`
 
-Defined in: .claude/worktrees/gta3-transit-system-4d41b4/src/core/heapStats.ts:9
+Defined in: src/core/heapStats.ts:9
 
 ***
 
@@ -24,7 +24,7 @@ Defined in: .claude/worktrees/gta3-transit-system-4d41b4/src/core/heapStats.ts:9
 
 > **externalMB**: `number`
 
-Defined in: .claude/worktrees/gta3-transit-system-4d41b4/src/core/heapStats.ts:10
+Defined in: src/core/heapStats.ts:10
 
 ***
 
@@ -32,4 +32,4 @@ Defined in: .claude/worktrees/gta3-transit-system-4d41b4/src/core/heapStats.ts:1
 
 > **heapMB**: `number`
 
-Defined in: .claude/worktrees/gta3-transit-system-4d41b4/src/core/heapStats.ts:8
+Defined in: src/core/heapStats.ts:8

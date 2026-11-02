@@ -6,7 +6,7 @@
 
 # Interface: AutopilotDriveInput
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/input/InputAutopilot.ts:62](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputAutopilot.ts#L62)
+Defined in: [src/input/InputAutopilot.ts:62](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputAutopilot.ts#L62)
 
 What a game driver asks of the virtual pad this frame: `steer` in -1..1, `throttle`/`brake` in 0..1.
 
@@ -16,7 +16,7 @@ What a game driver asks of the virtual pad this frame: `steer` in -1..1, `thrott
 
 > **brake**: `number`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/input/InputAutopilot.ts:65](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputAutopilot.ts#L65)
+Defined in: [src/input/InputAutopilot.ts:65](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputAutopilot.ts#L65)
 
 ***
 
@@ -24,7 +24,7 @@ Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/input/InputAutopil
 
 > **steer**: `number`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/input/InputAutopilot.ts:63](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputAutopilot.ts#L63)
+Defined in: [src/input/InputAutopilot.ts:63](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputAutopilot.ts#L63)
 
 ***
 
@@ -32,4 +32,4 @@ Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/input/InputAutopil
 
 > **throttle**: `number`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/input/InputAutopilot.ts:64](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputAutopilot.ts#L64)
+Defined in: [src/input/InputAutopilot.ts:64](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputAutopilot.ts#L64)

@@ -8,6 +8,6 @@
 
 > **BindingSource** = `"key"` \| `"pad"` \| `"axis"` \| `"mouse"`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/input/bindings.ts:24](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/bindings.ts#L24)
+Defined in: [src/input/bindings.ts:24](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/bindings.ts#L24)
 
 Origem física de um binding.

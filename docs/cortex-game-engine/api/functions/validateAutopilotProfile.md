@@ -8,7 +8,7 @@
 
 > **validateAutopilotProfile**(`profile`): `void`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/input/InputAutopilot.ts:93](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputAutopilot.ts#L93)
+Defined in: [src/input/InputAutopilot.ts:93](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputAutopilot.ts#L93)
 
 Throws with the offending step when `profile` is not a valid [AutopilotProfile](../interfaces/AutopilotProfile.md).
 

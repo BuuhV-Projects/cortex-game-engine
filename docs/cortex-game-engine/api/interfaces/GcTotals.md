@@ -6,7 +6,7 @@
 
 # Interface: GcTotals
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/PerfTrace.ts:456](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L456)
+Defined in: [src/core/PerfTrace.ts:456](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L456)
 
 Totais do coletor do host (`__cortexGcStats`, SPEC-0264).
 
@@ -16,7 +16,7 @@ Totais do coletor do host (`__cortexGcStats`, SPEC-0264).
 
 > `optional` **allocatedMB?**: `number`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/PerfTrace.ts:463](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L463)
+Defined in: [src/core/PerfTrace.ts:463](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L463)
 
 MB alocados pelo JS desde o boot (SPEC-0357); Δ entre amostras = alocação. Host antigo não tem.
 
@@ -26,7 +26,7 @@ MB alocados pelo JS desde o boot (SPEC-0357); Δ entre amostras = alocação. Ho
 
 > **oldCount**: `number`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/PerfTrace.ts:459](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L459)
+Defined in: [src/core/PerfTrace.ts:459](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L459)
 
 ***
 
@@ -34,7 +34,7 @@ Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/PerfTrace.ts:
 
 > **oldCpuMs**: `number`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/PerfTrace.ts:461](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L461)
+Defined in: [src/core/PerfTrace.ts:461](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L461)
 
 ***
 
@@ -42,7 +42,7 @@ Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/PerfTrace.ts:
 
 > **oldWallMs**: `number`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/PerfTrace.ts:460](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L460)
+Defined in: [src/core/PerfTrace.ts:460](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L460)
 
 ***
 
@@ -50,7 +50,7 @@ Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/PerfTrace.ts:
 
 > **youngCount**: `number`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/PerfTrace.ts:457](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L457)
+Defined in: [src/core/PerfTrace.ts:457](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L457)
 
 ***
 
@@ -58,4 +58,4 @@ Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/PerfTrace.ts:
 
 > **youngMs**: `number`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/PerfTrace.ts:458](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L458)
+Defined in: [src/core/PerfTrace.ts:458](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L458)

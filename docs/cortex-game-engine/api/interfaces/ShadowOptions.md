@@ -6,7 +6,7 @@
 
 # Interface: ShadowOptions
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/scene/SceneAssets.ts:46](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L46)
+Defined in: [src/scene/SceneAssets.ts:46](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L46)
 
 Opções de sombra pra [instance](../functions/instance.md) / [setShadows](../functions/setShadows.md).
 
@@ -16,7 +16,7 @@ Opções de sombra pra [instance](../functions/instance.md) / [setShadows](../fu
 
 > `optional` **castShadow?**: `boolean`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/scene/SceneAssets.ts:48](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L48)
+Defined in: [src/scene/SceneAssets.ts:48](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L48)
 
 O objeto projeta sombra. Default `true`.
 
@@ -26,6 +26,6 @@ O objeto projeta sombra. Default `true`.
 
 > `optional` **receiveShadow?**: `boolean`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/scene/SceneAssets.ts:50](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L50)
+Defined in: [src/scene/SceneAssets.ts:50](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L50)
 
 O objeto recebe sombra. Default `true`.

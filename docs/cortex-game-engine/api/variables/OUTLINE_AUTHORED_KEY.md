@@ -8,6 +8,6 @@
 
 > `const` **OUTLINE\_AUTHORED\_KEY**: `"cortexOutlineAuthored"` = `'cortexOutlineAuthored'`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/scene/OutlineCulling.ts:36](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/OutlineCulling.ts#L36)
+Defined in: [src/scene/OutlineCulling.ts:36](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/OutlineCulling.ts#L36)
 
 `userData` onde fica o `visible` da casca como o autor deixou.

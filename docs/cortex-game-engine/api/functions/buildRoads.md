@@ -8,7 +8,7 @@
 
 > **buildRoads**(`three`): `Promise`\<`void`\>
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/scene/RoadBuild.ts:308](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/RoadBuild.ts#L308)
+Defined in: [src/scene/RoadBuild.ts:308](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/RoadBuild.ts#L308)
 
 Gera todas as estradas da cena (com as peças das pontes) e molda os terrenos — o pós-passo do `buildScene`.
 

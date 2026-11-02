@@ -6,7 +6,7 @@
 
 # Interface: GameEditor
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/Game.ts:76](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L76)
+Defined in: [src/core/Game.ts:76](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L76)
 
 Handle do editor injetado no [Game](../classes/Game.md) (só existe no bundle de
 desenvolvimento — ver [registerEditorAttacher](../functions/registerEditorAttacher.md)). O Game pergunta a câmera
@@ -19,7 +19,7 @@ ativa a cada frame (editor de voo livre quando ligado, senão `null`) e dá um
 
 > **activeCamera**(): `PerspectiveCamera` \| `null`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/Game.ts:78](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L78)
+Defined in: [src/core/Game.ts:78](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L78)
 
 Câmera a usar no render (a livre do editor quando ativo; `null` = usar a do jogo).
 
@@ -33,7 +33,7 @@ Câmera a usar no render (a livre do editor quando ativo; `null` = usar a do jog
 
 > **isActive**(): `boolean`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/Game.ts:82](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L82)
+Defined in: [src/core/Game.ts:82](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L82)
 
 `true` quando o editor (F2) está ativo — pra pausar a gameplay.
 
@@ -47,7 +47,7 @@ Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/Game.ts:82](h
 
 > **isPaused**(): `boolean`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/Game.ts:84](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L84)
+Defined in: [src/core/Game.ts:84](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L84)
 
 `true` quando a gameplay está PAUSADA durante o play (Unity-style pause).
 
@@ -61,7 +61,7 @@ Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/Game.ts:84](h
 
 > **update**(`deltaSeconds`): `void`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/Game.ts:80](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L80)
+Defined in: [src/core/Game.ts:80](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L80)
 
 Chamado a cada frame, depois do `world.tick`, pra reatividade dos painéis.
 

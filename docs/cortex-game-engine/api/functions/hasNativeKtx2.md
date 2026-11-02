@@ -8,7 +8,7 @@
 
 > **hasNativeKtx2**(): `boolean`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/loadKtx2.ts:140](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/loadKtx2.ts#L140)
+Defined in: [src/core/loadKtx2.ts:140](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/loadKtx2.ts#L140)
 
 `true` no host CortexNative (o transcoder nativo está disponível).
 

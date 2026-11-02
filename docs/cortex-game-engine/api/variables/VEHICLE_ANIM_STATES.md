@@ -8,6 +8,6 @@
 
 > `const` **VEHICLE\_ANIM\_STATES**: readonly \[`"idle"`, `"accelerate"`, `"brake"`, `"steer_left"`, `"steer_right"`, `"drift_left"`, `"drift_right"`, `"victory"`\]
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/components/VehicleAnimatorComponent.ts:5](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/VehicleAnimatorComponent.ts#L5)
+Defined in: [src/components/VehicleAnimatorComponent.ts:5](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/VehicleAnimatorComponent.ts#L5)
 
 Estados de animação do piloto, na convenção de nomes de clipe (SPEC-0275).

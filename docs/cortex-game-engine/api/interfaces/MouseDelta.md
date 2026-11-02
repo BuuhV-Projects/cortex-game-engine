@@ -6,7 +6,7 @@
 
 # Interface: MouseDelta
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/InputManager.ts:27](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/InputManager.ts#L27)
+Defined in: [src/core/InputManager.ts:27](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/InputManager.ts#L27)
 
 Delta de movimento do mouse entre frames.
 
@@ -16,7 +16,7 @@ Delta de movimento do mouse entre frames.
 
 > **x**: `number`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/InputManager.ts:28](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/InputManager.ts#L28)
+Defined in: [src/core/InputManager.ts:28](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/InputManager.ts#L28)
 
 ***
 
@@ -24,4 +24,4 @@ Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/InputManager.
 
 > **y**: `number`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/InputManager.ts:29](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/InputManager.ts#L29)
+Defined in: [src/core/InputManager.ts:29](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/InputManager.ts#L29)

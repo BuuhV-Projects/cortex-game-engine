@@ -6,7 +6,7 @@
 
 # Class: VehicleDriverSystem
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/systems/VehicleDriverSystem.ts:228](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleDriverSystem.ts#L228)
+Defined in: [src/systems/VehicleDriverSystem.ts:228](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleDriverSystem.ts#L228)
 
 **Piloto no veículo** (SPEC-0275): por entidade, na ordem fixa
 assento ([VehicleSeatAttachmentComponent](VehicleSeatAttachmentComponent.md)) → animação
@@ -24,7 +24,7 @@ parâmetros (input 30, scripts de IA 50).
 
 > **new VehicleDriverSystem**(`pauseWhen?`): `VehicleDriverSystem`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/systems/VehicleDriverSystem.ts:233](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleDriverSystem.ts#L233)
+Defined in: [src/systems/VehicleDriverSystem.ts:233](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleDriverSystem.ts#L233)
 
 #### Parameters
 
@@ -46,7 +46,7 @@ Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/systems/VehicleDri
 
 > **keepOnClear**: `boolean` = `false`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/ecs/System.ts:51](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L51)
+Defined in: [src/ecs/System.ts:51](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L51)
 
 Se `true`, `World.clear()` PRESERVA este sistema (não chama `dispose`
 nem remove) ao trocar de cena. Para overlays que sobrevivem à troca de fase
@@ -63,7 +63,7 @@ nem remove) ao trocar de cena. Para overlays que sobrevivem à troca de fase
 
 > `optional` **pauseWhen?**: () => `boolean`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/ecs/System.ts:73](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L73)
+Defined in: [src/ecs/System.ts:73](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L73)
 
 Predicado opcional de PAUSA: se definido e retornar `true` num tick, o
 `World` pula o `update` deste sistema nesse frame. Usado, por ex., pra pausar
@@ -84,7 +84,7 @@ a gameplay (física/input) enquanto o editor está ativo
 
 > **priority**: `number` = `55`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/systems/VehicleDriverSystem.ts:231](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleDriverSystem.ts#L231)
+Defined in: [src/systems/VehicleDriverSystem.ts:231](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleDriverSystem.ts#L231)
 
 Prioridade de execução deste sistema.
 
@@ -101,7 +101,7 @@ Sistemas com valores menores executam antes. Padrão: `0`.
 
 > `static` **requiredComponents**: `never`[] = `[]`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/systems/VehicleDriverSystem.ts:230](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleDriverSystem.ts#L230)
+Defined in: [src/systems/VehicleDriverSystem.ts:230](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleDriverSystem.ts#L230)
 
 Construtores dos componentes que este sistema requer.
 
@@ -127,7 +127,7 @@ static requiredComponents = [TransformComponent, VelocityComponent];
 
 > **dispose**(): `void`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/ecs/System.ts:90](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L90)
+Defined in: [src/ecs/System.ts:90](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L90)
 
 Libera recursos ao remover o sistema — chamado por [World.clear](World.md#clear) (e
 pode ser chamado manualmente). No-op por padrão; sobrescreva pra liberar
@@ -148,7 +148,7 @@ handles nativos que o GC não coleta sozinho (ex.: o mundo do Rapier em
 
 > **update**(`entities`, `deltaTime`): `void`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/systems/VehicleDriverSystem.ts:238](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleDriverSystem.ts#L238)
+Defined in: [src/systems/VehicleDriverSystem.ts:238](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleDriverSystem.ts#L238)
 
 Executa a lógica do sistema para o frame/passo atual.
 

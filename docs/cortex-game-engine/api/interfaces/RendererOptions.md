@@ -6,7 +6,7 @@
 
 # Interface: RendererOptions
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/Renderer.ts:55](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L55)
+Defined in: [src/core/Renderer.ts:55](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L55)
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/Renderer.ts:5
 
 > `optional` **antialias?**: `boolean`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/Renderer.ts:66](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L66)
+Defined in: [src/core/Renderer.ts:66](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L66)
 
 Habilita anti-aliasing.
 
@@ -30,7 +30,7 @@ true
 
 > **canvas**: `HTMLCanvasElement`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/Renderer.ts:57](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L57)
+Defined in: [src/core/Renderer.ts:57](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L57)
 
 Elemento `<canvas>` onde a cena será renderizada.
 
@@ -40,7 +40,7 @@ Elemento `<canvas>` onde a cena será renderizada.
 
 > `optional` **forceWebGL?**: `boolean`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/Renderer.ts:73](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L73)
+Defined in: [src/core/Renderer.ts:73](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L73)
 
 Escape hatch: usa o backend WebGL2 em vez de WebGPU. Por padrão o engine
 **exige** WebGPU e lança se ele não estiver disponível (sem fallback
@@ -58,7 +58,7 @@ false
 
 > **height**: `number`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/Renderer.ts:61](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L61)
+Defined in: [src/core/Renderer.ts:61](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L61)
 
 Altura inicial em pixels.
 
@@ -68,6 +68,6 @@ Altura inicial em pixels.
 
 > **width**: `number`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/Renderer.ts:59](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L59)
+Defined in: [src/core/Renderer.ts:59](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L59)
 
 Largura inicial em pixels.

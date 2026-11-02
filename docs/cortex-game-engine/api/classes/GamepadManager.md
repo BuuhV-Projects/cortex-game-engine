@@ -6,7 +6,7 @@
 
 # Class: GamepadManager
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/GamepadManager.ts:69](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L69)
+Defined in: [src/core/GamepadManager.ts:69](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L69)
 
 ## Extends
 
@@ -18,7 +18,7 @@ Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/GamepadManage
 
 > **new GamepadManager**(`options?`): `GamepadManager`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/GamepadManager.ts:80](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L80)
+Defined in: [src/core/GamepadManager.ts:80](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L80)
 
 #### Parameters
 
@@ -42,7 +42,7 @@ Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/GamepadManage
 
 > **get** **deadzone**(): `number`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/GamepadManager.ts:292](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L292)
+Defined in: [src/core/GamepadManager.ts:292](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L292)
 
 Limiar de deadzone configurado no construtor.
 
@@ -56,7 +56,7 @@ Limiar de deadzone configurado no construtor.
 
 > **dispose**(): `void`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/GamepadManager.ts:103](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L103)
+Defined in: [src/core/GamepadManager.ts:103](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L103)
 
 Remove os listeners de (re)conexão registrados no `window`. Chame ao descartar
 o manager (hot-reload/teardown) pra não vazar listeners. No-op fora do browser.
@@ -71,7 +71,7 @@ o manager (hot-reload/teardown) pra não vazar listeners. No-op fora do browser.
 
 > **firstConnectedIndex**(): `number`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/GamepadManager.ts:282](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L282)
+Defined in: [src/core/GamepadManager.ts:282](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L282)
 
 Índice do **primeiro slot com gamepad conectado**, ou `-1` se nenhum. No
 Windows é comum o controle real cair no slot 1+ (dispositivo fantasma ocupa
@@ -87,7 +87,7 @@ o 0) — sistemas single-player devem ler este slot em vez de fixar o 0.
 
 > **getAxis**(`gamepadIndex`, `axis`): `number`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/GamepadManager.ts:262](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L262)
+Defined in: [src/core/GamepadManager.ts:262](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L262)
 
 Retorna o valor do eixo `axis` do gamepad `gamepadIndex` com deadzone
 aplicada (valores no intervalo (-deadzone, +deadzone) viram 0).
@@ -113,7 +113,7 @@ Retorna 0 se o gamepad não estiver conectado ou o eixo não existir.
 
 > **getButtonValue**(`gamepadIndex`, `button`): `number`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/GamepadManager.ts:251](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L251)
+Defined in: [src/core/GamepadManager.ts:251](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L251)
 
 Retorna o valor **analógico** do botão `button` (0..1). Útil pros gatilhos
 LT (6) / RT (7), que no Xbox são analógicos. Retorna 0 se desconectado ou
@@ -139,7 +139,7 @@ o botão não existir. (`isButtonDown` continua dando o booleano `pressed`.)
 
 > **getGamepad**(`index`): [`GamepadState`](../interfaces/GamepadState.md) \| `null`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/GamepadManager.ts:223](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L223)
+Defined in: [src/core/GamepadManager.ts:223](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L223)
 
 Retorna uma cópia do estado do gamepad no slot `index`, ou `null` se
 nenhum gamepad estiver conectado nesse slot.
@@ -162,7 +162,7 @@ Slot do gamepad (0..3).
 
 > **isButtonDown**(`gamepadIndex`, `button`): `boolean`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/GamepadManager.ts:240](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L240)
+Defined in: [src/core/GamepadManager.ts:240](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L240)
 
 Retorna `true` se o botão `button` do gamepad `gamepadIndex` estiver
 pressionado. Retorna `false` se o gamepad não estiver conectado.
@@ -187,7 +187,7 @@ pressionado. Retorna `false` se o gamepad não estiver conectado.
 
 > **isConnected**(`index?`): `boolean`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/GamepadManager.ts:273](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L273)
+Defined in: [src/core/GamepadManager.ts:273](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L273)
 
 `true` se há um gamepad conectado no slot `index` (default 0), sem alocar.
 Útil pra fazer **fallback teclado/mouse** quando não há controle: leia o gamepad
@@ -209,7 +209,7 @@ se `isConnected()`, senão leia o teclado.
 
 > **poll**(): `void`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/GamepadManager.ts:117](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L117)
+Defined in: [src/core/GamepadManager.ts:117](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L117)
 
 Lê o estado atual de todos os gamepads do `navigator`, atualiza o
 estado interno e emite eventos de transição.

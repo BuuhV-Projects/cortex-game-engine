@@ -8,7 +8,7 @@
 
 > **makeRoad**(`node`): `Mesh`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/scene/RoadBuild.ts:77](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/RoadBuild.ts#L77)
+Defined in: [src/scene/RoadBuild.ts:77](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/RoadBuild.ts#L77)
 
 Cria a malha (ainda vazia) da estrada; a geometria sai no [buildRoads](buildRoads.md).
 

@@ -6,7 +6,7 @@
 
 # Class: PipelineBirthLog
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/PipelineBirthLog.ts:97](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PipelineBirthLog.ts#L97)
+Defined in: [src/core/PipelineBirthLog.ts:97](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PipelineBirthLog.ts#L97)
 
 Registro dos nascimentos, drenado a cada amostra do trace.
 
@@ -37,7 +37,7 @@ const born = log.drain();
 
 > **get** **births**(): `number`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/PipelineBirthLog.ts:113](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PipelineBirthLog.ts#L113)
+Defined in: [src/core/PipelineBirthLog.ts:113](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PipelineBirthLog.ts#L113)
 
 Nascimentos desde a instalação (não é zerado pelo [PipelineBirthLog.drain](#drain)).
 
@@ -53,7 +53,7 @@ Nascimentos desde a instalação (não é zerado pelo [PipelineBirthLog.drain](#
 
 > **get** **lookups**(): `number`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/PipelineBirthLog.ts:108](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PipelineBirthLog.ts#L108)
+Defined in: [src/core/PipelineBirthLog.ts:108](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PipelineBirthLog.ts#L108)
 
 Consultas ao cache de pipeline desde a instalação, ACERTOS incluídos. O
 three chama `backend.getRenderCacheKey` uma vez por consulta que precisa de
@@ -69,7 +69,7 @@ pipeline — então consultas sem nascimento = pipeline reaproveitado.
 
 > **drain**(): [`PipelineBirth`](../interfaces/PipelineBirth.md)[]
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/PipelineBirthLog.ts:161](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PipelineBirthLog.ts#L161)
+Defined in: [src/core/PipelineBirthLog.ts:161](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PipelineBirthLog.ts#L161)
 
 Os nascimentos desde a última chamada.
 
@@ -83,7 +83,7 @@ Os nascimentos desde a última chamada.
 
 > **install**(`backend`, `mainCamera`, `now?`): `boolean`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/PipelineBirthLog.ts:122](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PipelineBirthLog.ts#L122)
+Defined in: [src/core/PipelineBirthLog.ts:122](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PipelineBirthLog.ts#L122)
 
 Envolve `backend.createRenderPipeline`. Idempotente. Devolve `false` (e
 avisa por `debug('perf')`) se o backend não tiver o método — uma versão do

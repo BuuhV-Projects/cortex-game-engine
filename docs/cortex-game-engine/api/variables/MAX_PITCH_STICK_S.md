@@ -8,7 +8,7 @@
 
 > `const` **MAX\_PITCH\_STICK\_S**: `0.3` = `0.3`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/input/InputAutopilot.ts:32](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputAutopilot.ts#L32)
+Defined in: [src/input/InputAutopilot.ts:32](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputAutopilot.ts#L32)
 
 Most right-stick-Y seconds a profile may accumulate either way (pitch drift from the game's
 default camera). Built-in profiles stay at 0: yaw-only camera turns (SPEC-0414).

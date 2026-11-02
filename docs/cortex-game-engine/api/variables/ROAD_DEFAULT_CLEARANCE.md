@@ -8,6 +8,6 @@
 
 > `const` **ROAD\_DEFAULT\_CLEARANCE**: `2` = `2`
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/road/roadFields.ts:13](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/roadFields.ts#L13)
+Defined in: [src/road/roadFields.ts:13](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/roadFields.ts#L13)
 
 Faixa default (m) além da borda da pista sem vegetação.

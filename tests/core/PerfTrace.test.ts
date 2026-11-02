@@ -214,6 +214,21 @@ describe('PerfTrace', () => {
       trace.tick(600, new Scene(), camera(), new FrameProfiler(), null);
       expect(JSON.parse(lines[2]!).game).toBeUndefined();
     });
+
+    it('grava o heap do Hermes em heap (SPEC-0664) e some fora do Hermes', () => {
+      const MB = 1024 * 1024;
+      const hermes = globalThis as { HermesInternal?: unknown };
+      hermes.HermesInternal = { getInstrumentedStats: () => ({ js_heapSize: 300 * MB, js_allocatedBytes: 150 * MB, js_externalBytes: 1800 * MB }) };
+      const trace = new PerfTrace();
+      try {
+        trace.tick(600, new Scene(), camera(), new FrameProfiler(), null);
+      } finally {
+        delete hermes.HermesInternal;
+      }
+      expect(JSON.parse(lines[0]!).heap).toEqual({ heapMB: 300, allocMB: 150, externalMB: 1800 });
+      trace.tick(600, new Scene(), camera(), new FrameProfiler(), null);
+      expect(JSON.parse(lines[1]!).heap).toBeUndefined();
+    });
   });
 });
 

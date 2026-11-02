@@ -6,7 +6,7 @@
 
 # Interface: AutopilotProfile
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/input/InputAutopilot.ts:85](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputAutopilot.ts#L85)
+Defined in: [src/input/InputAutopilot.ts:85](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputAutopilot.ts#L85)
 
 A profile: steps played in a loop.
 
@@ -16,4 +16,4 @@ A profile: steps played in a loop.
 
 > **steps**: [`AutopilotStep`](AutopilotStep.md)[]
 
-Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/input/InputAutopilot.ts:86](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputAutopilot.ts#L86)
+Defined in: [src/input/InputAutopilot.ts:86](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputAutopilot.ts#L86)
