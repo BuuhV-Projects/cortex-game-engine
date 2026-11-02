@@ -8,20 +8,94 @@
  * `V_GGX_SmithCorrelated`, `D_GGX` and the multiscatter term read from the DFG LUT). The IBL terms
  * the three emits without `scene.environment` multiply by zero (`radiance`, `iblIrradiance`) and
  * are left out, like the dead loops of `unlit`. Shared parts come from `lambert.ts`.
+ *
+ * SPEC-0659: `specularF0` param (the Physical's `ior`/`specular*`, 0.04 otherwise), one sample of
+ * the glTF metal/rough texture (`.z` metalness, `.y` roughness), the derivative TBN normal map
+ * (`lambert.ts`) and vertex colors.
  */
 import { ClampToEdgeWrapping, DataTexture, HalfFloatType, LinearFilter, RGFormat, type Material, type Object3D } from 'three';
 import type { NativeModelDef } from './NativeModel.js';
-import { LIT_PARAM_FLOATS, litAttributes, litOutputWgsl, litSurfaceWgsl, litTextures, litVariant, litVertexWgsl, writeLitParams } from './lambert.js';
+import {
+  LIT_PARAM_FLOATS, litAttributes, litOutputWgsl, litRefusalCounts, litSurfaceWgsl, litTextures, litVariant, litVertexWgsl, writeLitParams, writeUvTransform,
+  type MapLike,
+} from './lambert.js';
 
 const ROW_FLOATS = 4;
-/** Lit params + one row: metalness, roughness. */
-const PARAM_FLOATS = LIT_PARAM_FLOATS + ROW_FLOATS;
+const MAT3_FLOATS = 3 * ROW_FLOATS;
 const METALNESS_AT = LIT_PARAM_FLOATS;
 const ROUGHNESS_AT = LIT_PARAM_FLOATS + 1;
+const SPECULAR_F0_AT = LIT_PARAM_FLOATS + ROW_FLOATS;
+const NORMAL_SCALE_AT = SPECULAR_F0_AT + ROW_FLOATS;
+const METAL_ROUGH_TRANSFORM_AT = NORMAL_SCALE_AT + ROW_FLOATS;
+const NORMAL_TRANSFORM_AT = METAL_ROUGH_TRANSFORM_AT + MAT3_FLOATS;
+/** Lit params + metalness/roughness, specularF0, normalScale, metal/rough and normal uv transforms. */
+const PARAM_FLOATS = NORMAL_TRANSFORM_AT + MAT3_FLOATS;
+/** `Params` fields after the lit ones, in the layout above (WGSL pads the vec3 and vec2 rows). */
+const STANDARD_PARAMS_WGSL = `metalness : f32,
+  roughness : f32,
+  specularF0 : vec3<f32>,
+  normalScale : vec2<f32>,
+  metalRoughMapTransform : mat3x3<f32>,
+  normalMapTransform : mat3x3<f32>,`;
+const DIELECTRIC_F0 = 0.04;
+const RGB = 3;
 
-/** `vertexColors` never shows up on a standard material in the census: refused (YAGNI). */
-export const STANDARD_ACCEPTED: readonly string[] = ['map', 'emissiveMap', 'instanceColor', 'fog', 'alpha', 'alphaTest', 'receiveShadow'];
+/** `specularIor` has no variant of its own: the F0 is a param (SPEC-0659). */
+export const STANDARD_ACCEPTED: readonly string[] = [
+  'map', 'emissiveMap', 'metalRoughMap', 'normalMap', 'vertexColors', 'instanceColor', 'fog', 'alpha', 'alphaTest', 'receiveShadow', 'specularIor',
+];
 const ACCEPTED = STANDARD_ACCEPTED;
+/** three's TangentSpaceNormalMap. */
+const TANGENT_SPACE_NORMAL_MAP = 0;
+
+type StandardMaterial = Material & {
+  metalness: number;
+  roughness: number;
+  metalnessMap?: MapLike | null;
+  roughnessMap?: MapLike | null;
+  normalMap?: MapLike | null;
+  normalMapType?: number;
+  normalScale?: { x: number; y: number };
+  flatShading?: boolean;
+  ior?: number;
+  specularIntensity?: number;
+  specularColor?: { r: number; g: number; b: number };
+  specularIntensityMap?: unknown;
+  specularColorMap?: unknown;
+};
+
+/** What `standard` refuses beyond `litRefusal` (SPEC-0659), or `null`. */
+export function standardRefusal(object: Object3D, material: Material): string | null {
+  const m = material as StandardMaterial;
+  if ((m.metalnessMap || m.roughnessMap) && m.metalnessMap !== m.roughnessMap) return 'metalRoughSplit';
+  if (m.normalMap) {
+    if (m.normalMapType !== TANGENT_SPACE_NORMAL_MAP) return 'normalMapType';
+    if ((object as Object3D & { geometry?: { attributes: Record<string, unknown> } }).geometry?.attributes['tangent']) return 'tangent';
+  }
+  if (m.flatShading) return 'flatShading';
+  if (m.specularIntensityMap || m.specularColorMap) return 'specularMap';
+  return null;
+}
+
+/** The three's direct-specular F0 before the metalness mix: 0.04, or the Physical's ior/specular. */
+export function writeSpecularF0(material: Material, out: Float32Array, at: number): void {
+  const m = material as StandardMaterial;
+  if (m.ior === undefined) {
+    out.fill(DIELECTRIC_F0, at, at + RGB);
+    return;
+  }
+  const r = (m.ior - 1) / (m.ior + 1);
+  const c = m.specularColor ?? { r: 1, g: 1, b: 1 };
+  const k = m.specularIntensity ?? 1;
+  out[at] = Math.min(r * r * c.r, 1) * k;
+  out[at + 1] = Math.min(r * r * c.g, 1) * k;
+  out[at + 2] = Math.min(r * r * c.b, 1) * k;
+}
+
+/** Model textures after the lit ones, in binding order (the DFG LUT is always last). */
+function extraTextures(variant: readonly string[]): string[] {
+  return [...(variant.includes('metalRoughMap') ? ['metalRough'] : []), ...(variant.includes('normalMap') ? ['normal'] : []), 'dfg'];
+}
 
 const DFG_SIZE = 16;
 /**
@@ -111,23 +185,36 @@ export const standardModel: NativeModelDef = {
   name: 'standard',
   paramFloats: PARAM_FLOATS,
 
-  variant(c, _object: Object3D, material) {
-    return litVariant(c, material, ACCEPTED);
+  variant(c, object: Object3D, material) {
+    const why = standardRefusal(object, material);
+    if (why !== null) {
+      const key = `standard:${why}|${material.name || material.type}`;
+      litRefusalCounts.set(key, (litRefusalCounts.get(key) ?? 0) + 1);
+      return null;
+    }
+    return litVariant(c, material, ACCEPTED)?.filter((f) => f !== 'specularIor') ?? null;
   },
 
   attributes: litAttributes,
 
   wgsl(variant) {
-    return /* wgsl */ `${litVertexWgsl(variant, 'metalness : f32,\n  roughness : f32,', ['dfg'])}
+    const metalRough = variant.includes('metalRoughMap')
+      ? `let metalRough = textureSample(metalRoughTexture, metalRoughSampler, (params.metalRoughMapTransform * vec3<f32>(in.uv, 1.0)).xy);
+  metalness = metalness * metalRough.z;
+  roughnessFactor = roughnessFactor * metalRough.y;`
+      : '';
+    return /* wgsl */ `${litVertexWgsl(variant, STANDARD_PARAMS_WGSL, extraTextures(variant))}
 ${BRDF_WGSL}
 @fragment
 fn fs(in : VOut, @builtin(front_facing) isFront : bool) -> @location(0) vec4<f32> {
 ${litSurfaceWgsl(variant)}
-  let metalness = params.metalness;
+  var metalness = params.metalness;
+  var roughnessFactor = params.roughness;
+  ${metalRough}
   let normalDelta = max(abs(dpdx(normalGeometry)), abs(-dpdy(normalGeometry)));
-  let roughness = min(max(params.roughness, MIN_ROUGHNESS) + max(max(normalDelta.x, normalDelta.y), normalDelta.z), 1.0);
-  let specularColor = mix(vec3<f32>(DIELECTRIC_F0), diffuse.xyz, metalness);
-  let diffuseContribution = diffuse.xyz * vec3<f32>(1.0 - params.metalness);
+  let roughness = min(max(roughnessFactor, MIN_ROUGHNESS) + max(max(normalDelta.x, normalDelta.y), normalDelta.z), 1.0);
+  let specularColor = mix(params.specularF0, diffuse.xyz, metalness);
+  let diffuseContribution = diffuse.xyz * vec3<f32>(1.0 - metalness);
   let viewDirection = normalize(-in.positionView);
   let sunIrradiance = vec3<f32>(clamp(dot(normal, sunDirection), 0.0, 1.0)) * sunColor;
   var directDiffuse = sunIrradiance * (diffuseContribution * vec3<f32>(RECIPROCAL_PI));
@@ -152,14 +239,22 @@ ${litOutputWgsl(variant)}
 
   writeParams(material: Material, out: Float32Array): void {
     writeLitParams(material, out);
-    const m = material as unknown as { metalness: number; roughness: number };
+    const m = material as StandardMaterial;
+    out.fill(0, METALNESS_AT, PARAM_FLOATS);
     out[METALNESS_AT] = m.metalness;
     out[ROUGHNESS_AT] = m.roughness;
-    out[ROUGHNESS_AT + 1] = 0;
-    out[ROUGHNESS_AT + 2] = 0;
+    writeSpecularF0(material, out, SPECULAR_F0_AT);
+    out[NORMAL_SCALE_AT] = m.normalScale?.x ?? 1;
+    out[NORMAL_SCALE_AT + 1] = m.normalScale?.y ?? 1;
+    writeUvTransform(out, METAL_ROUGH_TRANSFORM_AT, m.metalnessMap ?? null);
+    writeUvTransform(out, NORMAL_TRANSFORM_AT, m.normalMap ?? null);
   },
 
   textures(material, variant) {
-    return [...litTextures(material, variant), dfgTexture()];
+    const m = material as StandardMaterial;
+    const out = litTextures(material, variant);
+    if (variant.includes('metalRoughMap')) out.push(m.metalnessMap);
+    if (variant.includes('normalMap')) out.push(m.normalMap);
+    return [...out, dfgTexture()];
   },
 };

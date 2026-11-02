@@ -1389,8 +1389,12 @@ Substitui o `three` no desenho do export **por objeto**, a caminho de 0 recusas 
   `?nativeShadowPass=0`; plantados `?nativeShadowShift=1` (amostragem) e
   `?nativeShadowPassShift=1` (mapa).
 - **Luz (R1.2, SPEC-0535)**: modelo `lambert` (`models/lambert.ts` exporta as partes comuns) e
-  `standard` (com a LUT DFG do `three`, copiada porque é privada do módulo dele), **fora de
-  `NATIVE_MODELS` até a paridade da fachada**. Recusas temporárias do `lambert` (emissivo não
+  `standard` (com a LUT DFG do `three`, copiada porque é privada do módulo dele). O `standard`
+  cobre o que o GLTFLoader cria de um kit do Blender (SPEC-0659): `MeshPhysical` só com
+  `ior`/`specular*` (vira o parâmetro `specularF0`, sem variante), uma textura metal/rough (`.z`/`.y`),
+  `normalMap` em espaço tangente com base TBN por derivadas (no prólogo comum, **antes** da sombra,
+  que desvia pelo normal perturbado) e cor de vértice. Recusa mapas metal/rough diferentes,
+  atributo `tangent`, `flatShading` e mapas de specular. Recusas temporárias do `lambert` (emissivo não
   preto, instanciado, `receiveShadow`): ver o backlog do PRD-0466. O bloco
   `frame/lights.ts` é um UBO por quadro com sol + hemisfério + até 8 spots (o que a `DynamicLighting`
   do `three` dá aos shaders). **Armadilha**: o `beginFrame` roda antes de o `three` coletar as luzes
