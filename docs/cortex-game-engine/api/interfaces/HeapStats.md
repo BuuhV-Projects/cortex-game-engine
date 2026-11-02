@@ -6,7 +6,7 @@
 
 # Interface: HeapStats
 
-Defined in: src/core/heapStats.ts:7
+Defined in: [src/core/heapStats.ts:7](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/heapStats.ts#L7)
 
 Megabytes do heap do Hermes numa amostra.
 
@@ -16,7 +16,7 @@ Megabytes do heap do Hermes numa amostra.
 
 > **allocMB**: `number`
 
-Defined in: src/core/heapStats.ts:9
+Defined in: [src/core/heapStats.ts:9](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/heapStats.ts#L9)
 
 ***
 
@@ -24,7 +24,7 @@ Defined in: src/core/heapStats.ts:9
 
 > **externalMB**: `number`
 
-Defined in: src/core/heapStats.ts:10
+Defined in: [src/core/heapStats.ts:10](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/heapStats.ts#L10)
 
 ***
 
@@ -32,4 +32,4 @@ Defined in: src/core/heapStats.ts:10
 
 > **heapMB**: `number`
 
-Defined in: src/core/heapStats.ts:8
+Defined in: [src/core/heapStats.ts:8](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/heapStats.ts#L8)
