@@ -17,7 +17,7 @@ import {
   Vector3,
   type Material,
 } from 'three';
-import { mergeSubtree } from '../../src/scene/StaticMerge.js';
+import { mergeStaticScene, mergeSubtree } from '../../src/scene/StaticMerge.js';
 
 /** Malha simples com geometria própria (o merge consome a geometria). */
 function peca(material: Material = new MeshBasicMaterial({ color: 0x224466 })): Mesh {
@@ -217,5 +217,28 @@ describe('mergeSubtree', () => {
     mergeSubtree(carro, { name: 'car-body' });
 
     expect(malhas(carro)[0]!.name).toBe('car-body-0');
+  });
+
+  it('a fusão global não junta de novo as células fundidas (SPEC-0666)', () => {
+    // Duas células espaciais com o mesmo material: cada uma vira uma malha e as duas continuam separadas.
+    const material = new MeshBasicMaterial();
+    const cena = new Object3D();
+    const celulas = [-500, 500].map((x) => {
+      const celula = new Object3D();
+      for (let i = 0; i < 2; i++) {
+        const p = peca(material);
+        p.position.set(x + i, 0, 0);
+        celula.add(p);
+      }
+      cena.add(celula);
+      mergeSubtree(celula, { name: 'cell' });
+      return celula;
+    });
+
+    mergeStaticScene(cena);
+
+    for (const celula of celulas) expect(malhas(celula)).toHaveLength(1);
+    expect(malhas(cena)).toHaveLength(2);
+    expect(malhas(cena).every((m) => m.userData['cortexMergedStatic'] === true)).toBe(true);
   });
 });
