@@ -29,6 +29,8 @@ import {
   type Material,
 } from 'three';
 import { Game, applyMaterial } from 'cortex-game-engine';
+// interno (não é API pública): o mesmo material que o Terrain usa (SPEC-0662)
+import { buildTerrainSplatMaterial } from '../../../src/scene/terrainSplatMaterial.js';
 import { AdditiveBlending, BufferGeometry, InstancedMesh, Matrix4, type Material, type Object3D } from 'three';
 import { MeshBasicNodeMaterial, TSL, registerNativeMaterial, shaderTime, type NativeModelDef } from 'cortex-game-engine';
 import { Bone, BoxGeometry, CylinderGeometry, FloatType, InstancedBufferAttribute, RGBAFormat, Skeleton, SkinnedMesh, Uint16BufferAttribute } from 'three';
@@ -75,6 +77,33 @@ const stripes = texture((x) => (Math.floor(x / cell) % 2 ? [1, 0.5, 0] : [0, 0, 
 const bumps = texture((x, y) => [0.5 + 0.4 * Math.sin(x / 3), 0.5 + 0.4 * Math.cos(y / 3), 1], false);
 // glTF metallicRoughness: roughness in G, metalness in B (SPEC-0659).
 const metalRough = texture((x, y) => [0, 0.3 + 0.6 * ((x >> 3) % 2), (y >> 4) % 2], false);
+// SPEC-0662: pesos do splat (r esquerda, g direita, b cima, a baixo; soma < 1 no meio mostra a cor base).
+const SPLAT_FADE = 24;
+const splatWeights = (() => {
+  const data = new Uint8Array(TEXTURE_SIZE * TEXTURE_SIZE * RGBA);
+  for (let y = 0; y < TEXTURE_SIZE; y++) {
+    for (let x = 0; x < TEXTURE_SIZE; x++) {
+      const i = (y * TEXTURE_SIZE + x) * RGBA;
+      const far = TEXTURE_SIZE - SPLAT_FADE;
+      data[i] = Math.max(0, 1 - x / SPLAT_FADE) * BYTE;
+      data[i + 1] = Math.max(0, (x - far) / SPLAT_FADE) * BYTE;
+      data[i + 2] = Math.max(0, 1 - y / SPLAT_FADE) * BYTE;
+      data[i + 3] = Math.max(0, (y - far) / SPLAT_FADE) * BYTE;
+    }
+  }
+  const t = new DataTexture(data, TEXTURE_SIZE, TEXTURE_SIZE);
+  t.needsUpdate = true;
+  return t;
+})();
+function terrainSplat(): Material {
+  const { material, layers, repeats } = buildTerrainSplatMaterial(splatWeights);
+  const sources = [checker, stripes, bumps, metalRough];
+  layers.forEach((l, i) => (l.value = sources[i]!));
+  repeats.forEach((r, i) => (r.value = i + 1));
+  material.color.set(0xcc8844);
+  material.roughness = 0.8;
+  return material;
+}
 const holes = texture((x, y) => {
   const keep = (Math.floor(x / cell) + Math.floor(y / cell)) % 2 ? 1 : 0;
   return [keep, keep, keep];
@@ -393,6 +422,7 @@ const entries: Array<[string, Material | ((mesh: Mesh) => void), boolean]> = [
     map: checker, metalnessMap: metalRough, roughnessMap: metalRough, normalMap: bumps, normalScale: new Vector2(1, -1), side: DoubleSide, ior: 1.5, specularIntensity: 0.8, metalness: 1,
   }), false],
   ['physical-ior-vcolor', new MeshPhysicalMaterial({ ior: 1.45, vertexColors: true, roughness: 0.5, side: DoubleSide }), true],
+  ['terrain-splat', terrainSplat(), false],
 ];
 
 const canvas = document.getElementById('canvas') as HTMLCanvasElement;
