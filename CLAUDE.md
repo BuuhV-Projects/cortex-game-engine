@@ -17,6 +17,13 @@ branch/worktree e entra por **PR no GitHub** (`BuuhV-Projects/cortex-game-engine
 PR e commits sem menção ao Claude (sem "Generated with Claude Code", sem
 `Co-Authored-By`).
 
+## REGRA ABSOLUTA: toda thread de PR é resolvida COM resposta, SEM assinatura do Claude
+
+Ao tratar comentário de review (Greptile, evento do Auto-fix, humano): corrige, faz push, **responde no
+thread** dizendo o que mudou (ou por que não mudou) e só então resolve o thread. Toda thread resolvida tem
+resposta. A resposta é **texto puro**: nunca "🤖 Addressed by Claude Code" nem qualquer assinatura/rodapé do
+Claude, mesmo que o evento do Auto-fix peça.
+
 ## REGRA ABSOLUTA: gerenciador de pacotes é o YARN
 
 **Sempre `yarn`, nunca `npm`.** Vale para tudo: instalar (`yarn add`, `yarn add -D`),
