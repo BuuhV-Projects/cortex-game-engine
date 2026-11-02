@@ -1,3 +1,12 @@
+## [0.97.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.97.0...v0.97.1) (2026-11-02)
+
+
+### Bug Fixes
+
+* **native:** do Rapier com patch só os fontes que o cargo compila (SPEC-0660) ([5d8cb86](https://github.com/BuuhV-Projects/cortex-game-engine/commit/5d8cb86362452b125fe0f68526c79f9005ccf823))
+* **native:** export recusa host/DLL do Rapier mais velhos que os fontes (SPEC-0660) ([ec9d12d](https://github.com/BuuhV-Projects/cortex-game-engine/commit/ec9d12d458613b5a41b56b365054a566c32b0856))
+* **native:** selo de build, fontes do bloom e do Rapier com patch, comando por alvo (SPEC-0660) ([e7cd72a](https://github.com/BuuhV-Projects/cortex-game-engine/commit/e7cd72a8fcd5590fef8f16f0f35e8e3f351ba49d))
+
 # [0.97.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.96.3...v0.97.0) (2026-11-02)
 
 
