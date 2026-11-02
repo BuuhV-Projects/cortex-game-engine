@@ -20,7 +20,6 @@ constexpr uint64_t kBytesPorTimestamp = sizeof(uint64_t);
 constexpr uint64_t kBytesDoQuerySet = static_cast<uint64_t>(kMaxPassesPorFrame) * kSlotsPorPass * kBytesPorTimestamp;
 /** Quantos passes aparecem no relatório, do mais caro para o menos. */
 constexpr size_t kPassesNoRelatorio = 6;
-constexpr double kNsPorMs = 1'000'000.0;
 /** Percentis da linha `gpu-work`. */
 constexpr double kMediana = 0.5;
 constexpr double kPercentilAlto = 0.95;
@@ -37,7 +36,7 @@ WGPUDevice g_device = nullptr;
 // de 100 MHz (10 ns/tick), e ler tick como ns mostrava a GPU 10x mais leve (12 "ms" com a GPU a 97%).
 double g_nsPorTick = 1.0;
 
-double msDeTicks(double ticks) { return ticks * g_nsPorTick / kNsPorMs; }
+double msDeTicks(double ticks) { return webgpu::msDeTicks(ticks, g_nsPorTick); }
 bool g_leituraEmVoo = false;
 /** A copia para o buffer de leitura ja foi gravada no encoder deste frame. */
 bool g_copiaGravada = false;
@@ -123,7 +122,7 @@ void setupPassTiming(WGPUDeviceImpl* device) {
   WGPUQueue queue = wgpuDeviceGetQueue(device);
   const float periodo = queue != nullptr ? wgpuQueueGetTimestampPeriod(queue) : 0.0f;
   if (queue != nullptr) wgpuQueueRelease(queue);
-  g_nsPorTick = periodo > 0.0f ? static_cast<double>(periodo) : 1.0;
+  g_nsPorTick = nsPorTickDoPeriodo(periodo);
   core::appendPerfLog("pass-timing: %.3f ns por tick do timestamp", g_nsPorTick);
   WGPUQuerySetDescriptor qsd = WGPU_QUERY_SET_DESCRIPTOR_INIT;
   qsd.type = WGPUQueryType_Timestamp;

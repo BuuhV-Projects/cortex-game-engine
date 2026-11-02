@@ -19,6 +19,9 @@ GPU a 97% e o `present` esperava 60–90 ms pela GPU.
 `msDeTicks` (percentis do `gpu-work`, ms por origem e a linha por passe). O período lido vai para o log
 (`pass-timing: N ns por tick do timestamp`), para ninguém precisar adivinhar a unidade.
 
+A conversão (`nsPorTickDoPeriodo`, `msDeTicks`) fica no `pass_timing_stats.h`, que não depende de device, e o
+`testPassTimingConvertsTicksByPeriod` trava o caso da AMD (10 ns por tick) e o período inválido (cai em 1 ns).
+
 ## Consequências
 
 - No DDD 00, a mesma rodada passa a mostrar `gpu-work med=139 ms`, coerente com o `present` e com o contador do

@@ -17,6 +17,7 @@ void testGcGenerationFromName();
 void testGcTotalsSeparateGenerations();
 void testPassTimingIgnoresSlotsBeyondUsed();
 void testPassTimingSkipsInvalidPairs();
+void testPassTimingConvertsTicksByPeriod();
 void testFormatToStringRoundtrip();
 void testBc7Math();
 void testAppendPerfLog();
@@ -170,6 +171,7 @@ int main() {
   tests::testGcTotalsSeparateGenerations();
   tests::testPassTimingIgnoresSlotsBeyondUsed();
   tests::testPassTimingSkipsInvalidPairs();
+  tests::testPassTimingConvertsTicksByPeriod();
   tests::testBlitBateComOGoldenDoJs();
   tests::testBlitRecusaArgumentosForaDoBuffer();
   tests::testRaycastLadoDaFace();
