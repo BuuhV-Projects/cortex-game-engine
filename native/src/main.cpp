@@ -62,6 +62,9 @@ constexpr int kDefaultWindowHeight = 1080;
 
 namespace {
 
+/** SSAA de quem não declara `renderScale` no cortex.json (ADR-0103, SPEC-0667). */
+constexpr float kDefaultRenderScale = 2.0f;
+
 // Spike do laço de render nativo (ADR-0232): tamanho da cena e duração quando
 // `CORTEX_RENDER_BENCH` não traz número. 1300 objetos é a árvore medida no
 // kart-racer (SPEC-0227), para o resultado ser comparável.
@@ -308,10 +311,12 @@ int main(int argc, char** argv) {
     // SSAA (supersampling): o engine renderiza numa canvas MAIOR (nativo ×
     // renderScale) num alvo offscreen; o host faz downscale bilinear no
     // present. Mata o serrilhado dos contornos finos (moedas) que o MSAA 4x
-    // sozinho não suaviza. CORTEX_RENDER_SCALE ajusta (padrão 2.0; 1.0 desliga).
+    // sozinho não suaviza. Variável vazia conta como ausente. Precedência (SPEC-0667): CORTEX_RENDER_SCALE >
+    // `renderScale` do cortex.json > 2.0. 1.0 desliga.
     {
       const char* scaleEnv = SDL_getenv("CORTEX_RENDER_SCALE");
-      float scale = scaleEnv ? static_cast<float>(SDL_atof(scaleEnv)) : 2.0f;
+      const float projectScale = game.renderScale > core::kNoRenderScale ? static_cast<float>(game.renderScale) : kDefaultRenderScale;
+      float scale = scaleEnv && scaleEnv[0] ? static_cast<float>(SDL_atof(scaleEnv)) : projectScale;
       if (scale < 1.0f) scale = 1.0f;
       if (scale > 4.0f) scale = 4.0f;  // teto de sanidade (VRAM/fill-rate)
       gpu.renderScale = scale;

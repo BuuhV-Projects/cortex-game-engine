@@ -62,6 +62,18 @@ void testGameConfig() {
   writeFile("cortex.json", "{ \"id\": \"x\", \"steamAppId\": 99999999999 }\n");
   CHECK(core::loadGameConfig("./", "fb").steamAppId == core::kNoSteamAppId);
 
+  // SPEC-0667: escala de render do projeto; ausente, zero ou texto = não declarada.
+  writeFile("cortex.json", "{ \"id\": \"x\", \"renderScale\": 1 }\n");
+  CHECK(core::loadGameConfig("./", "fb").renderScale == 1.0);
+  writeFile("cortex.json", "{ \"id\": \"x\", \"renderScale\": 1.5 }\n");
+  CHECK(core::loadGameConfig("./", "fb").renderScale == 1.5);
+  writeFile("cortex.json", "{ \"id\": \"x\", \"renderScale\": 0 }\n");
+  CHECK(core::loadGameConfig("./", "fb").renderScale == core::kNoRenderScale);
+  writeFile("cortex.json", "{ \"id\": \"x\", \"renderScale\": \"alto\" }\n");
+  CHECK(core::loadGameConfig("./", "fb").renderScale == core::kNoRenderScale);
+  writeFile("cortex.json", "{ \"id\": \"x\" }\n");
+  CHECK(core::loadGameConfig("./", "fb").renderScale == core::kNoRenderScale);
+
   // Convive com os outros campos, em qualquer ordem.
   writeFile("cortex.json",
             "{\n  \"steamAppId\": 3241660,\n  \"id\": \"rush\",\n  \"debug\": true\n}\n");

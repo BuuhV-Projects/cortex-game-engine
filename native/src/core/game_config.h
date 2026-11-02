@@ -12,6 +12,9 @@ namespace core {
 /** App id ausente/inválido no cortex.json — o host roda sem Steam (ADR-0174). */
 inline constexpr std::uint32_t kNoSteamAppId = 0;
 
+/** `renderScale` ausente/inválido no cortex.json (SPEC-0667). */
+inline constexpr double kNoRenderScale = 0.0;
+
 struct GameConfig {
   std::string id;    // slug estável → pasta de saves (SDL_GetPrefPath)
   std::string name;  // exibição → título da janela / Meus Programas
@@ -25,6 +28,11 @@ struct GameConfig {
    * {@link kNoSteamAppId} = não declarado → o host pula a Steam e segue.
    */
   std::uint32_t steamAppId = kNoSteamAppId;
+  /**
+   * Escala do alvo offscreen (SSAA) declarada pelo projeto (SPEC-0667);
+   * {@link kNoRenderScale} = não declarada → o host usa o padrão dele.
+   */
+  double renderScale = kNoRenderScale;
 };
 
 // Lê `<baseDir>/cortex.json` e extrai `id`/`name`. Ausência ou parse falho cai

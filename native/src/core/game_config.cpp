@@ -1,6 +1,7 @@
 #include "game_config.h"
 
 #include <cstdio>
+#include <cstdlib>
 #include <limits>
 #include <string>
 
@@ -106,6 +107,23 @@ bool extractJsonBool(const std::string& json, const std::string& key) {
   return json.compare(i, 4, "true") == 0;
 }
 
+// Extrai um número TOP-LEVEL (`"key": 1.5`) do mesmo JSON plano. Ausente, não
+// numérico ou <= 0 devolve `fallback`.
+double extractJsonNumber(const std::string& json, const std::string& key, double fallback) {
+  const std::string needle = "\"" + key + "\"";
+  size_t k = json.find(needle);
+  if (k == std::string::npos) return fallback;
+  size_t i = k + needle.size();
+  while (i < json.size() && (json[i] == ' ' || json[i] == '\t' || json[i] == '\n' ||
+                             json[i] == '\r' || json[i] == ':')) {
+    i++;
+  }
+  const char* start = json.c_str() + i;
+  char* end = nullptr;
+  const double value = std::strtod(start, &end);
+  return end == start || !(value > 0.0) ? fallback : value;
+}
+
 }  // namespace
 
 GameConfig loadGameConfig(const std::string& baseDir, const std::string& fallbackSlug) {
@@ -115,7 +133,8 @@ GameConfig loadGameConfig(const std::string& baseDir, const std::string& fallbac
   if (id.empty()) id = fallbackSlug;
   if (name.empty()) name = id;
   return GameConfig{id, name, extractJsonBool(json, "debug"),
-                    extractJsonUint(json, "steamAppId", kNoSteamAppId)};
+                    extractJsonUint(json, "steamAppId", kNoSteamAppId),
+                    extractJsonNumber(json, "renderScale", kNoRenderScale)};
 }
 
 }  // namespace core
