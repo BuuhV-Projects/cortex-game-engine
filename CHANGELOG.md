@@ -1,3 +1,30 @@
+# [0.96.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.95.0...v0.96.0) (2026-11-02)
+
+
+### Bug Fixes
+
+* **ci:** gate do Greptile exige editor do tipo Bot; login no GraphQL vem sem [bot] (SPEC-0654) ([6cc0e5b](https://github.com/BuuhV-Projects/cortex-game-engine/commit/6cc0e5be2d2764faf3835fd416b759d61c6f6f21))
+* **ci:** nota do Greptile só vale com a última edição do corpo feita por ele; diff lido com -z e cabeçalho só antes do @@ (SPEC-0654) ([6bc4cc8](https://github.com/BuuhV-Projects/cortex-game-engine/commit/6bc4cc86428131473a3eb066863ea8e6859dd502))
+* **physics:** chassi pode dormir e trânsito cinemático sai do laço do VehicleArcadeSystem ([2185d8a](https://github.com/BuuhV-Projects/cortex-game-engine/commit/2185d8a23c4e0c41063f7c39e6200d0db07c9cb2))
+* **template:** barra depois de string é divisão, não regex que esconda console.log ([bf72bfa](https://github.com/BuuhV-Projects/cortex-game-engine/commit/bf72bfa8d8cc3dcf779decda0b05d027f98c73ef))
+* **template:** chamada antiga não reprova por comentário inserido entre seus pedaços ([adbb9ed](https://github.com/BuuhV-Projects/cortex-game-engine/commit/adbb9ed6b47a566b434e230d37f04c1beb9b18a5))
+* **template:** comentário de bloco aberto no diff não esconde console.log das linhas seguintes ([9687001](https://github.com/BuuhV-Projects/cortex-game-engine/commit/9687001c4769b02c19f6b4938544f16abe79813e))
+* **template:** console.log achado no arquivo inteiro do head e reprovado só em linha adicionada ([fed2ec3](https://github.com/BuuhV-Projects/cortex-game-engine/commit/fed2ec3ca1836f8913eb2fb6ba8b5a62436138a2))
+* **template:** interpolação de crase é código e aspas em regex não abrem string na busca de console.log ([a58ae4d](https://github.com/BuuhV-Projects/cortex-game-engine/commit/a58ae4d4a9cac1fd5154cd9587daba288dc588a5))
+* **template:** regras do repo com pendência por caminho exato e console.log sem strings nem comentários ([b39b696](https://github.com/BuuhV-Projects/cortex-game-engine/commit/b39b696325ee8e85d7194c5367936310dd43e882))
+* **template:** regras do repo conferem a revisão do head, não o merge do pull_request ([6eadce6](https://github.com/BuuhV-Projects/cortex-game-engine/commit/6eadce6cf2947a2f5901a5ebce19a884726a0280))
+* **veiculo:** malha recebe a pose final do carro que dorme no meio do quadro ([10c18f9](https://github.com/BuuhV-Projects/cortex-game-engine/commit/10c18f92109552c1a9c993d92f121a93d9725b0d))
+
+
+### Features
+
+* **template:** job Regras do repo no PR do projeto novo ([91cce15](https://github.com/BuuhV-Projects/cortex-game-engine/commit/91cce153814912037bc3489655b1c35ddb018756))
+
+
+### Performance Improvements
+
+* **physics:** carro parado dorme e sai da simulação do VehicleArcadeSystem ([d141abf](https://github.com/BuuhV-Projects/cortex-game-engine/commit/d141abf80fcfd6d882b07655c29936f2c3de178a))
+
 # [0.95.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.94.0...v0.95.0) (2026-11-01)
 
 
