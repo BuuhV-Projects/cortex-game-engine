@@ -109,4 +109,33 @@ describe('refineDocument', () => {
     expect(avisos.some((a: string) => a.includes('doubleSided'))).toBe(true);
     expect(avisos.some((a: string) => a.includes('materiais'))).toBe(true);
   });
+
+  it('--simplify reduz triângulos de malha densa e mantém nós e materiais (SPEC-0668)', async () => {
+    // Plano 40x40 subdividido: coplanar, o simplificador colapsa quase tudo sem erro visível.
+    const GRID = 40;
+    const doc = new Document();
+    const pos: number[] = [];
+    for (let z = 0; z <= GRID; z++) for (let x = 0; x <= GRID; x++) pos.push(x / GRID, 0, z / GRID);
+    const idx: number[] = [];
+    for (let z = 0; z < GRID; z++) {
+      for (let x = 0; x < GRID; x++) {
+        const a = z * (GRID + 1) + x;
+        idx.push(a, a + GRID + 1, a + 1, a + 1, a + GRID + 1, a + GRID + 2);
+      }
+    }
+    const material = doc.createMaterial('MI_Trim');
+    const prim = doc.createPrimitive()
+      .setAttribute('POSITION', doc.createAccessor().setType('VEC3').setArray(new Float32Array(pos)))
+      .setIndices(doc.createAccessor().setType('SCALAR').setArray(new Uint32Array(idx)))
+      .setMaterial(material);
+    doc.createScene().addChild(doc.createNode('peca-trim').setMesh(doc.createMesh('trim').addPrimitive(prim)));
+
+    const r = await refineDocument(doc, { simplifyError: 0.005 });
+
+    expect(r.antes.triangles).toBe(GRID * GRID * 2);
+    expect(r.depois.triangles).toBeLessThan(r.antes.triangles / 10);
+    expect(doc.getRoot().listNodes().map((n) => n.getName())).toEqual(['peca-trim']);
+    expect(doc.getRoot().listMaterials().map((m) => m.getName())).toEqual(['MI_Trim']);
+  });
 });
+
