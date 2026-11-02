@@ -49,4 +49,16 @@ void testPassTimingSkipsInvalidPairs() {
   CHECK(stats.passesUsados == 0);
 }
 
+void testPassTimingConvertsTicksByPeriod() {
+  // SPEC-0665: RX 6600/DX12 tem 10 ns por tick; 14 M ticks = 140 ms, não 14.
+  constexpr float kPeriodoAmd = 10.0f;
+  constexpr double kTicks = 14'000'000.0;
+  CHECK(webgpu::nsPorTickDoPeriodo(kPeriodoAmd) == 10.0);
+  CHECK(webgpu::msDeTicks(kTicks, webgpu::nsPorTickDoPeriodo(kPeriodoAmd)) == 140.0);
+  // Período inválido não zera a medida: cai em 1 ns por tick.
+  CHECK(webgpu::nsPorTickDoPeriodo(0.0f) == 1.0);
+  CHECK(webgpu::nsPorTickDoPeriodo(-1.0f) == 1.0);
+  CHECK(webgpu::msDeTicks(kTicks, 1.0) == 14.0);
+}
+
 }  // namespace tests

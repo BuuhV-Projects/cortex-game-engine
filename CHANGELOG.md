@@ -1,3 +1,10 @@
+## [0.98.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.98.0...v0.98.1) (2026-11-02)
+
+
+### Bug Fixes
+
+* **native:** tempo de GPU do pass-timing converte ticks pelo período do timestamp (SPEC-0665) ([1dccc43](https://github.com/BuuhV-Projects/cortex-game-engine/commit/1dccc43bae4cbf160fc6c9f6d9db260bd825ad71))
+
 # [0.98.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.97.0...v0.98.0) (2026-11-02)
 
 
