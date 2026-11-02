@@ -422,7 +422,11 @@ export class Terrain {
     if (!layer || !node) return;
     this.syncRepeat();
     if (typeof document === 'undefined') return; // testes/SSR: sem ImageLoader
-    node.value = terrainLayerTexture(layer.url); // compartilhada por URL (SPEC-0652)
+    const texture = terrainLayerTexture(layer.url); // compartilhada por URL (SPEC-0652)
+    if (node.value === texture) return;
+    node.value = texture;
+    // o renderer nativo relê as texturas pela versão do material (SPEC-0662); só quando a camada muda
+    (this.mesh.material as MeshStandardMaterial).needsUpdate = true;
   }
 
   /** Espelha o `repeat` das camadas nos uniforms (tiling ao vivo, sem rebuild). */
