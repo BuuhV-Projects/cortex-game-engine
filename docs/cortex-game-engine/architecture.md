@@ -1394,7 +1394,7 @@ Substitui o `three` no desenho do export **por objeto**, a caminho de 0 recusas 
   `ior`/`specular*` (vira o parâmetro `specularF0`, sem variante), uma textura metal/rough (`.z`/`.y`),
   `normalMap` em espaço tangente com base TBN por derivadas (no prólogo comum, **antes** da sombra,
   que desvia pelo normal perturbado) e cor de vértice. Recusa mapas metal/rough diferentes,
-  atributo `tangent`, `flatShading` e mapas de specular. Recusas temporárias do `lambert` (emissivo não
+  atributo `tangent`, `flatShading` e mapas de specular. O **terreno pintado** (`Terrain` → `buildTerrainSplatMaterial`) é desenhado pelo material do jogo `terrainSplat` (SPEC-0662): o `standard` com a cor difusa trocada pelo blend do splat (`standardWgsl(variant, extras)`); splat, camadas e tiling são lidos dos nós TSL guardados num `WeakMap`, nunca no `userData`. Recusas temporárias do `lambert` (emissivo não
   preto, instanciado, `receiveShadow`): ver o backlog do PRD-0466. O bloco
   `frame/lights.ts` é um UBO por quadro com sol + hemisfério + até 8 spots (o que a `DynamicLighting`
   do `three` dá aos shaders). **Armadilha**: o `beginFrame` roda antes de o `three` coletar as luzes

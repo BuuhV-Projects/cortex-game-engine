@@ -39,8 +39,8 @@ const RECEIVE_SHADOW = true;
 const LIT_FEATURES = ['map', 'emissiveMap', 'vertexColors', 'instanceColor', 'fog', 'alpha', 'alphaTest', 'receiveShadow'] as const;
 /** Accepted without a variant of their own (the uv transform is always applied). */
 const NEUTRAL_FEATURES = ['uvTransform', 'noToneMap'];
-/** Features that sample a texture with the mesh uv (`standard` adds metalRoughMap/normalMap, SPEC-0659). */
-const UV_FEATURES = ['map', 'emissiveMap', 'metalRoughMap', 'normalMap'];
+/** Features that sample a texture with the mesh uv (`standard` adds metalRoughMap/normalMap, SPEC-0659; `splat` is the terrain's, SPEC-0662). */
+const UV_FEATURES = ['map', 'emissiveMap', 'metalRoughMap', 'normalMap', 'splat'];
 const usesUv = (variant: readonly string[]): boolean => UV_FEATURES.some((f) => variant.includes(f));
 
 export type MapLike = Texture & { matrix: { elements: ArrayLike<number> }; matrixAutoUpdate: boolean; updateMatrix(): void };
@@ -204,13 +204,15 @@ fn vs(vin : VIn) -> VOut {
  * `emissive`, `normalGeometry` (before the face flip) and `normal`, `sunColor` (with the sun
  * shadow when the variant receives it).
  */
-export function litSurfaceWgsl(variant: readonly string[]): string {
+export function litSurfaceWgsl(variant: readonly string[], diffuseWgsl?: string): string {
   const has = (f: string) => variant.includes(f);
-  return /* wgsl */ `
+  // `diffuseWgsl` replaces the base color (a material whose colorNode the native renderer reproduces, SPEC-0662)
+  const base = diffuseWgsl ?? /* wgsl */ `
   var diffuse = vec4<f32>(params.color, 1.0);
   ${has('map') ? 'diffuse = diffuse * textureSample(mapTexture, mapSampler, (params.mapTransform * vec3<f32>(in.uv, 1.0)).xy);' : ''}
   ${has('vertexColors') ? 'diffuse = diffuse * in.color;' : ''}
-  ${has('instanceColor') ? 'diffuse = vec4<f32>(in.instanceColor, 1.0) * diffuse;' : ''}
+  ${has('instanceColor') ? 'diffuse = vec4<f32>(in.instanceColor, 1.0) * diffuse;' : ''}`;
+  return /* wgsl */ `${base}
   diffuse.w = diffuse.w * params.opacity;
   ${has('alphaTest') ? 'if (diffuse.w <= params.alphaTest) {\n    discard;\n  }' : ''}
   ${has('alpha') ? '' : 'diffuse.w = 1.0;'}

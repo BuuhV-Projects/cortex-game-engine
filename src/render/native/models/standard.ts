@@ -29,7 +29,8 @@ const NORMAL_SCALE_AT = SPECULAR_F0_AT + ROW_FLOATS;
 const METAL_ROUGH_TRANSFORM_AT = NORMAL_SCALE_AT + ROW_FLOATS;
 const NORMAL_TRANSFORM_AT = METAL_ROUGH_TRANSFORM_AT + MAT3_FLOATS;
 /** Lit params + metalness/roughness, specularF0, normalScale, metal/rough and normal uv transforms. */
-const PARAM_FLOATS = NORMAL_TRANSFORM_AT + MAT3_FLOATS;
+export const STANDARD_PARAM_FLOATS = NORMAL_TRANSFORM_AT + MAT3_FLOATS;
+const PARAM_FLOATS = STANDARD_PARAM_FLOATS;
 /** `Params` fields after the lit ones, in the layout above (WGSL pads the vec3 and vec2 rows). */
 const STANDARD_PARAMS_WGSL = `metalness : f32,
   roughness : f32,
@@ -95,8 +96,15 @@ export function writeSpecularF0(material: Material, out: Float32Array, at: numbe
 }
 
 /** Model textures after the lit ones, in binding order (the DFG LUT is always last). */
-function extraTextures(variant: readonly string[]): string[] {
-  return [...(variant.includes('metalRoughMap') ? ['metalRough'] : []), ...(variant.includes('normalMap') ? ['normal'] : []), 'dfg'];
+function extraTextures(variant: readonly string[], more: readonly string[] = []): string[] {
+  return [...(variant.includes('metalRoughMap') ? ['metalRough'] : []), ...(variant.includes('normalMap') ? ['normal'] : []), ...more, 'dfg'];
+}
+
+/** What a model built on `standard` adds (SPEC-0662): `Params` fields after the standard ones, textures bound before the DFG LUT, and the WGSL that sets `diffuse`. */
+export interface StandardExtras {
+  params?: string;
+  textures?: readonly string[];
+  diffuse?: string;
 }
 
 const DFG_SIZE = 16;
@@ -199,17 +207,31 @@ export const standardModel: NativeModelDef = {
 
   attributes: litAttributes,
 
-  wgsl(variant) {
-    const metalRough = variant.includes('metalRoughMap')
-      ? `let metalRough = textureSample(metalRoughTexture, metalRoughSampler, (params.metalRoughMapTransform * vec3<f32>(in.uv, 1.0)).xy);
+  wgsl: (variant) => standardWgsl(variant),
+
+  writeParams: writeStandardParams,
+
+  textures(material, variant) {
+    const m = material as StandardMaterial;
+    const out = litTextures(material, variant);
+    if (variant.includes('metalRoughMap')) out.push(m.metalnessMap);
+    if (variant.includes('normalMap')) out.push(m.normalMap);
+    return [...out, dfgTexture()];
+  },
+};
+
+/** WGSL of the `standard` model; `extras` lets a model reuse its lighting with its own base color (SPEC-0662). */
+export function standardWgsl(variant: readonly string[], extras: StandardExtras = {}): string {
+  const metalRough = variant.includes('metalRoughMap')
+    ? `let metalRough = textureSample(metalRoughTexture, metalRoughSampler, (params.metalRoughMapTransform * vec3<f32>(in.uv, 1.0)).xy);
   metalness = metalness * metalRough.z;
   roughnessFactor = roughnessFactor * metalRough.y;`
-      : '';
-    return /* wgsl */ `${litVertexWgsl(variant, STANDARD_PARAMS_WGSL, extraTextures(variant))}
+    : '';
+  return /* wgsl */ `${litVertexWgsl(variant, STANDARD_PARAMS_WGSL + (extras.params ?? ''), extraTextures(variant, extras.textures))}
 ${BRDF_WGSL}
 @fragment
 fn fs(in : VOut, @builtin(front_facing) isFront : bool) -> @location(0) vec4<f32> {
-${litSurfaceWgsl(variant)}
+${litSurfaceWgsl(variant, extras.diffuse)}
   var metalness = params.metalness;
   var roughnessFactor = params.roughness;
   ${metalRough}
@@ -237,26 +259,18 @@ ${litSurfaceWgsl(variant)}
 ${litOutputWgsl(variant)}
 }
 `;
-  },
+}
 
-  writeParams(material: Material, out: Float32Array): void {
-    writeLitParams(material, out);
-    const m = material as StandardMaterial;
-    out.fill(0, METALNESS_AT, PARAM_FLOATS);
-    out[METALNESS_AT] = m.metalness;
-    out[ROUGHNESS_AT] = m.roughness;
-    writeSpecularF0(material, out, SPECULAR_F0_AT);
-    out[NORMAL_SCALE_AT] = m.normalScale?.x ?? 1;
-    out[NORMAL_SCALE_AT + 1] = m.normalScale?.y ?? 1;
-    writeUvTransform(out, METAL_ROUGH_TRANSFORM_AT, m.metalnessMap ?? null);
-    writeUvTransform(out, NORMAL_TRANSFORM_AT, m.normalMap ?? null);
-  },
-
-  textures(material, variant) {
-    const m = material as StandardMaterial;
-    const out = litTextures(material, variant);
-    if (variant.includes('metalRoughMap')) out.push(m.metalnessMap);
-    if (variant.includes('normalMap')) out.push(m.normalMap);
-    return [...out, dfgTexture()];
-  },
-};
+/** Params of the `standard` model (the first STANDARD_PARAM_FLOATS floats of a model built on it). */
+export function writeStandardParams(material: Material, out: Float32Array): void {
+  writeLitParams(material, out);
+  const m = material as StandardMaterial;
+  out.fill(0, METALNESS_AT, PARAM_FLOATS);
+  out[METALNESS_AT] = m.metalness;
+  out[ROUGHNESS_AT] = m.roughness;
+  writeSpecularF0(material, out, SPECULAR_F0_AT);
+  out[NORMAL_SCALE_AT] = m.normalScale?.x ?? 1;
+  out[NORMAL_SCALE_AT + 1] = m.normalScale?.y ?? 1;
+  writeUvTransform(out, METAL_ROUGH_TRANSFORM_AT, m.metalnessMap ?? null);
+  writeUvTransform(out, NORMAL_TRANSFORM_AT, m.normalMap ?? null);
+}
