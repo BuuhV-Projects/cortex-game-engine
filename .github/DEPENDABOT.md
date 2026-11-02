@@ -23,7 +23,8 @@ Isso não é versionável: fica em **Settings → Code security**.
 - [x] **Dependabot alerts**: é o que dispara o alerta de vulnerabilidade (ligado).
 - [ ] **Dependabot security updates**: abre sozinho o PR de correção (desligado em 02/11/2026).
 
-Sem os dois, este arquivo cobre só a atualização de rotina, e nada avisa sobre CVE.
+Este arquivo configura só a atualização de rotina. Com os alertas ligados, o repositório avisa sobre CVE;
+com as correções automáticas desligadas, ele não abre sozinho o PR de correção.
 
 ## Casos que exigem cuidado
 

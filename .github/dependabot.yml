@@ -59,6 +59,9 @@ updates:
     commit-message:
       prefix: chore
       include: scope
+    groups:
+      cargo-patch-minor:
+        update-types: [patch, minor]
 
   # --------------------------------------------------------- GitHub Actions
   #
