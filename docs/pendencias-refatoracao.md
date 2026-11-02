@@ -14,6 +14,7 @@ src/editor/EditorInspector.ts
 src/editor/ObjectEditSystem.ts
 native/src/shims/scene_mirror_shim.cpp
 src/core/NativeSceneMirror.ts
+tests/core/NativeSceneMirror.test.ts
 src/scene/OutdoorLighting.ts
 src/physics/nearMeshes.ts
 electron/main.ts

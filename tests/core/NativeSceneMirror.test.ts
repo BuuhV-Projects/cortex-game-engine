@@ -11,6 +11,7 @@ import {
   Object3D,
   OrthographicCamera,
   PerspectiveCamera,
+  Quaternion,
   Texture,
   Vector3,
 } from 'three';
@@ -280,6 +281,34 @@ describe('NativeSceneMirror', () => {
     expect(sync[0]).toBe(1);
     expect(sync.slice(1, 4)).toEqual(new Float64Array([7, 8, 9]));
     expect(host.get(1)!.slice(0, 3)).toEqual([7, 8, 9]);
+  });
+
+  it('nó com matrixAutoUpdate = false manda a pose da matrix, no build e na sincronização (SPEC-0658)', () => {
+    // As peças avulsas das células do Port Hollow: pose só em `matrix`, TRS no padrão.
+    // Com o TRS cru o host as desenhava todas na origem do mundo.
+    const { host } = instalarPonteFalsa(8);
+    const raiz = new Object3D();
+    const peca = malha();
+    peca.matrixAutoUpdate = false;
+    peca.matrix.compose(new Vector3(120, 8, -40), new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), Math.PI / 2), new Vector3(2, 2, 2));
+    raiz.add(peca);
+    const espelho = new NativeSceneMirror();
+    espelho.install(raiz);
+
+    const esperado = (): number[] => {
+      const p = new Vector3();
+      const q = new Quaternion();
+      const s = new Vector3();
+      peca.matrix.decompose(p, q, s);
+      return [p.x, p.y, p.z, q.x, q.y, q.z, q.w, s.x, s.y, s.z];
+    };
+    expect(host.get(1)!.slice(0, 10)).toEqual(esperado().map((v) => Math.fround(v)));
+
+    // o streaming suja o nó trocando `visible`: a linha não pode zerar a pose
+    peca.visible = false;
+    espelho.update(new PerspectiveCamera());
+    expect(host.get(1)!.slice(0, 10)).toEqual(esperado());
+    expect(peca.position.x).toBe(0); // o TRS do objeto fica intocado
   });
 
   it('manda ao C++ o castShadow AUTORADO, não o que o filtro deixou no frame', () => {
