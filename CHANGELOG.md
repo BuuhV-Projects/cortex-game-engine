@@ -1,3 +1,15 @@
+# [0.97.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.96.3...v0.97.0) (2026-11-02)
+
+
+### Bug Fixes
+
+* **render:** standard recusa mapa em uv1 e galeria testa metalness (SPEC-0659) ([ad8303f](https://github.com/BuuhV-Projects/cortex-game-engine/commit/ad8303f228e223f1080a9dda80f45fb325e13f7b))
+
+
+### Features
+
+* **render:** standard nativo com normalMap, metal/rough, specular/ior e cor de vértice (SPEC-0659) ([3ae6758](https://github.com/BuuhV-Projects/cortex-game-engine/commit/3ae67581bb1b3793a7a2ba5af04d9e66ba84ec55))
+
 ## [0.96.3](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.96.2...v0.96.3) (2026-11-02)
 
 
