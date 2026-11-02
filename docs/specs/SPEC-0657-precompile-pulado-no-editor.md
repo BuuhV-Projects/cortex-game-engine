@@ -35,6 +35,8 @@ A/B numa cópia do jogo, mesmo servidor, caches quentes: sem o aquecimento no ed
 
 - Ao apertar ▶ Play dentro do editor, os primeiros quadros podem travar enquanto os pipelines do que aparece
   compilam. Medir travada de largada no Studio exige bootar em play (`?play=1`) ou fechar o F2 antes da carga.
+- O `playtest_game` do Chat IA boota em edição e aperta Play (SPEC-0277): também sem aquecimento. Sonda de tempo
+  de quadro nos primeiros segundos depois do Play inclui compilação de shader — não é travada do jogo final.
 - Jogo que chama `precompile()` de novo depois (ex.: forçar um caminho de pós-processamento) com o editor ativo
   também não aquece — mesma regra.
 - Teste: `tests/core/gamePrecompileEditor.test.ts` (com o editor ativo não chama `renderer.init()`).
