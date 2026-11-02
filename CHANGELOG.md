@@ -1,3 +1,10 @@
+# [0.99.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.98.2...v0.99.0) (2026-11-02)
+
+
+### Features
+
+* **native:** escala de render declarada no cortex.json do jogo (SPEC-0667) ([#39](https://github.com/BuuhV-Projects/cortex-game-engine/issues/39)) ([af63f5d](https://github.com/BuuhV-Projects/cortex-game-engine/commit/af63f5d23f0b6a07b4127f8768d9b976e07570f1))
+
 ## [0.98.2](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.98.1...v0.98.2) (2026-11-02)
 
 

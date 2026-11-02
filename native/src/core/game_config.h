@@ -12,6 +12,9 @@ namespace core {
 /** App id ausente/inválido no cortex.json — o host roda sem Steam (ADR-0174). */
 inline constexpr std::uint32_t kNoSteamAppId = 0;
 
+/** `renderScale` ausente/inválido no cortex.json (SPEC-0667). */
+inline constexpr double kNoRenderScale = 0.0;
+
 struct GameConfig {
   std::string id;    // slug estável → pasta de saves (SDL_GetPrefPath)
   std::string name;  // exibição → título da janela / Meus Programas
@@ -25,11 +28,29 @@ struct GameConfig {
    * {@link kNoSteamAppId} = não declarado → o host pula a Steam e segue.
    */
   std::uint32_t steamAppId = kNoSteamAppId;
+  /**
+   * Escala do alvo offscreen (SSAA) declarada pelo projeto (SPEC-0667);
+   * {@link kNoRenderScale} = não declarada → o host usa o padrão dele.
+   */
+  double renderScale = kNoRenderScale;
 };
 
 // Lê `<baseDir>/cortex.json` e extrai `id`/`name`. Ausência ou parse falho cai
 // no `fallbackSlug` (o basename do dir/exe): `id = cortex.id ?? fallbackSlug`,
 // `name = cortex.name ?? id`. Nunca lança; campos vazios contam como ausentes.
 GameConfig loadGameConfig(const std::string& baseDir, const std::string& fallbackSlug);
+
+/** SSAA de quem não declara `renderScale` no cortex.json (ADR-0103, SPEC-0667). */
+inline constexpr float kDefaultRenderScale = 2.0f;
+/** Piso e teto da escala (1 = sem SSAA; 4 = teto de sanidade de VRAM/fill-rate). */
+inline constexpr float kMinRenderScale = 1.0f;
+inline constexpr float kMaxRenderScale = 4.0f;
+
+/**
+ * Escala do alvo offscreen (SPEC-0667): `CORTEX_RENDER_SCALE` (nula ou vazia =
+ * ausente) > `renderScale` do projeto > {@link kDefaultRenderScale}, limitada a
+ * [{@link kMinRenderScale}, {@link kMaxRenderScale}].
+ */
+float resolveRenderScale(const char* envValue, double projectScale);
 
 }  // namespace core
