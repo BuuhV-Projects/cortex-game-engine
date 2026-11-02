@@ -1,3 +1,10 @@
+## [0.96.3](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.96.2...v0.96.3) (2026-11-02)
+
+
+### Bug Fixes
+
+* **physics:** índices do trimesh sem array JS intermediário (SPEC-0661) ([fa4c5d0](https://github.com/BuuhV-Projects/cortex-game-engine/commit/fa4c5d06d64f19799545c1c9a989b1ef110097cb))
+
 ## [0.96.2](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.96.1...v0.96.2) (2026-11-02)
 
 
