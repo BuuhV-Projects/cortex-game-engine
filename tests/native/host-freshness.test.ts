@@ -50,7 +50,10 @@ describe('staleHostBinaries (SPEC-0660)', () => {
     write('native/build/cortex_host.exe', OLD);
     write('native/rapier-native/patched/rapier3d/src/pipeline.rs', NEW);
     write('native/rapier-native/patched/rapier3d/target/junk.rlib', NEWER); // saída, não fonte
-    expect(staleNames()).toEqual(['rapier_native.dll']);
+    write('native/rapier-native/patched/rapier3d/README.md', NEWER); // doc: não religa a DLL
+    const stale = staleHostBinaries(root, build);
+    expect(stale.map((s: { binary: string }) => s.binary)).toEqual(['rapier_native.dll']);
+    expect(stale[0]!.source).toBe(path.join('native', 'rapier-native', 'patched', 'rapier3d', 'src', 'pipeline.rs'));
     fs.rmSync(path.join(root, 'native', 'rapier-native'), { recursive: true });
     write('native/shaders/bloom.wgsl', NEW);
     expect(staleNames()).toEqual(['cortex_host.exe']);

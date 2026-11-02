@@ -28,8 +28,9 @@ Duas falhas deixaram isso passar calado:
      `native/CMakeLists.txt`. Vale a data do exe **ou** do selo `host-build.stamp`, o que for mais
      novo. O selo cobre a compilação que reconfigura sem religar o exe (por exemplo, um comentário no
      `CMakeLists.txt`); sem ele o export travaria para sempre.
-   - `rapier_native.dll` ← `native/rapier-native/src/**`, `native/rapier-native/patched/**` (o Rapier
-     com patch, ADR-0336; pastas `target` não contam) e `native/rapier-native/Cargo.toml`. Vale a data
+   - `rapier_native.dll` ← `native/rapier-native/src/**`, `native/rapier-native/patched/rapier3d/src/**` e o
+     `Cargo.toml` dele (o Rapier com patch, ADR-0336; só o que o cargo compila, então README ou doc lá dentro não
+     trava o export) e `native/rapier-native/Cargo.toml`. Vale a data
      da saída do cargo (`target/release/rapier_native.dll`), e a DLL de `native/build*` precisa ser
      **idêntica** a ela, porque o `copy_if_different` mantém a data antiga quando o conteúdo é igual.
 

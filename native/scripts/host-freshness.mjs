@@ -8,7 +8,13 @@ import path from 'node:path';
 /** Fontes (pastas ou arquivos, relativos à raiz) de cada binário de `native/build*`. */
 export const HOST_BINARY_SOURCES = {
   'cortex_host.exe': ['native/src', 'native/shaders', 'native/CMakeLists.txt'],
-  'rapier_native.dll': ['native/rapier-native/src', 'native/rapier-native/patched', 'native/rapier-native/Cargo.toml'],
+  // Do Rapier com patch só o que o cargo compila: doc ali dentro (README) não religa a DLL e travaria o export.
+  'rapier_native.dll': [
+    'native/rapier-native/src',
+    'native/rapier-native/Cargo.toml',
+    'native/rapier-native/patched/rapier3d/src',
+    'native/rapier-native/patched/rapier3d/Cargo.toml',
+  ],
 };
 /**
  * Selo que o alvo `host_runtime_files` do CMake grava em TODA compilação que termina: uma mudança que
