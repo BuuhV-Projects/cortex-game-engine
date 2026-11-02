@@ -6,7 +6,7 @@
 
 # Interface: VehicleHandle
 
-Defined in: [src/scene/VehicleSetup.ts:56](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L56)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/scene/VehicleSetup.ts:56](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L56)
 
 Handle de [setupVehicle](../functions/setupVehicle.md): o que o jogo usa no loop (velocímetro/som/tune).
 
@@ -16,7 +16,7 @@ Handle de [setupVehicle](../functions/setupVehicle.md): o que o jogo usa no loop
 
 > **engineSound**: [`EngineSound`](../classes/EngineSound.md) \| `null`
 
-Defined in: [src/scene/VehicleSetup.ts:74](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L74)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/scene/VehicleSetup.ts:74](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L74)
 
 ***
 
@@ -24,7 +24,7 @@ Defined in: [src/scene/VehicleSetup.ts:74](https://github.com/BuuhV-Projects/cor
 
 > **options**: [`VehicleControlOptions`](VehicleControlOptions.md)
 
-Defined in: [src/scene/VehicleSetup.ts:73](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L73)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/scene/VehicleSetup.ts:73](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L73)
 
 Opções do [VehicleControlSystem](../classes/VehicleControlSystem.md), lidas a cada quadro. Pode trocar
 `pauseWhen` depois (ex.: somar o menu de pausa do jogo) — vale pro controle,
@@ -36,7 +36,7 @@ o passo da física e as marcas de pneu (SPEC-0306).
 
 > **physics**: [`RapierPhysics`](../classes/RapierPhysics.md)
 
-Defined in: [src/scene/VehicleSetup.ts:65](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L65)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/scene/VehicleSetup.ts:65](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L65)
 
 O mundo físico em que o carro e os colisores do terreno/estrada foram criados
 (SPEC-0300). Use pra pôr outros corpos que colidem com o carro — ex.: um carro
@@ -50,7 +50,7 @@ o [VehicleControlSystem](../classes/VehicleControlSystem.md) já avança este mu
 
 > **rig**: [`VehicleRig`](VehicleRig.md)
 
-Defined in: [src/scene/VehicleSetup.ts:66](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L66)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/scene/VehicleSetup.ts:66](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L66)
 
 ***
 
@@ -58,7 +58,7 @@ Defined in: [src/scene/VehicleSetup.ts:66](https://github.com/BuuhV-Projects/cor
 
 > **speedo**: [`Speedometer`](../classes/Speedometer.md)
 
-Defined in: [src/scene/VehicleSetup.ts:67](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L67)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/scene/VehicleSetup.ts:67](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L67)
 
 ***
 
@@ -66,4 +66,4 @@ Defined in: [src/scene/VehicleSetup.ts:67](https://github.com/BuuhV-Projects/cor
 
 > **vehicle**: [`Vehicle`](../classes/Vehicle.md)
 
-Defined in: [src/scene/VehicleSetup.ts:57](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L57)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/scene/VehicleSetup.ts:57](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L57)

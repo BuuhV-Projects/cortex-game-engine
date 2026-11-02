@@ -8,7 +8,7 @@
 
 > **instance**(`gltf`, `shadows?`): `Object3D`
 
-Defined in: [src/scene/SceneAssets.ts:301](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L301)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/scene/SceneAssets.ts:301](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L301)
 
 Clona a cena de um GLTF (seguro pra `SkinnedMesh`) e configura sombras nos
 meshes. Clonar permite spawnar N cópias do mesmo GLTF carregado uma vez.

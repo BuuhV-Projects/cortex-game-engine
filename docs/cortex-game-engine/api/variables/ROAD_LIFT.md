@@ -8,6 +8,6 @@
 
 > `const` **ROAD\_LIFT**: `0.05` = `0.05`
 
-Defined in: [src/scene/RoadBuild.ts:40](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/RoadBuild.ts#L40)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/scene/RoadBuild.ts:40](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/RoadBuild.ts#L40)
 
 A pista fica tanto acima do platô moldado (evita briga de profundidade).

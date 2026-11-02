@@ -8,7 +8,7 @@
 
 > **setupThirdPerson**(`game`, `options?`): [`ThirdPersonHandle`](../interfaces/ThirdPersonHandle.md)
 
-Defined in: [src/scene/ThirdPerson.ts:35](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/ThirdPerson.ts#L35)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/scene/ThirdPerson.ts:35](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/ThirdPerson.ts#L35)
 
 Registra num [Game](../classes/Game.md) os sistemas de **terceira pessoa** (estilo Unity
 StarterAssets ThirdPerson): sincronização mesh↔transform + o controle/câmera

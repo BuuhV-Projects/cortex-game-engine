@@ -6,7 +6,7 @@
 
 # Class: FrameCap
 
-Defined in: [src/core/GameLoop.ts:77](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GameLoop.ts#L77)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/GameLoop.ts:77](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GameLoop.ts#L77)
 
 Teto de quadros com ALVO acumulado (ADR-0257) — separado do laço para ser
 testável sem `requestAnimationFrame`.
@@ -26,7 +26,7 @@ judder periódico, que é informação que o dev não tem como obter sozinho.
 
 > **new FrameCap**(`maxFps?`): `FrameCap`
 
-Defined in: [src/core/GameLoop.ts:86](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GameLoop.ts#L86)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/GameLoop.ts:86](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GameLoop.ts#L86)
 
 #### Parameters
 
@@ -46,7 +46,7 @@ Defined in: [src/core/GameLoop.ts:86](https://github.com/BuuhV-Projects/cortex-g
 
 > **get** **maxFps**(): `number`
 
-Defined in: [src/core/GameLoop.ts:91](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GameLoop.ts#L91)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/GameLoop.ts:91](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GameLoop.ts#L91)
 
 Teto atual; `0` = sem teto.
 
@@ -58,7 +58,7 @@ Teto atual; `0` = sem teto.
 
 > **set** **maxFps**(`fps`): `void`
 
-Defined in: [src/core/GameLoop.ts:95](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GameLoop.ts#L95)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/GameLoop.ts:95](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GameLoop.ts#L95)
 
 ##### Parameters
 
@@ -78,7 +78,7 @@ Defined in: [src/core/GameLoop.ts:95](https://github.com/BuuhV-Projects/cortex-g
 
 > **get** **refreshHz**(): `number` \| `null`
 
-Defined in: [src/core/GameLoop.ts:104](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GameLoop.ts#L104)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/GameLoop.ts:104](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GameLoop.ts#L104)
 
 Refresh estimado do monitor (Hz), ou `null` enquanto não há amostras.
 
@@ -92,7 +92,7 @@ Refresh estimado do monitor (Hz), ou `null` enquanto não há amostras.
 
 > **admit**(`nowMs`): `boolean`
 
-Defined in: [src/core/GameLoop.ts:113](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GameLoop.ts#L113)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/GameLoop.ts:113](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GameLoop.ts#L113)
 
 Registra o frame candidato e diz se ele deve rodar. Chamado a CADA callback
 de frame, inclusive os que serão pulados — a estimativa do refresh precisa

@@ -8,7 +8,7 @@
 
 > **overlayAnimation**(`overlay`): `Record`\<`string`, [`AnimationConfig`](../type-aliases/AnimationConfig.md)\>
 
-Defined in: [src/scene/SceneBuilder.ts:457](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L457)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/scene/SceneBuilder.ts:457](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L457)
 
 Lê `data.animation` da overlay — a animação **autorada no editor** por id
 (`{ [id]: { clip?, loop?, speed?, autoplay? } }`). Sobrescreve o `animation` do

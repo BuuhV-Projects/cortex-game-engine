@@ -6,7 +6,7 @@
 
 # Class: UiStylesheet
 
-Defined in: [src/ui/runtime/UiStylesheet.ts:31](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiStylesheet.ts#L31)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/ui/runtime/UiStylesheet.ts:31](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiStylesheet.ts#L31)
 
 ## Constructors
 
@@ -14,7 +14,7 @@ Defined in: [src/ui/runtime/UiStylesheet.ts:31](https://github.com/BuuhV-Project
 
 > **new UiStylesheet**(`rules`): `UiStylesheet`
 
-Defined in: [src/ui/runtime/UiStylesheet.ts:32](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiStylesheet.ts#L32)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/ui/runtime/UiStylesheet.ts:32](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiStylesheet.ts#L32)
 
 #### Parameters
 
@@ -32,7 +32,7 @@ Defined in: [src/ui/runtime/UiStylesheet.ts:32](https://github.com/BuuhV-Project
 
 > **apply**\<`T`\>(`widget`, `className`): `T`
 
-Defined in: [src/ui/runtime/UiStylesheet.ts:35](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiStylesheet.ts#L35)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/ui/runtime/UiStylesheet.ts:35](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiStylesheet.ts#L35)
 
 Aplica a classe (e `:focus`, se houver) ao widget. Erro se não existir.
 

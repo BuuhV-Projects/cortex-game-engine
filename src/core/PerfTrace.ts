@@ -5,6 +5,7 @@ import { describeMaterial, isDescribed, measureCoverage } from '../render/Materi
 import { countDistinctPipelines } from '../render/PipelineKey.js';
 import { PipelineBirthLog, drainNativePipelineBirths, type PipelineBirth } from './PipelineBirthLog.js';
 import { activeSceneMirror } from './NativeSceneMirror.js';
+import { readHeapStats, type HeapStats } from './heapStats.js';
 
 /**
  * **Perf trace de gameplay** (SPEC-0198) — com as métricas ativas, grava uma
@@ -84,6 +85,8 @@ export interface VisibleNode {
 export interface PerfSample {
   /** ms desde o boot. */
   t: number;
+  /** Heap do Hermes (SPEC-0664); ausente fora do host nativo. */
+  heap?: HeapStats;
   fps: number;
   frameMs: number;
   /** ms de CPU por seção do {@link FrameProfiler} (`{ render: 28.1, … }`). */
@@ -743,6 +746,8 @@ export class PerfTrace {
       visible: lap?.visibleNodes ?? [],
       game: readGauges(),
     });
+    const heap = readHeapStats(); // SPEC-0664: tamanho do heap e memória externa do Hermes
+    if (heap) sample.heap = heap;
     this._bridge(JSON.stringify(sample));
     this._lastSampleMs = performance.now() - sampleStart;
   }

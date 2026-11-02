@@ -8,7 +8,7 @@
 
 > **createDialogueUI**(`handlers`, `options?`): [`DialogueUI`](../interfaces/DialogueUI.md)
 
-Defined in: [src/dialogue/DialogueUI.ts:153](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueUI.ts#L153)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/dialogue/DialogueUI.ts:153](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueUI.ts#L153)
 
 ## Parameters
 

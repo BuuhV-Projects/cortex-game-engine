@@ -21,3 +21,4 @@ electron/main.ts
 src/physics/RapierPhysics.ts
 native/js/src/shims/rapier-compat.js
 native/rapier-native/src/lib.rs
+src/core/PerfTrace.ts

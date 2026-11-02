@@ -8,7 +8,7 @@
 
 > **wrapStaticInBundle**(`root`, `world?`, `extraDynamicRoots?`): `number`
 
-Defined in: [src/scene/StaticMerge.ts:375](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/StaticMerge.ts#L375)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/scene/StaticMerge.ts:375](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/StaticMerge.ts#L375)
 
 **Render bundles** (M-perf-2b / SPEC-0136) — envolve as subárvores ESTÁTICAS de
 `root` num BundleGroup. O `WebGPURenderer` grava os comandos de draw

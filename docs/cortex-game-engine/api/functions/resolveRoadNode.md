@@ -8,7 +8,7 @@
 
 > **resolveRoadNode**(`node`, `ov?`): `object`
 
-Defined in: [src/scene/RoadBuild.ts:72](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/RoadBuild.ts#L72)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/scene/RoadBuild.ts:72](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/RoadBuild.ts#L72)
 
 Nó efetivo: `{ ...nó, ...overlay }` — **o overlay vence** (SPEC-0631 §5).
 

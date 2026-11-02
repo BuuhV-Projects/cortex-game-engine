@@ -8,7 +8,7 @@
 
 > **resolveWallPush**(`near`, `radius`): `object`
 
-Defined in: [src/systems/CharacterPhysicsSystem.ts:149](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/CharacterPhysicsSystem.ts#L149)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/systems/CharacterPhysicsSystem.ts:149](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/CharacterPhysicsSystem.ts#L149)
 
 Empurrão horizontal pra **sair de paredes**: dado o hit mais próximo em cada
 direção de eixo (`±X`/`±Z`, distância ou `null` se livre) e o raio da cápsula,

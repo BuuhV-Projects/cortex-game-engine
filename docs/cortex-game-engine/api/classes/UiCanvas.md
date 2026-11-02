@@ -6,7 +6,7 @@
 
 # Class: UiCanvas
 
-Defined in: [src/ui/runtime/widgets.ts:216](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L216)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/ui/runtime/widgets.ts:216](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L216)
 
 `<canvas>` da UI de runtime (ADR-0315): dono de um `HTMLCanvasElement` real
 onde o jogo desenha com `getContext('2d')` — radar, minimapa, minigame. No
@@ -36,7 +36,7 @@ g.fillRect(0, 0, 10, 10); // aparece no Studio e no export nativo
 
 > **new UiCanvas**(`props?`): `UiCanvas`
 
-Defined in: [src/ui/runtime/widgets.ts:221](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L221)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/ui/runtime/widgets.ts:221](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L221)
 
 #### Parameters
 
@@ -58,7 +58,7 @@ Defined in: [src/ui/runtime/widgets.ts:221](https://github.com/BuuhV-Projects/co
 
 > **anchor**: [`UiAnchor`](../type-aliases/UiAnchor.md) = `'top-left'`
 
-Defined in: [src/ui/runtime/widgets.ts:28](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L28)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/ui/runtime/widgets.ts:28](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L28)
 
 #### Inherited from
 
@@ -70,7 +70,7 @@ Defined in: [src/ui/runtime/widgets.ts:28](https://github.com/BuuhV-Projects/cor
 
 > **background**: `string` = `'#000000'`
 
-Defined in: [src/ui/runtime/widgets.ts:62](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L62)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/ui/runtime/widgets.ts:62](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L62)
 
 `background` do CSS: cor (`#rrggbb`, `#rrggbbaa`, `rgba(...)`) OU
 gradiente `linear-gradient(180deg|90deg, c1, c2)` (180deg = topo→base,
@@ -86,7 +86,7 @@ gradiente `linear-gradient(180deg|90deg, c1, c2)` (180deg = topo→base,
 
 > **backgroundImage**: `string` \| `null` = `null`
 
-Defined in: [src/ui/runtime/widgets.ts:91](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L91)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/ui/runtime/widgets.ts:91](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L91)
 
 URL de uma **imagem de fundo** (ex.: arte do menu). Cobre o painel
 ("cover" — preenche sem distorcer, corta o excedente) por cima da
@@ -104,7 +104,7 @@ quad texturizado). Atributo `image` no template.
 
 > **backgroundTo**: `string` \| `null` = `null`
 
-Defined in: [src/ui/runtime/widgets.ts:64](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L64)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/ui/runtime/widgets.ts:64](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L64)
 
 #### Deprecated
 
@@ -120,7 +120,7 @@ Use `background: 'linear-gradient(180deg, c1, c2)'` (CSS).
 
 > **borderColor**: `string` = `'#ffffff'`
 
-Defined in: [src/ui/runtime/widgets.ts:77](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L77)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/ui/runtime/widgets.ts:77](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L77)
 
 `border-color` do CSS.
 
@@ -134,7 +134,7 @@ Defined in: [src/ui/runtime/widgets.ts:77](https://github.com/BuuhV-Projects/cor
 
 > **borderWidth**: `number` = `0`
 
-Defined in: [src/ui/runtime/widgets.ts:75](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L75)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/ui/runtime/widgets.ts:75](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L75)
 
 `border-width` do CSS (px; 0 = sem borda).
 
@@ -148,7 +148,7 @@ Defined in: [src/ui/runtime/widgets.ts:75](https://github.com/BuuhV-Projects/cor
 
 > **boxShadow**: `string` = `'none'`
 
-Defined in: [src/ui/runtime/widgets.ts:83](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L83)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/ui/runtime/widgets.ts:83](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L83)
 
 `box-shadow` do CSS, no subset SOMBRA DURA: `"0 Npx 0 <cor>"` (a sombra
 chapada dos botões cartoon) ou `"none"`. Sem blur/spread — os dois
@@ -164,7 +164,7 @@ backends desenham uma cópia da caixa deslocada N px pra baixo.
 
 > `readonly` **canvas**: `HTMLCanvasElement`
 
-Defined in: [src/ui/runtime/widgets.ts:218](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L218)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/ui/runtime/widgets.ts:218](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L218)
 
 O elemento canvas (desenhe nele como no browser).
 
@@ -174,7 +174,7 @@ O elemento canvas (desenhe nele como no browser).
 
 > **cornerRadius**: `number` = `0`
 
-Defined in: [src/ui/runtime/widgets.ts:66](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L66)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/ui/runtime/widgets.ts:66](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L66)
 
 Raio dos cantos em px (0 = reto). Nome legado de [borderRadius](UiPanel.md#borderradius).
 
@@ -188,7 +188,7 @@ Raio dos cantos em px (0 = reto). Nome legado de [borderRadius](UiPanel.md#borde
 
 > **dirty**: `boolean` = `true`
 
-Defined in: [src/ui/runtime/widgets.ts:40](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L40)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/ui/runtime/widgets.ts:40](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L40)
 
 Sujo = backend precisa re-sincronizar este widget.
 
@@ -202,7 +202,7 @@ Sujo = backend precisa re-sincronizar este widget.
 
 > **fill**: `boolean` = `false`
 
-Defined in: [src/ui/runtime/widgets.ts:98](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L98)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/ui/runtime/widgets.ts:98](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L98)
 
 Painel de fundo do tamanho do viewport (atributo `fill` do template). Quando
 `true`, o UiLayer redimensiona width/height pro viewport ATUAL a cada frame —
@@ -219,7 +219,7 @@ cobriria a tela após um resize (ex.: entrar em fullscreen).
 
 > **height**: `number` = `0`
 
-Defined in: [src/ui/runtime/widgets.ts:33](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L33)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/ui/runtime/widgets.ts:33](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L33)
 
 #### Inherited from
 
@@ -231,7 +231,7 @@ Defined in: [src/ui/runtime/widgets.ts:33](https://github.com/BuuhV-Projects/cor
 
 > `readonly` **id**: `number`
 
-Defined in: [src/ui/runtime/widgets.ts:27](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L27)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/ui/runtime/widgets.ts:27](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L27)
 
 #### Inherited from
 
@@ -243,7 +243,7 @@ Defined in: [src/ui/runtime/widgets.ts:27](https://github.com/BuuhV-Projects/cor
 
 > **measuredHeight**: `number` = `0`
 
-Defined in: [src/ui/runtime/widgets.ts:38](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L38)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/ui/runtime/widgets.ts:38](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L38)
 
 #### Inherited from
 
@@ -255,7 +255,7 @@ Defined in: [src/ui/runtime/widgets.ts:38](https://github.com/BuuhV-Projects/cor
 
 > **measuredWidth**: `number` = `0`
 
-Defined in: [src/ui/runtime/widgets.ts:37](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L37)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/ui/runtime/widgets.ts:37](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L37)
 
 Tamanho MEDIDO pelo backend (texto rasterizado) — leitura.
 
@@ -269,7 +269,7 @@ Tamanho MEDIDO pelo backend (texto rasterizado) — leitura.
 
 > **opacity**: `number` = `1`
 
-Defined in: [src/ui/runtime/widgets.ts:35](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L35)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/ui/runtime/widgets.ts:35](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L35)
 
 #### Inherited from
 
@@ -281,7 +281,7 @@ Defined in: [src/ui/runtime/widgets.ts:35](https://github.com/BuuhV-Projects/cor
 
 > **pointerEvents**: `"none"` \| `"auto"` = `'auto'`
 
-Defined in: [src/ui/runtime/widgets.ts:220](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L220)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/ui/runtime/widgets.ts:220](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L220)
 
 `pointer-events` do CSS: `none` deixa o clique passar pro jogo (só no DOM).
 
@@ -291,7 +291,7 @@ Defined in: [src/ui/runtime/widgets.ts:220](https://github.com/BuuhV-Projects/co
 
 > **visible**: `boolean` = `true`
 
-Defined in: [src/ui/runtime/widgets.ts:34](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L34)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/ui/runtime/widgets.ts:34](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L34)
 
 #### Inherited from
 
@@ -303,7 +303,7 @@ Defined in: [src/ui/runtime/widgets.ts:34](https://github.com/BuuhV-Projects/cor
 
 > **width**: `number` = `0`
 
-Defined in: [src/ui/runtime/widgets.ts:32](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L32)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/ui/runtime/widgets.ts:32](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L32)
 
 Tamanho declarado (Panel/Button). Labels medem no backend.
 
@@ -317,7 +317,7 @@ Tamanho declarado (Panel/Button). Labels medem no backend.
 
 > **x**: `number` = `0`
 
-Defined in: [src/ui/runtime/widgets.ts:29](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L29)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/ui/runtime/widgets.ts:29](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L29)
 
 #### Inherited from
 
@@ -329,7 +329,7 @@ Defined in: [src/ui/runtime/widgets.ts:29](https://github.com/BuuhV-Projects/cor
 
 > **y**: `number` = `0`
 
-Defined in: [src/ui/runtime/widgets.ts:30](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L30)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/ui/runtime/widgets.ts:30](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L30)
 
 #### Inherited from
 
@@ -343,7 +343,7 @@ Defined in: [src/ui/runtime/widgets.ts:30](https://github.com/BuuhV-Projects/cor
 
 > **get** **borderRadius**(): `number`
 
-Defined in: [src/ui/runtime/widgets.ts:68](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L68)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/ui/runtime/widgets.ts:68](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L68)
 
 `border-radius` do CSS (px). Alias primário de [cornerRadius](UiPanel.md#cornerradius).
 
@@ -355,7 +355,7 @@ Defined in: [src/ui/runtime/widgets.ts:68](https://github.com/BuuhV-Projects/cor
 
 > **set** **borderRadius**(`value`): `void`
 
-Defined in: [src/ui/runtime/widgets.ts:71](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L71)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/ui/runtime/widgets.ts:71](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L71)
 
 ##### Parameters
 
@@ -377,7 +377,7 @@ Defined in: [src/ui/runtime/widgets.ts:71](https://github.com/BuuhV-Projects/cor
 
 > **set**(`props`): `this`
 
-Defined in: [src/ui/runtime/widgets.ts:43](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L43)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/ui/runtime/widgets.ts:43](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L43)
 
 Aplica props e marca o widget pra re-sincronização.
 

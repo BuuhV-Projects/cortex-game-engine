@@ -6,7 +6,7 @@
 
 # Interface: VisibleNode
 
-Defined in: [src/core/PerfTrace.ts:74](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L74)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/PerfTrace.ts:75](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L75)
 
 Um nó de cena visível na amostra.
 
@@ -16,7 +16,7 @@ Um nó de cena visível na amostra.
 
 > **id**: `string`
 
-Defined in: [src/core/PerfTrace.ts:76](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L76)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/PerfTrace.ts:77](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L77)
 
 `node.id` da cena (o `buildScene` grava em `obj.name`).
 
@@ -26,7 +26,7 @@ Defined in: [src/core/PerfTrace.ts:76](https://github.com/BuuhV-Projects/cortex-
 
 > **meshes**: `number`
 
-Defined in: [src/core/PerfTrace.ts:78](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L78)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/PerfTrace.ts:79](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L79)
 
 Sub-malhas visíveis desse nó no frame.
 
@@ -36,6 +36,6 @@ Sub-malhas visíveis desse nó no frame.
 
 > **tris**: `number`
 
-Defined in: [src/core/PerfTrace.ts:80](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L80)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/PerfTrace.ts:81](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L81)
 
 Triângulos que o nó contribuiu.

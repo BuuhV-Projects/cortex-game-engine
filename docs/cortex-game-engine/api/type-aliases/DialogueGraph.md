@@ -8,4 +8,4 @@
 
 > **DialogueGraph** = `z.infer`\<*typeof* `dialogueGraphSchema`\>
 
-Defined in: [src/dialogue/DialogueGraph.ts:78](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueGraph.ts#L78)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/dialogue/DialogueGraph.ts:78](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueGraph.ts#L78)

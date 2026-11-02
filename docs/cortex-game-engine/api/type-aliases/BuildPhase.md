@@ -8,6 +8,6 @@
 
 > **BuildPhase** = `"cena"` \| `"nós"` \| `"física"` \| `"merge"`
 
-Defined in: [src/scene/SceneBuilder.ts:182](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L182)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/scene/SceneBuilder.ts:182](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L182)
 
 Etapa corrente do [buildScene](../functions/buildScene.md) (ver [BuildProgress](../interfaces/BuildProgress.md)).

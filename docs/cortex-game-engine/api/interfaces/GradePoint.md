@@ -6,7 +6,7 @@
 
 # Interface: GradePoint
 
-Defined in: [src/road/RoadGrade.ts:103](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/RoadGrade.ts#L103)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/road/RoadGrade.ts:103](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/RoadGrade.ts#L103)
 
 Um ponto do eixo em coords **locais do terreno** (XZ no plano, Y = greide).
 
@@ -16,7 +16,7 @@ Um ponto do eixo em coords **locais do terreno** (XZ no plano, Y = greide).
 
 > `optional` **bridge?**: `boolean`
 
-Defined in: [src/road/RoadGrade.ts:108](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/RoadGrade.ts#L108)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/road/RoadGrade.ts:108](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/RoadGrade.ts#L108)
 
 No vão de uma ponte: o segmento entre dois pontos `bridge` só corta, nunca aterra (SPEC-0631 §3c).
 
@@ -26,7 +26,7 @@ No vão de uma ponte: o segmento entre dois pontos `bridge` só corta, nunca ate
 
 > **x**: `number`
 
-Defined in: [src/road/RoadGrade.ts:104](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/RoadGrade.ts#L104)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/road/RoadGrade.ts:104](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/RoadGrade.ts#L104)
 
 ***
 
@@ -34,7 +34,7 @@ Defined in: [src/road/RoadGrade.ts:104](https://github.com/BuuhV-Projects/cortex
 
 > **y**: `number`
 
-Defined in: [src/road/RoadGrade.ts:106](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/RoadGrade.ts#L106)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/road/RoadGrade.ts:106](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/RoadGrade.ts#L106)
 
 ***
 
@@ -42,4 +42,4 @@ Defined in: [src/road/RoadGrade.ts:106](https://github.com/BuuhV-Projects/cortex
 
 > **z**: `number`
 
-Defined in: [src/road/RoadGrade.ts:105](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/RoadGrade.ts#L105)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/road/RoadGrade.ts:105](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/RoadGrade.ts#L105)

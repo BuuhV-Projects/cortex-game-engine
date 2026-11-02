@@ -8,7 +8,7 @@
 
 > **loadKtx2Native**(`url`): `Promise`\<`Texture`\<`unknown`, `TextureEventMap`\>\>
 
-Defined in: [src/core/loadKtx2.ts:150](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/loadKtx2.ts#L150)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/loadKtx2.ts:150](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/loadKtx2.ts#L150)
 
 Baixa o `.ktx2`, transcoda no host (basis_universal — num worker quando o host
 expõe `__cortexTranscodeKtx2Async`, SPEC-0287) e monta a textura (BC7

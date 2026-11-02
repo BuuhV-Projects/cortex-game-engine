@@ -8,4 +8,4 @@
 
 > **ParticlesNode** = `z.infer`\<*typeof* `particlesNode`\>
 
-Defined in: [src/scene/SceneDefinition.ts:644](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneDefinition.ts#L644)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/scene/SceneDefinition.ts:644](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneDefinition.ts#L644)

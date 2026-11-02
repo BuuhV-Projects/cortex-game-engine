@@ -6,7 +6,7 @@
 
 # Interface: RoadSample
 
-Defined in: [src/road/RoadSpline.ts:14](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/RoadSpline.ts#L14)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/road/RoadSpline.ts:14](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/RoadSpline.ts#L14)
 
 Uma amostra da spline: posição no mundo + tangente (direção da pista, unitária).
 
@@ -16,7 +16,7 @@ Uma amostra da spline: posição no mundo + tangente (direção da pista, unitá
 
 > **pos**: [`RoadVec3`](../type-aliases/RoadVec3.md)
 
-Defined in: [src/road/RoadSpline.ts:15](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/RoadSpline.ts#L15)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/road/RoadSpline.ts:15](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/RoadSpline.ts#L15)
 
 ***
 
@@ -24,7 +24,7 @@ Defined in: [src/road/RoadSpline.ts:15](https://github.com/BuuhV-Projects/cortex
 
 > `optional` **t?**: `number`
 
-Defined in: [src/road/RoadSpline.ts:18](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/RoadSpline.ts#L18)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/road/RoadSpline.ts:18](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/RoadSpline.ts#L18)
 
 Parâmetro na curva: índice do ponto de controle + fração do segmento (`2.5` = meio de 2→3).
 
@@ -34,4 +34,4 @@ Parâmetro na curva: índice do ponto de controle + fração do segmento (`2.5` 
 
 > **tangent**: [`RoadVec3`](../type-aliases/RoadVec3.md)
 
-Defined in: [src/road/RoadSpline.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/RoadSpline.ts#L16)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/road/RoadSpline.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/RoadSpline.ts#L16)

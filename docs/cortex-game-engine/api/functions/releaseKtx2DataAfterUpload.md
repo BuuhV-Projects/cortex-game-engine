@@ -8,7 +8,7 @@
 
 > **releaseKtx2DataAfterUpload**(`root`): `void`
 
-Defined in: [src/core/loadKtx2.ts:108](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/loadKtx2.ts#L108)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/loadKtx2.ts:108](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/loadKtx2.ts#L108)
 
 Solta os dados em CPU dos mips KTX2 nativos de `root` depois que a GPU os
 recebe (SPEC-0286). O GLTFLoader cria um clone da textura por material e os

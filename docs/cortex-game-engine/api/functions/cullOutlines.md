@@ -8,7 +8,7 @@
 
 > **cullOutlines**(`root`, `cameraPosition`, `minRatio`): [`OutlineCullStats`](../interfaces/OutlineCullStats.md)
 
-Defined in: [src/scene/OutlineCulling.ts:78](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/OutlineCulling.ts#L78)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/scene/OutlineCulling.ts:78](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/OutlineCulling.ts#L78)
 
 Percorre `root` e liga/desliga a casca de contorno por tamanho angular
 relativo a `cameraPosition`.

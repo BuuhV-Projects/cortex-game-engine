@@ -6,7 +6,7 @@
 
 # Interface: NativeModelDef
 
-Defined in: [src/render/native/models/NativeModel.ts:43](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/render/native/models/NativeModel.ts#L43)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/render/native/models/NativeModel.ts:43](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/render/native/models/NativeModel.ts#L43)
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: [src/render/native/models/NativeModel.ts:43](https://github.com/Buuh
 
 > `readonly` `optional` **attributeTypes?**: `Readonly`\<`Record`\<`string`, `string`\>\>
 
-Defined in: [src/render/native/models/NativeModel.ts:60](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/render/native/models/NativeModel.ts#L60)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/render/native/models/NativeModel.ts:60](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/render/native/models/NativeModel.ts#L60)
 
 WGSL type of each own attribute of the model, by geometry attribute name (a game WGSL, SPEC-0565):
 e.g. `{ instancePaint: 'vec3<f32>', paintMask: 'f32' }`. An `InstancedBufferAttribute` is per instance.
@@ -25,7 +25,7 @@ e.g. `{ instancePaint: 'vec3<f32>', paintMask: 'f32' }`. An `InstancedBufferAttr
 
 > `readonly` **name**: `string`
 
-Defined in: [src/render/native/models/NativeModel.ts:45](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/render/native/models/NativeModel.ts#L45)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/render/native/models/NativeModel.ts:45](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/render/native/models/NativeModel.ts#L45)
 
 Name the classifier gives (`unlit`, `lambert`, …, or `wgsl:<game material>`).
 
@@ -35,7 +35,7 @@ Name the classifier gives (`unlit`, `lambert`, …, or `wgsl:<game material>`).
 
 > `readonly` **paramFloats**: `number`
 
-Defined in: [src/render/native/models/NativeModel.ts:64](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/render/native/models/NativeModel.ts#L64)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/render/native/models/NativeModel.ts:64](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/render/native/models/NativeModel.ts#L64)
 
 Floats of the material params block (a multiple of 4: std140 rows); starts with the color rgb.
 
@@ -45,7 +45,7 @@ Floats of the material params block (a multiple of 4: std140 rows); starts with 
 
 > **attributes**(`variant`): readonly `string`[]
 
-Defined in: [src/render/native/models/NativeModel.ts:55](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/render/native/models/NativeModel.ts#L55)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/render/native/models/NativeModel.ts:55](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/render/native/models/NativeModel.ts#L55)
 
 Vertex attributes the variant reads, in location order (`position` first): the
 [VertexSemantic](../type-aliases/VertexSemantic.md)s, or a geometry attribute named in [attributeTypes](#attributetypes).
@@ -66,7 +66,7 @@ readonly `string`[]
 
 > **textures**(`material`, `variant`): readonly `unknown`[]
 
-Defined in: [src/render/native/models/NativeModel.ts:72](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/render/native/models/NativeModel.ts#L72)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/render/native/models/NativeModel.ts:72](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/render/native/models/NativeModel.ts#L72)
 
 Textures bound in group 2 after the params UBO, one sampler + texture pair each, visible in the
 vertex and fragment stages. A `FloatType` texture (a `DataTexture` of per-instance data) is
@@ -92,7 +92,7 @@ readonly `unknown`[]
 
 > **variant**(`c`, `object`, `material`): `string`[] \| `null`
 
-Defined in: [src/render/native/models/NativeModel.ts:50](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/render/native/models/NativeModel.ts#L50)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/render/native/models/NativeModel.ts:50](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/render/native/models/NativeModel.ts#L50)
 
 Variant key for the MATERIAL features (the core already removed and checked the
 object/pipeline ones), or `null` = refused (the three keeps the object).
@@ -121,7 +121,7 @@ object/pipeline ones), or `null` = refused (the three keeps the object).
 
 > **wgsl**(`variant`): `string`
 
-Defined in: [src/render/native/models/NativeModel.ts:62](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/render/native/models/NativeModel.ts#L62)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/render/native/models/NativeModel.ts:62](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/render/native/models/NativeModel.ts#L62)
 
 WGSL of the variant: a `vs(vin : VIn) -> …` and an `fs`, against `coreWgsl`.
 
@@ -141,7 +141,7 @@ readonly `string`[]
 
 > **writeParams**(`material`, `out`): `void`
 
-Defined in: [src/render/native/models/NativeModel.ts:66](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/render/native/models/NativeModel.ts#L66)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/render/native/models/NativeModel.ts:66](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/render/native/models/NativeModel.ts#L66)
 
 Writes the material params into `out` (the snapshot that detects a change, too).
 

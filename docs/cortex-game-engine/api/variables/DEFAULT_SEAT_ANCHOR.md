@@ -8,6 +8,6 @@
 
 > `const` **DEFAULT\_SEAT\_ANCHOR**: `"assento"` = `'assento'`
 
-Defined in: [src/components/VehicleSeatAttachmentComponent.ts:5](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/VehicleSeatAttachmentComponent.ts#L5)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/components/VehicleSeatAttachmentComponent.ts:5](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/VehicleSeatAttachmentComponent.ts#L5)
 
 Nome padrão do anchor do assento (convenção do kart — SPEC-0275).

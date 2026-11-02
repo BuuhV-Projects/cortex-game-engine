@@ -6,7 +6,7 @@
 
 # Interface: PlaceOptions
 
-Defined in: [src/scene/SceneAssets.ts:54](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L54)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/scene/SceneAssets.ts:54](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L54)
 
 Opções de [placeOnGround](../functions/placeOnGround.md).
 
@@ -16,7 +16,7 @@ Opções de [placeOnGround](../functions/placeOnGround.md).
 
 > `optional` **rotY?**: `number`
 
-Defined in: [src/scene/SceneAssets.ts:62](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L62)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/scene/SceneAssets.ts:62](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L62)
 
 Rotação no eixo vertical, em radianos. Default `0`.
 
@@ -26,7 +26,7 @@ Rotação no eixo vertical, em radianos. Default `0`.
 
 > `optional` **scale?**: `number`
 
-Defined in: [src/scene/SceneAssets.ts:64](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L64)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/scene/SceneAssets.ts:64](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L64)
 
 Escala uniforme aplicada antes de medir. Default `1`.
 
@@ -36,7 +36,7 @@ Escala uniforme aplicada antes de medir. Default `1`.
 
 > `optional` **x?**: `number`
 
-Defined in: [src/scene/SceneAssets.ts:56](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L56)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/scene/SceneAssets.ts:56](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L56)
 
 Centro horizontal X. Default `0`.
 
@@ -46,7 +46,7 @@ Centro horizontal X. Default `0`.
 
 > `optional` **y?**: `number`
 
-Defined in: [src/scene/SceneAssets.ts:58](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L58)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/scene/SceneAssets.ts:58](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L58)
 
 Altura onde a BASE da geometria encosta. Default `0`.
 
@@ -56,6 +56,6 @@ Altura onde a BASE da geometria encosta. Default `0`.
 
 > `optional` **z?**: `number`
 
-Defined in: [src/scene/SceneAssets.ts:60](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L60)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/scene/SceneAssets.ts:60](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L60)
 
 Centro horizontal Z. Default `0`.

@@ -6,7 +6,7 @@
 
 # Class: GameLoop
 
-Defined in: [src/core/GameLoop.ts:155](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GameLoop.ts#L155)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/GameLoop.ts:155](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GameLoop.ts#L155)
 
 ## Constructors
 
@@ -14,7 +14,7 @@ Defined in: [src/core/GameLoop.ts:155](https://github.com/BuuhV-Projects/cortex-
 
 > **new GameLoop**(`options`): `GameLoop`
 
-Defined in: [src/core/GameLoop.ts:173](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GameLoop.ts#L173)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/GameLoop.ts:173](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GameLoop.ts#L173)
 
 #### Parameters
 
@@ -34,7 +34,7 @@ Defined in: [src/core/GameLoop.ts:173](https://github.com/BuuhV-Projects/cortex-
 
 > **get** **isPaused**(): `boolean`
 
-Defined in: [src/core/GameLoop.ts:232](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GameLoop.ts#L232)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/GameLoop.ts:232](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GameLoop.ts#L232)
 
 Indica se o loop está pausado.
 
@@ -50,7 +50,7 @@ Indica se o loop está pausado.
 
 > **get** **isRunning**(): `boolean`
 
-Defined in: [src/core/GameLoop.ts:227](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GameLoop.ts#L227)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/GameLoop.ts:227](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GameLoop.ts#L227)
 
 Indica se o loop está ativo (inclui estado pausado).
 
@@ -66,7 +66,7 @@ Indica se o loop está ativo (inclui estado pausado).
 
 > **get** **maxFps**(): `number`
 
-Defined in: [src/core/GameLoop.ts:243](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GameLoop.ts#L243)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/GameLoop.ts:243](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GameLoop.ts#L243)
 
 Teto de quadros por segundo escolhido pelo jogo (ADR-0257). `0` = sem teto.
 
@@ -82,7 +82,7 @@ ainda melhor que oscilar sem padrão. Veja [refreshHz](#refreshhz).
 
 > **set** **maxFps**(`fps`): `void`
 
-Defined in: [src/core/GameLoop.ts:247](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GameLoop.ts#L247)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/GameLoop.ts:247](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GameLoop.ts#L247)
 
 ##### Parameters
 
@@ -102,7 +102,7 @@ Defined in: [src/core/GameLoop.ts:247](https://github.com/BuuhV-Projects/cortex-
 
 > **get** **refreshHz**(): `number` \| `null`
 
-Defined in: [src/core/GameLoop.ts:252](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GameLoop.ts#L252)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/GameLoop.ts:252](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GameLoop.ts#L252)
 
 Refresh do monitor estimado nos primeiros frames (Hz), ou `null` até lá.
 
@@ -116,7 +116,7 @@ Refresh do monitor estimado nos primeiros frames (Hz), ou `null` até lá.
 
 > **pause**(): `void`
 
-Defined in: [src/core/GameLoop.ts:207](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GameLoop.ts#L207)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/GameLoop.ts:207](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GameLoop.ts#L207)
 
 Pausa o loop sem resetar o estado. Use `resume()` para continuar.
 Sem efeito se não estiver rodando ou já estiver pausado.
@@ -131,7 +131,7 @@ Sem efeito se não estiver rodando ou já estiver pausado.
 
 > **resume**(): `void`
 
-Defined in: [src/core/GameLoop.ts:218](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GameLoop.ts#L218)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/GameLoop.ts:218](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GameLoop.ts#L218)
 
 Retoma o loop após `pause()`. Reinicializa `lastTime` para evitar um
 spike de deltaTime acumulado durante a pausa.
@@ -147,7 +147,7 @@ Sem efeito se não estiver rodando ou não estiver pausado.
 
 > **start**(): `void`
 
-Defined in: [src/core/GameLoop.ts:185](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GameLoop.ts#L185)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/GameLoop.ts:185](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GameLoop.ts#L185)
 
 Inicia o loop. Sem efeito se já estiver rodando.
 
@@ -161,7 +161,7 @@ Inicia o loop. Sem efeito se já estiver rodando.
 
 > **stop**(): `void`
 
-Defined in: [src/core/GameLoop.ts:197](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GameLoop.ts#L197)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/core/GameLoop.ts:197](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GameLoop.ts#L197)
 
 Para o loop completamente e reseta o estado interno.
 

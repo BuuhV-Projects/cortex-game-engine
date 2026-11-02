@@ -6,7 +6,7 @@
 
 # Interface: StaticMergeStats
 
-Defined in: [src/scene/StaticMerge.ts:60](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/StaticMerge.ts#L60)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/scene/StaticMerge.ts:60](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/StaticMerge.ts#L60)
 
 **Merge da geometria estática da cena** (SPEC-0120) — reduz draw calls fundindo
 as malhas paradas do cenário (ilhas, árvores, pedras, decoração) em poucas
@@ -54,7 +54,7 @@ chão/parede do Character enxerga a malha fundida (que preserva
 
 > **groups**: `number`
 
-Defined in: [src/scene/StaticMerge.ts:64](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/StaticMerge.ts#L64)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/scene/StaticMerge.ts:64](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/StaticMerge.ts#L64)
 
 Malhas fundidas criadas (≈ nº de materiais distintos do estático).
 
@@ -64,7 +64,7 @@ Malhas fundidas criadas (≈ nº de materiais distintos do estático).
 
 > **kept**: `number`
 
-Defined in: [src/scene/StaticMerge.ts:66](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/StaticMerge.ts#L66)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/scene/StaticMerge.ts:66](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/StaticMerge.ts#L66)
 
 Malhas elegíveis puladas (grupo de 1, mismatch de atributos, etc.).
 
@@ -74,6 +74,6 @@ Malhas elegíveis puladas (grupo de 1, mismatch de atributos, etc.).
 
 > **merged**: `number`
 
-Defined in: [src/scene/StaticMerge.ts:62](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/StaticMerge.ts#L62)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/scene/StaticMerge.ts:62](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/StaticMerge.ts#L62)
 
 Malhas originais fundidas (removidas da cena).

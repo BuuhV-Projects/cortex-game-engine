@@ -6,7 +6,7 @@
 
 # Class: InputAutopilot
 
-Defined in: [src/input/InputAutopilot.ts:118](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputAutopilot.ts#L118)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/input/InputAutopilot.ts:118](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputAutopilot.ts#L118)
 
 ## Constructors
 
@@ -14,7 +14,7 @@ Defined in: [src/input/InputAutopilot.ts:118](https://github.com/BuuhV-Projects/
 
 > **new InputAutopilot**(`profile`, `profileName?`): `InputAutopilot`
 
-Defined in: [src/input/InputAutopilot.ts:136](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputAutopilot.ts#L136)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/input/InputAutopilot.ts:136](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputAutopilot.ts#L136)
 
 #### Parameters
 
@@ -36,7 +36,7 @@ Defined in: [src/input/InputAutopilot.ts:136](https://github.com/BuuhV-Projects/
 
 > `readonly` **cycleS**: `number`
 
-Defined in: [src/input/InputAutopilot.ts:120](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputAutopilot.ts#L120)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/input/InputAutopilot.ts:120](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputAutopilot.ts#L120)
 
 Seconds of one full loop of the profile.
 
@@ -46,7 +46,7 @@ Seconds of one full loop of the profile.
 
 > `readonly` **profileName**: `string` = `''`
 
-Defined in: [src/input/InputAutopilot.ts:136](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputAutopilot.ts#L136)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/input/InputAutopilot.ts:136](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputAutopilot.ts#L136)
 
 ## Accessors
 
@@ -56,7 +56,7 @@ Defined in: [src/input/InputAutopilot.ts:136](https://github.com/BuuhV-Projects/
 
 > **get** **stepIndex**(): `number`
 
-Defined in: [src/input/InputAutopilot.ts:145](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputAutopilot.ts#L145)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/input/InputAutopilot.ts:145](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputAutopilot.ts#L145)
 
 Index of the step being played.
 
@@ -70,7 +70,7 @@ Index of the step being played.
 
 > **getGamepads**(): readonly (`VirtualPad` \| `null`)[]
 
-Defined in: [src/input/InputAutopilot.ts:150](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputAutopilot.ts#L150)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/input/InputAutopilot.ts:150](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputAutopilot.ts#L150)
 
 The virtual pad as `navigator.getGamepads()` returns it.
 
@@ -84,7 +84,7 @@ readonly (`VirtualPad` \| `null`)[]
 
 > **install**(`nav?`): () => `void`
 
-Defined in: [src/input/InputAutopilot.ts:172](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputAutopilot.ts#L172)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/input/InputAutopilot.ts:172](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputAutopilot.ts#L172)
 
 Replaces `navigator.getGamepads` with the virtual pad (real pads hidden).
 Returns the function that puts the original back.
@@ -107,7 +107,7 @@ Returns the function that puts the original back.
 
 > **step**(`dt`): `void`
 
-Defined in: [src/input/InputAutopilot.ts:155](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputAutopilot.ts#L155)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/input/InputAutopilot.ts:155](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputAutopilot.ts#L155)
 
 Advances the script by `dt` seconds of game clock.
 

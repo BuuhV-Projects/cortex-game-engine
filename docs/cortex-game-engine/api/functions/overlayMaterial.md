@@ -8,7 +8,7 @@
 
 > **overlayMaterial**(`overlay`): `Record`\<`string`, [`MaterialConfig`](../type-aliases/MaterialConfig.md)\>
 
-Defined in: [src/scene/SceneBuilder.ts:388](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L388)
+Defined in: [.claude/worktrees/gta3-transit-system-4d41b4/src/scene/SceneBuilder.ts:388](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L388)
 
 Lê `data.material` da overlay — o material/shader **autorado no editor** por id
 (`{ [id]: MaterialConfig }`, SPEC-0058). Sobrescreve o `material` do nó (JSON).
