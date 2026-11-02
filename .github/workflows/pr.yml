@@ -17,6 +17,8 @@ name: PR checks
 #                   unitários do C++ (`cortex_host_tests`, TDR-0004).
 #                   Pulado quando o PR só toca docs (job `changes`).
 #  3. `rules`     — regras do CLAUDE.md sobre o diff (SPEC-0654, TDR-0008).
+#  4. `trail`     — gera o mapa do trail e checa o diff contra os learnings
+#                   (SPEC-0657, TDR-0009).
 #
 # A aprovação exigida pelo ruleset vem do `greptile-approve.yml` (5/5).
 #
@@ -40,6 +42,8 @@ concurrency:
 env:
   # Mesma versão dos demais workflows do repo.
   NODE_VERSION: '24.15.0'
+  # trail pinado (TDR-0009); o job avisa quando sai versão nova.
+  TRAIL_VERSION: '0.28.1'
   # Diretório de build do host — o mesmo que a action composta configura.
   NATIVE_BUILD_DIR: native/build
   # Alvo PURO do CMake (sem wgpu/NAPI/Hermes): compila em segundos por cima do
@@ -99,6 +103,41 @@ jobs:
 
       - name: Checar regras no diff
         run: node .github/scripts/pr-rules.mjs "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}"
+
+  # Mapa do trail gera sobre o código do PR e o diff não conflita com nenhum
+  # learning de `.trail/learnings/` (SPEC-0657). O mapa não é versionado.
+  trail:
+    name: Trail
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # `trail check` compara contra origin/main
+
+      - name: Setup Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install trail ${{ env.TRAIL_VERSION }}
+        timeout-minutes: ${{ fromJSON(env.TIMEOUT_INSTALL_MINUTES) }}
+        run: |
+          yarn global add "@trailhq/trail-code@$TRAIL_VERSION"
+          echo "$(yarn global bin)" >> "$GITHUB_PATH"
+
+      - name: Versão do trail
+        run: |
+          latest=$(yarn info -s @trailhq/trail-code version)
+          if [ "$latest" != "$TRAIL_VERSION" ]; then
+            echo "::warning::trail $latest publicado; o repo pina $TRAIL_VERSION (TRAIL_VERSION no pr.yml)"
+          fi
+
+      - name: trail build
+        run: trail build
+
+      - name: trail check
+        run: trail check --base origin/main
 
   test:
     name: Tests (Vitest)
