@@ -51,7 +51,9 @@ void* cortexHermesCreateRuntime() {
   // memória EXTERNA (ArrayBuffers de malha/textura), não só os objetos JS:
   // 512 MB estourava na fusão estática da carga do crash-bandicoot-racer
   // (external 553 MB) — teto ampliado para 2 GB, igual em PC/Steam/Xbox.
-  constexpr unsigned kMaxHeapBytes = 2u << 30;
+  // ADR-0663: 3,75 GB, perto do máximo do tipo (gcheapsize_t é de 32 bits). A 2 GB, os 1,8 GB de
+  // ArrayBuffers da cidade do DDD 00 punham o coletor em coleta completa contínua (77 em 6,5 s).
+  constexpr unsigned kMaxHeapBytes = 0xF0000000u;
   auto config = hermes::vm::RuntimeConfig::Builder()
                     .withMicrotaskQueue(true)
                     .withGCConfig(hermes::vm::GCConfig::Builder()
