@@ -1466,6 +1466,10 @@ relação às outras. Ele agrupa por material, baka no espaço LOCAL da raiz (er
 isso faz o objeto herdar a transformação duas vezes e sair voando) e aceita
 `preserve` para o que precisa continuar independente: os pivôs de roda.
 
+O resultado leva `cortexMergedStatic`, então o `mergeStaticScene` não o funde de novo (SPEC-0666). Sem isso, o jogo
+que parte o mapa em células e funde cada uma com `mergeSubtree` tinha as células refundidas por material no mapa
+inteiro no export: uma malha do tamanho do mapa, que o frustum culling nunca descarta (DDD 00: 5 M tris por quadro).
+
 **Pode rodar no Studio**, diferente do merge estático: sub-malhas de um `.glb`
 não são nós autorados (`cortexSceneNode`), então o editor nunca as selecionava
 individualmente. Medido no kart-racer (3 carros, host nativo): **19 → 32 fps**,

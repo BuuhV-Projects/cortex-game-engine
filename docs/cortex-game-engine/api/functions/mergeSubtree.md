@@ -8,7 +8,7 @@
 
 > **mergeSubtree**(`root`, `options?`): [`SubtreeMergeStats`](../interfaces/SubtreeMergeStats.md)
 
-Defined in: [src/scene/StaticMerge.ts:455](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/StaticMerge.ts#L455)
+Defined in: [src/scene/StaticMerge.ts:459](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/StaticMerge.ts#L459)
 
 **Funde as malhas DENTRO de um modelo** (SPEC-0213), agrupando por material e
 bakeando no espaço **local de `root`**. O oposto do [mergeStaticScene](mergeStaticScene.md):
@@ -25,6 +25,10 @@ somavam 248 das 642 malhas desenhadas da cena.
 Não funde (a malha fica exatamente como estava): descendente de um `preserve`,
 malha com esqueleto, multi-material, geometria com morph targets ou assinatura
 de atributos incompatível, e grupo de uma malha só.
+
+As malhas criadas levam `userData.cortexMergedStatic`: o [mergeStaticScene](mergeStaticScene.md)
+não as funde de novo, então a granularidade escolhida aqui (um modelo, uma célula
+espacial) sobrevive e o culling continua por bloco (SPEC-0666).
 
 ## Parameters
 
