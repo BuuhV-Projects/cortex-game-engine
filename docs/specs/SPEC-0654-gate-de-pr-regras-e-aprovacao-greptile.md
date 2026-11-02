@@ -15,7 +15,7 @@ checadas e a aprovação exigida pelo ruleset travava o auto-merge.
 ### Local: `.husky/pre-commit`
 
 `yarn -s vitest related --run <staged>` com os `.ts/.tsx/.js/.mjs` staged
-(adicionados/modificados). Sem arquivo desses, não roda nada.
+(adicionados/modificados). Sem arquivo desses, não roda nada. Antes disso, `trail build` (SPEC-0657).
 
 ### PR: `.github/workflows/pr.yml`
 
