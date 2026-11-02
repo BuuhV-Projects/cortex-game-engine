@@ -448,6 +448,10 @@ const MIN_MERGE_GROUP = 2;
  * malha com esqueleto, multi-material, geometria com morph targets ou assinatura
  * de atributos incompatível, e grupo de uma malha só.
  *
+ * As malhas criadas levam `userData.cortexMergedStatic`: o {@link mergeStaticScene}
+ * não as funde de novo, então a granularidade escolhida aqui (um modelo, uma célula
+ * espacial) sobrevive e o culling continua por bloco (SPEC-0666).
+ *
  * @example
  * // O corpo vira poucas malhas; os pivôs de roda seguem girando.
  * mergeSubtree(carro, { preserve: rodas, name: 'car-body' });
@@ -515,6 +519,8 @@ export function mergeSubtree(root: Object3D, options: SubtreeMergeOptions = {}):
     merged.renderOrder = sample.renderOrder;
     merged.name = `${options.name ?? DEFAULT_SUBTREE_MERGE_NAME}-${stats.groups}`;
     const ud = merged.userData as Record<string, unknown>;
+    // SPEC-0666: quem chamou escolheu a granularidade (modelo, célula); a fusão global não junta de novo
+    ud['cortexMergedStatic'] = true;
     const orig = (sample.userData as Record<string, unknown>)['cortexOrigMaterial'];
     if (orig !== undefined) ud['cortexOrigMaterial'] = orig;
     root.add(merged);
