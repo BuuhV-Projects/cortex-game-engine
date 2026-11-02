@@ -40,4 +40,17 @@ struct GameConfig {
 // `name = cortex.name ?? id`. Nunca lança; campos vazios contam como ausentes.
 GameConfig loadGameConfig(const std::string& baseDir, const std::string& fallbackSlug);
 
+/** SSAA de quem não declara `renderScale` no cortex.json (ADR-0103, SPEC-0667). */
+inline constexpr float kDefaultRenderScale = 2.0f;
+/** Piso e teto da escala (1 = sem SSAA; 4 = teto de sanidade de VRAM/fill-rate). */
+inline constexpr float kMinRenderScale = 1.0f;
+inline constexpr float kMaxRenderScale = 4.0f;
+
+/**
+ * Escala do alvo offscreen (SPEC-0667): `CORTEX_RENDER_SCALE` (nula ou vazia =
+ * ausente) > `renderScale` do projeto > {@link kDefaultRenderScale}, limitada a
+ * [{@link kMinRenderScale}, {@link kMaxRenderScale}].
+ */
+float resolveRenderScale(const char* envValue, double projectScale);
+
 }  // namespace core

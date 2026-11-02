@@ -137,4 +137,12 @@ GameConfig loadGameConfig(const std::string& baseDir, const std::string& fallbac
                     extractJsonNumber(json, "renderScale", kNoRenderScale)};
 }
 
+float resolveRenderScale(const char* envValue, double projectScale) {
+  float scale = projectScale > kNoRenderScale ? static_cast<float>(projectScale) : kDefaultRenderScale;
+  if (envValue != nullptr && envValue[0] != '\0') scale = static_cast<float>(std::atof(envValue));
+  if (scale < kMinRenderScale) scale = kMinRenderScale;
+  if (scale > kMaxRenderScale) scale = kMaxRenderScale;
+  return scale;
+}
+
 }  // namespace core

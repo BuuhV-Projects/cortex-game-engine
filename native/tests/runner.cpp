@@ -23,6 +23,7 @@ void testBc7Math();
 void testAppendPerfLog();
 void testDescribeCurrentException();
 void testGameConfig();
+void testResolveRenderScale();
 void testSceneMirrorPropagaTransformDoPai();
 void testSceneMirrorRecusaArvoreForaDeOrdem();
 void testSceneMirrorCortaPeloFrustum();
@@ -101,6 +102,7 @@ int main() {
   tests::testAppendPerfLog();
   tests::testDescribeCurrentException();
   tests::testGameConfig();
+  tests::testResolveRenderScale();
   tests::testSceneMirrorPropagaTransformDoPai();
   tests::testSceneMirrorRecusaArvoreForaDeOrdem();
   tests::testSceneMirrorCortaPeloFrustum();

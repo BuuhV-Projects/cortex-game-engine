@@ -90,4 +90,20 @@ void testGameConfig() {
   CHECK(cfg.steamAppId == core::kNoSteamAppId);
 }
 
+void testResolveRenderScale() {
+  // SPEC-0667: variável > projeto > padrão; nula ou vazia conta como ausente.
+  constexpr double kSemProjeto = core::kNoRenderScale;
+  CHECK(core::resolveRenderScale(nullptr, kSemProjeto) == core::kDefaultRenderScale);
+  CHECK(core::resolveRenderScale("", kSemProjeto) == core::kDefaultRenderScale);
+  CHECK(core::resolveRenderScale(nullptr, 1.0) == 1.0f);
+  CHECK(core::resolveRenderScale("", 1.0) == 1.0f);
+  CHECK(core::resolveRenderScale("1.5", 1.0) == 1.5f);
+  CHECK(core::resolveRenderScale("3", kSemProjeto) == 3.0f);
+  // Limites de 1 a 4, venha de onde vier.
+  CHECK(core::resolveRenderScale("0", 2.0) == core::kMinRenderScale);
+  CHECK(core::resolveRenderScale("9", kSemProjeto) == core::kMaxRenderScale);
+  CHECK(core::resolveRenderScale(nullptr, 0.5) == core::kMinRenderScale);
+  CHECK(core::resolveRenderScale(nullptr, 8.0) == core::kMaxRenderScale);
+}
+
 }  // namespace tests
