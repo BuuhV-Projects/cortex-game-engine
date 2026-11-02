@@ -326,7 +326,8 @@ pub unsafe extern "C" fn rn_collider_groups(
 /// what: 0 setTranslation(x,y,z) · 1 setRotation(x,y,z,w) · 2 setLinvel ·
 /// 3 setAngvel · 4 setNextKinematicTranslation · 5 applyImpulse ·
 /// 6 applyTorqueImpulse · 7 wakeUp · 8 resetForces · 9 resetTorques ·
-/// 10 setEnabledRotations · 11 setEnabled
+/// 10 setEnabledRotations · 11 setEnabled · 12..15 tipo/CCD/amortecimento ·
+/// 16 sleep. Outro código: nada (SPEC-0660).
 #[no_mangle]
 pub unsafe extern "C" fn rn_body_set(
     world: *mut World,
@@ -373,7 +374,10 @@ pub unsafe extern "C" fn rn_body_set(
         15 => rb.set_angular_damping(x as f32),
         // 16 = dormir (o carro parado da frota, SPEC-0655).
         16 => rb.sleep(),
-        _ => rb.set_translation(v, wake_up),
+        0 => rb.set_translation(v, wake_up),
+        // Código desconhecido não faz nada (SPEC-0660): com o shim mais novo que a DLL, o
+        // braço padrão antigo (translação) levava pra origem todo carro que pedia `sleep`.
+        _ => {}
     }
 }
 
