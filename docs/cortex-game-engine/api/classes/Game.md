@@ -535,7 +535,7 @@ Registra um callback chamado a cada frame (delta em **segundos**), antes do
 
 > **precompile**(): `Promise`\<`void`\>
 
-Defined in: [src/core/Game.ts:906](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L906)
+Defined in: [src/core/Game.ts:909](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L909)
 
 **Pré-aquece os pipelines** da cena ativa (SPEC-0196) — compila os shaders
 agora em vez de no primeiro frame em que cada objeto aparece, que é o que
@@ -557,6 +557,9 @@ compila na hora. Se o `setPostFX` do jogo escolhe caminhos diferentes
 conforme o estado (um efeito que só liga em alta velocidade), force cada
 caminho e chame de novo.
 
+Com o editor (F2) ativo não faz nada (SPEC-0657): editar não tem largada e o
+quadro com a cena inteira custava ~40 s a cada reload no Studio.
+
 #### Returns
 
 `Promise`\<`void`\>
@@ -575,7 +578,7 @@ game.start()
 
 > **reset**(`options?`): `void`
 
-Defined in: [src/core/Game.ts:1035](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L1035)
+Defined in: [src/core/Game.ts:1039](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L1039)
 
 Reseta o jogo pra **trocar de cena/fase** sem recriar o `Game` (renderer,
 câmera e canvas continuam): para o loop, esvazia o world com `dispose` dos
@@ -752,7 +755,7 @@ game.setPostFX(fx)
 
 > **start**(): `void`
 
-Defined in: [src/core/Game.ts:1004](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L1004)
+Defined in: [src/core/Game.ts:1008](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L1008)
 
 Inicia o loop.
 
@@ -766,7 +769,7 @@ Inicia o loop.
 
 > **stop**(): `void`
 
-Defined in: [src/core/Game.ts:1009](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L1009)
+Defined in: [src/core/Game.ts:1013](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L1013)
 
 Para o loop.
 

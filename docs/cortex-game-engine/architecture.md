@@ -164,6 +164,10 @@ senão o **editor do Studio** não resolve o tipo (runtime funciona, IntelliSens
   host, desenha antes um quadro de preparo sem casters (`withoutShadowCasters`):
   o three cria o mapa de sombra vazio e o passe em C++ assume a sombra no quadro
   revelado (senão ele devolvia com `sem-mapa` e o three sombreava a cena inteira).
+  **Com o editor (F2) ativo, `game.precompile()` não faz nada (SPEC-0657):** no
+  Port Hollow o quadro de aquecimento custava ~40 s a cada reload no Studio, sem
+  largada nenhuma pra proteger. O preço é travar no 1º Play dentro do editor —
+  pra medir travada de largada, boote com `?play=1`.
 
 - **Acabamento toon (`Materials.ts`, SPEC-0194):** `shading: 'cel'` usa dois
   patamares e uma transição curta filtrada na rampa de luz. Sem o campo, mantém

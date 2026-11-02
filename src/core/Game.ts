@@ -898,12 +898,16 @@ export class Game {
    * conforme o estado (um efeito que só liga em alta velocidade), force cada
    * caminho e chame de novo.
    *
+   * Com o editor (F2) ativo não faz nada (SPEC-0657): editar não tem largada e o
+   * quadro com a cena inteira custava ~40 s a cada reload no Studio.
+   *
    * @example
    * const player = await createCar(game, golf, golfRig)
    * await game.precompile()
    * game.start()
    */
   async precompile(): Promise<void> {
+    if (this.editorActive) return;
     // Com o trace ativo, registra o que o aquecimento FEZ (SPEC-0261).
     this._perfTrace.watchPipelines(
       (this.renderer.threeRenderer as { backend?: unknown }).backend,

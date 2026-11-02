@@ -42,7 +42,7 @@ world.addSystem(new VehicleArcadeSystem(physics));
 
 > **new VehicleArcadeSystem**(`physics`): `VehicleArcadeSystem`
 
-Defined in: [src/systems/VehicleArcadeSystem.ts:52](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleArcadeSystem.ts#L52)
+Defined in: [src/systems/VehicleArcadeSystem.ts:54](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleArcadeSystem.ts#L54)
 
 #### Parameters
 
@@ -166,7 +166,7 @@ handles nativos que o GC não coleta sozinho (ex.: o mundo do Rapier em
 
 > **update**(`entities`, `deltaTime`): `void`
 
-Defined in: [src/systems/VehicleArcadeSystem.ts:56](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleArcadeSystem.ts#L56)
+Defined in: [src/systems/VehicleArcadeSystem.ts:58](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleArcadeSystem.ts#L58)
 
 Executa a lógica do sistema para o frame/passo atual.
 
