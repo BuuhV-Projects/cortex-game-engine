@@ -1,5 +1,9 @@
 # Leve de propósito (TDR-0008): só os testes ligados aos arquivos staged.
 # Suíte inteira, typecheck e host nativo rodam no PR.
+# Mapa local do trail sempre fresco (TDR-0009); sem trail instalado, pula.
+if command -v trail >/dev/null 2>&1; then
+  trail build >/dev/null 2>&1 || echo "aviso: trail build falhou, mapa local desatualizado"
+fi
 files=$(git diff --cached --name-only --diff-filter=AM -- '*.ts' '*.tsx' '*.js' '*.mjs')
 [ -z "$files" ] && exit 0
 yarn -s vitest related --run --passWithNoTests $files
