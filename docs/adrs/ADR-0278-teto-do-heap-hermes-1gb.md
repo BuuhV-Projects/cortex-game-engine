@@ -1,7 +1,7 @@
 # ADR-0278 - Teto do heap do Hermes sobe para 1 GB
 
 **Data:** 2026-09-25
-**Status:** aceito (substitui o valor do teto do ADR-0153; o motivo de TER teto continua)
+**Status:** substituído por ADR-0663 (o valor; o motivo de TER teto continua)
 
 ## Contexto
 O ADR-0153 pôs `GCConfig.maxHeapSize = 512 MB` no host: sem teto o Hades cresce o heap em

@@ -520,6 +520,7 @@ const VENDOR_TYPE_MODULES = {
     'GamepadManager',
     'Physics',
     'PerfTrace',
+    'heapStats',
     'PipelineBirthLog',
     'bootProfile',
     'frameYield',
