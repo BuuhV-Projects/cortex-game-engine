@@ -39,8 +39,11 @@ const RECEIVE_SHADOW = true;
 const LIT_FEATURES = ['map', 'emissiveMap', 'vertexColors', 'instanceColor', 'fog', 'alpha', 'alphaTest', 'receiveShadow'] as const;
 /** Accepted without a variant of their own (the uv transform is always applied). */
 const NEUTRAL_FEATURES = ['uvTransform', 'noToneMap'];
+/** Features that sample a texture with the mesh uv (`standard` adds metalRoughMap/normalMap, SPEC-0659). */
+const UV_FEATURES = ['map', 'emissiveMap', 'metalRoughMap', 'normalMap'];
+const usesUv = (variant: readonly string[]): boolean => UV_FEATURES.some((f) => variant.includes(f));
 
-type MapLike = Texture & { matrix: { elements: ArrayLike<number> }; matrixAutoUpdate: boolean; updateMatrix(): void };
+export type MapLike = Texture & { matrix: { elements: ArrayLike<number> }; matrixAutoUpdate: boolean; updateMatrix(): void };
 
 export interface LitMaterial {
   color: { r: number; g: number; b: number };
@@ -97,7 +100,7 @@ export function litVariant(c: Classification & { kind: 'covered' }, material: Ma
 
 export function litAttributes(variant: readonly string[]): VertexSemantic[] {
   const out: VertexSemantic[] = ['position', 'normal'];
-  if (variant.includes('map') || variant.includes('emissiveMap')) out.push('uv');
+  if (usesUv(variant)) out.push('uv');
   if (variant.includes('vertexColors')) out.push('color');
   if (variant.includes('instanceColor')) out.push('instanceColor');
   return out;
@@ -112,7 +115,7 @@ export function litTextures(material: Material, variant: readonly string[]): unk
   return out;
 }
 
-function writeUvTransform(out: Float32Array, at: number, map: MapLike | null): void {
+export function writeUvTransform(out: Float32Array, at: number, map: MapLike | null): void {
   if (!map) {
     out.fill(0, at, at + MAT3_COLUMNS * ROW_FLOATS);
     return;
@@ -150,7 +153,7 @@ export function writeLitParams(material: Material, out: Float32Array): void {
  */
 export function litVertexWgsl(variant: readonly string[], extraParams = '', extraTextures: readonly string[] = []): string {
   const has = (f: string) => variant.includes(f);
-  const uv = has('map') || has('emissiveMap');
+  const uv = usesUv(variant);
   const names = [...(has('map') ? ['map'] : []), ...(has('emissiveMap') ? ['emissive'] : []), ...extraTextures];
   const bindings = names
     .map((n, i) => `@group(2) @binding(${1 + 2 * i}) var ${n}Sampler : sampler;\n@group(2) @binding(${2 + 2 * i}) var ${n}Texture : texture_2d<f32>;`)
@@ -216,10 +219,36 @@ export function litSurfaceWgsl(variant: readonly string[]): string {
   let normalGeometry = normalize(in.normalView);
   var normal = normalGeometry;
   ${has('doubleSide') ? 'normal = normalGeometry * vec3<f32>((f32(isFront) * 2.0) - 1.0);' : ''}
+  ${has('normalMap') ? normalMapWgsl(has('doubleSide')) : ''}
   var sunColor = lights.sunColor;
   ${has('receiveShadow') ? 'sunColor = sunColor * nativeShadow(in.positionWorld, normalize((vec4<f32>(normal, 0.0) * view.view).xyz));' : ''}
   let sunDirection = nativeSunDirection();
 `;
+}
+
+/**
+ * Tangent-space normal map without a tangent attribute (SPEC-0659): the three's `TangentUtils`
+ * frame from screen derivatives, in the order of its WGSL (WebGPU negates the y derivatives).
+ * Only `standard` accepts `normalMap`, so `params.normalMapTransform`/`normalScale` are its fields.
+ */
+function normalMapWgsl(doubleSide: boolean): string {
+  const face = doubleSide ? '((f32(isFront) * 2.0) - 1.0)' : '1.0';
+  return /* wgsl */ `
+  let q1perp = cross(-dpdy(in.positionView), normal);
+  let st0 = dpdx(in.uv);
+  let q0perp = cross(normal, dpdx(in.positionView));
+  let st1 = -dpdy(in.uv);
+  let frameT = (q1perp * vec3<f32>(st0.x)) + (q0perp * vec3<f32>(st1.x));
+  let frameB = (q1perp * vec3<f32>(st0.y)) + (q0perp * vec3<f32>(st1.y));
+  let frameDet = max(dot(frameT, frameT), dot(frameB, frameB));
+  var frameScale = 0.0;
+  if (frameDet != 0.0) {
+    frameScale = inverseSqrt(frameDet);
+  }
+  let faceSign = ${face};
+  let tbn = mat3x3<f32>((frameT * vec3<f32>(frameScale)) * vec3<f32>(faceSign), (frameB * frameScale) * vec3<f32>(faceSign), normal);
+  let normalSample = (textureSample(normalTexture, normalSampler, (params.normalMapTransform * vec3<f32>(in.uv, 1.0)).xy) * vec4<f32>(2.0)) - vec4<f32>(1.0);
+  normal = normalize(tbn * vec3<f32>(normalSample.xy * params.normalScale, normalSample.z));`;
 }
 
 /** Fragment epilogue: output with alpha, clamp, linear fog. */
