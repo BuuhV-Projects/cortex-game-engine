@@ -10,6 +10,20 @@
   `map+normalMap+…`, `map+vertexColors+…`, `vertexColors+…+doubleSide` e o Physical com ior (`fog+receiveShadow`).
   Recusas na cena: só `toon`/`outline` (4), fora desta SPEC.
 - **Resposta conhecida** (`&nativeRenderer=1&nativeTint=1`): FAIL 66,5%, então o nativo desenha.
+- **DDD 00 no export** (200 s em janela, autopiloto `walk`, mediana das 12 últimas amostras do `cpu`):
+
+  | | antes | depois |
+  | --- | --- | --- |
+  | recusados / objetos no censo | 278 / 456 | 28 / 349 (todos `colorNode`) |
+  | `sceneRender` (three em JS) | 83–89 ms | 37 ms |
+  | `nativeEmit` | 44 ms | 23 ms |
+  | `world` | 39–58 ms | 85 ms |
+
+  O quadro continua acima de 100 ms (o `fps` do trace satura em 10): sobram o `world`, pausas de GC
+  de ~60 ms (alocação de ~80 MB/s) e as 28 recusas por `colorNode`. Os picos de `syncPlayerSkin`
+  (57–85 ms em amostras soltas, <1 ms nas outras) são GC caindo dentro da seção; a rodada base também
+  tem um. Com quadros de vários segundos o trace avança devagar (soma o `deltaMs` limitado a 100 ms):
+  200 s de relógio deram ~26 s de trace.
 - **Armadilha do instrumento:** sem `&nativeRenderer=1` a galeria **não liga** o renderer próprio, e a
   paridade dá PASS 0/0 até com `nativeTint`, porque os dois braços são o `three`. Sempre rode a prova
   com tinta junto.
