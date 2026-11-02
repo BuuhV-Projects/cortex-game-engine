@@ -43,6 +43,10 @@ describe('standard model (R1.2, SPEC-0535)', () => {
     expect(variant(tangent)).toBeNull();
     expect(variant(mesh(new MeshStandardMaterial({ flatShading: true })))).toBeNull();
     expect(variant(new Mesh(new BoxGeometry(), new MeshPhysicalMaterial({ specularColorMap: map })))).toBeNull();
+    const uv1 = new Texture();
+    uv1.channel = 1;
+    expect(standardRefusal(mesh(new MeshStandardMaterial({ normalMap: uv1 })), new MeshStandardMaterial({ normalMap: uv1 }))).toBe('uvChannel');
+    expect(standardRefusal(mesh(new MeshStandardMaterial()), new MeshStandardMaterial({ metalnessMap: uv1, roughnessMap: uv1 }))).toBe('uvChannel');
   });
 
   it('writes the F0 the three uses: 0.04 for Standard, min(((ior-1)/(ior+1))^2 * specularColor, 1) * specularIntensity for Physical', () => {

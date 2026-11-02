@@ -390,7 +390,7 @@ const entries: Array<[string, Material | ((mesh: Mesh) => void), boolean]> = [
   // SPEC-0659: what the GLTFLoader creates from a Blender kit (KHR_materials_specular, one
   // metallicRoughness texture, normalTexture without tangents: normalScale.y flipped).
   ['physical-gltf-metalrough-normal', new MeshPhysicalMaterial({
-    map: checker, metalnessMap: metalRough, roughnessMap: metalRough, normalMap: bumps, normalScale: new Vector2(1, -1), side: DoubleSide, ior: 1.5, specularIntensity: 0.8,
+    map: checker, metalnessMap: metalRough, roughnessMap: metalRough, normalMap: bumps, normalScale: new Vector2(1, -1), side: DoubleSide, ior: 1.5, specularIntensity: 0.8, metalness: 1,
   }), false],
   ['physical-ior-vcolor', new MeshPhysicalMaterial({ ior: 1.45, vertexColors: true, roughness: 0.5, side: DoubleSide }), true],
 ];

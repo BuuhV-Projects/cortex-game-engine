@@ -68,6 +68,8 @@ type StandardMaterial = Material & {
 export function standardRefusal(object: Object3D, material: Material): string | null {
   const m = material as StandardMaterial;
   if ((m.metalnessMap || m.roughnessMap) && m.metalnessMap !== m.roughnessMap) return 'metalRoughSplit';
+  // o shader só lê `uv`: um glTF com `uv1` (Texture.channel = 1) amostraria nas coordenadas erradas
+  if ((m.metalnessMap?.channel ?? 0) !== 0 || (m.normalMap?.channel ?? 0) !== 0) return 'uvChannel';
   if (m.normalMap) {
     if (m.normalMapType !== TANGENT_SPACE_NORMAL_MAP) return 'normalMapType';
     if ((object as Object3D & { geometry?: { attributes: Record<string, unknown> } }).geometry?.attributes['tangent']) return 'tangent';
