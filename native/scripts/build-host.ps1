@@ -94,7 +94,9 @@ if ($LASTEXITCODE -ne 0) { throw "cargo build do rapier-native falhou (exit $LAS
 
 $configure = "cmake -G Ninja -S `"$fontes`" -B `"$build`" -DCMAKE_BUILD_TYPE=$BuildType " +
              "-DCMAKE_C_COMPILER=`"$CAMINHO_DO_CLANG`" -DCMAKE_CXX_COMPILER=`"$CAMINHO_DO_CLANG`""
-$compilar = "cmake --build `"$build`" --target $Alvo"
+# host_runtime_files copia as DLLs e grava o selo que o export confere (SPEC-0660).
+$alvos = if ($Alvo -eq 'cortex_host') { 'cortex_host host_runtime_files' } else { $Alvo }
+$compilar = "cmake --build `"$build`" --target $alvos"
 
 Write-Output "[build-host] worktree: $Worktree"
 Write-Output "[build-host] alvo: $Alvo ($BuildType)"

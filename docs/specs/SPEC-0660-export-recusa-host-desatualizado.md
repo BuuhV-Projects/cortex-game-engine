@@ -23,15 +23,26 @@ Duas falhas deixaram isso passar calado:
 ## Decisão
 
 1. **`native/scripts/host-freshness.mjs`**: `staleHostBinaries(engineRoot, hostBuild)` devolve os
-   binários do host mais velhos que o arquivo mais novo dos seus fontes:
-   - `cortex_host.exe` ← `native/src/**` e `native/CMakeLists.txt`;
-   - `rapier_native.dll` ← `native/rapier-native/src/**` e `native/rapier-native/Cargo.toml`.
+   binários do host que estão velhos:
+   - `cortex_host.exe` ← `native/src/**`, `native/shaders/**` (o bloom é embutido) e
+     `native/CMakeLists.txt`. Vale a data do exe **ou** do selo `host-build.stamp`, o que for mais
+     novo. O selo cobre a compilação que reconfigura sem religar o exe (por exemplo, um comentário no
+     `CMakeLists.txt`); sem ele o export travaria para sempre.
+   - `rapier_native.dll` ← `native/rapier-native/src/**`, `native/rapier-native/patched/**` (o Rapier
+     com patch, ADR-0336; pastas `target` não contam) e `native/rapier-native/Cargo.toml`. Vale a data
+     da saída do cargo (`target/release/rapier_native.dll`), e a DLL de `native/build*` precisa ser
+     **idêntica** a ela, porque o `copy_if_different` mantém a data antiga quando o conteúdo é igual.
 
    Fonte ausente não conta: o Studio instalado exporta sem os fontes do host, e lá não há o que
-   conferir. É a mesma regra do `host_fresh` do `native/scripts/setup-worktree.sh`.
-2. **`export-game.mjs`**: logo depois de confirmar que o host existe, se houver binário velho, o export
-   falha com a lista de binários, a data de cada um, o fonte mais novo e o comando `yarn build:host`.
-3. **`rn_body_set`**: a translação passa a ser o código explícito 0 (que o shim já usa), e o braço
+   conferir.
+2. **`native/CMakeLists.txt`**: a cópia das DLLs saiu do `POST_BUILD` do `cortex_host` (que só roda
+   quando o exe é religado, então uma DLL nova do Rapier podia não ser copiada) e foi para o alvo
+   `host_runtime_files`, que roda em toda compilação e grava o selo. O `build-host.ps1` compila
+   `cortex_host` e `host_runtime_files`.
+3. **`export-game.mjs`**: logo depois de confirmar que o host existe, se houver binário velho, o export
+   falha com a lista de binários e o comando que recompila **a pasta usada**: `yarn build:host` para
+   `native/build`, e `cargo build` + `cmake --build native/build-steam|build-gdk` para Steam e GDK.
+4. **`rn_body_set`**: a translação passa a ser o código explícito 0 (que o shim já usa), e o braço
    padrão não faz nada.
 
 ## Consequências

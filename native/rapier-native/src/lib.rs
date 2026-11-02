@@ -870,6 +870,28 @@ mod tests {
         }
     }
 
+    /// Código desconhecido não mexe no corpo; o 0 continua sendo a translação (SPEC-0660).
+    /// Antes o braço padrão era `set_translation`: shim novo com DLL velha teleportava pra origem.
+    #[test]
+    fn unknown_code_leaves_the_body_and_zero_still_translates() {
+        const SET_TRANSLATION: f64 = 0.0;
+        const UNKNOWN: f64 = 99.0;
+        const FAR: f64 = 25.0;
+        const MOVED: f64 = -7.0;
+        unsafe {
+            let w = rn_world_new(0.0, GRAVITY, 0.0);
+            let body = rn_body_create(w, 0.0, FAR, FAR, FAR, 1.0);
+            let handle = unpack_handle(body);
+            rn_body_set(w, body, UNKNOWN, 0.0, 0.0, 0.0, 0.0, 1.0);
+            let t = (&*w).bodies[handle].translation();
+            assert_eq!([t.x as f64, t.y as f64, t.z as f64], [FAR, FAR, FAR], "código desconhecido moveu o corpo");
+            rn_body_set(w, body, SET_TRANSLATION, MOVED, MOVED, MOVED, 0.0, 1.0);
+            let t = (&*w).bodies[handle].translation();
+            assert_eq!([t.x as f64, t.y as f64, t.z as f64], [MOVED, MOVED, MOVED]);
+            rn_world_free(w);
+        }
+    }
+
     /// Corpo desligado não cai (sai da simulação) e o `is_enabled` volta pelo
     /// código 7; religado, volta a integrar (SPEC-0314).
     #[test]
