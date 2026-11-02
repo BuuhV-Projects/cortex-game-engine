@@ -1,3 +1,10 @@
+## [0.96.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.96.0...v0.96.1) (2026-11-02)
+
+
+### Performance Improvements
+
+* **editor:** precompile não aquece com o editor ativo (SPEC-0657) ([cbf27a4](https://github.com/BuuhV-Projects/cortex-game-engine/commit/cbf27a43aef6e5f25181bd741085d5276c92318a))
+
 # [0.96.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.95.0...v0.96.0) (2026-11-02)
 
 
