@@ -10,8 +10,8 @@
  *   cada objeto **aponta** para a memória do C++, então não há cópia nenhuma;
  * - **instancing** (revertido na SPEC-0012 do jogo): não é usado.
  */
-import type { Camera, BufferGeometry, Material, Vector3 } from 'three';
-import { BackSide, DoubleSide, FrontSide, Frustum, Matrix4, Object3D } from 'three';
+import type { Camera, BufferGeometry, Material } from 'three';
+import { BackSide, DoubleSide, FrontSide, Frustum, Matrix4, Object3D, Quaternion, Vector3 } from 'three';
 import { authoredCastShadow } from '../scene/ShadowCasterCulling.js';
 import { geometryId } from '../render/GeometryDesc.js';
 import {
@@ -579,6 +579,30 @@ function temPositionNode(material: Material | Material[] | undefined): boolean {
   );
 }
 
+const _posicaoManual = new Vector3();
+const _rotacaoManual = new Quaternion();
+const _escalaManual = new Vector3();
+
+/**
+ * Nó com `matrixAutoUpdate = false` (SPEC-0658): a pose vive em `matrix` e o TRS
+ * pode estar no padrão (as peças avulsas das células do Port Hollow). O host
+ * recompõe a matriz pelo TRS, então manda o da `matrix` decomposta.
+ * ponytail: decompose perde cisalhamento; matriz com shear sai aproximada.
+ */
+function escreverTrsDaMatriz(objeto: Object3D, destino: Float32Array | Float64Array, inicio: number): void {
+  objeto.matrix.decompose(_posicaoManual, _rotacaoManual, _escalaManual);
+  destino[inicio] = _posicaoManual.x;
+  destino[inicio + 1] = _posicaoManual.y;
+  destino[inicio + 2] = _posicaoManual.z;
+  destino[inicio + 3] = _rotacaoManual.x;
+  destino[inicio + 4] = _rotacaoManual.y;
+  destino[inicio + 5] = _rotacaoManual.z;
+  destino[inicio + 6] = _rotacaoManual.w;
+  destino[inicio + 7] = _escalaManual.x;
+  destino[inicio + 8] = _escalaManual.y;
+  destino[inicio + 9] = _escalaManual.z;
+}
+
 /**
  * Escreve um nó no layout de construção (ver `kBuildFloatsPerNode`).
  *
@@ -603,6 +627,7 @@ function descreverNo(
   destino[base + 8] = objeto.scale.x;
   destino[base + 9] = objeto.scale.y;
   destino[base + 10] = objeto.scale.z;
+  if (!objeto.matrixAutoUpdate) escreverTrsDaMatriz(objeto, destino, base + 1);
   destino[base + 11] = DEFAULT_RADIUS;
   destino[base + 12] = objeto.visible ? 1 : 0;
 
@@ -1205,6 +1230,7 @@ export class NativeSceneMirror {
       sync[base + 8] = escala._mx;
       sync[base + 9] = escala._my;
       sync[base + 10] = escala._mz;
+      if (!objeto.matrixAutoUpdate) escreverTrsDaMatriz(objeto, sync, base + 1);
       const flags = flagsDoQuadro(objeto, this._estaticoPorSlot[i]!);
       enviadas[i] = flags;
       sync[base + SYNC_FLAGS] = flags;
