@@ -326,7 +326,8 @@ pub unsafe extern "C" fn rn_collider_groups(
 /// what: 0 setTranslation(x,y,z) · 1 setRotation(x,y,z,w) · 2 setLinvel ·
 /// 3 setAngvel · 4 setNextKinematicTranslation · 5 applyImpulse ·
 /// 6 applyTorqueImpulse · 7 wakeUp · 8 resetForces · 9 resetTorques ·
-/// 10 setEnabledRotations · 11 setEnabled
+/// 10 setEnabledRotations · 11 setEnabled · 12..15 tipo/CCD/amortecimento ·
+/// 16 sleep. Outro código: nada (SPEC-0660).
 #[no_mangle]
 pub unsafe extern "C" fn rn_body_set(
     world: *mut World,
@@ -373,7 +374,10 @@ pub unsafe extern "C" fn rn_body_set(
         15 => rb.set_angular_damping(x as f32),
         // 16 = dormir (o carro parado da frota, SPEC-0655).
         16 => rb.sleep(),
-        _ => rb.set_translation(v, wake_up),
+        0 => rb.set_translation(v, wake_up),
+        // Código desconhecido não faz nada (SPEC-0660): com o shim mais novo que a DLL, o
+        // braço padrão antigo (translação) levava pra origem todo carro que pedia `sleep`.
+        _ => {}
     }
 }
 
@@ -862,6 +866,28 @@ mod tests {
                 rn_world_step(w);
                 assert!((&*w).bodies[handle].is_sleeping(), "acordou no passo {i}");
             }
+            rn_world_free(w);
+        }
+    }
+
+    /// Código desconhecido não mexe no corpo; o 0 continua sendo a translação (SPEC-0660).
+    /// Antes o braço padrão era `set_translation`: shim novo com DLL velha teleportava pra origem.
+    #[test]
+    fn unknown_code_leaves_the_body_and_zero_still_translates() {
+        const SET_TRANSLATION: f64 = 0.0;
+        const UNKNOWN: f64 = 99.0;
+        const FAR: f64 = 25.0;
+        const MOVED: f64 = -7.0;
+        unsafe {
+            let w = rn_world_new(0.0, GRAVITY, 0.0);
+            let body = rn_body_create(w, 0.0, FAR, FAR, FAR, 1.0);
+            let handle = unpack_handle(body);
+            rn_body_set(w, body, UNKNOWN, 0.0, 0.0, 0.0, 0.0, 1.0);
+            let t = (&*w).bodies[handle].translation();
+            assert_eq!([t.x as f64, t.y as f64, t.z as f64], [FAR, FAR, FAR], "código desconhecido moveu o corpo");
+            rn_body_set(w, body, SET_TRANSLATION, MOVED, MOVED, MOVED, 0.0, 1.0);
+            let t = (&*w).bodies[handle].translation();
+            assert_eq!([t.x as f64, t.y as f64, t.z as f64], [MOVED, MOVED, MOVED]);
             rn_world_free(w);
         }
     }

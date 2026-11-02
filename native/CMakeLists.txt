@@ -291,14 +291,20 @@ endif()
 
 # DLLs ao lado do executável
 # (hermes agora é ESTÁTICO no exe — sem hermes.dll; ADR-0122)
-add_custom_command(TARGET cortex_host POST_BUILD
+# Alvo sem OUTPUT: roda em TODA compilação, não só quando o exe é religado (SPEC-0660). Como
+# POST_BUILD do cortex_host, a DLL nova do Rapier não era copiada se o exe não precisasse religar.
+# O selo marca a compilação que terminou: o export compara os fontes com ele (host-freshness.mjs).
+add_custom_target(host_runtime_files ALL
   COMMAND ${CMAKE_COMMAND} -E copy_if_different
     ${TP}/SDL3/lib/x64/SDL3.dll
     ${TP}/wgpu/lib/wgpu_native.dll
     ${RAPIER_NATIVE}/rapier_native.dll
     ${TP}/fonts/Roboto-Medium.ttf
     $<TARGET_FILE_DIR:cortex_host>
+  COMMAND ${CMAKE_COMMAND} -E touch $<TARGET_FILE_DIR:cortex_host>/host-build.stamp
+  VERBATIM
 )
+add_dependencies(host_runtime_files cortex_host)
 
 # ── Testes unitários do host (TDR-0004) ──────────────────────────────────────
 # Só unidades PURAS (enums, matemática BC7, logging em arquivo) — sem device

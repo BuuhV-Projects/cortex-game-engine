@@ -18,6 +18,7 @@ import { whoLocks } from './who-locks.mjs';
 import { readGameConfig, steamAppIdOf } from './game-config.mjs';
 import { embedIcon } from './embed-icon.mjs';
 import { copyLanguages } from './copy-languages.mjs';
+import { staleHostBinaries, staleHostMessage } from './host-freshness.mjs';
 
 // Raiz do engine derivada do PRÓPRIO script (roda de qualquer cwd — ex.:
 // spawnado pelo Studio com cwd do projeto).
@@ -99,6 +100,13 @@ if (!fs.existsSync(path.join(hostBuild, 'cortex_host.exe'))) {
           '         (usando clang-cl por caminho completo — ver architecture.md).'
         : gdk ? ' — build o host com -DCORTEX_GDK=ON primeiro (ver architecture.md).' : '.'),
   );
+  process.exit(1);
+}
+// Host ou DLL do Rapier compilados antes da última mudança nos fontes não vão pro export
+// (SPEC-0660): a DLL velha teleportava pra origem todo carro que dormia.
+const staleHost = staleHostBinaries(engineRoot, hostBuild);
+if (staleHost.length > 0) {
+  console.error(staleHostMessage(staleHost, hostBuild));
   process.exit(1);
 }
 // hermesc do MESMO build do runtime embutido (ADR-0122 — o bytecode é acoplado
