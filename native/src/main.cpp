@@ -308,13 +308,10 @@ int main(int argc, char** argv) {
     // SSAA (supersampling): o engine renderiza numa canvas MAIOR (nativo ×
     // renderScale) num alvo offscreen; o host faz downscale bilinear no
     // present. Mata o serrilhado dos contornos finos (moedas) que o MSAA 4x
-    // sozinho não suaviza. CORTEX_RENDER_SCALE ajusta (padrão 2.0; 1.0 desliga).
+    // sozinho não suaviza. Variável vazia conta como ausente. Precedência (SPEC-0667): CORTEX_RENDER_SCALE >
+    // `renderScale` do cortex.json > 2.0. 1.0 desliga.
     {
-      const char* scaleEnv = SDL_getenv("CORTEX_RENDER_SCALE");
-      float scale = scaleEnv ? static_cast<float>(SDL_atof(scaleEnv)) : 2.0f;
-      if (scale < 1.0f) scale = 1.0f;
-      if (scale > 4.0f) scale = 4.0f;  // teto de sanidade (VRAM/fill-rate)
-      gpu.renderScale = scale;
+      gpu.renderScale = core::resolveRenderScale(SDL_getenv("CORTEX_RENDER_SCALE"), game.renderScale);
     }
 
     // Deep-link de fase / query de lançamento (env CORTEX_LAUNCH_QUERY →
