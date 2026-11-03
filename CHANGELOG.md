@@ -1,3 +1,10 @@
+# [0.100.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.99.1...v0.100.0) (2026-11-03)
+
+
+### Features
+
+* **regras:** sem pendência de refatoração e no máximo 20 testes por arquivo (SPEC-0668) ([f93bf55](https://github.com/BuuhV-Projects/cortex-game-engine/commit/f93bf55baca19bb7e690ecfa16f241eff7eba8c6))
+
 ## [0.99.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.99.0...v0.99.1) (2026-11-02)
 
 
