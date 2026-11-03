@@ -122,7 +122,7 @@ export async function refineDocument(document, { keep = [], keepHierarchy = fals
   document.setLogger(new Logger(Logger.Verbosity.SILENT));
   const antes = measure(document);
   const avisos = collectWarnings(document, antes);
-  // SPEC-0668: modo só-geometria para kits — nomes, materiais e hierarquia ficam; a paleta e o join não rodam.
+  // SPEC-0669: modo só-geometria para kits — nomes, materiais e hierarquia ficam; a paleta e o join não rodam.
   if (simplifyError > 0) {
     await MeshoptSimplifier.ready;
     await document.transform(
@@ -180,7 +180,7 @@ function linhaDiff(rotulo, antes, depois) {
 }
 
 /**
- * Valor do `--simplify` (SPEC-0668): `0` sem a flag; com a flag, um número finito e positivo ou `NaN`.
+ * Valor do `--simplify` (SPEC-0669): `0` sem a flag; com a flag, um número finito e positivo ou `NaN`.
  * `NaN` faz o `main` recusar antes de tocar no arquivo: cair no caminho da paleta/join sobrescreveria um kit
  * sem os nomes que o jogo procura (ex.: `--simplify --in-place`).
  */

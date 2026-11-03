@@ -110,7 +110,7 @@ describe('refineDocument', () => {
     expect(avisos.some((a: string) => a.includes('materiais'))).toBe(true);
   });
 
-  it('--simplify reduz triângulos de malha densa e mantém nós e materiais (SPEC-0668)', async () => {
+  it('--simplify reduz triângulos de malha densa e mantém nós e materiais (SPEC-0669)', async () => {
     // Plano 40x40 subdividido: coplanar, o simplificador colapsa quase tudo sem erro visível.
     const GRID = 40;
     const doc = new Document();
@@ -138,7 +138,7 @@ describe('refineDocument', () => {
     expect(doc.getRoot().listMaterials().map((m) => m.getName())).toEqual(['MI_Trim']);
   });
 
-  it('--simplify sem valor válido é recusado, não cai na paleta (SPEC-0668)', () => {
+  it('--simplify sem valor válido é recusado, não cai na paleta (SPEC-0669)', () => {
     expect(parseSimplifyError(['kit.glb'])).toBe(0);
     expect(parseSimplifyError(['kit.glb', '--simplify', '0.005'])).toBe(0.005);
     expect(parseSimplifyError(['kit.glb', '--simplify', '--in-place'])).toBeNaN();

@@ -1,4 +1,4 @@
-# SPEC-0668 — `refine-asset --simplify`: orçamento de triângulos nos kits
+# SPEC-0669 — `refine-asset --simplify`: orçamento de triângulos nos kits
 
 **Data:** 2026-11-02
 **Status:** implementado
