@@ -1,3 +1,10 @@
+# [0.101.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.100.1...v0.101.0) (2026-11-03)
+
+
+### Features
+
+* **tools:** refine-asset --simplify com meshoptimizer, UV e costura preservadas (SPEC-0670) ([#40](https://github.com/BuuhV-Projects/cortex-game-engine/issues/40)) ([604547e](https://github.com/BuuhV-Projects/cortex-game-engine/commit/604547e49b6b921c3473e28d1e9f083fd663c9ca)), closes [#42](https://github.com/BuuhV-Projects/cortex-game-engine/issues/42)
+
 ## [0.100.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.100.0...v0.100.1) (2026-11-03)
 
 
