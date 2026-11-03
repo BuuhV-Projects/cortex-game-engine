@@ -88,7 +88,8 @@ que fez contra elas antes de encerrar.
    próprio é uma draw call. Peças com o **mesmo acabamento** dividem UM material;
    no máximo **4 materiais** numa peça pequena (roda, item) e **8** num objeto
    grande (carro, prédio). Modelo pesado? Conte materiais por primitiva antes
-   de culpar a geometria — unifique material, não decime.
+   de culpar a geometria — unifique material antes de decimar (o orçamento de
+   triângulos é a regra 6).
 2. **Aquecer DEPOIS de criar.** O `main.ts` monta tudo sob a tela de
    carregamento e chama `game.precompile()` no fim. Crie ANTES dele tudo o que
    o jogo só cria no uso (efeitos, projéteis, variantes): objeto que aparece
@@ -101,6 +102,21 @@ que fez contra elas antes de encerrar.
    borrão de velocidade), force esse caminho e chame `game.precompile()` de novo.
 5. **Teto de fps é escolha do jogo:** `game.maxFps`, de preferência um divisor
    do refresh (`game.refreshHz`).
+6. **Kit novo: orçamento de triângulos por peça.** Ao receber um `.glb` de kit,
+   antes de usar no jogo (os scripts estão em `native/scripts/` do repo da engine):
+   1. Meça: `node native/scripts/kit-tris.mjs <kit.glb> 30` lista os triângulos por peça.
+   2. Compare com o orçamento do papel da peça: prop pequeno (até 1,5 m) ~2 k;
+      prop médio (1,5 a 5 m) ~3 k; veículo ~20 k; prédio ou peça de cidade ~15 k;
+      personagem ~10 k.
+   3. Kit com peça acima do orçamento:
+      `node native/scripts/refine-asset.mjs <kit.glb> --simplify 0.005 --in-place`.
+      O meshoptimizer simplifica até 0,5% de erro do tamanho da peça, com a borda
+      travada; nós, nomes e materiais ficam iguais. Em kit, nunca rode o
+      `refine-asset` sem `--simplify`: a paleta e o `join` apagam os nomes que o
+      jogo procura.
+   4. Confira a peça mais pesada antes e depois (render ou screenshot). Ficou
+      diferente? Volte o original e avise.
+   5. Não simplifique malha skinada (personagem) nem peça que já cabe no orçamento.
 
 ## Estrutura de pastas
 

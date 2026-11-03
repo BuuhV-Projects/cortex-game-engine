@@ -34,6 +34,9 @@ no orçamento. LOD por distância em runtime fica para quando um nível só não
 
 ## Consequências
 
+- O passo vira regra para todo kit novo: regra 6 da seção de performance do `AGENTS.md` do template
+  (`templates/new-project/AGENTS.md`), com o orçamento por papel da peça e o `native/scripts/kit-tris.mjs` para medir.
+
 - Rodar no kit é decisão do jogo (o kit é dele): conferir a aparência antes de commitar, porque `error` alto
   arredonda cornija e dente de engrenagem.
 - O relatório do `refine-asset` mostra triângulos antes/depois, como já fazia para materiais e nós.
