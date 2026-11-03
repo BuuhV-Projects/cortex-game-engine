@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { Document } from '@gltf-transform/core';
 // @ts-expect-error — script .mjs sem tipos; é ferramenta de asset, não API do engine.
-import { refineDocument } from '../../native/scripts/refine-asset.mjs';
+import { parseSimplifyError, refineDocument } from '../../native/scripts/refine-asset.mjs';
 
 /** Cor sólida distinta por material, que é o caso em que a paleta se aplica. */
 function criarPecaColorida(
@@ -137,5 +137,13 @@ describe('refineDocument', () => {
     expect(doc.getRoot().listNodes().map((n) => n.getName())).toEqual(['peca-trim']);
     expect(doc.getRoot().listMaterials().map((m) => m.getName())).toEqual(['MI_Trim']);
   });
-});
 
+  it('--simplify sem valor válido é recusado, não cai na paleta (SPEC-0668)', () => {
+    expect(parseSimplifyError(['kit.glb'])).toBe(0);
+    expect(parseSimplifyError(['kit.glb', '--simplify', '0.005'])).toBe(0.005);
+    expect(parseSimplifyError(['kit.glb', '--simplify', '--in-place'])).toBeNaN();
+    expect(parseSimplifyError(['kit.glb', '--simplify'])).toBeNaN();
+    expect(parseSimplifyError(['kit.glb', '--simplify', '0'])).toBeNaN();
+    expect(parseSimplifyError(['kit.glb', '--simplify', '-1'])).toBeNaN();
+  });
+});

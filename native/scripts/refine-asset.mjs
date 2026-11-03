@@ -179,6 +179,18 @@ function linhaDiff(rotulo, antes, depois) {
   return `  ${rotulo.padEnd(12)} ${String(antes).padStart(6)} ${seta} ${String(depois).padStart(6)}${ganho}`;
 }
 
+/**
+ * Valor do `--simplify` (SPEC-0668): `0` sem a flag; com a flag, um número finito e positivo ou `NaN`.
+ * `NaN` faz o `main` recusar antes de tocar no arquivo: cair no caminho da paleta/join sobrescreveria um kit
+ * sem os nomes que o jogo procura (ex.: `--simplify --in-place`).
+ */
+export function parseSimplifyError(args) {
+  const i = args.indexOf('--simplify');
+  if (i < 0) return 0;
+  const valor = Number(args[i + 1]);
+  return Number.isFinite(valor) && valor > 0 ? valor : Number.NaN;
+}
+
 function parseArgs(argv) {
   const args = argv.slice(2);
   const valor = (flag) => {
@@ -191,7 +203,7 @@ function parseArgs(argv) {
     keep: (valor('--keep') ?? '').split(',').map((s) => s.trim()).filter(Boolean),
     inPlace: args.includes('--in-place'),
     keepHierarchy: args.includes('--keep-hierarchy'),
-    simplifyError: Number(valor('--simplify') ?? 0),
+    simplifyError: parseSimplifyError(args),
     check: args.includes('--check'),
     json: args.includes('--json'),
   };
@@ -216,6 +228,10 @@ async function main() {
   const opts = parseArgs(process.argv);
   if (!opts.alvo || !fs.existsSync(opts.alvo)) {
     console.error('uso: node scripts/refine-asset.mjs <arquivo.glb | pasta> [--out <dir>] [--in-place] [--keep Mat1,Mat2] [--keep-hierarchy] [--simplify <erro, ex. 0.005>] [--check] [--json]');
+    process.exit(1);
+  }
+  if (Number.isNaN(opts.simplifyError)) {
+    console.error('--simplify precisa de um erro positivo (ex.: --simplify 0.005); nada foi alterado');
     process.exit(1);
   }
 
