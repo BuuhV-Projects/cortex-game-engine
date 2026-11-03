@@ -48,10 +48,11 @@ Workflow `.github/workflows/claude-review.yml`:
 
 ## Consequências
 
-- Requer o Claude GitHub App instalado e a regra WIF aceitando o OIDC de
-  `pull_request_target` deste repo; sem eles o job falha e não há aprovação.
+- Requer a regra WIF aceitando o OIDC de `pull_request_target` deste repo; sem ela
+  o job falha e não há aprovação. A action comenta com o `GITHUB_TOKEN`
+  (`github-actions[bot]`), não pelo Claude GitHub App (TDR-0012).
 - A resposta às threads segue a regra do CLAUDE.md (o Auto-fix da sessão trata os
-  comentários do `claude[bot]` como os de qualquer revisor).
+  comentários do `github-actions[bot]` como os de qualquer revisor).
 - O Greptile foi desativado e o `greptile-approve.yml` removido: esta é a única
   fonte da aprovação do ruleset.
 - PR do Dependabot é revisado também (`allowed_bots`).
