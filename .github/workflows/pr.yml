@@ -20,7 +20,7 @@ name: PR checks
 #  4. `trail`     — gera o mapa do trail e checa o diff contra os learnings
 #                   (SPEC-0657, TDR-0009).
 #
-# A aprovação exigida pelo ruleset vem do `greptile-approve.yml` (5/5).
+# A aprovação exigida pelo ruleset vem do `claude-review.yml` (5/5, TDR-0011).
 #
 # `release.yml` e `build-ide.yml` NÃO foram alterados — o caminho que publica
 # os instaladores do Studio segue idêntico.

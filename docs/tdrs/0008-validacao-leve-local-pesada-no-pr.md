@@ -1,7 +1,7 @@
 # 0008 - Validação leve no local, determinística no PR, aprovação pelo Greptile
 
 **Data:** 2026-11-01
-**Status:** aceito
+**Status:** aceito; a aprovação pelo Greptile foi substituída pelo TDR-0011 (Greptile desativado, `greptile-approve.yml` removido)
 
 ## Contexto
 

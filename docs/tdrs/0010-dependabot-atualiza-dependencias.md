@@ -30,7 +30,7 @@ Alternativas consideradas:
 - **GitHub Actions**: os workflows e as actions compostas de `.github/actions/*`, toda semana.
 - Patch e minor vão **agrupados** (um PR por dependência vira ruído, e ruído leva a ignorar). Major
   vai em **PR individual**.
-- O PR do Dependabot segue o mesmo portão de qualquer PR: CI verde e Greptile 5/5 antes do auto-merge.
+- O PR do Dependabot segue o mesmo portão de qualquer PR: CI verde e Claude review 5/5 antes do auto-merge (TDR-0011; era Greptile).
 
 Fica fora do Dependabot, porque não vem de um registro de pacotes: SDL3, wgpu-native e Hermes
 (`native/scripts/fetch-deps.ps1`) e o Steamworks SDK (que tem o `steam-sdk-watch.yml`).
