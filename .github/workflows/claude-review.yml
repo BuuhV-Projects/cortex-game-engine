@@ -1,0 +1,147 @@
+name: Claude review
+
+# Revisão de PR pelo Claude Code (SPEC-0669, TDR-0011):
+# comentários inline no diff + nota 1–5; com 5/5 no head, aprova (o ruleset da
+# `main` exige 1 aprovação, TDR-0008).
+#
+# Segurança: `pull_request_target` roda SEMPRE este arquivo da `main`, então um
+# PR não edita o próprio revisor nem o gate. O head do PR entra em `pr-head/` e
+# nada dele é executado (padrão do docs/security.md da action). O Claude não tem
+# `gh api`: com ele poderia aprovar o próprio PR.
+#
+# Pré-requisitos (usuário): Claude GitHub App instalado no repo e a regra de
+# federação da Anthropic (WIF) aceitando o OIDC deste repo em `pull_request_target`.
+
+on:
+  pull_request_target:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: write
+  id-token: write # OIDC para a federação da Anthropic e o token do Claude GitHub App
+
+concurrency:
+  group: claude-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  # Mesma versão dos demais workflows do repo.
+  NODE_VERSION: '24.15.0'
+  # trail pinado (TDR-0009), igual ao `pr.yml`.
+  TRAIL_VERSION: '0.28.1'
+  TIMEOUT_INSTALL_MINUTES: '15'
+  TIMEOUT_REVIEW_MINUTES: '30'
+  # Nota que aprova o PR.
+  APPROVE_SCORE: '5'
+
+jobs:
+  review:
+    name: Revisar
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      !github.event.pull_request.draft
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout da main (raiz)
+        uses: actions/checkout@v4
+
+      - name: Checkout do head do PR
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: pr-head
+          fetch-depth: 0 # `trail check` compara contra origin/main
+          persist-credentials: false
+
+      - name: Setup Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install trail ${{ env.TRAIL_VERSION }}
+        timeout-minutes: ${{ fromJSON(env.TIMEOUT_INSTALL_MINUTES) }}
+        run: |
+          yarn global add "@trailhq/trail-code@$TRAIL_VERSION"
+          echo "$(yarn global bin)" >> "$GITHUB_PATH"
+
+      - name: trail build (head)
+        run: trail build pr-head
+
+      - name: Comentários inline já existentes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          mkdir -p review-context
+          gh api "repos/$REPO/pulls/$PR/comments" --paginate \
+            --jq '[.[] | {path, line, user: .user.login, body}]' > review-context/comments.json
+
+      - name: Revisão
+        id: review
+        timeout-minutes: ${{ fromJSON(env.TIMEOUT_REVIEW_MINUTES) }}
+        uses: anthropics/claude-code-action@v1
+        with:
+          # Workload Identity Federation: o OIDC do GitHub vira token da API da
+          # Anthropic, sem secret. IDs não são segredo (só valem com o OIDC deste repo).
+          anthropic_federation_rule_id: fdrl_01RcYzzjyrkF5WLUisZobf4c
+          anthropic_organization_id: 7658f3f1-9356-479a-8ceb-ce3a2121be8e
+          anthropic_service_account_id: svac_01X9YLKdDRQoS2UMeP2vGiEP
+          anthropic_workspace_id: wrkspc_01JF2vKrRZDdxebheAXApTA9
+          settings: '{"disableAllHooks": true}'
+          # PR do Dependabot passa pelo mesmo portão (TDR-0010).
+          allowed_bots: 'dependabot[bot]'
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR: ${{ github.event.pull_request.number }}
+
+            Revise este PR em português do Brasil.
+
+            - O código do PR (head) está em `pr-head/`. A raiz do workspace é a `main`:
+              use-a só para comparar. Nos comentários inline, use o caminho SEM o
+              prefixo `pr-head/`.
+            - Veja o diff com `gh pr diff ${{ github.event.pull_request.number }}`.
+            - Use o trail para entender o código e o impacto, sempre com `pr-head` como
+              diretório: `trail ask "<pergunta>" pr-head --source`,
+              `trail callers <símbolo> pr-head --depth 2`, `trail skeleton <arquivo> pr-head`.
+              Rode `trail check pr-head` para achar conflito com os learnings do repo.
+            - Procure: bugs de correção, regressão, segurança e complexidade ruim em código
+              que roda por quadro. Confira também as regras de `pr-head/CLAUDE.md`
+              (registro SPEC/ADR antes do código, 500 linhas por arquivo, 20 testes por
+              arquivo de teste, yarn e nunca npm, `debug()` em vez de `console.log`,
+              física declarada no `level.json` e não no código, módulo público novo em
+              `VENDOR_TYPE_MODULES`, doc da API regenerada).
+            - `review-context/comments.json` tem os comentários inline que já existem no
+              PR: não repita o que já foi apontado.
+            - Um comentário inline por problema real, na linha do head, dizendo o que
+              quebra e como corrigir. Nada de elogio nem comentário de estilo sem impacto.
+            - Não comente fora do inline: o resumo vai no campo `summary`.
+
+            Nota (`score`): 5 = pode mergear, nada a corrigir; 4 = só detalhes;
+            3 ou menos = há problema real a corrigir.
+          claude_args: |
+            --allowedTools "Read,Glob,Grep,Bash(trail:*),Bash(gh pr diff:*),Bash(gh pr view:*),mcp__github_inline_comment__create_inline_comment"
+            --json-schema '{"type":"object","properties":{"score":{"type":"integer","minimum":1,"maximum":5},"summary":{"type":"string"}},"required":["score","summary"]}'
+
+      - name: Nota e aprovação
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          SHA: ${{ github.event.pull_request.head.sha }}
+          RESULT: ${{ steps.review.outputs.structured_output }}
+        run: |
+          score=$(jq -r .score <<<"$RESULT")
+          summary=$(jq -r .summary <<<"$RESULT")
+          head=$(gh pr view "$PR" -R "$REPO" --json headRefOid --jq .headRefOid)
+          if [ "$head" != "$SHA" ]; then
+            echo "PR #$PR: o commit revisado não é mais o head"; exit 0
+          fi
+          event=COMMENT
+          if [ "$score" = "$APPROVE_SCORE" ]; then event=APPROVE; fi
+          body=$(printf '**Claude review: %s/5**\n\n%s' "$score" "$summary")
+          gh api "repos/$REPO/pulls/$PR/reviews" -f commit_id="$SHA" -f event="$event" \
+            -f body="$body" >/dev/null
+          echo "PR #$PR: nota $score ($event)"
