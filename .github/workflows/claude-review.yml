@@ -9,8 +9,8 @@ name: Claude review
 # nada dele é executado (padrão do docs/security.md da action). O Claude não tem
 # `gh api`: com ele poderia aprovar o próprio PR.
 #
-# Pré-requisitos (usuário): Claude GitHub App instalado no repo e a regra de
-# federação da Anthropic (WIF) aceitando o OIDC deste repo em `pull_request_target`.
+# Pré-requisito (usuário): a regra de federação da Anthropic (WIF) aceitando o OIDC
+# deste repo em `pull_request_target`. Comenta com o `GITHUB_TOKEN` (TDR-0012).
 
 on:
   pull_request_target:
@@ -20,7 +20,7 @@ on:
 permissions:
   contents: read
   pull-requests: write
-  id-token: write # OIDC para a federação da Anthropic e o token do Claude GitHub App
+  id-token: write # OIDC para a federação da Anthropic
 
 concurrency:
   group: claude-review-${{ github.event.pull_request.number }}
@@ -90,6 +90,9 @@ jobs:
           anthropic_organization_id: 7658f3f1-9356-479a-8ceb-ce3a2121be8e
           anthropic_service_account_id: svac_01X9YLKdDRQoS2UMeP2vGiEP
           anthropic_workspace_id: wrkspc_01JF2vKrRZDdxebheAXApTA9
+          # Token do runner (TDR-0012): sem ele a action troca o OIDC pelo token do
+          # Claude GitHub App, e essa troca devolve 401 em `pull_request_target`.
+          github_token: ${{ github.token }}
           settings: '{"disableAllHooks": true}'
           # PR do Dependabot passa pelo mesmo portão (TDR-0010).
           allowed_bots: 'dependabot[bot]'
