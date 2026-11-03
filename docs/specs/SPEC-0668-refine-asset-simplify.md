@@ -7,8 +7,11 @@
 
 O DDD 61 roda bem no export porque o conteúdo nasceu low-poly (kit DF-Modular). O DDD 00 usa kits comprados com
 densidade de escultura: no inventário por material de um quadro (meio-dia, sol), os acabamentos do `city_kit`
-(`MI_Trim*`) somam ~724 k triângulos, os postes 117 k em 4 draws, um hidrante 27 k. Com hora e clima fixos, os draws
-da cidade custam ~76 dos 93 ms de GPU do passe principal.
+(`MI_Trim*`) somam ~724 k triângulos, os postes 117 k em 4 draws, um hidrante 27 k.
+
+A medição de GPU que motivou esta SPEC ("~76 dos 93 ms") foi contaminada por outro processo usando a placa: o
+mesmo export, medido de novo em 03/11, dá GPU 4,5 ms. O orçamento de triângulos segue valendo para GPUs mais fracas
+e para a sombra, mas não muda o fps do DDD 00 na RX 6600, que hoje é limitado pela CPU.
 
 O `refine-asset.mjs` (SPEC-0231) só junta materiais e malhas; não reduz triângulos.
 
