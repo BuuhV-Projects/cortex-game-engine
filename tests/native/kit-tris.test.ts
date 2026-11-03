@@ -1,12 +1,12 @@
 /**
- * Contagem de triângulos do orçamento de kit (SPEC-0669): o modo da primitiva decide a conta.
+ * Contagem de triângulos do orçamento de kit (SPEC-0670): o modo da primitiva decide a conta.
  */
 import { describe, it, expect } from 'vitest';
-import { Document, Primitive } from '@gltf-transform/core';
+import { Document, Primitive, type GLTF } from '@gltf-transform/core';
 // @ts-expect-error — script .mjs sem tipos; é ferramenta de asset, não API do engine.
 import { trianglesOf } from '../../native/scripts/kit-tris.mjs';
 
-function primitiva(mode: number, indices: number) {
+function primitiva(mode: GLTF.MeshPrimitiveMode, indices: number) {
   const doc = new Document();
   return doc.createPrimitive()
     .setMode(mode)

@@ -110,25 +110,9 @@ describe('refineDocument', () => {
     expect(avisos.some((a: string) => a.includes('materiais'))).toBe(true);
   });
 
-  it('--simplify reduz triângulos de malha densa e mantém nós e materiais (SPEC-0669)', async () => {
-    // Plano 40x40 subdividido: coplanar, o simplificador colapsa quase tudo sem erro visível.
-    const GRID = 40;
-    const doc = new Document();
-    const pos: number[] = [];
-    for (let z = 0; z <= GRID; z++) for (let x = 0; x <= GRID; x++) pos.push(x / GRID, 0, z / GRID);
-    const idx: number[] = [];
-    for (let z = 0; z < GRID; z++) {
-      for (let x = 0; x < GRID; x++) {
-        const a = z * (GRID + 1) + x;
-        idx.push(a, a + GRID + 1, a + 1, a + 1, a + GRID + 1, a + GRID + 2);
-      }
-    }
-    const material = doc.createMaterial('MI_Trim');
-    const prim = doc.createPrimitive()
-      .setAttribute('POSITION', doc.createAccessor().setType('VEC3').setArray(new Float32Array(pos)))
-      .setIndices(doc.createAccessor().setType('SCALAR').setArray(new Uint32Array(idx)))
-      .setMaterial(material);
-    doc.createScene().addChild(doc.createNode('peca-trim').setMesh(doc.createMesh('trim').addPrimitive(prim)));
+  it('--simplify reduz triângulos de malha densa e mantém nós e materiais (SPEC-0670)', async () => {
+    // Coplanar com UV linear na posição: o colapso não muda a interpolação, então simplifica quase tudo.
+    const doc = planoSubdividido((x, z) => [x * 4, z * 4]);
 
     const r = await refineDocument(doc, { simplifyError: 0.005 });
 
@@ -138,7 +122,17 @@ describe('refineDocument', () => {
     expect(doc.getRoot().listMaterials().map((m) => m.getName())).toEqual(['MI_Trim']);
   });
 
-  it('--simplify sem valor válido é recusado, não cai na paleta (SPEC-0669)', () => {
+  it('--simplify mantém a crista da UV espelhada do asfalto — sem ela a textura estica (SPEC-0670)', async () => {
+    // Como o asfalto do Street_2Lane do city_kit: plano, com v indo 0 -> 1 -> 0 ao longo da pista. Só com a
+    // posição no erro, a fileira do meio (v = 1) sumia e a metade da pista ficava com v constante.
+    const doc = planoSubdividido((x, z) => [x, 1 - Math.abs(2 * z - 1)]);
+
+    await refineDocument(doc, { simplifyError: 0.005 });
+
+    expect(uvNoPonto(doc, 0.5, 0.5)[1]).toBeCloseTo(1, 3);
+  });
+
+  it('--simplify sem valor válido é recusado, não cai na paleta (SPEC-0670)', () => {
     expect(parseSimplifyError(['kit.glb'])).toBe(0);
     expect(parseSimplifyError(['kit.glb', '--simplify', '0.005'])).toBe(0.005);
     expect(parseSimplifyError(['kit.glb', '--simplify', '--in-place'])).toBeNaN();
@@ -147,3 +141,51 @@ describe('refineDocument', () => {
     expect(parseSimplifyError(['kit.glb', '--simplify', '-1'])).toBeNaN();
   });
 });
+
+const GRID = 40;
+
+/** Plano GRIDxGRID subdividido em y=0, com a UV de cada vértice dada por `uv(x, z)` (x e z em 0..1). */
+function planoSubdividido(uv: (x: number, z: number) => [number, number]) {
+  const doc = new Document();
+  const pos: number[] = [];
+  const tex: number[] = [];
+  for (let z = 0; z <= GRID; z++) {
+    for (let x = 0; x <= GRID; x++) {
+      pos.push(x / GRID, 0, z / GRID);
+      tex.push(...uv(x / GRID, z / GRID));
+    }
+  }
+  const idx: number[] = [];
+  for (let z = 0; z < GRID; z++) {
+    for (let x = 0; x < GRID; x++) {
+      const a = z * (GRID + 1) + x;
+      idx.push(a, a + GRID + 1, a + 1, a + 1, a + GRID + 1, a + GRID + 2);
+    }
+  }
+  const prim = doc.createPrimitive()
+    .setAttribute('POSITION', doc.createAccessor().setType('VEC3').setArray(new Float32Array(pos)))
+    .setAttribute('TEXCOORD_0', doc.createAccessor().setType('VEC2').setArray(new Float32Array(tex)))
+    .setIndices(doc.createAccessor().setType('SCALAR').setArray(new Uint32Array(idx)))
+    .setMaterial(doc.createMaterial('MI_Trim'));
+  doc.createScene().addChild(doc.createNode('peca-trim').setMesh(doc.createMesh('trim').addPrimitive(prim)));
+  return doc;
+}
+
+/** UV interpolada no ponto (x, z) do plano y=0 — o que a textura mostra ali depois da simplificação. */
+function uvNoPonto(doc: Document, x: number, z: number): number[] {
+  const prim = doc.getRoot().listMeshes()[0].listPrimitives()[0];
+  const pos = prim.getAttribute('POSITION')!;
+  const uv = prim.getAttribute('TEXCOORD_0')!;
+  const idx = prim.getIndices()!.getArray()!;
+  for (let t = 0; t < idx.length; t += 3) {
+    const [a, b, c] = [idx[t], idx[t + 1], idx[t + 2]].map((i) => pos.getElement(i, [0, 0, 0]));
+    const det = (b[2] - c[2]) * (a[0] - c[0]) + (c[0] - b[0]) * (a[2] - c[2]);
+    const l0 = ((b[2] - c[2]) * (x - c[0]) + (c[0] - b[0]) * (z - c[2])) / det;
+    const l1 = ((c[2] - a[2]) * (x - c[0]) + (a[0] - c[0]) * (z - c[2])) / det;
+    const l = [l0, l1, 1 - l0 - l1];
+    if (Math.min(...l) < -1e-6) continue;
+    const uvs = [idx[t], idx[t + 1], idx[t + 2]].map((i) => uv.getElement(i, [0, 0]));
+    return [0, 1].map((k) => l[0] * uvs[0][k] + l[1] * uvs[1][k] + l[2] * uvs[2][k]);
+  }
+  throw new Error(`ponto (${x}, ${z}) fora da malha`);
+}

@@ -1,5 +1,5 @@
 // Triângulos por peça (nó com malha) de um .glb, da mais pesada para a mais leve: o passo de medir do orçamento
-// de kit (SPEC-0669, regra 6 do AGENTS.md do template). Uso: node native/scripts/kit-tris.mjs <kit.glb> [N=20]
+// de kit (SPEC-0670, regra 6 do AGENTS.md do template). Uso: node native/scripts/kit-tris.mjs <kit.glb> [N=20]
 import { NodeIO, Primitive } from '@gltf-transform/core';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
 import { pathToFileURL } from 'node:url';

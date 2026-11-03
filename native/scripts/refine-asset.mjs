@@ -8,9 +8,9 @@
 // e transforma cada peça numa draw.
 //
 // Uso: node scripts/refine-asset.mjs <arquivo.glb | pasta> [opções]
-import { Logger, NodeIO } from '@gltf-transform/core';
+import { Logger, NodeIO, Primitive } from '@gltf-transform/core';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
-import { dedup, join, palette, prune, simplify, weld } from '@gltf-transform/functions';
+import { dedup, join, palette, prune, simplifyPrimitive, weld } from '@gltf-transform/functions';
 import { MeshoptSimplifier } from 'meshoptimizer';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -31,6 +31,14 @@ const WHITE_PIXEL_PNG = Buffer.from(
 const MAX_MATERIALS = 4;
 const MAX_PRIMITIVES_PER_MESH = 2;
 const MAX_NODES = 24;
+
+// Peso de cada atributo no erro do `--simplify` (SPEC-0670): UV pesa como posição, normal pela metade.
+const UV_WEIGHT = 1;
+const NORMAL_WEIGHT = 0.5;
+const SIMPLIFY_ATTRIBUTES = [
+  ['TEXCOORD_0', UV_WEIGHT],
+  ['NORMAL', NORMAL_WEIGHT],
+];
 
 const io = new NodeIO().registerExtensions(ALL_EXTENSIONS);
 
@@ -115,6 +123,56 @@ function unprotectMaterials(protegidos) {
   }
 }
 
+/**
+ * Trava (1) todo vértice que divide a posição com outro: depois do `weld()`, só sobram assim os de costura, onde a UV
+ * ou a normal muda de um lado para o outro. O(n) por primitiva.
+ */
+function seamLock(positions, stride) {
+  const vertexCount = positions.length / stride;
+  const lock = new Uint8Array(vertexCount);
+  const first = new Map();
+  for (let i = 0; i < vertexCount; i++) {
+    const key = `${positions[i * stride]},${positions[i * stride + 1]},${positions[i * stride + 2]}`;
+    const j = first.get(key);
+    if (j === undefined) first.set(key, i);
+    else lock[i] = lock[j] = 1;
+  }
+  return lock;
+}
+
+/**
+ * Simplificador para o `simplifyPrimitive` que soma UV e normal da primitiva ao erro (SPEC-0670).
+ *
+ * O `simplify()` do gltf-transform só passa a posição: numa peça plana o erro de qualquer colapso é zero, e onde a UV
+ * não é linear (as ruas do `city_kit`) a textura estica. O `simplifyPrimitive` chama `simplify` depois de compactar a
+ * primitiva, então os atributos lidos aqui casam com as posições recebidas. Os vértices de costura ficam travados
+ * (`seamLock`): mesmo com a UV no erro, o meshoptimizer 0.22 colapsa ao longo da costura e a UV erra até 1,1 no kit.
+ */
+function attributeAwareSimplifier(prim) {
+  return {
+    simplify(indices, positions, stride, target, error, flags) {
+      const attributes = SIMPLIFY_ATTRIBUTES.map(([name, weight]) => [prim.getAttribute(name), weight]).filter(([a]) => a);
+      if (attributes.length === 0) return MeshoptSimplifier.simplify(indices, positions, stride, target, error, flags);
+      const vertexCount = positions.length / stride;
+      const weights = attributes.flatMap(([a, weight]) => Array(a.getElementSize()).fill(weight));
+      const data = new Float32Array(vertexCount * weights.length);
+      let offset = 0;
+      for (const [accessor] of attributes) {
+        const size = accessor.getElementSize();
+        const element = new Array(size);
+        for (let i = 0; i < vertexCount; i++) {
+          accessor.getElement(i, element);
+          for (let c = 0; c < size; c++) data[i * weights.length + offset + c] = element[c];
+        }
+        offset += size;
+      }
+      return MeshoptSimplifier.simplifyWithAttributes(
+        indices, positions, stride, data, weights.length, weights, seamLock(positions, stride), target, error, flags,
+      );
+    },
+  };
+}
+
 /** Aplica o refino. Devolve o relatório. */
 export async function refineDocument(document, { keep = [], keepHierarchy = false, simplifyError = 0 } = {}) {
   // O logger da biblioteca escreve no stdout e quebraria o `--json`, que é
@@ -122,14 +180,20 @@ export async function refineDocument(document, { keep = [], keepHierarchy = fals
   document.setLogger(new Logger(Logger.Verbosity.SILENT));
   const antes = measure(document);
   const avisos = collectWarnings(document, antes);
-  // SPEC-0669: modo só-geometria para kits — nomes, materiais e hierarquia ficam; a paleta e o join não rodam.
+  // SPEC-0670: modo só-geometria para kits — nomes, materiais e hierarquia ficam; a paleta e o join não rodam.
   if (simplifyError > 0) {
     await MeshoptSimplifier.ready;
-    await document.transform(
-      weld(),
-      simplify({ simplifier: MeshoptSimplifier, ratio: 0, error: simplifyError, lockBorder: true }),
-      prune({ keepLeaves: true }),
-    );
+    // `simplifyWithAttributes` fica atrás desta chave no 0.22.0 (versão pinada).
+    MeshoptSimplifier.useExperimentalFeatures = true;
+    await document.transform(weld());
+    for (const mesh of document.getRoot().listMeshes()) {
+      for (const prim of mesh.listPrimitives()) {
+        if (prim.getMode() !== Primitive.Mode.TRIANGLES) continue;
+        const simplifier = attributeAwareSimplifier(prim);
+        simplifyPrimitive(prim, { simplifier, ratio: 0, error: simplifyError, lockBorder: true });
+      }
+    }
+    await document.transform(prune({ keepLeaves: true, keepAttributes: true }));
     return { antes, depois: measure(document), avisos, protegidos: [] };
   }
   const protegidos = protectMaterials(document, keep);
@@ -180,7 +244,7 @@ function linhaDiff(rotulo, antes, depois) {
 }
 
 /**
- * Valor do `--simplify` (SPEC-0669): `0` sem a flag; com a flag, um número finito e positivo ou `NaN`.
+ * Valor do `--simplify` (SPEC-0670): `0` sem a flag; com a flag, um número finito e positivo ou `NaN`.
  * `NaN` faz o `main` recusar antes de tocar no arquivo: cair no caminho da paleta/join sobrescreveria um kit
  * sem os nomes que o jogo procura (ex.: `--simplify --in-place`).
  */
