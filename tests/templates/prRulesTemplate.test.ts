@@ -2,10 +2,10 @@
 import { describe, expect, it } from 'vitest'
 
 // @ts-expect-error — script de CI do template, sem d.ts
-import { checkRules, parseAddedLines, MAX_LINES } from '../../templates/new-project/.github/scripts/pr-rules.mjs'
+import { checkRules, parseAddedLines, MAX_LINES, MAX_TESTS } from '../../templates/new-project/.github/scripts/pr-rules.mjs'
 
-const file = (path: string, lines = 10, status = 'M') => ({ status, path, lines })
-const run = (files: ReturnType<typeof file>[], pendencias = '') => checkRules({ files, added: [], pendencias })
+const file = (path: string, lines = 10, status = 'M', tests = 0) => ({ status, path, lines, tests })
+const run = (files: ReturnType<typeof file>[]) => checkRules({ files, added: [] })
 
 /**
  * Erros de console.log com o arquivo inteiro `source` no head e as linhas `added` (a partir de 1) adicionadas no
@@ -15,14 +15,18 @@ function logErrs(source: string, added?: number[], path = 'game/a.ts'): number {
   const lines = source.split('\n')
   const which = added ?? lines.map((_, i) => i + 1)
   const diff = which.map((line) => ({ path, text: lines[line - 1]!, line }))
-  return checkRules({ files: [], added: diff, pendencias: '', sources: { [path]: source } }).errors.length
+  return checkRules({ files: [], added: diff, sources: { [path]: source } }).errors.length
 }
 
 describe('pr-rules do template (SPEC-0656)', () => {
-  it('reprova código do jogo acima do limite fora das pendências', () => {
+  it('reprova código do jogo acima do limite, sem pendência (SPEC-0668)', () => {
     expect(run([file('game/city.ts', MAX_LINES + 1)]).errors).toHaveLength(1)
     expect(run([file('main.ts', MAX_LINES + 1)]).errors).toHaveLength(1)
-    expect(run([file('game/city.ts', MAX_LINES + 1)], 'game/city.ts\n').errors).toHaveLength(0)
+  })
+
+  it('reprova arquivo de teste do jogo acima do limite de testes (SPEC-0668)', () => {
+    expect(run([file('tests/city.test.ts', 10, 'M', MAX_TESTS + 1)]).errors).toHaveLength(1)
+    expect(run([file('tests/city.test.ts', 10, 'M', MAX_TESTS)]).errors).toHaveLength(0)
   })
 
   it('isenta engine vendorizada, dependências e build', () => {
@@ -48,14 +52,7 @@ describe('pr-rules do template (SPEC-0656)', () => {
   })
 })
 
-describe('pr-rules: revisão do PR (pendências exatas, console.log, leitura do diff)', () => {
-  it('pendência só libera o caminho exato', () => {
-    const big = MAX_LINES + 1
-    expect(run([file('game/city.ts', big)], 'game/city.tsx\n').errors).toHaveLength(1)
-    expect(run([file('main.ts', big)], 'systems/main.ts\n').errors).toHaveLength(1)
-    expect(run([file('game/city.ts', big)], '- `game/city.ts`\n').errors).toHaveLength(0)
-  })
-
+describe('pr-rules: revisão do PR (console.log, leitura do diff)', () => {
   it('console.log: comentário e string não contam; espaço e quebra de linha contam', () => {
     expect(logErrs("const speed = 1 // console.log('speed')")).toBe(0)
     expect(logErrs("const s = 'console.log(x)'")).toBe(0)

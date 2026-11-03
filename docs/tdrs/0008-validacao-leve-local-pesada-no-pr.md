@@ -38,7 +38,7 @@ O repo é público, então minutos de Actions não custam.
 - **PR ganha** o typecheck do engine (`tsconfig.engine.json`, limpo hoje) no job
   de testes e um job `Regras do repo` que checa o **diff** do PR (não o repo
   inteiro, que tem débito herdado): arquivo de código tocado acima de 500 linhas
-  sem estar em `docs/pendencias-refatoracao.md`, `package-lock.json`,
+  (sem pendência; e teste acima de 20 por arquivo, SPEC-0668), `package-lock.json`,
   `console.log` adicionado em `src/`. Registro ausente vira aviso, não erro,
   porque a regra tem exceção para correção trivial.
 - **Host nativo é pulado** quando o PR só toca docs/markdown. O pulo é por `if`

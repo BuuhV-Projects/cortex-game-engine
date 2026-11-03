@@ -1,7 +1,7 @@
 # SPEC-0654 - Gate de PR: regras do repo, nativo condicional e aprovação pelo Greptile
 
 **Data:** 2026-11-01
-**Status:** aceito
+**Status:** aceito (a isenção por `docs/pendencias-refatoracao.md` foi removida pela SPEC-0668)
 
 Decisão e alternativas no [TDR-0008](../tdrs/0008-validacao-leve-local-pesada-no-pr.md).
 

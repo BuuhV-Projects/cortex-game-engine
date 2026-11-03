@@ -1,7 +1,7 @@
 # SPEC-0656 - Regras do repo no PR dos jogos (template de projeto)
 
 **Data:** 2026-11-01
-**Status:** aceito
+**Status:** aceito (a isenção por `docs/pendencias-refatoracao.md` foi removida pela SPEC-0668)
 
 ## Contexto
 
