@@ -10,7 +10,8 @@
 // Uso: node scripts/refine-asset.mjs <arquivo.glb | pasta> [opções]
 import { Logger, NodeIO } from '@gltf-transform/core';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
-import { dedup, join, palette, prune } from '@gltf-transform/functions';
+import { dedup, join, palette, prune, simplify, weld } from '@gltf-transform/functions';
+import { MeshoptSimplifier } from 'meshoptimizer';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -115,12 +116,22 @@ function unprotectMaterials(protegidos) {
 }
 
 /** Aplica o refino. Devolve o relatório. */
-export async function refineDocument(document, { keep = [], keepHierarchy = false } = {}) {
+export async function refineDocument(document, { keep = [], keepHierarchy = false, simplifyError = 0 } = {}) {
   // O logger da biblioteca escreve no stdout e quebraria o `--json`, que é
   // justamente a saída que o Chat IA vai ler.
   document.setLogger(new Logger(Logger.Verbosity.SILENT));
   const antes = measure(document);
   const avisos = collectWarnings(document, antes);
+  // SPEC-0669: modo só-geometria para kits — nomes, materiais e hierarquia ficam; a paleta e o join não rodam.
+  if (simplifyError > 0) {
+    await MeshoptSimplifier.ready;
+    await document.transform(
+      weld(),
+      simplify({ simplifier: MeshoptSimplifier, ratio: 0, error: simplifyError, lockBorder: true }),
+      prune({ keepLeaves: true }),
+    );
+    return { antes, depois: measure(document), avisos, protegidos: [] };
+  }
   const protegidos = protectMaterials(document, keep);
 
   // `join()` funde malhas e come nós pelo caminho. Num asset cujos nós são
@@ -168,6 +179,18 @@ function linhaDiff(rotulo, antes, depois) {
   return `  ${rotulo.padEnd(12)} ${String(antes).padStart(6)} ${seta} ${String(depois).padStart(6)}${ganho}`;
 }
 
+/**
+ * Valor do `--simplify` (SPEC-0669): `0` sem a flag; com a flag, um número finito e positivo ou `NaN`.
+ * `NaN` faz o `main` recusar antes de tocar no arquivo: cair no caminho da paleta/join sobrescreveria um kit
+ * sem os nomes que o jogo procura (ex.: `--simplify --in-place`).
+ */
+export function parseSimplifyError(args) {
+  const i = args.indexOf('--simplify');
+  if (i < 0) return 0;
+  const valor = Number(args[i + 1]);
+  return Number.isFinite(valor) && valor > 0 ? valor : Number.NaN;
+}
+
 function parseArgs(argv) {
   const args = argv.slice(2);
   const valor = (flag) => {
@@ -175,11 +198,12 @@ function parseArgs(argv) {
     return i >= 0 ? args[i + 1] : null;
   };
   return {
-    alvo: args.find((a) => !a.startsWith('--') && args[args.indexOf(a) - 1] !== '--out' && args[args.indexOf(a) - 1] !== '--keep'),
+    alvo: args.find((a) => !a.startsWith('--') && args[args.indexOf(a) - 1] !== '--out' && args[args.indexOf(a) - 1] !== '--keep' && args[args.indexOf(a) - 1] !== '--simplify'),
     out: valor('--out'),
     keep: (valor('--keep') ?? '').split(',').map((s) => s.trim()).filter(Boolean),
     inPlace: args.includes('--in-place'),
     keepHierarchy: args.includes('--keep-hierarchy'),
+    simplifyError: parseSimplifyError(args),
     check: args.includes('--check'),
     json: args.includes('--json'),
   };
@@ -203,7 +227,11 @@ function listarGlbs(alvo) {
 async function main() {
   const opts = parseArgs(process.argv);
   if (!opts.alvo || !fs.existsSync(opts.alvo)) {
-    console.error('uso: node scripts/refine-asset.mjs <arquivo.glb | pasta> [--out <dir>] [--in-place] [--keep Mat1,Mat2] [--keep-hierarchy] [--check] [--json]');
+    console.error('uso: node scripts/refine-asset.mjs <arquivo.glb | pasta> [--out <dir>] [--in-place] [--keep Mat1,Mat2] [--keep-hierarchy] [--simplify <erro, ex. 0.005>] [--check] [--json]');
+    process.exit(1);
+  }
+  if (Number.isNaN(opts.simplifyError)) {
+    console.error('--simplify precisa de um erro positivo (ex.: --simplify 0.005); nada foi alterado');
     process.exit(1);
   }
 
@@ -212,7 +240,7 @@ async function main() {
 
   for (const arquivo of arquivos) {
     const document = await io.read(arquivo);
-    const relatorio = await refineDocument(document, { keep: opts.keep, keepHierarchy: opts.keepHierarchy });
+    const relatorio = await refineDocument(document, { keep: opts.keep, keepHierarchy: opts.keepHierarchy, simplifyError: opts.simplifyError });
     relatorio.arquivo = arquivo;
 
     if (!opts.check) {
