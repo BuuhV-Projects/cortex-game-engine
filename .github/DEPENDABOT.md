@@ -8,12 +8,12 @@ A configuração está em [`dependabot.yml`](dependabot.yml) e a decisão no
 | Tipo | Frequência | Formato | O que fazer |
 |---|---|---|---|
 | **Vulnerabilidade** | imediato | PR individual | Tem prioridade sobre o trabalho em andamento |
-| Patch | semanal | agrupado | Merge com CI verde e Greptile 5/5 |
+| Patch | semanal | agrupado | Merge com CI verde e Claude review 5/5 |
 | Minor | semanal | agrupado | Ler o changelog antes |
 | **Major** | semanal | PR individual | Changelog lido; testar Studio e export nativo |
 | Cargo / template | mensal | por pasta | Ver as seções abaixo |
 
-O PR do Dependabot passa pelo mesmo portão de qualquer PR: CI verde e **Greptile 5/5** antes do
+O PR do Dependabot passa pelo mesmo portão de qualquer PR: CI verde e **Claude review 5/5** antes do
 auto-merge. Atualizar é um ato deliberado.
 
 ## O que precisa ser ligado no repositório
