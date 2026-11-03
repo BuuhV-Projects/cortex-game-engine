@@ -109,14 +109,17 @@ que fez contra elas antes de encerrar.
       prop médio (1,5 a 5 m) ~3 k; veículo ~20 k; prédio ou peça de cidade ~15 k;
       personagem ~10 k.
    3. Kit com peça acima do orçamento:
-      `node native/scripts/refine-asset.mjs <kit.glb> --simplify 0.005 --in-place`.
-      O meshoptimizer simplifica até 0,5% de erro do tamanho da peça, com a borda
-      travada; nós, nomes e materiais ficam iguais. Em kit, nunca rode o
-      `refine-asset` sem `--simplify`: a paleta e o `join` apagam os nomes que o
-      jogo procura.
-   4. Confira a peça mais pesada antes e depois (render ou screenshot). Ficou
-      diferente? Volte o original e avise.
-   5. Não simplifique malha skinada (personagem) nem peça que já cabe no orçamento.
+      `node native/scripts/refine-asset.mjs <kit.glb> --simplify 0.005`.
+      A saída vai para `<kit>.refined.glb`, ao lado; o original fica intacto. O
+      meshoptimizer simplifica até 0,5% de erro do tamanho da peça, com UV, cor de
+      vértice e normal no erro e borda e costuras travadas; nós, nomes e materiais
+      ficam iguais. Malha skinada ou com morph target é pulada (vira aviso). Em kit,
+      nunca rode o `refine-asset` sem `--simplify`: a paleta e o `join` apagam os
+      nomes que o jogo procura.
+   4. Confira a peça mais pesada e uma peça plana texturizada (chão, rua) nas duas
+      versões (render ou screenshot). Ficou igual? Troque o original pelo
+      `.refined.glb`. Ficou diferente? Apague o `.refined.glb` e avise.
+   5. Não simplifique peça que já cabe no orçamento.
 
 ## Estrutura de pastas
 

@@ -129,7 +129,32 @@ describe('refineDocument', () => {
 
     await refineDocument(doc, { simplifyError: 0.005 });
 
-    expect(uvNoPonto(doc, 0.5, 0.5)[1]).toBeCloseTo(1, 3);
+    expect(atributoNoPonto(doc, 'TEXCOORD_0', 0.5, 0.5)[1]).toBeCloseTo(1, 3);
+  });
+
+  it('--simplify mantém degradê de cor de vértice numa face plana (SPEC-0670)', async () => {
+    // AO/degradê assado em COLOR_0: com UV linear, só a cor impede o colapso do meio do plano.
+    const doc = planoSubdividido((x, z) => [x, z]);
+    const prim = doc.getRoot().listMeshes()[0].listPrimitives()[0];
+    const cores: number[] = [];
+    for (let z = 0; z <= GRID; z++) for (let x = 0; x <= GRID; x++) cores.push(1 - Math.abs(2 * z / GRID - 1), 0, 0);
+    prim.setAttribute('COLOR_0', doc.createAccessor().setType('VEC3').setArray(new Float32Array(cores)));
+
+    await refineDocument(doc, { simplifyError: 0.005 });
+
+    expect(atributoNoPonto(doc, 'COLOR_0', 0.5, 0.5)[0]).toBeCloseTo(1, 3);
+  });
+
+  it('--simplify pula malha skinada e avisa (SPEC-0670)', async () => {
+    const doc = planoSubdividido((x, z) => [x, z]);
+    const prim = doc.getRoot().listMeshes()[0].listPrimitives()[0];
+    const vertices = prim.getAttribute('POSITION')!.getCount();
+    prim.setAttribute('JOINTS_0', doc.createAccessor().setType('VEC4').setArray(new Uint16Array(vertices * 4)));
+
+    const r = await refineDocument(doc, { simplifyError: 0.005 });
+
+    expect(r.depois.triangles).toBe(r.antes.triangles);
+    expect(r.avisos.some((a: string) => a.includes('skinada'))).toBe(true);
   });
 
   it('--simplify sem valor válido é recusado, não cai na paleta (SPEC-0670)', () => {
@@ -171,11 +196,12 @@ function planoSubdividido(uv: (x: number, z: number) => [number, number]) {
   return doc;
 }
 
-/** UV interpolada no ponto (x, z) do plano y=0 — o que a textura mostra ali depois da simplificação. */
-function uvNoPonto(doc: Document, x: number, z: number): number[] {
+/** Atributo interpolado no ponto (x, z) do plano y=0 — o que a textura/cor mostra ali depois da simplificação. */
+function atributoNoPonto(doc: Document, nome: string, x: number, z: number): number[] {
   const prim = doc.getRoot().listMeshes()[0].listPrimitives()[0];
   const pos = prim.getAttribute('POSITION')!;
-  const uv = prim.getAttribute('TEXCOORD_0')!;
+  const attr = prim.getAttribute(nome)!;
+  const size = attr.getElementSize();
   const idx = prim.getIndices()!.getArray()!;
   for (let t = 0; t < idx.length; t += 3) {
     const [a, b, c] = [idx[t], idx[t + 1], idx[t + 2]].map((i) => pos.getElement(i, [0, 0, 0]));
@@ -184,8 +210,8 @@ function uvNoPonto(doc: Document, x: number, z: number): number[] {
     const l1 = ((c[2] - a[2]) * (x - c[0]) + (a[0] - c[0]) * (z - c[2])) / det;
     const l = [l0, l1, 1 - l0 - l1];
     if (Math.min(...l) < -1e-6) continue;
-    const uvs = [idx[t], idx[t + 1], idx[t + 2]].map((i) => uv.getElement(i, [0, 0]));
-    return [0, 1].map((k) => l[0] * uvs[0][k] + l[1] * uvs[1][k] + l[2] * uvs[2][k]);
+    const vals = [idx[t], idx[t + 1], idx[t + 2]].map((i) => attr.getElement(i, new Array(size)));
+    return vals[0].map((_, k) => l[0] * vals[0][k] + l[1] * vals[1][k] + l[2] * vals[2][k]);
   }
   throw new Error(`ponto (${x}, ${z}) fora da malha`);
 }

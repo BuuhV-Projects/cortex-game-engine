@@ -14,6 +14,7 @@ import { dedup, join, palette, prune, simplifyPrimitive, weld } from '@gltf-tran
 import { MeshoptSimplifier } from 'meshoptimizer';
 import fs from 'node:fs';
 import path from 'node:path';
+import { trianglesOf } from './kit-tris.mjs';
 
 /** Lado (px) de cada bloco na textura de paleta. Blocos com folga evitam que o
  * filtro bilinear puxe a cor do vizinho. */
@@ -32,11 +33,15 @@ const MAX_MATERIALS = 4;
 const MAX_PRIMITIVES_PER_MESH = 2;
 const MAX_NODES = 24;
 
-// Peso de cada atributo no erro do `--simplify` (SPEC-0670): UV pesa como posição, normal pela metade.
+// Peso de cada atributo no erro do `--simplify` (SPEC-0670): UV (inclusive a de lightmap) e cor de vértice (AO ou
+// degradê assado) pesam como posição, normal pela metade.
 const UV_WEIGHT = 1;
+const COLOR_WEIGHT = 1;
 const NORMAL_WEIGHT = 0.5;
 const SIMPLIFY_ATTRIBUTES = [
   ['TEXCOORD_0', UV_WEIGHT],
+  ['TEXCOORD_1', UV_WEIGHT],
+  ['COLOR_0', COLOR_WEIGHT],
   ['NORMAL', NORMAL_WEIGHT],
 ];
 
@@ -51,10 +56,7 @@ function measure(document) {
   for (const mesh of meshes) {
     for (const prim of mesh.listPrimitives()) {
       primitives++;
-      const indices = prim.getIndices();
-      const position = prim.getAttribute('POSITION');
-      const count = indices ? indices.getCount() : (position?.getCount() ?? 0);
-      triangles += Math.floor(count / 3);
+      triangles += trianglesOf(prim);
     }
   }
   return {
@@ -189,6 +191,11 @@ export async function refineDocument(document, { keep = [], keepHierarchy = fals
     for (const mesh of document.getRoot().listMeshes()) {
       for (const prim of mesh.listPrimitives()) {
         if (prim.getMode() !== Primitive.Mode.TRIANGLES) continue;
+        // O erro não vê peso de osso nem delta de morph: o defeito só apareceria animando.
+        if (prim.getAttribute('JOINTS_0') || prim.listTargets().length > 0) {
+          avisos.push(`${mesh.getName()}: malha skinada ou com morph target, não simplificada`);
+          continue;
+        }
         const simplifier = attributeAwareSimplifier(prim);
         simplifyPrimitive(prim, { simplifier, ratio: 0, error: simplifyError, lockBorder: true });
       }

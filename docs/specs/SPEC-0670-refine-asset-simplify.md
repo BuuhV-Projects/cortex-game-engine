@@ -23,7 +23,8 @@ dependência de desenvolvimento), e `prune({ keepLeaves: true, keepAttributes: t
 de nó (e às vezes de material) em runtime, então hierarquia, nomes e materiais ficam como estavam. Só a geometria muda.
 
 - `ratio: 0` + `error`: simplifica até o erro pedido (fração do tamanho da malha), sem meta de contagem.
-- **UV e normal entram no erro** (`simplifyWithAttributes`, peso 1 na `TEXCOORD_0` e 0,5 na `NORMAL`). O `simplify()`
+- **UV, cor de vértice e normal entram no erro** (`simplifyWithAttributes`, peso 1 na `TEXCOORD_0`, na `TEXCOORD_1`
+  — lightmap — e na `COLOR_0` — AO ou degradê assado —, e 0,5 na `NORMAL`). O `simplify()`
   do gltf-transform 4.4.1 passa só a posição ao meshoptimizer. Numa peça plana o erro geométrico de qualquer colapso
   é zero, então ele junta os vértices internos à vontade; onde a UV não é linear na posição (asfalto, faixa e meio-fio
   das ruas do `city_kit` do DDD 00, 03/11), a textura esticava em listras ao longo da pista. Com a UV no erro, plano
@@ -33,6 +34,10 @@ de nó (e às vezes de material) em runtime, então hierarquia, nomes e materiai
   costura: no `city_kit`, 36 peças com a UV deslocada mais de 0,01 (até 1,1 no `Trim_FirstFloor_Wall`). Com a trava,
   o pior caso fica em ~0,03.
 - `lockBorder: true`: borda aberta não anda, para não abrir costura entre peças que se encostam.
+- **Malha skinada ou com morph target não é simplificada** (`JOINTS_0` ou `listTargets()`): o erro do meshoptimizer
+  não vê peso de osso nem delta de morph, e o defeito só apareceria animando. Ela fica como estava e vira aviso no
+  relatório.
+- O relatório conta triângulos pelo modo da primitiva (`trianglesOf` do `kit-tris.mjs`): faixa e leque também.
 
 ### Medido no `city_kit` do DDD 00 (03/11)
 
@@ -57,6 +62,8 @@ no orçamento. LOD por distância em runtime fica para quando um nível só não
 
 - O passo vira regra para todo kit novo: regra 6 da seção de performance do `AGENTS.md` do template
   (`templates/new-project/AGENTS.md`), com o orçamento por papel da peça e o `native/scripts/kit-tris.mjs` para medir.
+  A regra grava a saída ao lado (`<kit>.refined.glb`, sem `--in-place`): o kit recém-chegado costuma não estar no
+  git, e sobrescrevê-lo apagaria o original que o passo de conferir manda restaurar.
 
 - Rodar no kit é decisão do jogo (o kit é dele): conferir a aparência antes de commitar, porque `error` alto
   arredonda cornija e dente de engrenagem.
