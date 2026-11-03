@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { Document } from '@gltf-transform/core';
 // @ts-expect-error — script .mjs sem tipos; é ferramenta de asset, não API do engine.
-import { refineDocument } from '../../native/scripts/refine-asset.mjs';
+import { parseSimplifyError, refineDocument } from '../../native/scripts/refine-asset.mjs';
 
 /** Cor sólida distinta por material, que é o caso em que a paleta se aplica. */
 function criarPecaColorida(
@@ -109,4 +109,109 @@ describe('refineDocument', () => {
     expect(avisos.some((a: string) => a.includes('doubleSided'))).toBe(true);
     expect(avisos.some((a: string) => a.includes('materiais'))).toBe(true);
   });
+
+  it('--simplify reduz triângulos de malha densa e mantém nós e materiais (SPEC-0670)', async () => {
+    // Coplanar com UV linear na posição: o colapso não muda a interpolação, então simplifica quase tudo.
+    const doc = planoSubdividido((x, z) => [x * 4, z * 4]);
+
+    const r = await refineDocument(doc, { simplifyError: 0.005 });
+
+    expect(r.antes.triangles).toBe(GRID * GRID * 2);
+    expect(r.depois.triangles).toBeLessThan(r.antes.triangles / 10);
+    expect(doc.getRoot().listNodes().map((n) => n.getName())).toEqual(['peca-trim']);
+    expect(doc.getRoot().listMaterials().map((m) => m.getName())).toEqual(['MI_Trim']);
+  });
+
+  it('--simplify mantém a crista da UV espelhada do asfalto — sem ela a textura estica (SPEC-0670)', async () => {
+    // Como o asfalto do Street_2Lane do city_kit: plano, com v indo 0 -> 1 -> 0 ao longo da pista. Só com a
+    // posição no erro, a fileira do meio (v = 1) sumia e a metade da pista ficava com v constante.
+    const doc = planoSubdividido((x, z) => [x, 1 - Math.abs(2 * z - 1)]);
+
+    await refineDocument(doc, { simplifyError: 0.005 });
+
+    expect(atributoNoPonto(doc, 'TEXCOORD_0', 0.5, 0.5)[1]).toBeCloseTo(1, 3);
+  });
+
+  it('--simplify mantém degradê de cor de vértice numa face plana (SPEC-0670)', async () => {
+    // AO/degradê assado em COLOR_0: com UV linear, só a cor impede o colapso do meio do plano.
+    const doc = planoSubdividido((x, z) => [x, z]);
+    const prim = doc.getRoot().listMeshes()[0].listPrimitives()[0];
+    const cores: number[] = [];
+    for (let z = 0; z <= GRID; z++) for (let x = 0; x <= GRID; x++) cores.push(1 - Math.abs(2 * z / GRID - 1), 0, 0);
+    prim.setAttribute('COLOR_0', doc.createAccessor().setType('VEC3').setArray(new Float32Array(cores)));
+
+    await refineDocument(doc, { simplifyError: 0.005 });
+
+    expect(atributoNoPonto(doc, 'COLOR_0', 0.5, 0.5)[0]).toBeCloseTo(1, 3);
+  });
+
+  it('--simplify pula malha skinada e avisa (SPEC-0670)', async () => {
+    const doc = planoSubdividido((x, z) => [x, z]);
+    const prim = doc.getRoot().listMeshes()[0].listPrimitives()[0];
+    const vertices = prim.getAttribute('POSITION')!.getCount();
+    prim.setAttribute('JOINTS_0', doc.createAccessor().setType('VEC4').setArray(new Uint16Array(vertices * 4)));
+
+    const r = await refineDocument(doc, { simplifyError: 0.005 });
+
+    expect(r.depois.triangles).toBe(r.antes.triangles);
+    expect(r.avisos.some((a: string) => a.includes('skinada'))).toBe(true);
+  });
+
+  it('--simplify sem valor válido é recusado, não cai na paleta (SPEC-0670)', () => {
+    expect(parseSimplifyError(['kit.glb'])).toBe(0);
+    expect(parseSimplifyError(['kit.glb', '--simplify', '0.005'])).toBe(0.005);
+    expect(parseSimplifyError(['kit.glb', '--simplify', '--in-place'])).toBeNaN();
+    expect(parseSimplifyError(['kit.glb', '--simplify'])).toBeNaN();
+    expect(parseSimplifyError(['kit.glb', '--simplify', '0'])).toBeNaN();
+    expect(parseSimplifyError(['kit.glb', '--simplify', '-1'])).toBeNaN();
+  });
 });
+
+const GRID = 40;
+
+/** Plano GRIDxGRID subdividido em y=0, com a UV de cada vértice dada por `uv(x, z)` (x e z em 0..1). */
+function planoSubdividido(uv: (x: number, z: number) => [number, number]) {
+  const doc = new Document();
+  const pos: number[] = [];
+  const tex: number[] = [];
+  for (let z = 0; z <= GRID; z++) {
+    for (let x = 0; x <= GRID; x++) {
+      pos.push(x / GRID, 0, z / GRID);
+      tex.push(...uv(x / GRID, z / GRID));
+    }
+  }
+  const idx: number[] = [];
+  for (let z = 0; z < GRID; z++) {
+    for (let x = 0; x < GRID; x++) {
+      const a = z * (GRID + 1) + x;
+      idx.push(a, a + GRID + 1, a + 1, a + 1, a + GRID + 1, a + GRID + 2);
+    }
+  }
+  const prim = doc.createPrimitive()
+    .setAttribute('POSITION', doc.createAccessor().setType('VEC3').setArray(new Float32Array(pos)))
+    .setAttribute('TEXCOORD_0', doc.createAccessor().setType('VEC2').setArray(new Float32Array(tex)))
+    .setIndices(doc.createAccessor().setType('SCALAR').setArray(new Uint32Array(idx)))
+    .setMaterial(doc.createMaterial('MI_Trim'));
+  doc.createScene().addChild(doc.createNode('peca-trim').setMesh(doc.createMesh('trim').addPrimitive(prim)));
+  return doc;
+}
+
+/** Atributo interpolado no ponto (x, z) do plano y=0 — o que a textura/cor mostra ali depois da simplificação. */
+function atributoNoPonto(doc: Document, nome: string, x: number, z: number): number[] {
+  const prim = doc.getRoot().listMeshes()[0].listPrimitives()[0];
+  const pos = prim.getAttribute('POSITION')!;
+  const attr = prim.getAttribute(nome)!;
+  const size = attr.getElementSize();
+  const idx = prim.getIndices()!.getArray()!;
+  for (let t = 0; t < idx.length; t += 3) {
+    const [a, b, c] = [idx[t], idx[t + 1], idx[t + 2]].map((i) => pos.getElement(i, [0, 0, 0]));
+    const det = (b[2] - c[2]) * (a[0] - c[0]) + (c[0] - b[0]) * (a[2] - c[2]);
+    const l0 = ((b[2] - c[2]) * (x - c[0]) + (c[0] - b[0]) * (z - c[2])) / det;
+    const l1 = ((c[2] - a[2]) * (x - c[0]) + (a[0] - c[0]) * (z - c[2])) / det;
+    const l = [l0, l1, 1 - l0 - l1];
+    if (Math.min(...l) < -1e-6) continue;
+    const vals = [idx[t], idx[t + 1], idx[t + 2]].map((i) => attr.getElement(i, new Array(size)));
+    return vals[0].map((_, k) => l[0] * vals[0][k] + l[1] * vals[1][k] + l[2] * vals[2][k]);
+  }
+  throw new Error(`ponto (${x}, ${z}) fora da malha`);
+}

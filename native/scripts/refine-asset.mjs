@@ -8,11 +8,13 @@
 // e transforma cada peça numa draw.
 //
 // Uso: node scripts/refine-asset.mjs <arquivo.glb | pasta> [opções]
-import { Logger, NodeIO } from '@gltf-transform/core';
+import { Logger, NodeIO, Primitive } from '@gltf-transform/core';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
-import { dedup, join, palette, prune } from '@gltf-transform/functions';
+import { dedup, join, palette, prune, simplifyPrimitive, weld } from '@gltf-transform/functions';
+import { MeshoptSimplifier } from 'meshoptimizer';
 import fs from 'node:fs';
 import path from 'node:path';
+import { trianglesOf } from './kit-tris.mjs';
 
 /** Lado (px) de cada bloco na textura de paleta. Blocos com folga evitam que o
  * filtro bilinear puxe a cor do vizinho. */
@@ -31,6 +33,18 @@ const MAX_MATERIALS = 4;
 const MAX_PRIMITIVES_PER_MESH = 2;
 const MAX_NODES = 24;
 
+// Peso de cada atributo no erro do `--simplify` (SPEC-0670): UV (inclusive a de lightmap) e cor de vértice (AO ou
+// degradê assado) pesam como posição, normal pela metade.
+const UV_WEIGHT = 1;
+const COLOR_WEIGHT = 1;
+const NORMAL_WEIGHT = 0.5;
+const SIMPLIFY_ATTRIBUTES = [
+  ['TEXCOORD_0', UV_WEIGHT],
+  ['TEXCOORD_1', UV_WEIGHT],
+  ['COLOR_0', COLOR_WEIGHT],
+  ['NORMAL', NORMAL_WEIGHT],
+];
+
 const io = new NodeIO().registerExtensions(ALL_EXTENSIONS);
 
 /** Números que descrevem o peso de um asset para o render. */
@@ -42,10 +56,7 @@ function measure(document) {
   for (const mesh of meshes) {
     for (const prim of mesh.listPrimitives()) {
       primitives++;
-      const indices = prim.getIndices();
-      const position = prim.getAttribute('POSITION');
-      const count = indices ? indices.getCount() : (position?.getCount() ?? 0);
-      triangles += Math.floor(count / 3);
+      triangles += trianglesOf(prim);
     }
   }
   return {
@@ -114,13 +125,84 @@ function unprotectMaterials(protegidos) {
   }
 }
 
+/**
+ * Trava (1) todo vértice que divide a posição com outro: depois do `weld()`, só sobram assim os de costura, onde a UV
+ * ou a normal muda de um lado para o outro. O(n) por primitiva.
+ */
+function seamLock(positions, stride) {
+  const vertexCount = positions.length / stride;
+  const lock = new Uint8Array(vertexCount);
+  const first = new Map();
+  for (let i = 0; i < vertexCount; i++) {
+    const key = `${positions[i * stride]},${positions[i * stride + 1]},${positions[i * stride + 2]}`;
+    const j = first.get(key);
+    if (j === undefined) first.set(key, i);
+    else lock[i] = lock[j] = 1;
+  }
+  return lock;
+}
+
+/**
+ * Simplificador para o `simplifyPrimitive` que soma UV e normal da primitiva ao erro (SPEC-0670).
+ *
+ * O `simplify()` do gltf-transform só passa a posição: numa peça plana o erro de qualquer colapso é zero, e onde a UV
+ * não é linear (as ruas do `city_kit`) a textura estica. O `simplifyPrimitive` chama `simplify` depois de compactar a
+ * primitiva, então os atributos lidos aqui casam com as posições recebidas. Os vértices de costura ficam travados
+ * (`seamLock`): mesmo com a UV no erro, o meshoptimizer 0.22 colapsa ao longo da costura e a UV erra até 1,1 no kit.
+ */
+function attributeAwareSimplifier(prim) {
+  return {
+    simplify(indices, positions, stride, target, error, flags) {
+      const attributes = SIMPLIFY_ATTRIBUTES.map(([name, weight]) => [prim.getAttribute(name), weight]).filter(([a]) => a);
+      if (attributes.length === 0) return MeshoptSimplifier.simplify(indices, positions, stride, target, error, flags);
+      const vertexCount = positions.length / stride;
+      const weights = attributes.flatMap(([a, weight]) => Array(a.getElementSize()).fill(weight));
+      const data = new Float32Array(vertexCount * weights.length);
+      let offset = 0;
+      for (const [accessor] of attributes) {
+        const size = accessor.getElementSize();
+        const element = new Array(size);
+        for (let i = 0; i < vertexCount; i++) {
+          accessor.getElement(i, element);
+          for (let c = 0; c < size; c++) data[i * weights.length + offset + c] = element[c];
+        }
+        offset += size;
+      }
+      return MeshoptSimplifier.simplifyWithAttributes(
+        indices, positions, stride, data, weights.length, weights, seamLock(positions, stride), target, error, flags,
+      );
+    },
+  };
+}
+
 /** Aplica o refino. Devolve o relatório. */
-export async function refineDocument(document, { keep = [], keepHierarchy = false } = {}) {
+export async function refineDocument(document, { keep = [], keepHierarchy = false, simplifyError = 0 } = {}) {
   // O logger da biblioteca escreve no stdout e quebraria o `--json`, que é
   // justamente a saída que o Chat IA vai ler.
   document.setLogger(new Logger(Logger.Verbosity.SILENT));
   const antes = measure(document);
   const avisos = collectWarnings(document, antes);
+  // SPEC-0670: modo só-geometria para kits — nomes, materiais e hierarquia ficam; a paleta e o join não rodam.
+  if (simplifyError > 0) {
+    await MeshoptSimplifier.ready;
+    // `simplifyWithAttributes` fica atrás desta chave no 0.22.0 (versão pinada).
+    MeshoptSimplifier.useExperimentalFeatures = true;
+    await document.transform(weld());
+    for (const mesh of document.getRoot().listMeshes()) {
+      for (const prim of mesh.listPrimitives()) {
+        if (prim.getMode() !== Primitive.Mode.TRIANGLES) continue;
+        // O erro não vê peso de osso nem delta de morph: o defeito só apareceria animando.
+        if (prim.getAttribute('JOINTS_0') || prim.listTargets().length > 0) {
+          avisos.push(`${mesh.getName()}: malha skinada ou com morph target, não simplificada`);
+          continue;
+        }
+        const simplifier = attributeAwareSimplifier(prim);
+        simplifyPrimitive(prim, { simplifier, ratio: 0, error: simplifyError, lockBorder: true });
+      }
+    }
+    await document.transform(prune({ keepLeaves: true, keepAttributes: true }));
+    return { antes, depois: measure(document), avisos, protegidos: [] };
+  }
   const protegidos = protectMaterials(document, keep);
 
   // `join()` funde malhas e come nós pelo caminho. Num asset cujos nós são
@@ -168,6 +250,18 @@ function linhaDiff(rotulo, antes, depois) {
   return `  ${rotulo.padEnd(12)} ${String(antes).padStart(6)} ${seta} ${String(depois).padStart(6)}${ganho}`;
 }
 
+/**
+ * Valor do `--simplify` (SPEC-0670): `0` sem a flag; com a flag, um número finito e positivo ou `NaN`.
+ * `NaN` faz o `main` recusar antes de tocar no arquivo: cair no caminho da paleta/join sobrescreveria um kit
+ * sem os nomes que o jogo procura (ex.: `--simplify --in-place`).
+ */
+export function parseSimplifyError(args) {
+  const i = args.indexOf('--simplify');
+  if (i < 0) return 0;
+  const valor = Number(args[i + 1]);
+  return Number.isFinite(valor) && valor > 0 ? valor : Number.NaN;
+}
+
 function parseArgs(argv) {
   const args = argv.slice(2);
   const valor = (flag) => {
@@ -175,11 +269,12 @@ function parseArgs(argv) {
     return i >= 0 ? args[i + 1] : null;
   };
   return {
-    alvo: args.find((a) => !a.startsWith('--') && args[args.indexOf(a) - 1] !== '--out' && args[args.indexOf(a) - 1] !== '--keep'),
+    alvo: args.find((a) => !a.startsWith('--') && args[args.indexOf(a) - 1] !== '--out' && args[args.indexOf(a) - 1] !== '--keep' && args[args.indexOf(a) - 1] !== '--simplify'),
     out: valor('--out'),
     keep: (valor('--keep') ?? '').split(',').map((s) => s.trim()).filter(Boolean),
     inPlace: args.includes('--in-place'),
     keepHierarchy: args.includes('--keep-hierarchy'),
+    simplifyError: parseSimplifyError(args),
     check: args.includes('--check'),
     json: args.includes('--json'),
   };
@@ -203,7 +298,11 @@ function listarGlbs(alvo) {
 async function main() {
   const opts = parseArgs(process.argv);
   if (!opts.alvo || !fs.existsSync(opts.alvo)) {
-    console.error('uso: node scripts/refine-asset.mjs <arquivo.glb | pasta> [--out <dir>] [--in-place] [--keep Mat1,Mat2] [--keep-hierarchy] [--check] [--json]');
+    console.error('uso: node scripts/refine-asset.mjs <arquivo.glb | pasta> [--out <dir>] [--in-place] [--keep Mat1,Mat2] [--keep-hierarchy] [--simplify <erro, ex. 0.005>] [--check] [--json]');
+    process.exit(1);
+  }
+  if (Number.isNaN(opts.simplifyError)) {
+    console.error('--simplify precisa de um erro positivo (ex.: --simplify 0.005); nada foi alterado');
     process.exit(1);
   }
 
@@ -212,7 +311,7 @@ async function main() {
 
   for (const arquivo of arquivos) {
     const document = await io.read(arquivo);
-    const relatorio = await refineDocument(document, { keep: opts.keep, keepHierarchy: opts.keepHierarchy });
+    const relatorio = await refineDocument(document, { keep: opts.keep, keepHierarchy: opts.keepHierarchy, simplifyError: opts.simplifyError });
     relatorio.arquivo = arquivo;
 
     if (!opts.check) {

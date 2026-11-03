@@ -10,8 +10,8 @@ O host nativo renderiza num alvo offscreen de `janela × renderScale` e reduz pa
 e jogador nenhum define variável de ambiente.
 
 O 2.0 nasceu para o contorno fino do teste4 (moedas com inverted-hull). Num jogo de mundo aberto ele custa
-caro: no DDD 00 (RX 6600, 1080p, meio-dia, sol), a GPU leva 95 ms com 2.0 e 68 ms com 1.0. São quatro
-vezes mais pixels sombreados por um serrilhado que a cena não tem.
+caro em GPU mais fraca: são quatro vezes mais pixels sombreados. No DDD 00 (RX 6600, 1080p, meio-dia, sol, 03/11),
+a GPU leva 8,6 ms com 2.0 e 3,9 ms com 1.0. (Os 95/68 ms medidos em 02/11 vinham de outro processo usando a placa.)
 
 ## Decisão
 
