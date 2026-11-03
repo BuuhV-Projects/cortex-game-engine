@@ -1,19 +1,27 @@
 import { describe, expect, it } from 'vitest'
-import { checkRules, parseAddedLines, MAX_LINES } from '../../.github/scripts/pr-rules.mjs'
+import { checkRules, countTests, parseAddedLines, MAX_LINES, MAX_TESTS } from '../../.github/scripts/pr-rules.mjs'
 
-const file = (path: string, lines = 10, status = 'M') => ({ status, path, lines })
-const run = (files: ReturnType<typeof file>[], added: { path: string; text: string }[] = [], pendencias = '') =>
-  checkRules({ files, added, pendencias })
+const file = (path: string, lines = 10, status = 'M', tests = 0) => ({ status, path, lines, tests })
+const run = (files: ReturnType<typeof file>[], added: { path: string; text: string }[] = []) => checkRules({ files, added })
 
 describe('pr-rules (SPEC-0654)', () => {
   it('reprova package-lock.json', () => {
     expect(run([file('package-lock.json', 1, 'A')]).errors).toHaveLength(1)
   })
 
-  it('reprova código acima do limite fora das pendências', () => {
+  it('reprova código acima do limite, sem pendência (SPEC-0668)', () => {
     expect(run([file('src/a.ts', MAX_LINES + 1)]).errors).toHaveLength(1)
     expect(run([file('src/a.ts', MAX_LINES)]).errors).toHaveLength(0)
-    expect(run([file('src/a.ts', MAX_LINES + 1)], [], '- src/a.ts\n').errors).toHaveLength(0)
+  })
+
+  it('reprova arquivo de teste acima do limite de testes (SPEC-0668)', () => {
+    expect(run([file('tests/a.test.ts', 10, 'M', MAX_TESTS + 1)]).errors).toHaveLength(1)
+    expect(run([file('tests/a.test.ts', 10, 'M', MAX_TESTS)]).errors).toHaveLength(0)
+  })
+
+  it('conta it/test com modificador, um it.each por vez', () => {
+    const src = ["it('a', f)", "  test.skip('b', f)", "  it.each([1, 2])('c', f)", "describe('d', f)", "  // it('x')", 'await it2()']
+    expect(countTests(src.join('\n'))).toBe(3)
   })
 
   it('isenta terceiros, dados e arquivos removidos', () => {

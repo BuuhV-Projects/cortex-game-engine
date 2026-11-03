@@ -36,15 +36,16 @@ Se um `yarn add` falhar com `EBUSY ... electron\dist\resources\default_app.asar`
 o **Studio aberto** segurando o arquivo: feche o Studio e repita o comando — não
 troque pro npm pra contornar. Versões sempre **pinadas** (`-E`), nunca `latest`.
 
-## REGRA: arquivo de código com no máximo 500 linhas
+## REGRA ABSOLUTA: 500 linhas por arquivo e 20 testes por arquivo de teste — sem pendência
 
-Nenhum arquivo de código (TS, JS, C++, Python, shell…) passa de **500 linhas**. Passou disso, tem que
-refatorar: dividir por responsabilidade em módulos menores.
+Nenhum arquivo de código (TS, JS, C++, Python, shell…) passa de **500 linhas**, e nenhum arquivo de
+teste (`*.test.*` / `*.spec.*`) passa de **20 testes** (`it`/`test`). Passou disso, refatora: divide por
+responsabilidade (código) ou por assunto (testes).
 
-Se você mexer num arquivo que **já tem mais de 500 linhas** e a refatoração não couber na tarefa,
-registre-o em `docs/pendencias-refatoracao.md`: só o caminho do arquivo, uma linha por arquivo, sem
-repetir quem já está lá. Quem refatorar tira a linha. Não contam: dados (`.json`), assets, código de
-terceiros (`third_party/`, `vendor/`) e docs gerados (`docs/cortex-game-engine/api/`).
+**Não existe registro de pendência.** Mexeu num arquivo que **já** passa do limite, refatora na mesma
+mudança: o problema é de quem encontrou o arquivo. O gate do PR (`pr-rules.mjs`) reprova qualquer arquivo
+tocado acima do limite (SPEC-0668). Não contam: dados (`.json`), assets, código de terceiros
+(`third_party/`, `vendor/`) e docs gerados (`docs/cortex-game-engine/api/`).
 
 ## REGRA ABSOLUTA: registro ANTES do código (spec/ADR primeiro)
 
