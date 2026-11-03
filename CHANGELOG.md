@@ -1,3 +1,10 @@
+## [0.100.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.100.0...v0.100.1) (2026-11-03)
+
+
+### Bug Fixes
+
+* **ci:** Claude review comenta com o GITHUB_TOKEN; a troca pelo token do App dava 401 (TDR-0012) ([7691947](https://github.com/BuuhV-Projects/cortex-game-engine/commit/76919479794bc5983bc04d84a261fd34141944db))
+
 # [0.100.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.99.1...v0.100.0) (2026-11-03)
 
 
