@@ -119,7 +119,9 @@ que fez contra elas antes de encerrar.
    4. Confira a peça mais pesada e uma peça plana texturizada (chão, rua) nas duas
       versões (render ou screenshot). Ficou igual? Troque o original pelo
       `.refined.glb`. Ficou diferente? Apague o `.refined.glb` e avise.
-   5. Não simplifique peça que já cabe no orçamento.
+   5. Nenhuma peça passa do orçamento? Não rode o passo 3. Quando roda, ele
+      simplifica o `.glb` inteiro, inclusive as peças que já cabiam; o erro
+      travado segura a aparência delas, que só perdem o que não se vê.
 
 ## Estrutura de pastas
 
