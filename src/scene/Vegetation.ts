@@ -60,6 +60,7 @@ export class Vegetation {
   /** Instâncias escondidas pela estrada (SPEC-0631 §3b) — não mexe em `instances`. */
   private hidden: Uint8Array | null = null;
   private readonly capacity: number;
+  private _version = 0;
 
   // Escratch reusado no sync (evita alocar por instância).
   private readonly _m = new Matrix4();
@@ -116,6 +117,14 @@ export class Vegetation {
     this.subs.length = 0;
     this.buildFrom(source);
     this.sync(); // reaplica as instâncias atuais no modelo novo
+  }
+
+  /**
+   * Sobe a cada mudança das instâncias (ou da máscara de escondidas / do modelo): quem guarda uma cópia
+   * derivada delas — os troncos do {@link CharacterPhysicsSystem} — só relê quando muda (SPEC-0674).
+   */
+  get version(): number {
+    return this._version;
   }
 
   /** Número de instâncias espalhadas. */
@@ -218,6 +227,7 @@ export class Vegetation {
 
   /** Reescreve as matrizes de instância de todas as sub-malhas a partir de `instances`. */
   private sync(): void {
+    this._version++;
     const n = this.count;
     for (const { mesh, local } of this.subs) {
       mesh.count = n;
