@@ -45,6 +45,12 @@ o código/JSON. Lógica de jogo vive em `Systems`/`Components` (ECS).
   O perfil por sistema (`enableSystemProfile`, SPEC-0236) acumula por
   `system.profileLabel ?? constructor.name`: todo sistema da engine declara o seu
   `profileLabel`, senão o bundle minificado mostra `fx`, `DBe`… (SPEC-0671).
+  **Query cacheada** (SPEC-0673): o `tick` reusa o array de cada sistema (chave = identidade
+  do `requiredComponents`) enquanto a **versão estrutural** (`src/ecs/structureVersion.ts`,
+  global) não muda — sobe em `addComponent`/`removeComponent`/`createEntity`/`destroyEntity`/
+  `clear`. ⚠️ O array que o `update` recebe é **compartilhado entre quadros: só leitura**.
+  `world.query()` público segue devolvendo array novo. O `Object3DSyncSystem` só escreve no
+  `Object3D` o que difere do transform (sem recalcular quaternion em entidade parada).
 - **Ordem do frame no `Game`** (SPEC-0351): input → `onUpdate` → `world.tick` →
   `onLateUpdate` → UI → editor → render. Quem anda o personagem é System (dentro do
   `world.tick`): lógica do jogo que **lê** esse movimento (animar pelo passo, seguir um
