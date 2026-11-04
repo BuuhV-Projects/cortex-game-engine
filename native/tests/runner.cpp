@@ -16,6 +16,7 @@ void testWindowSizeParse();
 void testGcGenerationFromName();
 void testGcTotalsSeparateGenerations();
 void testGcOccupancyTargetKeepsMarginBelowCap();
+void testNapiBindGroupSplitsJsAndReplay();
 void testPassTimingIgnoresSlotsBeyondUsed();
 void testPassTimingSkipsInvalidPairs();
 void testPassTimingConvertsTicksByPeriod();
@@ -213,6 +214,7 @@ int main() {
   tests::testGcGenerationFromName();
   tests::testGcTotalsSeparateGenerations();
   tests::testGcOccupancyTargetKeepsMarginBelowCap();
+  tests::testNapiBindGroupSplitsJsAndReplay();
   tests::testPassTimingIgnoresSlotsBeyondUsed();
   tests::testPassTimingSkipsInvalidPairs();
   tests::testPassTimingConvertsTicksByPeriod();

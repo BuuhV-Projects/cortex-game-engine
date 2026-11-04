@@ -18,6 +18,7 @@
  */
 import { Matrix3, type Layers, type Material, type Object3D } from 'three';
 import { debug } from '../../core/debug.js';
+import { traceNativeRefusal } from '../../core/perfTrace/traceCounters.js';
 import type { DrawBatchBridge } from '../DrawBatch.js';
 import type { NativeDrawer, NativeEntry } from '../RenderServer.js';
 import { NO_VERSION } from '../RenderServerTypes.js';
@@ -235,6 +236,7 @@ export class NativeRenderer implements NativeDrawer {
       this._byObject.set(object, { material, geometry, version, instanceColor, reason });
     }
     this._refusals.set(reason, (this._refusals.get(reason) ?? 0) + 1);
+    traceNativeRefusal(reason); // SPEC-0688
     this.stats.refused++;
     return null;
   }

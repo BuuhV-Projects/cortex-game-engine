@@ -22,6 +22,7 @@
 import { beginSection, endSection } from './RenderSections.js';
 import type { Object3D } from 'three';
 import { debug } from '../core/debug.js';
+import { traceRegisterRenderServer } from '../core/perfTrace/traceCounters.js';
 import { queryFlagRequested } from './TransformOnlyRefresh.js';
 import {
   buildServerInstance,
@@ -117,7 +118,9 @@ export class RenderServer {
     return this._ids[i]! - this._ids[j]!;
   };
 
-  constructor(private readonly _access: ServerAccess) {}
+  constructor(private readonly _access: ServerAccess) {
+    traceRegisterRenderServer(this.stats); // SPEC-0688: deltas no perf-trace
+  }
 
   /**
    * Start of a top-level projection of the mirrored scene (not a shadow pass).
