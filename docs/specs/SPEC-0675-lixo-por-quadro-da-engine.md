@@ -134,6 +134,12 @@ Microbench de alocação (`heapUsed` antes/depois de rodadas de chamadas, menor 
 JIT. O V8 tem objetos menores que o Hermes, e com JIT otimiza o iterador do `Set` que o Hermes aloca por passo: os
 números comparam antes e depois, não somam com o nativo.
 
+O `vegetationWriteBench` também compara o **tempo** do `setInstances` com o caminho antigo, no mesmo processo. Na
+máquina local o caminho novo tem de ser 1,5× mais rápido (medido ~3×). No runner do CI (máquina compartilhada) a mesma
+medida deu ~1,3× e reprovou um PR sem relação com a `Vegetation` (cortex-game-engine#53, 2026-11-04): com `CI`
+definido, só se exige que o caminho novo não seja mais lento. A asserção de bytes por chamada não depende de tempo e
+vale nos dois.
+
 | rotina | antes | depois |
 | --- | --- | --- |
 | `World.tick`, 2,1 mil entidades, 25 sistemas `[]` + 3 com 2 componentes, com JIT | 88 KB/tick | 66 B/tick |
