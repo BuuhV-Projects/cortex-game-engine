@@ -13,7 +13,7 @@ e as alternativas estão no TDR-0011.
 Workflow `.github/workflows/claude-review.yml`:
 
 - **Gatilho:** `pull_request_target` (`opened`, `synchronize`, `reopened`,
-  `ready_for_review`) na `main`. Pula draft e PR de fork. Push novo cancela a
+  `ready_for_review`) em PR para qualquer base (TDR-0014; antes só na `main`). Pula draft e PR de fork. Push novo cancela a
   revisão anterior do mesmo PR.
 - **Checkout:** `main` na raiz (a action exige um repo git ali e restaura dela o
   `.claude/` e o `CLAUDE.md`); head do PR em `pr-head/` com histórico completo,

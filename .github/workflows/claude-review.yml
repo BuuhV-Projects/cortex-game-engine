@@ -4,8 +4,9 @@ name: Claude review
 # comentários inline no diff + nota 1–5; com 5/5 no head, aprova (o ruleset da
 # `main` exige 1 aprovação, TDR-0008).
 #
-# Segurança: `pull_request_target` roda SEMPRE este arquivo da `main`, então um
-# PR não edita o próprio revisor nem o gate. O head do PR entra em `pr-head/` e
+# Segurança: `pull_request_target` roda SEMPRE este arquivo da branch de BASE, então um
+# PR não edita o próprio revisor nem o gate. Roda em PR para qualquer base (TDR-0014): no
+# PR empilhado o arquivo vem da branch do PR de baixo, que só quem tem escrita altera. O head do PR entra em `pr-head/` e
 # nada dele é executado (padrão do docs/security.md da action). O Claude não tem
 # `gh api`: com ele poderia aprovar o próprio PR.
 #
@@ -16,7 +17,6 @@ name: Claude review
 
 on:
   pull_request_target:
-    branches: [main]
     types: [opened, synchronize, reopened, ready_for_review]
 
 permissions:
@@ -45,7 +45,7 @@ jobs:
       !github.event.pull_request.draft
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout da main (raiz)
+      - name: Checkout da base (raiz)
         uses: actions/checkout@v4
 
       - name: Checkout do head do PR
@@ -99,8 +99,8 @@ jobs:
 
             Revise este PR em português do Brasil.
 
-            - O código do PR (head) está em `pr-head/`. A raiz do workspace é a `main`:
-              use-a só para comparar. Nos comentários inline, use o caminho SEM o
+            - O código do PR (head) está em `pr-head/`. A raiz do workspace é a base do PR
+              (`${{ github.base_ref }}`): use-a só para comparar. Nos comentários inline, use o caminho SEM o
               prefixo `pr-head/`.
             - Veja o diff com `gh pr diff ${{ github.event.pull_request.number }}`.
             - Use o trail para entender o código e o impacto, sempre com `pr-head` como

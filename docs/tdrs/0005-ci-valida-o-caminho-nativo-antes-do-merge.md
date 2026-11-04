@@ -1,7 +1,7 @@
 # 0005 - CI valida o caminho nativo antes do merge na `main`
 
 **Data:** 2026-09-22
-**Status:** aceito
+**Status:** aceito; o gatilho só na `main` foi estendido a PR de qualquer base por 0014
 
 ## Contexto
 

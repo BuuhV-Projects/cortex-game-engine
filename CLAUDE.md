@@ -14,6 +14,12 @@ branch/worktree e entra por **PR no GitHub** (`BuuhV-Projects/cortex-game-engine
 2. Repita até o review do PR dizer **"Claude review: 5/5"**.
 3. Só com **5/5** ative o **auto-merge** — ele mergeia sozinho quando o CI passar.
    Abaixo de 5/5, não ative: corrija e espere nova revisão.
+4. **PR empilhado** (base que não é a `main`): CI e Claude review rodam nele também
+   (TDR-0014), mas **nunca ative o auto-merge enquanto a base não for a `main`** — fora
+   da `main` não há ruleset, e o auto-merge mergearia na hora, sem nota nem CI. A pilha
+   entra em ordem: quando o PR de baixo entra, o GitHub redireciona o de cima para a
+   `main`; atualize-o com a `main` (o ruleset exige a branch em dia), espere o 5/5 do
+   head novo e só então ative o auto-merge.
 
 PR e commits sem menção ao Claude (sem "Generated with Claude Code", sem
 `Co-Authored-By`).
