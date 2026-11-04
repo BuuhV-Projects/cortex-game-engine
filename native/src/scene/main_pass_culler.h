@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <vector>
 
+#include "main_pass_slots.h"
 #include "scene_mirror.h"
 #include "world_versions.h"
 
@@ -45,12 +46,18 @@ class MainPassCuller {
    * @param planes   6 planos do frustum da câmera, 4 doubles cada, em mundo —
    *                 derivados pelo JS com o `coordinateSystem` da câmera
    * @param viewProj `projectionMatrix × matrixWorldInverse` (16 doubles)
+   * @param cameraLayers `camera.layers.mask` (SPEC-0686): o candidato fora
+   *        dela não entra; {@link kAllLayers} = não filtra
    * @return quantos candidatos, ou {@link kMainCullRefused} se um nó
    *         alcançável tem {@link kMainUnsupported} (o `three` projeta)
    */
-  int cull(const SceneMirror& mirror, const double* planes, const double* viewProj);
+  int cull(const SceneMirror& mirror, const double* planes, const double* viewProj,
+           uint32_t cameraLayers = kAllLayers);
 
   const std::vector<MainCandidate>& candidates() const { return candidates_; }
+
+  /** Camadas e esferas do objeto por slot (SPEC-0686), escritas pela ponte. */
+  MainPassSlots& slots() { return slots_; }
 
   /** Nó que causou a última recusa, ou {@link kNoParent}. */
   NodeIndex refusedAt() const { return refusedAt_; }
@@ -60,6 +67,7 @@ class MainPassCuller {
   std::vector<MainCandidate> candidates_;
   NodeIndex refusedAt_ = kNoParent;
   WorldVersions versions_;
+  MainPassSlots slots_;
 };
 
 /**
