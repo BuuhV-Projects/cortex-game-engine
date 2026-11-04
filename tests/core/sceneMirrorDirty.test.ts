@@ -5,7 +5,7 @@
  */
 import { afterEach, describe, expect, it } from 'vitest';
 import { BoxGeometry, Mesh, MeshBasicMaterial, Object3D, PerspectiveCamera, Quaternion } from 'three';
-import { NativeSceneMirror, SWEEP_PERIOD_FRAMES } from '../../src/core/NativeSceneMirror.js';
+import { NativeSceneMirror, SWEEP_MIN_NODES, SWEEP_PERIOD_FRAMES } from '../../src/core/NativeSceneMirror.js';
 
 /** Layouts que o espelho usa (ver `scene_mirror.h`). */
 const FLOATS_POR_NO = 21;
@@ -49,6 +49,7 @@ function quadro(espelho: NativeSceneMirror, registro: { linhas: number[][] }): n
 describe('NativeSceneMirror — só o sujo de verdade (SPEC-0678)', () => {
   afterEach(() => {
     delete (globalThis as Record<string, unknown>)['__cortexSceneMirror'];
+    delete (globalThis as Record<string, unknown>)['__cortexMainPass'];
   });
 
   it('o padrão do Object3DSyncSystem com valor igual não manda linha', () => {
@@ -124,5 +125,30 @@ describe('NativeSceneMirror — só o sujo de verdade (SPEC-0678)', () => {
     let linhas = 0;
     for (let i = 0; i < SWEEP_PERIOD_FRAMES; i++) linhas += quadro(espelho, registro).length;
     expect(linhas).toBe(1);
+  });
+
+  it('troca de geometria feita com o nó oculto chega ao host quando ele reaparece', () => {
+    // Cena maior que uma fatia da varredura: sem a conferência na reaparição,
+    // a esfera nova só chegaria quando o rodízio voltasse ao slot.
+    const enchimento = SWEEP_MIN_NODES * SWEEP_PERIOD_FRAMES * 2;
+    const registro = instalarPonte(enchimento + 8);
+    const esferas: number[][] = [];
+    (globalThis as Record<string, unknown>)['__cortexMainPass'] = {
+      project: () => 0,
+      setBounds: (i: number, x: number, y: number, z: number, r: number) => esferas.push([i, x, y, z, r]),
+    };
+    const m = new Mesh(new BoxGeometry(), new MeshBasicMaterial());
+    const nos: Object3D[] = [m];
+    for (let i = 0; i < enchimento; i++) nos.push(new Object3D());
+    const espelho = new NativeSceneMirror();
+    expect(espelho.install(cenaComFilhos(...nos))).toBe(true);
+    quadro(espelho, registro);
+    m.visible = false;
+    m.geometry = new BoxGeometry(10, 10, 10);
+    for (let i = 0; i < SWEEP_PERIOD_FRAMES * 2; i++) quadro(espelho, registro);
+    expect(esferas).toEqual([]);
+    m.visible = true;
+    expect(esferas).toHaveLength(1);
+    expect(esferas[0]![4]).toBeCloseTo(Math.sqrt(75));
   });
 });

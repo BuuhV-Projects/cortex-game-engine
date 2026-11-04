@@ -148,6 +148,12 @@ export abstract class MirrorSlots implements MirrorSink {
     this._listaSujos[this._qtdSujos++] = slot;
   }
 
+  /** @internal Chamado pelo gancho de `visible` quando o nó volta a aparecer. */
+  _reapareceu(slot: number): void {
+    const objeto = this._nodes[slot];
+    if (this._installed && objeto) this._conferirGeometria(objeto, slot);
+  }
+
   /** Dimensiona os vetores por slot pela capacidade do host. */
   protected _reservarPorSlot(capacidade: number): void {
     this._sujoMarca = new Uint8Array(capacidade);

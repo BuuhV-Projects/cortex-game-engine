@@ -47,11 +47,21 @@ A varredura das flags do quadro pula, além dos nós com ancestral oculto (SPEC-
 
 O nó pulado continua ocupando a fatia do quadro. A volta inteira segue em 8 quadros.
 
+A varredura também conferia a troca de geometria (`_conferirGeometria`, a esfera do culling). Para o nó oculto
+pulado, essa conferência passa para a reaparição: o acessor de `visible`, ao virar `true`, chama
+`_reapareceu(slot)`, que confere a geometria na hora. Sem isso, uma geometria trocada com o nó escondido (esconde,
+troca, mostra) ficaria até 8 quadros com a esfera velha no culling, e uma esfera menor que a nova pode cortar um
+objeto visível.
+
 ### Host (`native/src/scene/scene_mirror.cpp`)
 
 A linha de sync deixa de forçar a propagação. `applyTransforms` marca o slot como **sujo a conferir**
 (`kDirtyFromSync`). Se o pai não mudou, o `updateAndCull` recompõe a matriz local num rascunho e compara com a
-que já tem. Igual: o slot fica limpo (sem recompor o mundo, sem entrar em `changed_`, sem propagar). O sujo
+que já tem. Igual, e o mundo guardado igual a pai × local: o slot fica limpo (sem entrar em `changed_`, sem propagar). A
+segunda conferência existe porque o JS escreve direto na fatia do mundo no meio do quadro (`updateWorldMatrix`,
+SPEC-0340): numa pose transitória desfeita antes do sync (move, pede `getWorldPosition`, volta), a linha bate com
+a local, mas o mundo guardado é o da pose. Nesse caso o mundo é refeito e propaga, como antes. Custa uma
+multiplicação 4×4 por linha igual, ainda sem tocar a subárvore. O sujo
 forçado do `build`/`append` (`kDirtyForced`) segue como antes. As flags do quadro que vieram na linha (`visible`,
 `material.visible`, lado da sombra, passe principal) são aplicadas antes, como hoje.
 
@@ -77,4 +87,5 @@ forçado do `build`/`append` (`kDirtyForced`) segue como antes. As flags do quad
   disparam o callback). Isso é custo do `world` (30–33%), fora do espelho: fica registrado como próximo passo
   da frente de `world` (comparar antes de escrever).
 - Um nó com `matrixAutoUpdate = false` que muda só a `matrix` continua sem gancho (comportamento anterior).
-- Testes: `tests/core/sceneMirrorDirty.test.ts` (JS) e `testSceneMirrorLinhaIgualNaoPropaga` (host).
+- Testes: `tests/core/sceneMirrorDirty.test.ts` (JS) e `native/tests/scene_mirror_dirty_test.cpp` (host, incluindo
+  `testSceneMirrorLinhaIgualRefazMundoEscritoPeloJs`).

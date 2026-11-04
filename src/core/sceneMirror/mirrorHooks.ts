@@ -8,6 +8,8 @@ import type { Object3D, Quaternion, Vector3 } from 'three';
 export interface MirrorSink {
   _marcarSujo(slot: number): void;
   _ancestralMudou(raiz: Object3D, delta: number): void;
+  /** O nó voltou a ficar visível: confere a geometria, que a varredura pula enquanto ele está oculto. */
+  _reapareceu(slot: number): void;
 }
 
 // ── Ganchos de transform (SPEC-0322) ───────────────────────────────────────
@@ -106,6 +108,9 @@ export const ACESSOR_VISIBLE: PropertyDescriptor = {
     this._mVis = valor;
     const posicao = this.position as unknown as VetorEnganchado;
     avisarSujo(posicao);
+    // A varredura pula o nó oculto (SPEC-0678): uma troca de geometria feita
+    // enquanto ele estava escondido chega ao host aqui, não 8 quadros depois.
+    if (valor) posicao._mEspelho?._reapareceu(posicao._mSlot);
     // Hidden-ancestor counters of the subtree (SPEC-0372): paid on the toggle, not per frame.
     if (this.children.length > 0) posicao._mEspelho?._ancestralMudou(this as unknown as Object3D, valor ? -1 : 1);
   },

@@ -40,6 +40,7 @@ void testSceneMirrorLadoDaSombraVemDoBuildEDoFrame();
 void testSceneMirrorLinhaIgualNaoPropaga();
 void testSceneMirrorLinhaDiferentePropagaParaOsFilhos();
 void testSceneMirrorLinhaIgualAindaAplicaAsFlags();
+void testSceneMirrorLinhaIgualRefazMundoEscritoPeloJs();
 void testShadowCasterIgnoraInvisivel();
 void testDrawBatchPrimeiroSetaTudoDepoisSoOQueMuda();
 void testDrawBatchSemIndiceUsaDraw();
@@ -122,6 +123,7 @@ int main() {
   tests::testSceneMirrorLinhaIgualNaoPropaga();
   tests::testSceneMirrorLinhaDiferentePropagaParaOsFilhos();
   tests::testSceneMirrorLinhaIgualAindaAplicaAsFlags();
+  tests::testSceneMirrorLinhaIgualRefazMundoEscritoPeloJs();
   tests::testShadowCasterIgnoraInvisivel();
   tests::testDrawBatchPrimeiroSetaTudoDepoisSoOQueMuda();
   tests::testDrawBatchSemIndiceUsaDraw();

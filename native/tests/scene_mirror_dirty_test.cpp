@@ -87,4 +87,20 @@ void testSceneMirrorLinhaIgualAindaAplicaAsFlags() {
   CHECK(espelho.changedThisFrame().empty());
 }
 
+void testSceneMirrorLinhaIgualRefazMundoEscritoPeloJs() {
+  // O `updateWorldMatrix` do JS (SPEC-0340) escreve direto na fatia do mundo.
+  // Pose transitória desfeita antes do sync: a linha bate com a local, mas o
+  // mundo guardado é o da pose — tem de ser refeito e propagado.
+  const auto planos = planosQueNaoCortam();
+  SceneMirror espelho = cadeiaAtualizada(planos);
+  espelho.worldData()[16 + 12] = 7.0;  // mundo do pai escrito "pelo JS"
+  espelho.worldData()[32 + 12] = 7.0;  // e o do filho
+  const auto igual = linhaDoPai(2.0);
+  espelho.applyTransforms(igual.data(), igual.size());
+  espelho.updateAndCull(kIdentidade, planos.data());
+  CHECK(espelho.changedThisFrame().size() == 2);
+  CHECK(std::fabs(espelho.worldMatrix(1)[12] - 2.0) < 1e-9);
+  CHECK(std::fabs(espelho.worldMatrix(2)[12] - 2.0) < 1e-9);
+}
+
 }  // namespace tests

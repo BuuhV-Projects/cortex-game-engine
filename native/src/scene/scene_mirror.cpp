@@ -51,6 +51,17 @@ void multiply(double* out, const double* a, const double* b) {
   }
 }
 
+/**
+ * O mundo guardado é o que pai × local dá (SPEC-0678)? Quem escreve fora do
+ * C++ é o `updateWorldMatrix` do JS (SPEC-0340), direto na fatia nativa.
+ */
+bool mundoEmDia(const double* mundo, const double* mundoDoPai, const double* local) {
+  if (mundoDoPai == nullptr) return std::memcmp(mundo, local, kMatrixFloats * sizeof(double)) == 0;
+  double esperado[kMatrixFloats];
+  multiply(esperado, mundoDoPai, local);
+  return std::memcmp(mundo, esperado, sizeof(esperado)) == 0;
+}
+
 /** Estado inicial do passe principal, derivado das flags de autoria (SPEC-0332). */
 uint8_t initialMainFrameFlags(uint16_t flags) {
   uint8_t out = 0;
@@ -107,7 +118,7 @@ bool SceneMirror::build(const std::vector<NodeDesc>& nodes, size_t spareNodes) {
   bounds_.resize(count);
   local_.assign(count * kMatrixFloats, 0.0);
   world_.assign(count * kMatrixFloats, 0.0);
-  dirty_.assign(count, 1);
+  dirty_.assign(count, kDirtyForced);
   visible_.clear();
   visible_.reserve(capacity_);
   changed_.reserve(capacity_);
@@ -188,7 +199,7 @@ void SceneMirror::writeNode(NodeIndex index, const NodeDesc& node, NodeIndex par
   geometryIds_[i] = node.geometryId;
   bounds_[i] = node.bounds;
   removed_[i] = 0;
-  dirty_[i] = 1;
+  dirty_[i] = kDirtyForced;
 
   // Compõe já: o JS aponta o `matrixWorld.elements` para este slot no mesmo
   // frame do `childadded`, e o `three` pode lê-lo antes do próximo update —
@@ -356,9 +367,15 @@ int SceneMirror::updateAndCull(const float* viewProj, const float* planes) {
       double composta[kMatrixFloats];
       compose(composta, locals_[i]);
       double* local = &local_[i * kMatrixFloats];
-      // Linha igual ao que o slot já tem (SPEC-0678): limpo, sem propagar.
+      // Linha igual ao que o slot já tem (SPEC-0678): limpo, sem propagar —
+      // desde que o MUNDO também esteja em dia. O JS escreve direto na fatia
+      // do mundo no meio do quadro (`updateWorldMatrix`, SPEC-0340); uma pose
+      // transitória desfeita antes do sync deixaria esse mundo velho.
+      const double* mundoDoPai =
+          parent == kNoParent ? nullptr : &world_[static_cast<size_t>(parent) * kMatrixFloats];
       if (selfState == kDirtyFromSync && !parentDirty &&
-          std::memcmp(composta, local, sizeof(composta)) == 0) {
+          std::memcmp(composta, local, sizeof(composta)) == 0 &&
+          mundoEmDia(&world_[i * kMatrixFloats], mundoDoPai, local)) {
         dirty_[i] = 0;
         continue;
       }
