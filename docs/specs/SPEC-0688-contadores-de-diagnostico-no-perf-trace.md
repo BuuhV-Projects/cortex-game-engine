@@ -140,7 +140,16 @@ No trace, ao lado de `cpu.napiBind` (sem mudança, a soma): `cpu.napiBindJs` e `
   da composição, `flipRowsInto` e a destruição do visual vão para `src/ui/runtime/uiBackendMaterials.ts`.
 - `native/src/webgpu/napi_stats.h`: a parte sem NAPI vai para `napi_frame_stats.h/.cpp`.
 
-Só movimentação: o comportamento é o mesmo.
+Só movimentação: o comportamento é o mesmo. `triangleCount` e `sceneNodeIdOf` passam a ser exportados pelo
+`sceneCensus.ts` (o `traceCounters` usa o segundo), mas o `PerfTrace.ts` não os re-exporta: a API pública fica igual.
+
+### Pendência conhecida: tipos no editor do Studio
+
+O `PerfTrace.d.ts` passa a importar `core/perfTrace/{sceneCensus,hostStats,traceCounters}.d.ts`. Esses arquivos
+precisam entrar no `VENDOR_TYPE_MODULES` (`electron/main.ts`) para o Monaco resolver `SceneWalk`, `GcTotals` e os
+campos novos do `PerfSample`. O `electron/main.ts` tem 2.094 linhas, e tocá-lo exige dividi-lo (regra das 500
+linhas), o que está fora do escopo desta medição. O runtime e o bundle não mudam; só o editor mostra esses tipos
+como não resolvidos até a lista ganhar `'core/perfTrace': ['sceneCensus', 'hostStats', 'traceCounters']`.
 
 ## Como ler
 
@@ -157,7 +166,7 @@ Só movimentação: o comportamento é o mesmo.
 - `tests/core/perfTrace/traceCounters.test.ts`: `Tally` (top-N, zera ao drenar), inatividade sem a ponte, e cada
   campo (`sunShadow`, `renderServer`, `uiUploads`, `alloc`).
 - `tests/core/PerfTraceCounters.test.ts`: `PerfTrace.tick` publica os campos e o `napiBindJs`/`napiBindReplay`.
-- `tests/render/NativeSunShadowPassTrace.test.ts`: recusa com ofensor chega ao `sunShadow`.
+- `tests/render/native/sunShadowTrace.test.ts`: recusa com ofensor chega ao `sunShadow`.
 - `tests/ui/RendererUiBackendUploads.test.ts`: reenvio de texto e canvas por widget.
 - `tests/ecs/WorldSystemAlloc.test.ts`: delta por sistema com leitor falso.
 - `native/tests/napi_frame_stats_test.cpp`: total, replay e JS separados.
