@@ -60,7 +60,10 @@ A linha de sync deixa de forçar a propagação. `applyTransforms` marca o slot 
 que já tem. Igual, e o mundo guardado igual a pai × local: o slot fica limpo (sem entrar em `changed_`, sem propagar). A
 segunda conferência existe porque o JS escreve direto na fatia do mundo no meio do quadro (`updateWorldMatrix`,
 SPEC-0340): numa pose transitória desfeita antes do sync (move, pede `getWorldPosition`, volta), a linha bate com
-a local, mas o mundo guardado é o da pose. Nesse caso o mundo é refeito e propaga, como antes. Custa uma
+a local, mas o mundo guardado é o da pose. Nesse caso o mundo é refeito e propaga, como antes. A conferência só
+vale para quem tem linha, então o `updateWorldMatrix` de nó espelhado também **suja o slot**: o filho cujo mundo o
+JS escreveu sob a pose transitória do pai manda linha e é conferido, mesmo sem o local dele ter mudado (o pai que
+volta manda linha igual, e linha igual não propaga). Custa uma linha por `updateWorldMatrix` real no quadro. Custa uma
 multiplicação 4×4 por linha igual, ainda sem tocar a subárvore. O sujo
 forçado do `build`/`append` (`kDirtyForced`) segue como antes. As flags do quadro que vieram na linha (`visible`,
 `material.visible`, lado da sombra, passe principal) são aplicadas antes, como hoje.

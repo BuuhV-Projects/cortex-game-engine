@@ -89,6 +89,11 @@ Mudança (`src/scene/Vegetation.ts`, `src/scene/vegetationMatrices.ts`):
      `getInstances()`).
 4. Faixas acumuladas sem upload (malha fora de vista não sobe; SPEC-0597): passou de 32 faixas, o `three` sobe o
    atributo inteiro (`clearUpdateRanges`).
+5. A escrita inteira (`setInstances`, `adoptInstances`, edição do editor) marca a faixa inteira **explícita**
+   (`clearUpdateRanges` + `addUpdateRange(0, n × 16)`), não a lista vazia. Com a lista vazia ("sobe tudo"), uma
+   escrita por faixa no mesmo quadro, antes do upload, fazia o `three` subir só a faixa e perder a escrita inteira.
+6. O vão que o `writeInstances` abre além do total (`[total, first)`) fica com escala 0 no armazenamento próprio (com buffer adotado, com o que o buffer tiver): não desenha, e o coletor do
+   personagem não faz tronco de escala 0 (antes virava um tronco invisível na origem).
 
 `add`, `removeNear`, `removeAt` (editor) e `getInstances` seguem com o mesmo comportamento; com buffer adotado, as
 edições do editor copiam para um array próprio antes de mexer.
@@ -103,7 +108,9 @@ no mesmo quadro. `1` volta ao comportamento antigo.
 
 - Seguro porque o `three` só recalcula `shadow.matrix` (o `lightShadowMatrix` que amostra o mapa) dentro do
   `updateShadow`: a cascata que pulou o quadro amostra o mapa e a matriz do MESMO quadro anterior. Estático fica
-  certo; objeto andando na cascata distante atrasa até `intervalo − 1` quadros.
+  certo; objeto andando na cascata distante atrasa até `intervalo − 1` quadros. A câmera andando também: a cascata que pulou
+  cobre a área da câmera do quadro anterior, e com a câmera rápida a borda dela pode ficar sem sombra por até
+  `intervalo − 1` quadros.
 - Troca de câmera (`updateFrustums`, editor ↔ play) força todas as cascatas no quadro.
 - Com espelho nativo instalado nada muda: o passe nativo (SPEC-0245) é dono do `autoUpdate`, e num quadro que ele
   devolve ao `three` já chamou o `updateMatrices` das cascatas — pular o redesenho ali daria mapa velho com matriz

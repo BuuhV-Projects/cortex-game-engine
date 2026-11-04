@@ -351,8 +351,10 @@ export class Vegetation {
     const n = this.instanceCount;
     for (const { mesh } of this.subs) {
       mesh.count = n;
-      // Escrita inteira: sobe o atributo todo, não as faixas que sobraram de escritas parciais.
+      // Escrita inteira como faixa EXPLÍCITA: com a lista vazia ("sobe tudo") uma faixa parcial no mesmo
+      // quadro faria o `three` subir só ela; assim o coalescimento funde a parcial nesta.
       mesh.instanceMatrix.clearUpdateRanges();
+      if (n > 0) mesh.instanceMatrix.addUpdateRange(0, n * MATRIX_FLOATS);
       mesh.instanceMatrix.needsUpdate = true;
       // Único ponto (com a faixa) que escreve instanceMatrix/count: a esfera de culling segue as instâncias.
       if (mesh.boundingSphere) mesh.boundingSphere.makeEmpty();
