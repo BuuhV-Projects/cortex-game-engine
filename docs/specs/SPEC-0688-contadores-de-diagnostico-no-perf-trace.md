@@ -133,23 +133,34 @@ No trace, ao lado de `cpu.napiBind` (sem mudança, a soma): `cpu.napiBindJs` e `
 
 ### Divisões de arquivo (regra das 500 linhas)
 
-- `src/core/PerfTrace.ts` (754): o censo da cena (`SceneWalk`, `countNodes`, `countUnchangedMatrices`,
-  `censusBySceneNode`, `collectVisible`, `sceneNodeIdOf`) vai para `src/core/perfTrace/sceneCensus.ts`; o
-  `PerfTrace.ts` re-exporta os mesmos nomes.
+- `src/core/PerfTrace.ts` (754): a implementação do censo da cena (`SceneWalk`, `countNodes`,
+  `countUnchangedMatrices`, `censusBySceneNode`, `collectVisible`, `sceneNodeIdOf`) vai para
+  `src/core/perfTrace/sceneCensus.ts`; os leitores do host para `perfTrace/hostStats.ts`; os blocos do `tick` que
+  escrevem no mapa `cpu` (ponte NAPI, fases, sistemas, cobertura de material) para `perfTrace/sampleSections.ts`.
 - `src/ui/runtime/RendererUiBackend.ts` (770): materiais TSL da caixa e da imagem, estilo da caixa, "cover", blend
   da composição, `flipRowsInto` e a destruição do visual vão para `src/ui/runtime/uiBackendMaterials.ts`.
 - `native/src/webgpu/napi_stats.h`: a parte sem NAPI vai para `napi_frame_stats.h/.cpp`.
 
-Só movimentação: o comportamento é o mesmo. `triangleCount` e `sceneNodeIdOf` passam a ser exportados pelo
-`sceneCensus.ts` (o `traceCounters` usa o segundo), mas o `PerfTrace.ts` não os re-exporta: a API pública fica igual.
+Só movimentação: o comportamento é o mesmo.
 
-### Pendência conhecida: tipos no editor do Studio
+### `.d.ts` público autocontido (`VENDOR_TYPE_MODULES`)
 
-O `PerfTrace.d.ts` passa a importar `core/perfTrace/{sceneCensus,hostStats,traceCounters}.d.ts`. Esses arquivos
-precisam entrar no `VENDOR_TYPE_MODULES` (`electron/main.ts`) para o Monaco resolver `SceneWalk`, `GcTotals` e os
-campos novos do `PerfSample`. O `electron/main.ts` tem 2.094 linhas, e tocá-lo exige dividi-lo (regra das 500
-linhas), o que está fora do escopo desta medição. O runtime e o bundle não mudam; só o editor mostra esses tipos
-como não resolvidos até a lista ganhar `'core/perfTrace': ['sceneCensus', 'hostStats', 'traceCounters']`.
+O Studio copia para o `vendor/` só os `.d.ts` da lista `VENDOR_TYPE_MODULES` (`electron/main.ts`). Os módulos de
+`core/perfTrace/*` ficam **fora** dela e por isso não podem aparecer em nenhuma assinatura pública:
+
+- os tipos públicos (`PerfSample` com os campos novos, `VisibleNode`, `SceneWalkResult`, `GcTotals`,
+  `SunShadowSample`, `ShadowOffender`, `RenderServerSample`, `UiUploadsSample`, `AllocSample`,
+  `TraceCounterFields`) são declarados no próprio `PerfTrace.ts`; os módulos internos os importam com `import type`;
+- `SceneWalk`, `countNodes`, `countUnchangedMatrices`, `censusBySceneNode` e `collectVisible` seguem públicos no
+  `PerfTrace.ts` como fachadas com assinatura própria, que delegam à implementação em `sceneCensus.ts`
+  (`SceneWalk.result` passa a ser getter, só leitura);
+- nada de `core/perfTrace/*` é re-exportado.
+
+`tests/electron/vendorTypeModules.test.ts` lê a lista do `electron/main.ts`, emite as declarações em memória e
+confere que todo `import`/`export … from` relativo dos `.d.ts` da lista aponta para outro módulo da lista. As
+referências quebradas que já existiam na `main` (`FrameProfiler`, `RenderPhaseProbe`, `scenes/ilha.json`) ficam
+numa lista explícita no teste: corrigi-las exige mudar a lista no `electron/main.ts`. Uma referência nova fora da
+lista reprova; uma antiga corrigida pede para sair da lista.
 
 ## Como ler
 
@@ -170,3 +181,4 @@ como não resolvidos até a lista ganhar `'core/perfTrace': ['sceneCensus', 'hos
 - `tests/ui/RendererUiBackendUploads.test.ts`: reenvio de texto e canvas por widget.
 - `tests/ecs/WorldSystemAlloc.test.ts`: delta por sistema com leitor falso.
 - `native/tests/napi_frame_stats_test.cpp`: total, replay e JS separados.
+- `tests/electron/vendorTypeModules.test.ts`: `.d.ts` vendorizados sem referência para fora da lista.

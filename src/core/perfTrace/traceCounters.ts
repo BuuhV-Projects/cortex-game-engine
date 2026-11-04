@@ -12,6 +12,9 @@
 import type { Object3D } from 'three';
 import { sceneNodeIdOf } from './sceneCensus.js';
 import { readAllocatedBytes } from './hostStats.js';
+import type {
+  AllocSample, RenderServerSample, SunShadowSample, TraceCounterFields, UiUploadsSample,
+} from '../PerfTrace.js';
 
 /** Quantas chaves entram nos top-N dos campos (motivos de recusa, widgets da UI). */
 export const TRACE_TOP = 5;
@@ -59,53 +62,6 @@ export class Tally {
     this._total = 0;
     return { total, top };
   }
-}
-
-/** Objeto que barrou a sombra do sol: nome do three, `Object3D.id` e o nó de cena que o contém. */
-export interface ShadowOffender {
-  name: string;
-  id: number;
-  node: string;
-}
-
-/** Campo `sunShadow`: o que o passe da sombra do sol nativa fez na janela. */
-export interface SunShadowSample {
-  drawn: number;
-  handedBack: number;
-  /** Motivo da última recusa da janela. */
-  reason?: string;
-  /** `counts` do portão nessa recusa. */
-  counts?: string;
-  offender?: ShadowOffender;
-}
-
-/** Campo `renderServer`: deltas da janela e recusas do NativeRenderer. */
-export interface RenderServerSample {
-  fallback: number;
-  refused: number;
-  fbEnv: number;
-  nativeRefused: number;
-  nativeTop: { reason: string; count: number }[];
-}
-
-/** Campo `uiUploads`: reenvios de pixels da UI à GPU, por widget. */
-export interface UiUploadsSample {
-  total: number;
-  top: { widget: string; count: number; hint?: string }[];
-}
-
-/** Campo `alloc`: KB alocados pelo Hermes na janela e por sistema do ECS. */
-export interface AllocSample {
-  windowKB?: number;
-  sysKB?: Record<string, number>;
-}
-
-/** Os campos que este módulo acrescenta à amostra. */
-export interface TraceCounterFields {
-  sunShadow?: SunShadowSample;
-  renderServer?: RenderServerSample;
-  uiUploads?: UiUploadsSample;
-  alloc?: AllocSample;
 }
 
 /** Os acumulados do `RenderServer.stats` que a amostra lê. */

@@ -1,20 +1,16 @@
 import { Vector3, type Camera, type Object3D } from 'three';
 import type { FrameProfiler } from './FrameProfiler.js';
 import type { RenderPhaseProbe } from './RenderPhaseProbe.js';
-import { describeMaterial, isDescribed, measureCoverage } from '../render/MaterialDesc.js';
-import { countDistinctPipelines } from '../render/PipelineKey.js';
 import { PipelineBirthLog, drainNativePipelineBirths, type PipelineBirth } from './PipelineBirthLog.js';
 import { activeSceneMirror } from './NativeSceneMirror.js';
 import { readHeapStats, type HeapStats } from './heapStats.js';
-import { SceneWalk, censusBySceneNode, type VisibleNode } from './perfTrace/sceneCensus.js';
-import { napiBridgeMs, napiStats, readGcTotals, type GcTotals } from './perfTrace/hostStats.js';
-import { drainTraceCounters, setTraceCountersActive, type TraceCounterFields } from './perfTrace/traceCounters.js';
-
-export {
-  SceneWalk, censusBySceneNode, collectVisible, countNodes, countUnchangedMatrices,
-  type SceneWalkResult, type VisibleNode,
-} from './perfTrace/sceneCensus.js';
-export type { GcTotals } from './perfTrace/hostStats.js';
+// Módulos internos (SPEC-0688): só nos corpos, nunca em assinatura pública — o PerfTrace.d.ts não os importa.
+import * as census from './perfTrace/sceneCensus.js';
+import { readGcTotals } from './perfTrace/hostStats.js';
+import { drainTraceCounters, setTraceCountersActive } from './perfTrace/traceCounters.js';
+import {
+  MS_DECIMALS, PHASE_MS_DECIMALS, materialCoverageEvent, readHostSections, readPhaseSections, readSystemSections, round,
+} from './perfTrace/sampleSections.js';
 
 /**
  * **Perf trace de gameplay** (SPEC-0198) — com as métricas ativas, grava uma
@@ -35,21 +31,8 @@ export type { GcTotals } from './perfTrace/hostStats.js';
 /** Intervalo entre amostras, em ms. */
 const SAMPLE_MS = 500;
 
-/** Casas decimais dos tempos (ms) na linha gravada. */
-const MS_DECIMALS = 1;
-
 /** Casas decimais das coordenadas de câmera (m). */
 const POS_DECIMALS = 1;
-
-/**
- * Casas decimais das fases do render (SPEC-0227). Mais fino que `MS_DECIMALS`
- * de propósito: uma fase pode valer centésimos de ms por frame e ainda assim
- * dominar o custo POR OBJETO, que é a pergunta em jogo.
- */
-const PHASE_MS_DECIMALS = 3;
-
-/** Casas decimais do custo do relógio (ns). */
-const CLOCK_NS_DECIMALS = 1;
 
 /** Quantos nós de cena entram no censo da árvore (os maiores). */
 const CENSUS_LIMIT = 20;
@@ -77,8 +60,8 @@ function isFineKey(name: string): boolean {
   return FINE_KEY_PREFIXES.some((prefix) => name.startsWith(prefix));
 }
 
-/** Uma amostra do trace, como vai serializada em JSONL. Os campos de diagnóstico vêm de {@link TraceCounterFields} (SPEC-0688). */
-export interface PerfSample extends TraceCounterFields {
+/** Uma amostra do trace, como vai serializada em JSONL. */
+export interface PerfSample {
   /** ms desde o boot. */
   t: number;
   /** Heap do Hermes (SPEC-0664); ausente fora do host nativo. */
@@ -136,6 +119,129 @@ export interface PerfSample extends TraceCounterFields {
   visible: VisibleNode[];
   /** Medidores do jogo ({@link setPerfTraceGauge}, SPEC-0595): ausente sem nenhum registrado. */
   game?: Record<string, number>;
+  /** Sombra do sol nativa na janela (SPEC-0688): ausente se o passe não rodou. */
+  sunShadow?: SunShadowSample;
+  /** Δ do `RenderServer.stats` na janela e recusas do NativeRenderer (SPEC-0688). */
+  renderServer?: RenderServerSample;
+  /** Reenvios de pixels da UI à GPU por widget (SPEC-0688): ausente sem upload. */
+  uiUploads?: UiUploadsSample;
+  /** KB alocados pelo Hermes na janela e por sistema do ECS (SPEC-0688). */
+  alloc?: AllocSample;
+}
+
+// Tipos públicos: aqui, e não em perfTrace/, para o PerfTrace.d.ts vendorizado ser autocontido (SPEC-0688).
+
+/** Um nó de cena visível na amostra. */
+export interface VisibleNode {
+  /** `node.id` da cena (o `buildScene` grava em `obj.name`). */
+  id: string;
+  /** Sub-malhas visíveis desse nó no frame. */
+  meshes: number;
+  /** Triângulos que o nó contribuiu. */
+  tris: number;
+}
+
+/** Resultado de uma volta completa do {@link SceneWalk}. */
+export interface SceneWalkResult {
+  /** Nós da árvore (inclusive os invisíveis — o `updateMatrixWorld` desce neles). */
+  total: number;
+  /** Nós com visibilidade efetiva (o `visible` do three é herdado). */
+  visible: number;
+  /** Nós com a matriz local igual à da volta anterior. */
+  unchanged: number;
+  /** Nós de cena no frustum, do mais caro (triângulos) pro menos. */
+  visibleNodes: VisibleNode[];
+  /** Quadros que a volta levou — a idade máxima do dado. */
+  frames: number;
+}
+
+/** Totais do coletor do host (`__cortexGcStats`, SPEC-0264). */
+export interface GcTotals {
+  youngCount: number;
+  youngMs: number;
+  oldCount: number;
+  oldWallMs: number;
+  oldCpuMs: number;
+  /** MB alocados pelo JS desde o boot (SPEC-0357); Δ entre amostras = alocação. Host antigo não tem. */
+  allocatedMB?: number;
+}
+
+/** Objeto que barrou a sombra do sol: nome do three, `Object3D.id` e o nó de cena que o contém. */
+export interface ShadowOffender {
+  name: string;
+  id: number;
+  node: string;
+}
+
+/** Campo `sunShadow`: redesenhos e devoluções do passe na janela, e a última recusa. */
+export interface SunShadowSample {
+  drawn: number;
+  handedBack: number;
+  reason?: string;
+  counts?: string;
+  offender?: ShadowOffender;
+}
+
+/** Campo `renderServer`: deltas da janela e os motivos de recusa mais frequentes do NativeRenderer. */
+export interface RenderServerSample {
+  fallback: number;
+  refused: number;
+  fbEnv: number;
+  nativeRefused: number;
+  nativeTop: { reason: string; count: number }[];
+}
+
+/** Campo `uiUploads`: total e os widgets que mais reenviaram (`label#id`, `canvas#id`, `image#id`). */
+export interface UiUploadsSample {
+  total: number;
+  top: { widget: string; count: number; hint?: string }[];
+}
+
+/** Campo `alloc`: KB da janela e por sistema do ECS. */
+export interface AllocSample {
+  windowKB?: number;
+  sysKB?: Record<string, number>;
+}
+
+/** Os campos de diagnóstico da SPEC-0688, como os contadores os entregam. */
+export type TraceCounterFields = Pick<PerfSample, 'sunShadow' | 'renderServer' | 'uiUploads' | 'alloc'>;
+
+/**
+ * **Censo da cena em rodízio** (SPEC-0334): anda `budget` nós por chamada e, ao fechar a volta, publica em
+ * {@link SceneWalk.result} o tamanho da árvore, as matrizes paradas e os nós no frustum.
+ */
+export class SceneWalk {
+  private readonly _impl = new census.SceneWalk();
+
+  /** Última volta completa, ou `null` antes da primeira. */
+  get result(): SceneWalkResult | null {
+    return this._impl.result;
+  }
+
+  /** Avança a volta em até `budget` nós. A câmera precisa estar com `matrixWorldInverse` em dia. */
+  step(scene: Object3D, camera: Camera, budget: number): void {
+    this._impl.step(scene, camera, budget);
+  }
+}
+
+/** Tamanho da árvore de cena (SPEC-0227): todos os nós e os de visibilidade efetiva. */
+export function countNodes(scene: Object3D): { total: number; visible: number } {
+  return census.countNodes(scene);
+}
+
+/** Quantos nós tiveram a matriz local inalterada desde a chamada anterior com o mesmo `previous`. */
+export function countUnchangedMatrices(scene: Object3D, previous: Map<number, Float64Array>): number {
+  return census.countUnchangedMatrices(scene, previous);
+}
+
+/** Censo por nó de cena: quantos `Object3D` cada nó do `level.json` carrega, os `limit` maiores. */
+export function censusBySceneNode(scene: Object3D, limit: number): [string, number][] {
+  return census.censusBySceneNode(scene, limit);
+}
+
+/** Nós de cena dentro do frustum da câmera, do mais caro (triângulos) pro menos. Travessia completa. */
+export function collectVisible(scene: Object3D, camera: Camera): VisibleNode[] {
+  return census.collectVisible(scene, camera);
 }
 
 const gauges = new Map<string, () => number>();
@@ -168,12 +274,6 @@ type TraceBridge = (line: string) => void;
 function bridge(): TraceBridge | undefined {
   const fn = (globalThis as { __cortexPerfTrace?: unknown }).__cortexPerfTrace;
   return typeof fn === 'function' ? (fn as TraceBridge) : undefined;
-}
-
-/** Arredonda pra `decimals` casas (evita linha cheia de ruído de ponto flutuante). */
-function round(value: number, decimals: number): number {
-  const factor = 10 ** decimals;
-  return Math.round(value * factor) / factor;
 }
 
 const _direction = new Vector3();
@@ -249,7 +349,7 @@ export class PerfTrace {
   private _censusSent = false;
   private _samples = 0;
   /** Censo da cena em rodízio (SPEC-0334) — a amostra só lê o resultado. */
-  private readonly _walk = new SceneWalk();
+  private readonly _walk = new census.SceneWalk();
   /** ms da travessia somados na janela da amostra, e quadros da janela. */
   private _walkMs = 0;
   private _walkSteps = 0;
@@ -336,72 +436,9 @@ export class PerfTrace {
       cpuAvg[section.name] = section.avgMs;
       cpuP99[section.name] = section.p99Ms;
     }
-    // Ponte NAPI do host (SPEC-0225). Entra no mesmo mapa porque é a mesma
-    // pergunta — quanto do frame é isto — mas ATENÇÃO: não é uma seção nova e
-    // sim um SUBCONJUNTO de `render`. Somar tudo contaria duas vezes.
-    const napiMs = napiBridgeMs();
-    if (napiMs !== null) cpu['napi'] = round(napiMs, MS_DECIMALS);
-    // Contadores da ponte no mesmo mapa: a pergunta em aberto é se os
-    // `writeBuffer` acompanham os draws (uniforme de objeto estático reescrito
-    // todo frame) ou só os objetos que de fato se movem (SPEC-0225).
-    const stats = napiStats();
-    if (stats) {
-      cpu['napiWb'] = stats['writeBuffer'] ?? 0;
-      cpu['napiBind'] = stats['setBindGroup'] ?? 0;
-      // SPEC-0688: o mesmo total separado em chamada JS e replay em C++ do draw batch (host antigo: ausentes).
-      if (stats['setBindGroupJs'] !== undefined) cpu['napiBindJs'] = stats['setBindGroupJs'];
-      if (stats['setBindGroupReplay'] !== undefined) cpu['napiBindReplay'] = stats['setBindGroupReplay'];
-      cpu['napiPipe'] = stats['setPipeline'] ?? 0;
-    }
-    // Acumulados de criação (SPEC-0252). Ficam FORA do mapa `cpu` de propósito:
-    // não são milissegundos, e misturá-los ali faria qualquer soma de seções
-    // dar um número sem sentido.
-    const born = stats && stats['bornPipelines'] !== undefined
-      ? {
-          pipelines: stats['bornPipelines'] ?? 0,
-          buffers: stats['bornBuffers'] ?? 0,
-          textures: stats['bornTextures'] ?? 0,
-        }
-      : undefined;
-    // Fases do render (SPEC-0227): mesma regra do `napi` — são SUBCONJUNTOS de
-    // `render`, não seções novas, e não se somam ao total. `rpCalls*` conta as
-    // chamadas de topo, para separar "fase cara" de "fase chamada muitas vezes".
-    if (phases?.enabled) {
-      const phaseMs = phases.lastFrameMs();
-      const phaseCalls = phases.lastFrameCalls();
-      for (const [name, ms] of Object.entries(phaseMs)) {
-        cpu[`rp${name[0].toUpperCase()}${name.slice(1)}`] = round(ms, PHASE_MS_DECIMALS);
-      }
-      for (const [name, calls] of Object.entries(phaseCalls)) {
-        cpu[`rpCalls${name[0].toUpperCase()}${name.slice(1)}`] = calls;
-      }
-      // Custo e resolução do relógio: sem eles não dá para saber se um balde
-      // pequeno é trabalho ou é o próprio instrumento (e um `clockResNs` de
-      // ~1e6 denuncia que a SPEC-0226 não está de pé neste binário).
-      // Nível 3: 1 = colaboradores internos embrulhados, 0 = não deu (baldes
-      // internos zerados NÃO são "fase barata"); ausente = nível 3 não pedido.
-      // M0 do ADR-0237: refazer x reaproveitar o trabalho por objeto.
-      const refresh = phases.lastFrameRefresh();
-      if (refresh.refresh + refresh.reuse > 0) {
-        cpu['rpRefresh'] = refresh.refresh;
-        cpu['rpReuse'] = refresh.reuse;
-      }
-      const internals = phases.internalsOk;
-      if (internals !== null) cpu['rpInternals'] = internals ? 1 : 0;
-      const clock = phases.clock;
-      if (clock) {
-        cpu['clockNs'] = round(clock.costNs, CLOCK_NS_DECIMALS);
-        cpu['clockResNs'] = round(clock.resolutionNs, CLOCK_NS_DECIMALS);
-      }
-    }
-    // Perfil por sistema do ECS (SPEC-0236): o `world` deixa de ser um bloco
-    // só. Prefixo `sys` para não colidir com as seções do profiler de frame.
-    if (systemProfile) {
-      for (const [nome, ms] of systemProfile) {
-        cpu[`sys${nome}`] = round(ms, PHASE_MS_DECIMALS);
-      }
-      systemProfile.clear();
-    }
+    const born = readHostSections(cpu); // ponte NAPI e acumulados de criação (SPEC-0225/0252)
+    readPhaseSections(cpu, phases); // fases do render (SPEC-0227)
+    readSystemSections(cpu, systemProfile); // perfil por sistema do ECS (SPEC-0236)
     // Tamanho da árvore: a travessia custa por NÓ, e sem este número os ms da
     // fase não viram custo por nó (SPEC-0227). Vem da última volta completa do
     // censo em rodízio (SPEC-0334); `walkFrames` é a idade do dado.
@@ -423,24 +460,9 @@ export class PerfTrace {
     if (espelho) cpu['mirrorSynced'] = round(espelho.takeAverageSyncedNodes(), MS_DECIMALS);
     // Cobertura da descricao de material (M1 do ADR-0237): uma vez so, junto
     // do censo. E o criterio de aceitacao do marco, medido na cena REAL.
+    // Cobertura da descrição de material (M1 do ADR-0237): uma vez só, junto do censo, na cena REAL.
     if (!this._censusSent && this._samples + 1 >= CENSUS_AFTER_SAMPLES) {
-      const materiais = new Set<never>();
-      scene.traverse((obj) => {
-        const mesh = obj as { material?: unknown };
-        if (!mesh.material) return;
-        for (const m of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) materiais.add(m as never);
-      });
-      const cobertura = measureCoverage(materiais);
-      // Passo 2 da SPEC-0238: quantos pipelines DISTINTOS a cena gera. Contexto
-      // fixo porque layout de vertice e formato de alvo ainda nao sao
-      // catalogados — entao este numero e o PISO, nao o total.
-      const descritos = [];
-      for (const m of materiais) {
-        const d = describeMaterial(m as never);
-        if (isDescribed(d)) descritos.push(d);
-      }
-      const pipelines = countDistinctPipelines(descritos, { vertexLayoutId: 0, targetFormatId: 0 });
-      this._bridge(JSON.stringify({ t: Math.round(this._elapsedMs), materialCoverage: cobertura, pipelines }));
+      this._bridge(JSON.stringify({ t: Math.round(this._elapsedMs), ...materialCoverageEvent(scene) }));
     }
     // Censo: uma vez só, e NÃO na primeira amostra — na primeira a cena ainda
     // está montando (a rodada inicial pegou 228 nós de 1.271, sem os carros, e
@@ -448,7 +470,7 @@ export class PerfTrace {
     this._samples++;
     if (!this._censusSent && this._samples >= CENSUS_AFTER_SAMPLES) {
       this._censusSent = true;
-      const censo = censusBySceneNode(scene, CENSUS_LIMIT);
+      const censo = census.censusBySceneNode(scene, CENSUS_LIMIT);
       this._bridge(JSON.stringify({ t: Math.round(this._elapsedMs), census: censo }));
     }
     const sample = buildSample({

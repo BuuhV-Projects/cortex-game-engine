@@ -8,12 +8,9 @@
 
 > **censusBySceneNode**(`scene`, `limit`): \[`string`, `number`\][]
 
-Defined in: [src/core/perfTrace/sceneCensus.ts:225](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/perfTrace/sceneCensus.ts#L225)
+Defined in: [src/core/PerfTrace.ts:238](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L238)
 
-Censo da árvore por nó de cena: quantos `Object3D` cada nó do `level.json`
-carrega. Responde "quem são os 1.271 nós" — a pergunta que decide se vale
-podar a travessia (cenário estático) ou reduzir malha (modelo com peças
-demais), que são trabalhos completamente diferentes.
+Censo por nó de cena: quantos `Object3D` cada nó do `level.json` carrega, os `limit` maiores.
 
 ## Parameters
 

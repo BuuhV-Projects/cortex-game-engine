@@ -1204,7 +1204,9 @@ trecho” sem depender de print de HUD na hora certa.
   (`windowKB` e, com `?systemProfile=1`, `sysKB` por sistema, lido pelo `World` com `__cortexAllocatedBytes`).
   `cpu.napiBindJs`/`cpu.napiBindReplay` separam o `napiBind`. O módulo só registra com a ponte do trace: fora
   dele, cada registro é uma comparação. O censo da cena mora em `src/core/perfTrace/sceneCensus.ts` e os
-  leitores do host em `src/core/perfTrace/hostStats.ts`; o `PerfTrace.ts` re-exporta os nomes públicos.
+  leitores do host em `src/core/perfTrace/hostStats.ts`, e os blocos do `tick` em `perfTrace/sampleSections.ts`.
+  Esses módulos não entram em assinatura pública: os tipos e as fachadas (`SceneWalk`, `collectVisible`…) são
+  declarados no `PerfTrace.ts`, para o `.d.ts` vendorizado ser autocontido (`tests/electron/vendorTypeModules.test.ts`).
 
 ## 8e3. Render bundles estão DESLIGADOS — ADR-0215
 

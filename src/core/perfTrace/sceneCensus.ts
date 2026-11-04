@@ -1,22 +1,13 @@
 /**
  * Censo da cena do perf-trace (SPEC-0198, SPEC-0227, SPEC-0334): tamanho da árvore, matrizes paradas, nós por
  * nó de cena e o que está no frustum. Saiu do `PerfTrace.ts` (SPEC-0688) para ele caber em 500 linhas; o
- * `PerfTrace.ts` re-exporta os mesmos nomes.
+ * `PerfTrace.ts` declara os tipos e as fachadas públicas; este módulo é só implementação.
  */
 import { Frustum, Matrix4, type Camera, type Mesh, type Object3D } from 'three';
+import type { SceneWalkResult, VisibleNode } from '../PerfTrace.js';
 
 /** Elementos de uma Matrix4. */
 const MATRIX_ELEMENTS = 16;
-
-/** Um nó de cena visível na amostra. */
-export interface VisibleNode {
-  /** `node.id` da cena (o `buildScene` grava em `obj.name`). */
-  id: string;
-  /** Sub-malhas visíveis desse nó no frame. */
-  meshes: number;
-  /** Triângulos que o nó contribuiu. */
-  tris: number;
-}
 
 /** Triângulos que uma malha desenha (indexada ou não). */
 export function triangleCount(mesh: Mesh): number {
@@ -110,20 +101,6 @@ function matrixUnchanged(obj: Object3D, previous: Map<number, Float64Array>): bo
   }
   if (!igual) for (let i = 0; i < MATRIX_ELEMENTS; i++) before[i] = elements[i];
   return igual;
-}
-
-/** Resultado de uma volta completa do {@link SceneWalk}. */
-export interface SceneWalkResult {
-  /** Nós da árvore (inclusive os invisíveis — o `updateMatrixWorld` desce neles). */
-  total: number;
-  /** Nós com visibilidade efetiva (o `visible` do three é herdado). */
-  visible: number;
-  /** Nós com a matriz local igual à da volta anterior. */
-  unchanged: number;
-  /** Nós de cena no frustum, do mais caro (triângulos) pro menos. */
-  visibleNodes: VisibleNode[];
-  /** Quadros que a volta levou — a idade máxima do dado. */
-  frames: number;
 }
 
 /**

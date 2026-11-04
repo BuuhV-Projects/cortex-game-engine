@@ -3,17 +3,7 @@
  * (`__cortexNapiStats`, SPEC-0225), coletor (`__cortexGcStats`, SPEC-0264) e bytes alocados pelo Hermes
  * (`__cortexAllocatedBytes`, SPEC-0688). Fora do host (navegador, Studio, testes) todos devolvem `null`.
  */
-
-/** Totais do coletor do host (`__cortexGcStats`, SPEC-0264). */
-export interface GcTotals {
-  youngCount: number;
-  youngMs: number;
-  oldCount: number;
-  oldWallMs: number;
-  oldCpuMs: number;
-  /** MB alocados pelo JS desde o boot (SPEC-0357); Δ entre amostras = alocação. Host antigo não tem. */
-  allocatedMB?: number;
-}
+import type { GcTotals } from '../PerfTrace.js';
 
 const BYTES_PER_MB = 1024 * 1024;
 

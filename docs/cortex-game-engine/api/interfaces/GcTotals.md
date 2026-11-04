@@ -6,7 +6,7 @@
 
 # Interface: GcTotals
 
-Defined in: [src/core/perfTrace/hostStats.ts:8](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/perfTrace/hostStats.ts#L8)
+Defined in: [src/core/PerfTrace.ts:159](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L159)
 
 Totais do coletor do host (`__cortexGcStats`, SPEC-0264).
 
@@ -16,7 +16,7 @@ Totais do coletor do host (`__cortexGcStats`, SPEC-0264).
 
 > `optional` **allocatedMB?**: `number`
 
-Defined in: [src/core/perfTrace/hostStats.ts:15](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/perfTrace/hostStats.ts#L15)
+Defined in: [src/core/PerfTrace.ts:166](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L166)
 
 MB alocados pelo JS desde o boot (SPEC-0357); Δ entre amostras = alocação. Host antigo não tem.
 
@@ -26,7 +26,7 @@ MB alocados pelo JS desde o boot (SPEC-0357); Δ entre amostras = alocação. Ho
 
 > **oldCount**: `number`
 
-Defined in: [src/core/perfTrace/hostStats.ts:11](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/perfTrace/hostStats.ts#L11)
+Defined in: [src/core/PerfTrace.ts:162](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L162)
 
 ***
 
@@ -34,7 +34,7 @@ Defined in: [src/core/perfTrace/hostStats.ts:11](https://github.com/BuuhV-Projec
 
 > **oldCpuMs**: `number`
 
-Defined in: [src/core/perfTrace/hostStats.ts:13](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/perfTrace/hostStats.ts#L13)
+Defined in: [src/core/PerfTrace.ts:164](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L164)
 
 ***
 
@@ -42,7 +42,7 @@ Defined in: [src/core/perfTrace/hostStats.ts:13](https://github.com/BuuhV-Projec
 
 > **oldWallMs**: `number`
 
-Defined in: [src/core/perfTrace/hostStats.ts:12](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/perfTrace/hostStats.ts#L12)
+Defined in: [src/core/PerfTrace.ts:163](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L163)
 
 ***
 
@@ -50,7 +50,7 @@ Defined in: [src/core/perfTrace/hostStats.ts:12](https://github.com/BuuhV-Projec
 
 > **youngCount**: `number`
 
-Defined in: [src/core/perfTrace/hostStats.ts:9](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/perfTrace/hostStats.ts#L9)
+Defined in: [src/core/PerfTrace.ts:160](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L160)
 
 ***
 
@@ -58,4 +58,4 @@ Defined in: [src/core/perfTrace/hostStats.ts:9](https://github.com/BuuhV-Project
 
 > **youngMs**: `number`
 
-Defined in: [src/core/perfTrace/hostStats.ts:10](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/perfTrace/hostStats.ts#L10)
+Defined in: [src/core/PerfTrace.ts:161](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L161)
