@@ -17,7 +17,7 @@ ser chamada: o Console não mostra nenhum evento de autenticação para ela.
 O passo `Revisão` passa `github_token: ${{ github.token }}`. A action usa o token do
 runner (`contents: read`, `pull-requests: write`) para ler o PR e comentar no diff, e
 não troca nada pelo token do App. A federação (WIF) segue pagando a revisão com o
-crédito da API, como no TDR-0011.
+crédito da API, como no TDR-0011 (depois trocada pelo token da assinatura, TDR-0013).
 
 Alternativas:
 

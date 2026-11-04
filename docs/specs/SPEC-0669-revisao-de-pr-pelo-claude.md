@@ -22,8 +22,8 @@ Workflow `.github/workflows/claude-review.yml`:
   - `trail build pr-head` gera o mapa do head;
   - os comentários inline que já existem no PR vão para `review-context/comments.json`,
     para o Claude não repetir o que já foi apontado.
-- **Revisão:** `claude-code-action@v1`, autenticada na API por WIF (crédito da API,
-  sem secret; TDR-0011). Ferramentas
+- **Revisão:** `claude-code-action@v1`, autenticada pelo token da assinatura (secret
+  `CLAUDE_CODE_OAUTH_TOKEN`, TDR-0013; era WIF com crédito da API, TDR-0011). Ferramentas
   liberadas: `Read`, `Glob`, `Grep`, `Bash(trail:*)`, `Bash(gh pr diff:*)`,
   `Bash(gh pr view:*)` e o MCP `create_inline_comment`. Hooks desligados
   (`disableAllHooks`). O prompt pede, em pt-br:
@@ -48,8 +48,8 @@ Workflow `.github/workflows/claude-review.yml`:
 
 ## Consequências
 
-- Requer a regra WIF aceitando o OIDC de `pull_request_target` deste repo; sem ela
-  o job falha e não há aprovação. A action comenta com o `GITHUB_TOKEN`
+- Requer o secret `CLAUDE_CODE_OAUTH_TOKEN` no repo; sem ele (ou com o token
+  vencido) o job falha e não há aprovação. A action comenta com o `GITHUB_TOKEN`
   (`github-actions[bot]`), não pelo Claude GitHub App (TDR-0012).
 - A resposta às threads segue a regra do CLAUDE.md (o Auto-fix da sessão trata os
   comentários do `github-actions[bot]` como os de qualquer revisor).
