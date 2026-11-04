@@ -228,6 +228,13 @@ export interface MatState {
   generation: number;
 }
 
+/** Uma receita gravada: id na ponte e as gerações (material, grupo 1) com que foi gravada. */
+export interface RecipeRecord {
+  id: number;
+  generation: number;
+  frame: number;
+}
+
 export interface Inst extends NativeEntry {
   object: Object3D;
   material: Material;
@@ -250,7 +257,10 @@ export interface Inst extends NativeEntry {
   last: Float32Array;
   /** World matrix version whose matrix is in `last` and the object block (SPEC-0682); -1 = none. */
   worldVersion: number;
-  recipes: Map<string, { id: number; generation: number; frame: number }>;
+  recipes: Map<string, RecipeRecord>;
+  /** Por passe (SPEC-0685): id do alvo da última receita devolvida (`NO_TARGET` = nenhuma) e o registro dela. */
+  passTarget: Int32Array;
+  passRecipe: RecipeRecord[];
   // Per frame (`getDrawParameters` of the three): drawRange, InstancedMesh.count.
   count: number;
   first: number;
