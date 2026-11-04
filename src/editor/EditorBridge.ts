@@ -95,12 +95,13 @@ export function createEditorBridge(options: EditorBridgeOptions): EditorBridge {
 
   let bridged = false;
   let lastJson = '';
-  let lastSentAt = 0;
+  let lastDescribedAt = 0;
   let lastHandlers: HandlerMap = new Map();
   let helloTimer: ReturnType<typeof setInterval> | null = null;
 
-  // Em play o transform muda todo frame — limita a ~12 posts/s pra não inundar a
-  // borda do iframe. `force` ignora o throttle (handshake/edições do usuário).
+  // Em play o transform muda todo frame — limita a ~12 descrições/s pra não inundar a
+  // borda do iframe nem serializar o estado todo quadro. `force` ignora o throttle
+  // (handshake/edições do usuário).
   const MIN_INTERVAL_MS = 80;
 
   const post = (msg: unknown): void => transport.send(msg as BridgeMessage);
@@ -108,7 +109,10 @@ export function createEditorBridge(options: EditorBridgeOptions): EditorBridge {
   const doPublish = (force: boolean): void => {
     if (!bridged) return;
     const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
-    if (!force && now - lastSentAt < MIN_INTERVAL_MS) return;
+    if (!force && now - lastDescribedAt < MIN_INTERVAL_MS) return;
+    // Marca ANTES de descrever (SPEC-0671): com o JSON igual nada é postado, e se o
+    // instante só andasse no envio, a descrição + o stringify rodariam todo quadro.
+    lastDescribedAt = now;
     const outliner = describeOutliner(editRoots, registry, selection.current, selection.items);
     const described = describeInspector(selection.current, ctx, registry, selection.items);
     lastHandlers = described.handlers;
@@ -126,7 +130,6 @@ export function createEditorBridge(options: EditorBridgeOptions): EditorBridge {
     const json = JSON.stringify(msg);
     if (json === lastJson) return; // diff: nada mudou, não posta
     lastJson = json;
-    lastSentAt = now;
     post(msg);
   };
 
