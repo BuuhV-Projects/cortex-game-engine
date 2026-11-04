@@ -17,7 +17,7 @@ const CALLS = 10;
 /** O caminho novo tem de ser mais rápido que o antigo por pelo menos isto (medido ~3× com JIT). */
 const MIN_SPEEDUP = 1.5;
 /**
- * No runner do CI (máquina compartilhada, ruído de tempo) a mesma medida deu ~1,3× e reprovou um PR sem relação com a
+ * No runner do CI (máquina compartilhada, ruído de tempo) essa medida deu ~1,3× e reprovou um PR sem relação com a
  * `Vegetation`: lá só se exige que o caminho novo não seja mais lento. A asserção de bytes, determinística, não muda.
  */
 const MIN_SPEEDUP_CI = 1;
@@ -101,7 +101,7 @@ describe('Vegetation — custo da escrita (SPEC-0675)', () => {
     const data = new Float32Array(flat);
     const adopted = msPerCall(() => veg.adoptInstances(data));
     report(`1900 inteiras: ${after.toFixed(3)} ms (antes ${before.toFixed(3)} ms; adotado ${adopted.toFixed(3)} ms)`);
-    expect(after * speedupFloor()).toBeLessThan(before);
+    expect(after * speedupFloor()).toBeLessThanOrEqual(before); // no CI, empate conta como "não mais lento"
   });
 
   it('a escrita de uma faixa de 64 não aloca por instância', () => {

@@ -135,7 +135,7 @@ JIT. O V8 tem objetos menores que o Hermes, e com JIT otimiza o iterador do `Set
 números comparam antes e depois, não somam com o nativo.
 
 O `vegetationWriteBench` também compara o **tempo** do `setInstances` com o caminho antigo, no mesmo processo. Na
-máquina local o caminho novo tem de ser 1,5× mais rápido (medido ~3×). No runner do CI (máquina compartilhada) a mesma
+máquina local o caminho novo tem de ser 1,5× mais rápido (medido ~3×). No runner do CI (máquina compartilhada) essa
 medida deu ~1,3× e reprovou um PR sem relação com a `Vegetation` (cortex-game-engine#53, 2026-11-04): com `CI`
 definido, só se exige que o caminho novo não seja mais lento. A asserção de bytes por chamada não depende de tempo e
 vale nos dois.
