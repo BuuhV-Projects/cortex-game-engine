@@ -6,7 +6,7 @@
 
 # Interface: VehicleWheelSpec
 
-Defined in: [src/physics/RapierPhysics.ts:65](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L65)
+Defined in: [src/physics/RapierPhysics.ts:75](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L75)
 
 Uma roda do [Vehicle](../classes/Vehicle.md) (posição relativa ao chassi + flags).
 
@@ -16,7 +16,7 @@ Uma roda do [Vehicle](../classes/Vehicle.md) (posição relativa ao chassi + fla
 
 > `optional` **gripScale?**: `number`
 
-Defined in: [src/physics/RapierPhysics.ts:75](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L75)
+Defined in: [src/physics/RapierPhysics.ts:85](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L85)
 
 Multiplica o grip desta roda (ex.: traseira 0.7 = escapa mais → sobreesterço). Default 1.
 
@@ -26,7 +26,7 @@ Multiplica o grip desta roda (ex.: traseira 0.7 = escapa mais → sobreesterço)
 
 > **position**: [`Vec3Like`](Vec3Like.md)
 
-Defined in: [src/physics/RapierPhysics.ts:67](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L67)
+Defined in: [src/physics/RapierPhysics.ts:77](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L77)
 
 Posição da roda relativa ao centro do chassi.
 
@@ -36,7 +36,7 @@ Posição da roda relativa ao centro do chassi.
 
 > `optional` **powered?**: `boolean`
 
-Defined in: [src/physics/RapierPhysics.ts:73](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L73)
+Defined in: [src/physics/RapierPhysics.ts:83](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L83)
 
 Tem tração (motor)?
 
@@ -46,7 +46,7 @@ Tem tração (motor)?
 
 > **radius**: `number`
 
-Defined in: [src/physics/RapierPhysics.ts:69](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L69)
+Defined in: [src/physics/RapierPhysics.ts:79](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L79)
 
 Raio da roda (m).
 
@@ -56,6 +56,6 @@ Raio da roda (m).
 
 > `optional` **steering?**: `boolean`
 
-Defined in: [src/physics/RapierPhysics.ts:71](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L71)
+Defined in: [src/physics/RapierPhysics.ts:81](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L81)
 
 Esterça? (dianteiras = `true`).

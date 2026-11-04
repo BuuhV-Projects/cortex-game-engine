@@ -26,7 +26,7 @@ sobrescreveria a chase cam ao dirigir). As rodas raycastam no WASM (sem custo de
 
 > **new VehicleControlSystem**(`physics`, `vehicle`, `car`, `camera`, `gamepad`, `input?`, `options?`): `VehicleControlSystem`
 
-Defined in: [src/systems/VehicleControlSystem.ts:132](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L132)
+Defined in: [src/systems/VehicleControlSystem.ts:133](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L133)
 
 #### Parameters
 
@@ -91,7 +91,7 @@ nem remove) ao trocar de cena. Para overlays que sobrevivem à troca de fase
 
 > `optional` **pauseWhen?**: () => `boolean`
 
-Defined in: [src/ecs/System.ts:73](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L73)
+Defined in: [src/ecs/System.ts:80](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L80)
 
 Predicado opcional de PAUSA: se definido e retornar `true` num tick, o
 `World` pula o `update` deste sistema nesse frame. Usado, por ex., pra pausar
@@ -112,7 +112,7 @@ a gameplay (física/input) enquanto o editor está ativo
 
 > **priority**: `number` = `30`
 
-Defined in: [src/systems/VehicleControlSystem.ts:120](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L120)
+Defined in: [src/systems/VehicleControlSystem.ts:121](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L121)
 
 Prioridade de execução deste sistema.
 
@@ -125,11 +125,27 @@ Sistemas com valores menores executam antes. Padrão: `0`.
 
 ***
 
+### profileLabel
+
+> `readonly` **profileLabel**: `"VehicleControlSystem"` = `'VehicleControlSystem'`
+
+Defined in: [src/systems/VehicleControlSystem.ts:119](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L119)
+
+Nome do sistema no perfil por sistema (`World.enableSystemProfile`, SPEC-0236).
+Sem ele o perfil usa `constructor.name`, que no bundle minificado vira `fx`,
+`DBe`… — por isso todo sistema da engine declara o seu (SPEC-0671).
+
+#### Overrides
+
+[`System`](System.md).[`profileLabel`](System.md#profilelabel)
+
+***
+
 ### requiredComponents
 
 > `static` **requiredComponents**: `never`[] = `[]`
 
-Defined in: [src/systems/VehicleControlSystem.ts:119](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L119)
+Defined in: [src/systems/VehicleControlSystem.ts:120](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L120)
 
 Construtores dos componentes que este sistema requer.
 
@@ -155,7 +171,7 @@ static requiredComponents = [TransformComponent, VelocityComponent];
 
 > **dispose**(): `void`
 
-Defined in: [src/ecs/System.ts:90](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L90)
+Defined in: [src/ecs/System.ts:97](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L97)
 
 Libera recursos ao remover o sistema — chamado por [World.clear](World.md#clear) (e
 pode ser chamado manualmente). No-op por padrão; sobrescreva pra liberar
@@ -176,7 +192,7 @@ handles nativos que o GC não coleta sozinho (ex.: o mundo do Rapier em
 
 > **update**(`_entities`, `deltaTime`): `void`
 
-Defined in: [src/systems/VehicleControlSystem.ts:148](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L148)
+Defined in: [src/systems/VehicleControlSystem.ts:149](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L149)
 
 Executa a lógica do sistema para o frame/passo atual.
 

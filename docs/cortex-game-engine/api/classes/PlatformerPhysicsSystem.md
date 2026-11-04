@@ -70,7 +70,7 @@ nem remove) ao trocar de cena. Para overlays que sobrevivem à troca de fase
 
 > `optional` **pauseWhen?**: () => `boolean`
 
-Defined in: [src/ecs/System.ts:73](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L73)
+Defined in: [src/ecs/System.ts:80](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L80)
 
 Predicado opcional de PAUSA: se definido e retornar `true` num tick, o
 `World` pula o `update` deste sistema nesse frame. Usado, por ex., pra pausar
@@ -91,7 +91,7 @@ a gameplay (física/input) enquanto o editor está ativo
 
 > **priority**: `number` = `5`
 
-Defined in: [src/systems/PlatformerPhysicsSystem.ts:32](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/PlatformerPhysicsSystem.ts#L32)
+Defined in: [src/systems/PlatformerPhysicsSystem.ts:33](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/PlatformerPhysicsSystem.ts#L33)
 
 Prioridade de execução deste sistema.
 
@@ -104,11 +104,27 @@ Sistemas com valores menores executam antes. Padrão: `0`.
 
 ***
 
+### profileLabel
+
+> `readonly` **profileLabel**: `"PlatformerPhysicsSystem"` = `'PlatformerPhysicsSystem'`
+
+Defined in: [src/systems/PlatformerPhysicsSystem.ts:31](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/PlatformerPhysicsSystem.ts#L31)
+
+Nome do sistema no perfil por sistema (`World.enableSystemProfile`, SPEC-0236).
+Sem ele o perfil usa `constructor.name`, que no bundle minificado vira `fx`,
+`DBe`… — por isso todo sistema da engine declara o seu (SPEC-0671).
+
+#### Overrides
+
+[`System`](System.md).[`profileLabel`](System.md#profilelabel)
+
+***
+
 ### requiredComponents
 
 > `static` **requiredComponents**: (*typeof* [`Collider2DComponent`](Collider2DComponent.md) \| *typeof* [`TransformComponent`](TransformComponent.md))[]
 
-Defined in: [src/systems/PlatformerPhysicsSystem.ts:31](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/PlatformerPhysicsSystem.ts#L31)
+Defined in: [src/systems/PlatformerPhysicsSystem.ts:32](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/PlatformerPhysicsSystem.ts#L32)
 
 Construtores dos componentes que este sistema requer.
 
@@ -134,7 +150,7 @@ static requiredComponents = [TransformComponent, VelocityComponent];
 
 > **dispose**(): `void`
 
-Defined in: [src/ecs/System.ts:90](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L90)
+Defined in: [src/ecs/System.ts:97](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L97)
 
 Libera recursos ao remover o sistema — chamado por [World.clear](World.md#clear) (e
 pode ser chamado manualmente). No-op por padrão; sobrescreva pra liberar
@@ -155,7 +171,7 @@ handles nativos que o GC não coleta sozinho (ex.: o mundo do Rapier em
 
 > **update**(`entities`, `deltaTime`): `void`
 
-Defined in: [src/systems/PlatformerPhysicsSystem.ts:34](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/PlatformerPhysicsSystem.ts#L34)
+Defined in: [src/systems/PlatformerPhysicsSystem.ts:35](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/PlatformerPhysicsSystem.ts#L35)
 
 Executa a lógica do sistema para o frame/passo atual.
 

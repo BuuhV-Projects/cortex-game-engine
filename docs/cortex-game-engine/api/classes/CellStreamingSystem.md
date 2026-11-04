@@ -46,7 +46,7 @@ class MovementSystem extends System {
 
 > **new CellStreamingSystem**(`cells`, `opts`): `CellStreamingSystem`
 
-Defined in: [src/scene/Streaming.ts:84](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L84)
+Defined in: [src/scene/Streaming.ts:85](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L85)
 
 #### Parameters
 
@@ -89,7 +89,7 @@ nem remove) ao trocar de cena. Para overlays que sobrevivem à troca de fase
 
 > `optional` **pauseWhen?**: () => `boolean`
 
-Defined in: [src/ecs/System.ts:73](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L73)
+Defined in: [src/ecs/System.ts:80](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L80)
 
 Predicado opcional de PAUSA: se definido e retornar `true` num tick, o
 `World` pula o `update` deste sistema nesse frame. Usado, por ex., pra pausar
@@ -110,7 +110,7 @@ a gameplay (física/input) enquanto o editor está ativo
 
 > **priority**: `number` = `-1000`
 
-Defined in: [src/scene/Streaming.ts:74](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L74)
+Defined in: [src/scene/Streaming.ts:75](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L75)
 
 Roda ANTES de tudo — o render vê a residência já atualizada neste frame.
 
@@ -120,11 +120,27 @@ Roda ANTES de tudo — o render vê a residência já atualizada neste frame.
 
 ***
 
+### profileLabel
+
+> `readonly` **profileLabel**: `"CellStreamingSystem"` = `'CellStreamingSystem'`
+
+Defined in: [src/scene/Streaming.ts:73](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L73)
+
+Nome do sistema no perfil por sistema (`World.enableSystemProfile`, SPEC-0236).
+Sem ele o perfil usa `constructor.name`, que no bundle minificado vira `fx`,
+`DBe`… — por isso todo sistema da engine declara o seu (SPEC-0671).
+
+#### Overrides
+
+[`System`](System.md).[`profileLabel`](System.md#profilelabel)
+
+***
+
 ### requiredComponents
 
 > `static` **requiredComponents**: `ComponentClass`[] = `[]`
 
-Defined in: [src/ecs/System.ts:65](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L65)
+Defined in: [src/ecs/System.ts:72](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L72)
 
 Construtores dos componentes que este sistema requer.
 
@@ -152,7 +168,7 @@ static requiredComponents = [TransformComponent, VelocityComponent];
 
 > **get** **loadingCount**(): `number`
 
-Defined in: [src/scene/Streaming.ts:167](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L167)
+Defined in: [src/scene/Streaming.ts:168](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L168)
 
 Nº de células ainda CARREGANDO (onLoad async não terminou) — pra tela de loading.
 
@@ -168,7 +184,7 @@ Nº de células ainda CARREGANDO (onLoad async não terminou) — pra tela de lo
 
 > **get** **resident**(): `ReadonlySet`\<`string`\>
 
-Defined in: [src/scene/Streaming.ts:152](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L152)
+Defined in: [src/scene/Streaming.ts:153](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L153)
 
 Chaves residentes agora (desejadas — inclui as ainda carregando).
 
@@ -184,7 +200,7 @@ Chaves residentes agora (desejadas — inclui as ainda carregando).
 
 > **get** **residentCount**(): `number`
 
-Defined in: [src/scene/Streaming.ts:162](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L162)
+Defined in: [src/scene/Streaming.ts:163](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L163)
 
 Nº de células residentes (desejadas) agora.
 
@@ -198,7 +214,7 @@ Nº de células residentes (desejadas) agora.
 
 > **dispose**(): `void`
 
-Defined in: [src/ecs/System.ts:90](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L90)
+Defined in: [src/ecs/System.ts:97](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L97)
 
 Libera recursos ao remover o sistema — chamado por [World.clear](World.md#clear) (e
 pode ser chamado manualmente). No-op por padrão; sobrescreva pra liberar
@@ -219,7 +235,7 @@ handles nativos que o GC não coleta sozinho (ex.: o mundo do Rapier em
 
 > **isResident**(`key`): `boolean`
 
-Defined in: [src/scene/Streaming.ts:157](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L157)
+Defined in: [src/scene/Streaming.ts:158](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L158)
 
 A célula `key` é desejada agora? (o app confere antes de adicionar à cena.)
 
@@ -239,7 +255,7 @@ A célula `key` é desejada agora? (o app confere antes de adicionar à cena.)
 
 > **step**(`cam`): `void`
 
-Defined in: [src/scene/Streaming.ts:103](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L103)
+Defined in: [src/scene/Streaming.ts:104](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L104)
 
 Passo puro do streaming (testável): descarrega o que saiu de `raio+histerese`
 e carrega, por distância e até o orçamento, o que entrou no raio.
@@ -260,7 +276,7 @@ e carrega, por distância e até o orçamento, o que entrou no raio.
 
 > **update**(): `void`
 
-Defined in: [src/scene/Streaming.ts:95](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L95)
+Defined in: [src/scene/Streaming.ts:96](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L96)
 
 Executa a lógica do sistema para o frame/passo atual.
 

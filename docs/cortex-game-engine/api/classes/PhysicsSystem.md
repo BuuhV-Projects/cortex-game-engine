@@ -102,7 +102,7 @@ nem remove) ao trocar de cena. Para overlays que sobrevivem à troca de fase
 
 > `optional` **pauseWhen?**: () => `boolean`
 
-Defined in: [src/ecs/System.ts:73](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L73)
+Defined in: [src/ecs/System.ts:80](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L80)
 
 Predicado opcional de PAUSA: se definido e retornar `true` num tick, o
 `World` pula o `update` deste sistema nesse frame. Usado, por ex., pra pausar
@@ -136,6 +136,22 @@ Sistemas com valores menores executam antes. Padrão: `0`.
 
 ***
 
+### profileLabel?
+
+> `readonly` `optional` **profileLabel?**: `string`
+
+Defined in: [src/ecs/System.ts:58](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L58)
+
+Nome do sistema no perfil por sistema (`World.enableSystemProfile`, SPEC-0236).
+Sem ele o perfil usa `constructor.name`, que no bundle minificado vira `fx`,
+`DBe`… — por isso todo sistema da engine declara o seu (SPEC-0671).
+
+#### Inherited from
+
+[`System`](System.md).[`profileLabel`](System.md#profilelabel)
+
+***
+
 ### requiredComponents
 
 > `static` **requiredComponents**: (*typeof* [`RigidBodyComponent`](RigidBodyComponent.md) \| *typeof* [`ColliderComponent`](ColliderComponent.md))[]
@@ -166,7 +182,7 @@ static requiredComponents = [TransformComponent, VelocityComponent];
 
 > **dispose**(): `void`
 
-Defined in: [src/ecs/System.ts:90](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L90)
+Defined in: [src/ecs/System.ts:97](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L97)
 
 Libera recursos ao remover o sistema — chamado por [World.clear](World.md#clear) (e
 pode ser chamado manualmente). No-op por padrão; sobrescreva pra liberar

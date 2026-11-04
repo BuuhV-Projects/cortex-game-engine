@@ -31,7 +31,7 @@ Roda em `priority = 6`: depois da física (`CharacterPhysicsSystem`, 5) e ANTES 
 
 > **new ThirdPersonControlSystem**(`camera`, `input`, `canvas`, `options?`, `gamepad?`, `collisionRoot?`): `ThirdPersonControlSystem`
 
-Defined in: [src/systems/ThirdPersonControlSystem.ts:181](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L181)
+Defined in: [src/systems/ThirdPersonControlSystem.ts:182](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L182)
 
 #### Parameters
 
@@ -76,7 +76,7 @@ câmera (chão/árvore/parede), a câmera é puxada pra dentro. Opcional.
 
 > **faceCamera**: `boolean`
 
-Defined in: [src/systems/ThirdPersonControlSystem.ts:145](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L145)
+Defined in: [src/systems/ThirdPersonControlSystem.ts:146](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L146)
 
 Personagem encara a câmera — ver [ThirdPersonControlOptions.faceCamera](../interfaces/ThirdPersonControlOptions.md#facecamera).
 
@@ -103,7 +103,7 @@ nem remove) ao trocar de cena. Para overlays que sobrevivem à troca de fase
 
 > `optional` **pauseWhen?**: () => `boolean`
 
-Defined in: [src/ecs/System.ts:73](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L73)
+Defined in: [src/ecs/System.ts:80](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L80)
 
 Predicado opcional de PAUSA: se definido e retornar `true` num tick, o
 `World` pula o `update` deste sistema nesse frame. Usado, por ex., pra pausar
@@ -124,7 +124,7 @@ a gameplay (física/input) enquanto o editor está ativo
 
 > **priority**: `number` = `6`
 
-Defined in: [src/systems/ThirdPersonControlSystem.ts:124](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L124)
+Defined in: [src/systems/ThirdPersonControlSystem.ts:125](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L125)
 
 Prioridade de execução deste sistema.
 
@@ -137,11 +137,27 @@ Sistemas com valores menores executam antes. Padrão: `0`.
 
 ***
 
+### profileLabel
+
+> `readonly` **profileLabel**: `"ThirdPersonControlSystem"` = `'ThirdPersonControlSystem'`
+
+Defined in: [src/systems/ThirdPersonControlSystem.ts:123](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L123)
+
+Nome do sistema no perfil por sistema (`World.enableSystemProfile`, SPEC-0236).
+Sem ele o perfil usa `constructor.name`, que no bundle minificado vira `fx`,
+`DBe`… — por isso todo sistema da engine declara o seu (SPEC-0671).
+
+#### Overrides
+
+[`System`](System.md).[`profileLabel`](System.md#profilelabel)
+
+***
+
 ### shoulderOffset
 
 > **shoulderOffset**: `number`
 
-Defined in: [src/systems/ThirdPersonControlSystem.ts:143](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L143)
+Defined in: [src/systems/ThirdPersonControlSystem.ts:144](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L144)
 
 Deslocamento lateral da câmera (m) — ver [ThirdPersonControlOptions.shoulderOffset](../interfaces/ThirdPersonControlOptions.md#shoulderoffset).
 
@@ -151,7 +167,7 @@ Deslocamento lateral da câmera (m) — ver [ThirdPersonControlOptions.shoulderO
 
 > `static` **requiredComponents**: (*typeof* [`TransformComponent`](TransformComponent.md) \| *typeof* [`CharacterBodyComponent`](CharacterBodyComponent.md))[]
 
-Defined in: [src/systems/ThirdPersonControlSystem.ts:123](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L123)
+Defined in: [src/systems/ThirdPersonControlSystem.ts:124](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L124)
 
 Construtores dos componentes que este sistema requer.
 
@@ -177,7 +193,7 @@ static requiredComponents = [TransformComponent, VelocityComponent];
 
 > **dispose**(): `void`
 
-Defined in: [src/systems/ThirdPersonControlSystem.ts:232](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L232)
+Defined in: [src/systems/ThirdPersonControlSystem.ts:233](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L233)
 
 Remove o listener de `mousedown` do canvas — chamado pelo [World.clear](World.md#clear)
 na troca de fase. Sem isto, a closure do listener retém este system (e, por
@@ -198,7 +214,7 @@ jogada — era um dos vazamentos de memória por fase (SPEC-0152).
 
 > **playAction**(`clip`, `duration`): `void`
 
-Defined in: [src/systems/ThirdPersonControlSystem.ts:258](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L258)
+Defined in: [src/systems/ThirdPersonControlSystem.ts:259](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L259)
 
 Toca uma **ação one-shot** (soco, aceno, etc.) por `duration` segundos, sobrepondo
 a locomoção — o jogo chama isso num botão (combate/interação). O clipe precisa
@@ -224,7 +240,7 @@ existir no `.glb`; senão é ignorado.
 
 > **setOrbit**(`mode`, `angles?`): `void`
 
-Defined in: [src/systems/ThirdPersonControlSystem.ts:242](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L242)
+Defined in: [src/systems/ThirdPersonControlSystem.ts:243](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L243)
 
 Troca o modo de câmera em runtime (ótimo pra A/B testar): `locked` fixa
 yaw/pitch/distância nos valores passados (ou mantém os atuais); `free` volta
@@ -260,7 +276,7 @@ a órbita por mouse/stick. Sai do pointer lock ao travar.
 
 > **update**(`entities`, `deltaTime`): `void`
 
-Defined in: [src/systems/ThirdPersonControlSystem.ts:263](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L263)
+Defined in: [src/systems/ThirdPersonControlSystem.ts:264](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L264)
 
 Executa a lógica do sistema para o frame/passo atual.
 
