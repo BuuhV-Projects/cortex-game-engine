@@ -125,6 +125,25 @@ jobs:
             --allowedTools "Read,Glob,Grep,Bash(trail:*),Bash(gh pr diff:*),Bash(gh pr view:*),mcp__github_inline_comment__create_inline_comment"
             --json-schema '{"type":"object","properties":{"score":{"type":"integer","minimum":1,"maximum":5},"summary":{"type":"string"}},"required":["score","summary"]}'
 
+      # A action guarda a resposta do Claude num arquivo e não a mostra: sem isto, uma falha de
+      # autenticação ou de cota aparece só como "did not return structured_output". Imprime o
+      # texto do erro (o `result` e a última fala), não a saída inteira — o log do repo é público.
+      - name: Erro da revisão
+        if: failure() && steps.review.outcome == 'failure'
+        env:
+          EXEC_FILE: ${{ steps.review.outputs.execution_file }}
+        run: |
+          file="${EXEC_FILE:-$RUNNER_TEMP/claude-execution-output.json}"
+          [ -f "$file" ] || { echo "sem $file"; exit 0; }
+          node -e '
+            const msgs = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"));
+            const cut = (t) => String(t ?? "(vazio)").slice(0, 500);
+            for (const m of msgs) if (m.type === "result") console.log("result: " + cut(m.result));
+            const falas = msgs.filter((m) => m.type === "assistant").flatMap((m) => m.message?.content ?? [])
+              .filter((c) => c.type === "text").map((c) => c.text);
+            console.log("última fala: " + cut(falas.at(-1) ?? "(sem fala)"));
+          ' "$file"
+
       - name: Nota e aprovação
         env:
           GH_TOKEN: ${{ github.token }}
