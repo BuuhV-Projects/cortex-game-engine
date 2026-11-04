@@ -1,3 +1,15 @@
+## [0.103.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.103.0...v0.103.1) (2026-11-04)
+
+
+### Bug Fixes
+
+* **frota:** malha trocada no Object3DComponent recebe a pose do carro (SPEC-0687) ([febe613](https://github.com/BuuhV-Projects/cortex-game-engine/commit/febe61338126f008f13ab3108ab65360a46eddce)), closes [#53](https://github.com/BuuhV-Projects/cortex-game-engine/issues/53)
+
+
+### Performance Improvements
+
+* **frota:** carro com pose externa fora do passo do VehicleArcadeSystem (SPEC-0687) ([c6d7e0c](https://github.com/BuuhV-Projects/cortex-game-engine/commit/c6d7e0ce62af9ddc200553d4cb3ce2f64f4fb66f))
+
 # [0.103.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.102.1...v0.103.0) (2026-11-04)
 
 
