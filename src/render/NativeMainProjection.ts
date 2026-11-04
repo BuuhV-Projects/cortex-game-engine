@@ -25,7 +25,7 @@ import { debug } from '../core/debug.js';
 import { mainPassBridge, type MainPassBridge, type NativeSceneMirror } from '../core/NativeSceneMirror.js';
 import { MainPassKind } from './MainPassKind.js';
 import { queryFlagRequested } from './TransformOnlyRefresh.js';
-import { activeRenderServer, type RenderServer, type ServerRendererLike } from './RenderServer.js';
+import { NO_VERSION, activeRenderServer, type RenderServer, type ServerRendererLike } from './RenderServer.js';
 import { mainPassArm } from './MainPassArm.js';
 
 const QUERY_KEY = 'nativeProjection=';
@@ -90,6 +90,8 @@ export class MainProjector {
   private readonly _depth = new Vector4();
   private _indices = new Int32Array(0);
   private _depths = new Float64Array(0);
+  /** Versão do mundo por candidato (SPEC-0682), quando o host a dá. */
+  private _versions = new Float64Array(0);
   private _lastRefusal = '';
 
   constructor(
@@ -104,6 +106,7 @@ export class MainProjector {
     if (this._indices.length < capacidade) {
       this._indices = new Int32Array(capacidade);
       this._depths = new Float64Array(capacidade);
+      this._versions = new Float64Array(capacidade);
     }
 
     // Escrita feita depois do `update` do quadro (dentro do render) entra agora.
@@ -121,7 +124,10 @@ export class MainProjector {
     this._vp.set(this._viewProjection.elements);
 
     beginSection('nativeCull');
-    const n = this._bridge.project(this._planes, this._vp, this._indices, this._depths);
+    const comVersoes = this._bridge.worldVersions === true;
+    const n = comVersoes
+      ? this._bridge.project(this._planes, this._vp, this._indices, this._depths, this._versions)
+      : this._bridge.project(this._planes, this._vp, this._indices, this._depths);
     endSection('nativeCull');
     if (n < 0) {
       this._recusar(n === PROJECT_REFUSED ? `no ${this._indices[0]} nao reproduzivel` : `codigo ${n}`, view.nodes, n);
@@ -139,12 +145,13 @@ export class MainProjector {
         continue;
       }
       let z = this._depths[k]!;
+      const versao = comVersoes ? this._versions[k]! : NO_VERSION;
       // Only what the three would push (`material.visible`) is offered (SPEC-0555).
       const ofertavel = server !== null && !Array.isArray(objeto.material) && objeto.material.visible;
       // RS1b (SPEC-0425): clean opaque instances go to the server, not to the RenderList.
       if (
         ofertavel && tipo === MainPassKind.NativeCull &&
-        server!.offer(objeto, objeto.material as Material, objeto.geometry, clippingContext, this._depths[k]!)
+        server!.offer(objeto, objeto.material as Material, objeto.geometry, clippingContext, this._depths[k]!, versao)
       ) {
         continue;
       }
@@ -153,7 +160,7 @@ export class MainProjector {
         if (objeto.frustumCulled && !this._dentro(objeto)) continue;
         z = this._zDoThree(objeto);
         // The native renderer (ADR-0465) may own instanced/skinned objects the RS1 never takes.
-        if (ofertavel && server!.offerNative(objeto, objeto.material, objeto.geometry, clippingContext, z)) continue;
+        if (ofertavel && server!.offerNative(objeto, objeto.material, objeto.geometry, clippingContext, z, versao)) continue;
       }
       empurrar(renderList, objeto, z, clippingContext);
     }

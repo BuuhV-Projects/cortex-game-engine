@@ -15,8 +15,10 @@ namespace {
 constexpr int kProjectRefused = scene::kMainCullRefused;
 constexpr int kProjectBadArgs = -2;
 constexpr int kProjectOutTooSmall = -3;
-/** Argumentos de `project`: planos, viewProj, índices de saída, `z` de saída. */
+/** Argumentos obrigatórios de `project`: planos, viewProj, índices de saída, `z` de saída. */
 constexpr size_t kArgsProject = 4;
+/** Com o 5º, opcional: versões do mundo de saída (SPEC-0682). */
+constexpr size_t kArgsProjectVersions = 5;
 /** Argumentos de `setBounds`: índice, cx, cy, cz, raio. */
 constexpr size_t kArgsSetBounds = 5;
 /** Doubles dos 6 planos do frustum. */
@@ -49,14 +51,16 @@ napi_value number(napi_env env, double value) {
 
 /**
  * `project(planos: Float64Array(24), viewProj: Float64Array(16),
- *          indices: Int32Array, z: Float64Array): number`
+ *          indices: Int32Array, z: Float64Array, versions?: Float64Array): number`
  *
  * Devolve quantos candidatos foram escritos, ou um código negativo. Na recusa
  * ({@link kProjectRefused}) o índice do nó que recusou vai em `indices[0]`.
+ * Com `versions`, escreve a versão da matriz de mundo de cada candidato
+ * (SPEC-0682; double: 2^53 versões não acabam).
  */
 napi_value jsProject(napi_env env, napi_callback_info info) {
-  size_t argc = kArgsProject;
-  napi_value args[kArgsProject];
+  size_t argc = kArgsProjectVersions;
+  napi_value args[kArgsProjectVersions];
   napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
   scene::SceneMirror* mirror = builtSceneMirror();
   if (mirror == nullptr || argc < kArgsProject) return number(env, kProjectBadArgs);
@@ -70,6 +74,12 @@ napi_value jsProject(napi_env env, napi_callback_info info) {
   if (planes == nullptr || viewProj == nullptr || indices == nullptr || depths == nullptr) {
     return number(env, kProjectBadArgs);
   }
+  size_t versionLength = 0;
+  double* versions = nullptr;
+  if (argc >= kArgsProjectVersions) {
+    versions = typedArray<double>(env, args[kArgsProject], napi_float64_array, 1, &versionLength);
+    if (versions == nullptr) return number(env, kProjectBadArgs);
+  }
 
   scene::MainPassCuller& c = culler();
   const int count = c.cull(*mirror, planes, viewProj);
@@ -78,11 +88,16 @@ napi_value jsProject(napi_env env, napi_callback_info info) {
     return number(env, kProjectRefused);
   }
   const auto n = static_cast<size_t>(count);
-  if (n > indexLength || n > depthLength) return number(env, kProjectOutTooSmall);
+  if (n > indexLength || n > depthLength || (versions != nullptr && n > versionLength)) {
+    return number(env, kProjectOutTooSmall);
+  }
   const auto& candidates = c.candidates();
   for (size_t i = 0; i < n; i++) {
     indices[i] = candidates[i].index;
     depths[i] = candidates[i].z;
+  }
+  if (versions != nullptr) {
+    for (size_t i = 0; i < n; i++) versions[i] = static_cast<double>(candidates[i].worldVersion);
   }
   return number(env, count);
 }
@@ -113,6 +128,10 @@ void registerMainPass(napi_env env) {
   napi_value api = njs::makeObject(env);
   njs::setMethod(env, api, "project", jsProject);
   njs::setMethod(env, api, "setBounds", jsSetBounds);
+  // O JS só passa o 5º argumento de `project` quando vê isto (SPEC-0682).
+  napi_value capability = nullptr;
+  napi_get_boolean(env, true, &capability);
+  napi_set_named_property(env, api, "worldVersions", capability);
   napi_set_named_property(env, global, "__cortexMainPass", api);
 }
 

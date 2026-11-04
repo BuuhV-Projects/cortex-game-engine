@@ -1322,9 +1322,16 @@ segue 100% no `three`. `?nativeMainPass=0` desliga tudo; cada etapa tem o seu.
   visibilidade herdada, frustum pela esfera da geometria e o `z`; o JS faz
   camadas, material (array/grupo/`visible`) e o `renderList.push`. Ordem de
   inserção diferente não importa: o sort da RenderList é ordem total.
-  `MainPassKind.ts` classifica o nó (ramos do `_projectObject`).
+  `MainPassKind.ts` classifica o nó (ramos do `_projectObject`). **Versão do
+  mundo por candidato (SPEC-0682, ADR-0683):** com `__cortexMainPass.worldVersions`,
+  o `project` devolve num 5º array a versão da matriz de mundo de cada candidato
+  (`native/src/scene/world_versions.*`, pelo CONTEÚDO, contador global). O RS1
+  (`checkRecording` em `CleanSnapshot.ts`) e o renderer nativo (`take(…, version)`)
+  pulam a comparação da matriz quando a versão é a que adotaram. Armadilha: toda
+  escrita do instantâneo fora da projeção (`gravar`, `aplicarMovimento`) zera a
+  versão adotada (`NO_VERSION`).
 
-- **(b.1) desenho direto em JS** (`src/render/CleanDrawFastPath.ts`,
+- **(b.1) desenho direto em JS** (`src/render/CleanDrawFastPath.ts` + o instantâneo em `CleanSnapshot.ts`,
   `?cleanDraw=0|1`, SPEC-0333): embrulha o `_renderObjectDirect`; render object
   elegível é gravado com um instantâneo numérico do que os nós `OBJECT` dele
   leem (material, névoa, textura com UV, matriz, geometria, campos de
@@ -1371,7 +1378,7 @@ quadros de atraso, visível no passe principal. `frustumCulled`, `renderOrder`
 de grupo e troca de `geometry` seguem pela varredura (até 8 quadros); uma
 `boundingSphere` recalculada na MESMA geometria não é vista.
 
-**RenderingServer RS1 (ADR-0404 / SPEC-0425, `src/render/RenderServer.ts`,
+**RenderingServer RS1 (ADR-0404 / SPEC-0425, `src/render/RenderServer.ts` + formas em `RenderServerTypes.ts`,
 LIGADO por padrão no host desde 2026-10-23 por decisão do usuário, `?renderServer=0` desliga; o Studio não instala):** a projeção nativa oferece cada malha
 opaca simples com gravação da b.1; a conferida vai para uma lista de comandos
 (receita da b.2 + 4 inteiros) em vez da RenderList, emitida no passe por trechos
@@ -1404,7 +1411,7 @@ padrão com `GameOptions.nativeRenderer` (ADR-0605: o `Game` chama `setNativeRen
 `nativeRenderer`/`nativePrecompile`; a query vence).
 Substitui o `three` no desenho do export **por objeto**, a caminho de 0 recusas no DDD 61.
 
-- **Servidor JS** `src/render/native/NativeRenderer.ts`: toma o objeto (geometria, material,
+- **Servidor JS** `src/render/native/NativeRenderer.ts` (+ `NativeGeometryStore`, `NativeMaterialStore`, `NativePipelineStore`, `nativeRendererShared`, SPEC-0682): toma o objeto (geometria, material,
   pipeline e bind groups PRÓPRIOS, criados pelo shim WebGPU) e grava a receita no lote C++ que
   já existe (`__cortexDrawBatch`); o handle C++ é o id da receita. Texturas/samplers vêm do
   upload do `three` (`_textures.updateTexture`).
