@@ -93,7 +93,9 @@ continua exportado, com o mesmo contrato). Os laços sobre `ys` são indexados.
 ### 5. `TerrainCollisionSystem` sem varrer entidades
 
 - `src/ecs/structureVersion.ts`: contador que sobe em `Entity.addComponent`/`removeComponent` e
-  `World.createEntity`/`destroyEntity`/`clear`.
+  `World.createEntity`/`destroyEntity`/`clear`. É o **mesmo** contador da consulta em cache do `World.tick`
+  (ADR-0676, `structureVersion()`/`bumpStructureVersion()`): na integração da Fase 3 os três registros que
+  criaram um contador próprio (SPEC-0673, SPEC-0674, SPEC-0675) ficaram com um mecanismo só, o da ADR-0676.
 - O sistema guarda a classificação (terrenos e corpos, em arrays paralelos) e só reclassifica quando o contador
   mudou ou quando a lista recebida não é a mesma da anterior (comprimento e identidade de cada entidade —
   comparação barata, sem `Map`).
@@ -120,5 +122,5 @@ continua exportado, com o mesmo contrato). Os laços sobre `ys` são indexados.
 - Quem guarda dados em `userData.cortexVegetation` sem `version` não ganha o cache (continua correto).
 - Quem chamar `TerrainCollisionSystem.update` à mão com outra lista é reclassificado (a comparação é por
   identidade); mutação de componente fora de `addComponent`/`removeComponent` não existe na API.
-- Pendente (fora desta mudança): `World.query` aloca o array de resultado por sistema por passo e poderia usar
-  o mesmo contador; `toIntersection` do raycast nativo aloca 3 objetos por acerto.
+- A consulta do `World.tick` por sistema passou a usar o mesmo contador (ADR-0676, integrada junto). Pendente
+  (fora desta mudança): `toIntersection` do raycast nativo aloca 3 objetos por acerto.

@@ -45,6 +45,11 @@ o código/JSON. Lógica de jogo vive em `Systems`/`Components` (ECS).
   O perfil por sistema (`enableSystemProfile`, SPEC-0236) acumula por
   `system.profileLabel ?? constructor.name`: todo sistema da engine declara o seu
   `profileLabel`, senão o bundle minificado mostra `fx`, `DBe`… (SPEC-0671).
+  A consulta do `tick` fica em cache por `requiredComponents` e só remonta quando a
+  estrutura muda (entidade criada/destruída, componente adicionado/removido — o contador
+  de `ecs/structureVersion.ts`; ADR-0676). ⚠️ O array que o `update` recebe é
+  **compartilhado** entre sistemas e quadros: não mute (`world.query` público continua
+  devolvendo array novo).
 - **Ordem do frame no `Game`** (SPEC-0351): input → `onUpdate` → `world.tick` →
   `onLateUpdate` → UI → editor → render. Quem anda o personagem é System (dentro do
   `world.tick`): lógica do jogo que **lê** esse movimento (animar pelo passo, seguir um
@@ -127,6 +132,14 @@ senão o **editor do Studio** não resolve o tipo (runtime funciona, IntelliSens
   fica em `userData.cortexShadowAuthored` e o filtro só tira, nunca dá. Skinned
   e `InstancedMesh` ficam de fora (bounding sphere não descreve o conjunto).
   Medido no `kart-racer`: 2807 → 1966 draws, sem diferença visível.
+
+- **CSM escalonado (`scene/CameraFollowingCSM.ts`, SPEC-0675):** sem espelho nativo
+  (Studio/navegador), a cascata 0 redesenha todo quadro e as distantes a cada
+  `shadowFarCascadeInterval` quadros (default 2), revezando. A cascata que pula fica
+  com mapa e `shadow.matrix` do mesmo quadro anterior (o `three` só recalcula a matriz
+  no `updateShadow`). ⚠️ Com espelho nativo o passe nativo é dono do `autoUpdate`:
+  num quadro recusado ele já chamou `updateMatrices`, e pular daria mapa velho com
+  matriz nova — por isso o escalonamento não age lá.
 
 - **Pré-aquecimento de pipeline (`Renderer.precompile`, SPEC-0196):** o three
   compila o pipeline na PRIMEIRA aparição de cada material — numa largada de
@@ -1583,7 +1596,7 @@ no logo da splash enquanto montava os seis carros.
 | Narrativa (diálogo/UI/flags) | `src/dialogue/` · `src/narrative/` (ADR-0070) |
 | Blockout / ProBuilder | `src/probuilder/` (formas + `EditableMesh`) · editor: `MeshAuthoring`, `MeshEditSystem`, `EditorShapePanel` (SPEC-0071) |
 | Estrada por spline | `src/road/` (spline, fita, greide/corte puros, `roadFields`) · `src/scene/RoadBuild.ts` (nó → pista + corte) · editor: `RoadAuthoring`, `RoadDrawSystem`, `RoadEditSystem`, `RoadInspectorSection` (ADR-0630/SPEC-0631) |
-| Vegetação (instanciada) | `src/scene/Vegetation.ts` (InstancedMesh + placeholder) · editor: `VegetationAuthoring` (pincel de espalhar) · nó `vegetation` (SPEC-0077) · culling por esfera das instâncias, por nó (SPEC-0299; a sombra nativa não corta instanced; folhagem com `alphaTest` projeta sombra recortada no passe nativo — SPEC-0642, `src/render/ShadowAlphaClipSync.ts`) |
+| Vegetação (instanciada) | `src/scene/Vegetation.ts` (InstancedMesh + placeholder; matriz e esfera escritas direto por `vegetationMatrices.ts`; `adoptInstances` sem cópia, `writeInstances`/`syncInstances` por faixa com `addUpdateRange` — SPEC-0675) · editor: `VegetationAuthoring` (pincel de espalhar) · nó `vegetation` (SPEC-0077) · culling por esfera das instâncias, por nó (SPEC-0299; a sombra nativa não corta instanced; folhagem com `alphaTest` projeta sombra recortada no passe nativo — SPEC-0642, `src/render/ShadowAlphaClipSync.ts`) |
 | Input por ação + remapeamento | `src/input/` (`InputActions`, `bindings`, `ControlsScreen`) · gate: `src/core/gamePlatform.ts` (ADR-0164/SPEC-0165) |
 | Editor (F2) + autorias | `src/editor/` · `src/editor/authoring/` |
 | Física Rapier | `src/physics/` |

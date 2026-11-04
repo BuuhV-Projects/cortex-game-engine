@@ -1,7 +1,7 @@
 import { Matrix4, Vector3 } from 'three';
 import { System } from '../ecs/System.js';
 import { Entity } from '../ecs/Entity.js';
-import { ecsStructureVersion } from '../ecs/structureVersion.js';
+import { structureVersion } from '../ecs/structureVersion.js';
 import { TransformComponent } from '../components/TransformComponent.js';
 import { TerrainComponent } from '../components/TerrainComponent.js';
 import { PlatformerBodyComponent } from '../components/PlatformerBodyComponent.js';
@@ -78,14 +78,14 @@ export class TerrainCollisionSystem extends System {
 
   /** Mesma versão do ECS e as mesmas entidades, na mesma ordem, da última classificação? */
   private sameAsSeen(entities: readonly Entity[]): boolean {
-    if (this.seenVersion !== ecsStructureVersion() || entities.length !== this.seen.length) return false;
+    if (this.seenVersion !== structureVersion() || entities.length !== this.seen.length) return false;
     for (let i = 0; i < entities.length; i++) if (entities[i] !== this.seen[i]) return false;
     return true;
   }
 
   /** Separa terrenos e corpos, na ordem das entidades (a do laço de antes). */
   private classify(entities: readonly Entity[]): void {
-    this.seenVersion = ecsStructureVersion();
+    this.seenVersion = structureVersion();
     this.seen.length = this.terrains.length = 0;
     this.bodyT.length = this.bodyPb.length = this.bodyKb.length = 0;
     for (let i = 0; i < entities.length; i++) {

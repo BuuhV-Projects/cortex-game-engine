@@ -1,5 +1,5 @@
 import { Component } from './Component.js';
-import { bumpEcsStructure } from './structureVersion.js';
+import { bumpStructureVersion } from './structureVersion.js';
 
 /**
  * Tipo utilitário que representa o construtor de uma subclasse de Component.
@@ -45,7 +45,7 @@ export class Entity {
    */
   addComponent(component: Component): this {
     this._components.set(component.type, component);
-    bumpEcsStructure();
+    bumpStructureVersion(); // a consulta do `World.tick` remonta (ADR-0676)
     return this;
   }
 
@@ -54,7 +54,7 @@ export class Entity {
    * Sem efeito se o componente não estiver presente.
    */
   removeComponent<T extends Component>(ComponentClass: ComponentClass<T>): void {
-    if (this._components.delete(ComponentClass.name)) bumpEcsStructure();
+    if (this._components.delete(ComponentClass.name)) bumpStructureVersion();
   }
 
   /**

@@ -11,7 +11,7 @@ import { KinematicBodyComponent } from '../../src/components/KinematicBodyCompon
 import { PlatformerBodyComponent } from '../../src/components/PlatformerBodyComponent.js';
 import { TerrainComponent } from '../../src/components/TerrainComponent.js';
 import { TerrainCollisionSystem } from '../../src/systems/TerrainCollisionSystem.js';
-import { ecsStructureVersion } from '../../src/ecs/structureVersion.js';
+import { structureVersion } from '../../src/ecs/structureVersion.js';
 
 function setup() {
   const world = new World();
@@ -26,20 +26,20 @@ function setup() {
 describe('TerrainCollisionSystem — classificação guardada (SPEC-0674)', () => {
   it('a versão do ECS sobe ao criar/destruir entidade e ao pôr/tirar componente', () => {
     const world = new World();
-    const v0 = ecsStructureVersion();
+    const v0 = structureVersion();
     const e = world.createEntity();
-    const v1 = ecsStructureVersion();
+    const v1 = structureVersion();
     expect(v1).toBeGreaterThan(v0);
     e.addComponent(new TransformComponent());
-    const v2 = ecsStructureVersion();
+    const v2 = structureVersion();
     expect(v2).toBeGreaterThan(v1);
     e.removeComponent(KinematicBodyComponent); // não tinha: não muda
-    expect(ecsStructureVersion()).toBe(v2);
+    expect(structureVersion()).toBe(v2);
     e.removeComponent(TransformComponent);
-    expect(ecsStructureVersion()).toBeGreaterThan(v2);
-    const v3 = ecsStructureVersion();
+    expect(structureVersion()).toBeGreaterThan(v2);
+    const v3 = structureVersion();
     world.destroyEntity(e);
-    expect(ecsStructureVersion()).toBeGreaterThan(v3);
+    expect(structureVersion()).toBeGreaterThan(v3);
   });
 
   it('corpo criado depois do 1º passo é aterrado', () => {

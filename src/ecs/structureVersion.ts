@@ -1,16 +1,16 @@
 /**
- * Contador de estrutura do ECS (SPEC-0674): sobe sempre que uma entidade entra/sai do `World` ou ganha/perde um
- * componente. Quem classifica entidades por componente (ex.: o {@link TerrainCollisionSystem}) guarda o valor e só
- * reclassifica quando ele muda — em vez de buscar componentes em todas as entidades a cada passo.
+ * Versão da estrutura do ECS (ADR-0676): sobe a cada entidade criada/destruída e a cada componente
+ * adicionado/removido, em qualquer `World`. A consulta do `World.tick` guarda o resultado com a versão em que foi
+ * montado e só remonta quando ela muda. Interno: fora do `index-runtime`.
  */
 let version = 0;
 
-/** Marca uma mudança de estrutura (chamado por `Entity` e `World`). */
-export function bumpEcsStructure(): void {
-  version++;
+/** Versão atual da estrutura. */
+export function structureVersion(): number {
+  return version;
 }
 
-/** Valor atual do contador. */
-export function ecsStructureVersion(): number {
-  return version;
+/** Marca que a estrutura mudou (entidade ou componente). */
+export function bumpStructureVersion(): void {
+  version++;
 }
