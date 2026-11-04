@@ -318,6 +318,7 @@ add_executable(cortex_host_tests
   tests/crash_handler_test.cpp
   tests/game_config_test.cpp
   tests/scene_mirror_test.cpp
+  tests/scene_mirror_dirty_test.cpp
   tests/shadow_caster_enumerator_test.cpp
   tests/main_pass_culler_test.cpp
   tests/draw_batch_test.cpp

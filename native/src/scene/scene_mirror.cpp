@@ -7,6 +7,15 @@
 namespace scene {
 namespace {
 
+/**
+ * Estados de `dirty_` (SPEC-0678). O forçado (build/append) recompõe sempre;
+ * o que veio por linha de sincronização só propaga se a matriz local mudou —
+ * o `three` reescreve rotação igual todo quadro, e cada linha assim recompunha
+ * a subárvore inteira.
+ */
+constexpr uint8_t kDirtyForced = 1;
+constexpr uint8_t kDirtyFromSync = 2;
+
 /** compose() do three: quaternion + posição + escala numa matriz 4x4. */
 void compose(double* m, const Transform& t) {
   const double x2 = t.qx + t.qx, y2 = t.qy + t.qy, z2 = t.qz + t.qz;
@@ -321,7 +330,7 @@ void SceneMirror::applyTransforms(const double* buffer, size_t valueCount) {
     if ((frameFlags & kSyncFrustumCulled) != 0) main |= kMainFrustumCulled;
     if ((frameFlags & kSyncMainUnsupported) != 0) main |= kMainUnsupported;
     mainFrameFlags_[index] = main;
-    dirty_[index] = 1;
+    if (dirty_[index] == 0) dirty_[index] = kDirtyFromSync;  // não rebaixa o forçado
   }
 }
 
@@ -341,8 +350,20 @@ int SceneMirror::updateAndCull(const float* viewProj, const float* planes) {
     // Um nó precisa recompor a matriz de mundo se o transform dele mudou OU se
     // o pai mudou — e como o pai vem antes, a flag dele já está atualizada.
     const bool parentDirty = parent != kNoParent && dirty_[static_cast<size_t>(parent)] != 0;
-    const bool selfDirty = dirty_[i] != 0;
-    if (selfDirty) compose(&local_[i * kMatrixFloats], locals_[i]);
+    const uint8_t selfState = dirty_[i];
+    const bool selfDirty = selfState != 0;
+    if (selfDirty) {
+      double composta[kMatrixFloats];
+      compose(composta, locals_[i]);
+      double* local = &local_[i * kMatrixFloats];
+      // Linha igual ao que o slot já tem (SPEC-0678): limpo, sem propagar.
+      if (selfState == kDirtyFromSync && !parentDirty &&
+          std::memcmp(composta, local, sizeof(composta)) == 0) {
+        dirty_[i] = 0;
+        continue;
+      }
+      std::memcpy(local, composta, sizeof(composta));
+    }
     if (selfDirty || parentDirty) {
       if (parent == kNoParent) {
         std::memcpy(&world_[i * kMatrixFloats], &local_[i * kMatrixFloats],
@@ -351,7 +372,7 @@ int SceneMirror::updateAndCull(const float* viewProj, const float* planes) {
         multiply(&world_[i * kMatrixFloats], &world_[static_cast<size_t>(parent) * kMatrixFloats],
                  &local_[i * kMatrixFloats]);
       }
-      dirty_[i] = 1;  // propaga para os filhos, que vêm depois
+      dirty_[i] = kDirtyForced;  // propaga para os filhos, que vêm depois
       // Registra ANTES de as flags serem limpas: e esta lista que diz quais
       // uniformes precisam subir para a GPU (M3 do ADR-0237).
       changed_.push_back(static_cast<NodeIndex>(i));
