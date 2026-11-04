@@ -78,6 +78,13 @@ escrita, nenhum `sin`/`cos`.
 - `World.tick` não aloca nem percorre entidades nos quadros sem mudança estrutural.
 - O sync deixa de escrever e de recalcular quaternion nas entidades paradas (colisores estáticos, carros
   dormindo, pedestres parados).
+- **Espelho nativo (SPEC-0322):** os setters de `Euler` passam pelo gancho do `NativeSceneMirror`, então antes
+  TODA raiz de entidade ficava suja todo quadro e virava linha na ponte. Agora só as que se movem. Efeito
+  colateral aceito: numa raiz de entidade parada, `material.visible`/lado da sombra mudados em runtime chegam
+  ao host pela varredura em rodízio (até `SWEEP_PERIOD_FRAMES` quadros), como já acontecia com os nós que não
+  são entidade; `visible`, posição, escala e rotação continuam sujando na hora pelos ganchos. Nó com
+  `matrixAutoUpdate = false` cuja `matrix` é escrita à mão não suja por gancho — nenhuma entidade faz isso
+  hoje (o único caso é o `matrixComposeFreeze` de diagnóstico do `Game`).
 - O array passado ao `System.update` pelo `tick` não pode ser mutado pelo sistema (já não era em nenhum lugar).
 - Quem precisar da semântica antiga de "sempre escreve" (nenhum caso conhecido) pode chamar
   `obj.rotation.order = 'YXZ'` por conta própria.
