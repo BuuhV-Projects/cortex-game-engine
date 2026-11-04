@@ -103,9 +103,18 @@ continua exportado, com o mesmo contrato). Os laços sobre `ys` são indexados.
 
 ## Consequências
 
-- Na bancada: o passo com coleta cai de ~12,5 ms para o custo da travessia mais a comparação das matrizes; o
-  `TerrainCollisionSystem` vai de ~0,7 ms para dezenas de µs. Números finais no commit e na medição da sessão
-  principal.
+- Na bancada (mesma cena, intercalando base e final):
+
+  | Parte | Antes | Depois |
+  | --- | --- | --- |
+  | `CharacterPhysicsSystem` (média por passo) | ~1,16 ms | ~0,58 ms |
+  | passo com coleta (pico a cada 250 ms) | ~12,5 ms | ~6,7 ms |
+  | …`NearMeshIndex.rebuild` | ~9,1 ms | ~4,1 ms |
+  | passo sem coleta | ~0,41 ms | ~0,18 ms |
+  | `TerrainCollisionSystem` (média por passo) | ~0,67 ms | ~0,07 ms |
+
+  O que sobra no rebuild é a comparação exata da `matrixWorld` de cada malha (sem um sinal de "sujo" do three,
+  não dá para pular sem perder a exatidão). A medição no Hermes fica para a sessão principal.
 - Comportamento de colisão idêntico: mesmas listas, mesma ordem, mesmos números no índice, mesma ordem dos
   empurrões dos troncos. Os testes do personagem, do índice e do terreno passam sem mudança.
 - Quem guarda dados em `userData.cortexVegetation` sem `version` não ganha o cache (continua correto).
