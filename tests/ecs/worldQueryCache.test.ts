@@ -110,4 +110,19 @@ describe('World.tick — consulta em cache (ADR-0676)', () => {
     expect(first).toEqual([e1]);
     expect(second).not.toBe(first);
   });
+
+  it('requiredComponents como getter (array novo por leitura) continua filtrando certo', () => {
+    class NeedsAGetter extends Recorder {
+      static override get requiredComponents(): (typeof A)[] {
+        return [A];
+      }
+    }
+    const { world, e1, e2 } = setup();
+    const getter = new NeedsAGetter();
+    world.addSystem(getter);
+    world.tick(16);
+    world.tick(16);
+    expect(getter.seen[0]).toEqual([e1, e2]);
+    expect(getter.seen[1]).toEqual([e1, e2]);
+  });
 });

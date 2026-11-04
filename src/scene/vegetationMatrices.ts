@@ -19,8 +19,9 @@ export interface VegetationSub {
  * Escreve as matrizes `T(pos)·Ry(rot)·S(scale)·local` das instâncias `[first, first+count)` de `data`
  * (`[x,y,z,rotY,scale]` por instância; `hidden[i] = 1` = escala 0, SPEC-0631 §3b) em todas as sub-malhas e
  * une a esfera de cada uma à `mesh.boundingSphere` (que o chamador esvaziou, numa escrita inteira, ou mantém, numa
- * faixa — aí a esfera só cresce). A esfera de uma instância é a mesma do `computeBoundingSphere` do `three`: a da
- * geometria levada pela matriz lida de volta do `Float32Array`.
+ * faixa — aí a esfera só cresce). A esfera de uma instância é a do `computeBoundingSphere` do `three` (a da geometria
+ * levada pela matriz), calculada com a matriz em `double` antes de ir para o `Float32Array` — difere do `three`, que
+ * relê a matriz já arredondada, só no arredondamento de `float`.
  */
 export function writeInstanceMatrices(
   subs: readonly VegetationSub[],

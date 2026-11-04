@@ -53,8 +53,11 @@ export class World {
   private _list: Entity[] = [];
   /** Versão de estrutura em que `_list` foi montada; diferente da atual = remontar. */
   private _listVersion = -1;
-  /** Consulta do `tick` por array `requiredComponents` (identidade), com a versão em que foi montada. */
-  private readonly _queries = new Map<readonly ComponentClass[], CachedQuery>();
+  /**
+   * Consulta do `tick` por array `requiredComponents` (identidade), com a versão em que foi montada. `WeakMap`: um
+   * `requiredComponents` declarado como getter (array novo por leitura) não acumula entradas a cada quadro.
+   */
+  private _queries = new WeakMap<readonly ComponentClass[], CachedQuery>();
 
   /**
    * Lista de systems registrados, mantida em ordem crescente de `priority`.
@@ -138,7 +141,7 @@ export class World {
     for (const entity of [...this._entities]) {
       if (!entity.keepOnClear) this._entities.delete(entity);
     }
-    this._queries.clear();
+    this._queries = new WeakMap();
     bumpStructureVersion();
   }
 

@@ -39,7 +39,8 @@ Mudança (`src/ecs/World.ts`, `src/ecs/Entity.ts`, `src/ecs/structureVersion.ts`
 1. O `World` mantém as entidades também num array (ordem de inserção, a do `Set`), percorrido por índice.
 2. Versão de estrutura: `createEntity`, `destroyEntity`, `clear` e `addComponent`/`removeComponent` de qualquer
    entidade sobem um contador do módulo `structureVersion` (interno, fora do `index-runtime`).
-3. O `tick` consulta por `requiredComponents` (identidade do array estático): o resultado fica em cache com a versão
+3. O `tick` consulta por `requiredComponents` (identidade do array estático, num `WeakMap`: um getter que devolve
+   array novo por leitura perde o cache mas não acumula entradas): o resultado fica em cache com a versão
    em que foi montado; com a versão igual, o mesmo array volta, sem varrer nada. `[]` devolve o array de todas as
    entidades. Mudou a estrutura: monta um array **novo** (o antigo, se alguém o guardou, fica como estava).
 4. `world.query(...classes)` público continua devolvendo um array novo por chamada, agora sem iterador.
@@ -72,9 +73,9 @@ Mudança (`src/scene/Vegetation.ts`, `src/scene/vegetationMatrices.ts`):
 1. **Matriz direta:** `T(pos)·Ry(rot)·S(scale)·local` escrita direto no `instanceMatrix.array` (12 produtos por coluna,
    seno e cosseno uma vez por instância para todas as sub-malhas). Mesma matriz do caminho antigo (tolerância de
    ponto flutuante).
-2. **Esfera no mesmo laço:** a esfera de cada instância sai da matriz recém-escrita (lida de volta do `Float32Array`,
-   como o `three` lê) e entra por `Sphere.union` num rascunho — o mesmo resultado do `computeBoundingSphere`, sem a
-   segunda passada.
+2. **Esfera no mesmo laço:** a esfera de cada instância sai da matriz recém-calculada (em `double`, antes de ir para o
+   `Float32Array`; o `three` relê a matriz já arredondada, então a diferença é só o arredondamento de `float`) e entra
+   por `Sphere.union` num rascunho — o resultado do `computeBoundingSphere`, sem a segunda passada.
 3. **API nova, a antiga mantida:**
    - `setInstances(flat)` — como antes (copia; aceita qualquer `ArrayLike<number>`; zera a máscara).
    - `adoptInstances(data, count?)` — **sem cópia**: o `Float32Array`/`Float64Array`/`number[]` do chamador vira o

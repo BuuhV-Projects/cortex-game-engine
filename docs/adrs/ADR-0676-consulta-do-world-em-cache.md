@@ -44,3 +44,6 @@ novo por chamada.
 - A versão é global (um contador do módulo): mudança numa entidade de outro `World` também invalida. Raro, e só custa
   uma remontagem.
 - Um sistema que muta o array recebido corromperia o de outros sistemas — fica documentado no TSDoc do `System.update`.
+- A chave é a identidade do array `requiredComponents`, num `WeakMap`: um `requiredComponents` declarado como getter
+  (array novo por leitura) só perde o cache, sem vazar entradas; mutar o array estático no lugar não invalida nada
+  até a próxima mudança de estrutura.
