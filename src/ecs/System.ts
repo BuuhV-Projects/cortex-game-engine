@@ -84,6 +84,8 @@ export abstract class System {
    *
    * @param entities  - Entidades filtradas pelo `World` que possuem todos os
    *                    componentes declarados em `requiredComponents`.
+   *                    **Só leitura**: o `World` reusa o mesmo array entre
+   *                    quadros enquanto a estrutura do ECS não muda (SPEC-0673).
    * @param deltaTime - Tempo decorrido desde o último tick, em segundos.
    */
   abstract update(entities: Entity[], deltaTime: number): void;

@@ -1,6 +1,7 @@
 import { Component } from './Component.js';
 import { Entity } from './Entity.js';
 import { System } from './System.js';
+import { bumpEcsStructure, ecsStructureVersion } from './structureVersion.js';
 
 /**
  * Tipo utilitário para o construtor de uma subclasse de Component.
@@ -47,6 +48,11 @@ export class World {
   private _systems: System[] = [];
   /** Perfil por sistema (SPEC-0236); null = desligado, que e o default. */
   private _systemProfile: Map<string, number> | null = null;
+  /**
+   * Query cacheada por assinatura (identidade do `requiredComponents` do sistema),
+   * válida enquanto a versão estrutural do ECS não muda (SPEC-0673).
+   */
+  private readonly _queryCache = new Map<ComponentClass[], { version: number; entities: Entity[] }>();
 
   // ─── Entity Management ─────────────────────────────────────────────────────
 
@@ -58,6 +64,7 @@ export class World {
   createEntity(): Entity {
     const entity = new Entity();
     this._entities.add(entity);
+    bumpEcsStructure();
     return entity;
   }
 
@@ -68,7 +75,7 @@ export class World {
    * @param entity - A entity a ser destruída.
    */
   destroyEntity(entity: Entity): void {
-    this._entities.delete(entity);
+    if (this._entities.delete(entity)) bumpEcsStructure();
   }
 
   // ─── System Management ─────────────────────────────────────────────────────
@@ -121,6 +128,8 @@ export class World {
     for (const entity of [...this._entities]) {
       if (!entity.keepOnClear) this._entities.delete(entity);
     }
+    this._queryCache.clear();
+    bumpEcsStructure();
   }
 
   /**
@@ -161,6 +170,26 @@ export class World {
     return result;
   }
 
+  /**
+   * Query do `tick` (SPEC-0673): reusa o array do quadro anterior enquanto nenhuma
+   * entidade ganhou/perdeu componente nem entrou/saiu. Na invalidação cria um array
+   * NOVO — o que um sistema está iterando nunca muda por baixo dele. Compartilhado
+   * entre quadros: o sistema não pode mutá-lo (ver `System.update`).
+   */
+  private _cachedQuery(required: ComponentClass[]): Entity[] {
+    const version = ecsStructureVersion();
+    const hit = this._queryCache.get(required);
+    if (hit !== undefined && hit.version === version) return hit.entities;
+    const entities = this.query(...required);
+    if (hit !== undefined) {
+      hit.version = version;
+      hit.entities = entities;
+    } else {
+      this._queryCache.set(required, { version, entities });
+    }
+    return entities;
+  }
+
   // ─── Tick ──────────────────────────────────────────────────────────────────
 
   /**
@@ -169,7 +198,8 @@ export class World {
    *
    * Para cada system, o `World`:
    * 1. Obtém `requiredComponents` declarado estaticamente na classe do system.
-   * 2. Chama `query(...requiredComponents)` para filtrar as entities elegíveis.
+   * 2. Filtra as entities elegíveis com `query(...requiredComponents)` — cacheada
+   *    enquanto a estrutura do ECS não muda (SPEC-0673).
    * 3. Repassa as entities filtradas ao `system.update(entities, deltaTime)`.
    *
    * Chamado pelo `GameLoop` a cada frame (passo variável) ou passo fixo de
@@ -185,7 +215,7 @@ export class World {
     for (const system of this._systems) {
       if (system.pauseWhen?.()) continue; // sistema pausado (ex.: gameplay no editor)
       const required = (system.constructor as typeof System).requiredComponents;
-      const entities = this.query(...required);
+      const entities = this._cachedQuery(required);
       if (profile === null) {
         system.update(entities, deltaTime);
         continue;
