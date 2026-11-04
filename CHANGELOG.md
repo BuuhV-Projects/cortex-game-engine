@@ -1,3 +1,10 @@
+## [0.102.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.102.0...v0.102.1) (2026-11-04)
+
+
+### Performance Improvements
+
+* **render:** alvo da receita nativa lido uma vez por lista (SPEC-0685) ([d1ca119](https://github.com/BuuhV-Projects/cortex-game-engine/commit/d1ca1194867feccc0c8cb456f8ada562e60f7010))
+
 # [0.102.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.101.1...v0.102.0) (2026-11-04)
 
 
