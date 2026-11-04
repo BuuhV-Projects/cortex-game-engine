@@ -248,6 +248,16 @@ export class NearMeshIndex {
 
   /** Põe o slot `i` nas células que a caixa dele (já no `data`) toca, ou na lista larga. */
   private place(i: number): void {
+    this.cellsOf(i, true);
+  }
+
+  /** Tira o slot `i` das células da caixa dele (ainda a antiga, no `data`); a ordem na célula não importa. */
+  private unplace(i: number): void {
+    this.cellsOf(i, false);
+  }
+
+  /** Põe (`add`) ou tira o slot `i` das células que a caixa dele no `data` toca, ou da lista larga. */
+  private cellsOf(i: number, add: boolean): void {
     const b = i * STRIDE + BOX;
     const d = this.data;
     const ix0 = Math.floor(d[b]! / GRID_CELL);
@@ -255,38 +265,21 @@ export class NearMeshIndex {
     const ix1 = Math.floor(d[b + 3]! / GRID_CELL);
     const iz1 = Math.floor(d[b + 5]! / GRID_CELL);
     if (!((ix1 - ix0 + 1) * (iz1 - iz0 + 1) <= MAX_CELLS_PER_MESH)) {
-      this.wide.push(i); // também pega NaN/Infinity (sem geometria)
+      if (add) this.wide.push(i); // também pega NaN/Infinity (sem geometria)
+      else swapRemove(this.wide, i);
       return;
     }
     for (let ix = ix0; ix <= ix1; ix++) {
       for (let iz = iz0; iz <= iz1; iz++) {
         const key = ix * GRID_KEY_SPAN + iz;
         let list = this.cells.get(key);
-        if (!list) this.cells.set(key, (list = []));
-        list.push(i);
-      }
-    }
-  }
-
-  /** Tira o slot `i` das células da caixa dele (ainda a antiga, no `data`); a ordem na célula não importa. */
-  private unplace(i: number): void {
-    const b = i * STRIDE + BOX;
-    const d = this.data;
-    const ix0 = Math.floor(d[b]! / GRID_CELL);
-    const iz0 = Math.floor(d[b + 2]! / GRID_CELL);
-    const ix1 = Math.floor(d[b + 3]! / GRID_CELL);
-    const iz1 = Math.floor(d[b + 5]! / GRID_CELL);
-    if (!((ix1 - ix0 + 1) * (iz1 - iz0 + 1) <= MAX_CELLS_PER_MESH)) {
-      swapRemove(this.wide, i);
-      return;
-    }
-    for (let ix = ix0; ix <= ix1; ix++) {
-      for (let iz = iz0; iz <= iz1; iz++) {
-        const key = ix * GRID_KEY_SPAN + iz;
-        const list = this.cells.get(key);
-        if (!list) continue;
-        swapRemove(list, i);
-        if (list.length === 0) this.cells.delete(key);
+        if (add) {
+          if (!list) this.cells.set(key, (list = []));
+          list.push(i);
+        } else if (list) {
+          swapRemove(list, i);
+          if (list.length === 0) this.cells.delete(key);
+        }
       }
     }
   }
