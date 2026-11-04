@@ -62,7 +62,7 @@ versão por slot nesse ponto é barata, e o `matrixMatch` vira uma comparação 
   RS1 (`checkRecording`) e o renderer nativo (`take(…, version)`, ligado no DDD 00), que é quem recebe a maioria
   dos candidatos.
 - As três divisões que a primeira versão desta ADR pedia foram feitas na mesma série, sem mudança de comportamento:
-  `RenderServer.ts` (655 → 486 + `RenderServerTypes.ts`), `CleanDrawFastPath.ts` (887 → 447 + `CleanSnapshot.ts`) e
+  `RenderServer.ts` (655 → 489 + `RenderServerTypes.ts`), `CleanDrawFastPath.ts` (887 → 447 + `CleanSnapshot.ts`) e
   também `NativeRenderer.ts` (1.063 → 471 + três stores e `nativeRendererShared.ts`). O `scene_mirror.h` (578) não
   foi tocado: as versões ficam com o `MainPassCuller`.
 - **Estimativa, não medição:** ~0,4–1 ms a menos no `nativeProject` do centro do DDD 00 (2–3 mil candidatos parados

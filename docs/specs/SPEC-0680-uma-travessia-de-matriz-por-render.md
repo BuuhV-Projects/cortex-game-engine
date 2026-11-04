@@ -70,8 +70,8 @@ Nenhuma outra travessia da cena inteira se repete por quadro do lado da engine; 
 - `NativeRenderer.recipeFor` (pendência da SPEC-0675): continua montando `` `${color}|${depth}|${samples}|${pass}` ``
   e lendo três formatos do `renderContext` por draw por passe. O `known.frame === _frameGeneration` só invalida
   quando o grupo 1 muda, então o custo é a string e as três leituras, não o `record`. Cachear por
-  `(renderContext, passe, quadro)` exige tocar `src/render/native/NativeRenderer.ts` (1.063 linhas → dividir,
-  SPEC-0668), refatoração do renderer nativo que só se valida na bancada do host.
+  `(renderContext, passe, quadro)` exige tocar `src/render/native/NativeRenderer.ts` (já dividido na SPEC-0682, 471 linhas), refatoração do
+  renderer nativo que só se valida na bancada do host: fica pendente só por essa validação.
 
 ## Consequências
 
