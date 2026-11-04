@@ -106,6 +106,8 @@ interface CascataDoCsm {
     map?: { depthTexture?: { name?: string } };
     updateMatrices?: (luz: unknown) => void;
   };
+  updateMatrixWorld?: () => void;
+  target?: { updateMatrixWorld?: () => void };
 }
 
 /**
@@ -120,6 +122,19 @@ export class CameraFollowingCSM extends CSMShadowNode {
    * Público: o Inspector/cena pode mudar em runtime.
    */
   shadowCasterMinRatio = DEFAULT_SHADOW_CASTER_MIN_RATIO;
+
+  /**
+   * O `super.updateBefore` MOVE a luz e o alvo de cada cascata no meio do render, e o `shadow.updateMatrices` de cada
+   * cascata lê o `matrixWorld` deles. Com a travessia única por render (SPEC-0680) ninguém mais repropaga a pose
+   * nova antes da cascata: atualiza aqui (2 nós por cascata, sem filhos). Com o espelho, a matriz é do host.
+   */
+  private _atualizarMatrizDasCascatas(): void {
+    if (activeSceneMirror()?.installed) return;
+    for (const cascata of (this as unknown as { lights?: CascataDoCsm[] }).lights ?? []) {
+      cascata.updateMatrixWorld?.();
+      cascata.target?.updateMatrixWorld?.();
+    }
+  }
 
   /**
    * CSM escalonado (SPEC-0675): sem o passe nativo (Studio/navegador), a cascata 0 redesenha todo quadro e a
@@ -249,6 +264,7 @@ export class CameraFollowingCSM extends CSMShadowNode {
     // e recompõe a ortho de cada uma. Desenhar antes usaria o frustum do frame
     // passado e a sombra divergiria a cada quadro em que a câmera anda.
     const resultado = super.updateBefore(frame);
+    this._atualizarMatrizDasCascatas();
     if (cam?.isPerspectiveCamera) {
       this._desenharPasseDeSombraNativo(frame);
       this._escalonarCascatas(trocouCamera);

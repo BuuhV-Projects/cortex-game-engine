@@ -1,7 +1,7 @@
 # ADR-0677 — Projeção do passe principal: o que fica em C++ e o que fica em JS
 
 **Data:** 2026-11-03
-**Status:** aceito — direção (b)/(c) da ADR-0330; nenhum código nesta mudança (ver Consequências)
+**Status:** aceito — direção (b)/(c) da ADR-0330; a intermediária foi implementada na SPEC-0682 (ADR-0683), o item retido segue adiado (ver Resultado)
 
 ## Contexto
 
@@ -52,3 +52,20 @@ versão por slot nesse ponto é barata, e o `matrixMatch` vira uma comparação 
   material/geometria. A SPEC-0333 (etapa (b)) segue sendo o lugar do desenho.
 - O que esta mudança reduz no `nativeProject` vem só da SPEC-0678. O `syncPending` no começo da projeção manda
   menos linhas, e o host deixa de recompor subárvore parada.
+
+## Resultado (2026-11-04, SPEC-0682, ADR-0683)
+
+- **Intermediária entregue.** O `cull` aceito devolve, por candidato, a versão da matriz de mundo
+  (`native/src/scene/world_versions.*`). Ela é dada pelo **conteúdo** (foto por slot comparada com a memória que o
+  `three` lê, contador global), e não pela lista `changed_` do `updateAndCull`, porque o JS escreve na fatia do mundo
+  sem linha de sync (SPEC-0340). Os dois consumidores pulam as 16 comparações quando a versão é a que adotaram: o
+  RS1 (`checkRecording`) e o renderer nativo (`take(…, version)`, ligado no DDD 00), que é quem recebe a maioria
+  dos candidatos.
+- As três divisões que a primeira versão desta ADR pedia foram feitas na mesma série, sem mudança de comportamento:
+  `RenderServer.ts` (655 → 489 + `RenderServerTypes.ts`), `CleanDrawFastPath.ts` (887 → 447 + `CleanSnapshot.ts`) e
+  também `NativeRenderer.ts` (1.063 → 471 + três stores e `nativeRendererShared.ts`). O `scene_mirror.h` (578) não
+  foi tocado: as versões ficam com o `MainPassCuller`.
+- **Estimativa, não medição:** ~0,4–1 ms a menos no `nativeProject` do centro do DDD 00 (2–3 mil candidatos parados
+  × 0,2–0,4 µs da comparação no Hermes sem JIT). A medição fica para a sessão principal (A/B, poses fixas).
+- **Item retido:** adiado, com o desenho e o motivo na ADR-0683 (paridade sem rede de troca de material em runtime
+  e ordem com dois lados ordenando). O próximo passo é medir quanto do `nativeProject` sobrou.

@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "scene_mirror.h"
+#include "world_versions.h"
 
 namespace scene {
 
@@ -28,6 +29,11 @@ constexpr int kMainCullRefused = -1;
 struct MainCandidate {
   NodeIndex index = 0;
   double z = 0;
+  /**
+   * Versão da matriz de mundo do nó neste quadro (SPEC-0682): igual à de um
+   * quadro anterior, a matriz é a mesma. Dada só a um `cull` aceito.
+   */
+  uint64_t worldVersion = 0;
 };
 
 class MainPassCuller {
@@ -53,6 +59,7 @@ class MainPassCuller {
   std::vector<uint8_t> effectiveVisible_;
   std::vector<MainCandidate> candidates_;
   NodeIndex refusedAt_ = kNoParent;
+  WorldVersions versions_;
 };
 
 /**

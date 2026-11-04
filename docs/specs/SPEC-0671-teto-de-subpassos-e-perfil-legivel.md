@@ -66,7 +66,7 @@ mesmos pontos.
 Para caber no limite, o shim (652 linhas) foi dividido: veículo em `rapier-compat-vehicle.js`, consultas
 (raycast, contatos) em `rapier-compat-queries.js`; o `rapier-compat.js` instala os dois no `World`.
 
-### 5. `updateMatrixWorld` nos passes de sombra — pendente
+### 5. `updateMatrixWorld` nos passes de sombra — resolvido na SPEC-0680
 
 O `updateMatrixWorld` repetido é do `Renderer.render` do three (`node_modules/three/src/renderers/common/Renderer.js`,
 linha ~1578): cada passe que chama `render(scene, …)` com `scene.matrixWorldAutoUpdate === true` percorre a árvore.
@@ -74,6 +74,10 @@ linha ~1578): cada passe que chama `render(scene, …)` com `scene.matrixWorldAu
 engine (desligar `matrixWorldAutoUpdate` da cena e fazer UM `updateMatrixWorld` por quadro antes do render) mexe em
 `Game.ts` (acima de 500 linhas) e em quem conta com o auto-update (espelho nativo, `matrixFreeze`); não coube sem
 risco nesta mudança.
+
+Resolvido na SPEC-0680 (ADR-0681), sem mexer no `Game.ts`: o `render` da instância do `WebGPURenderer` é embrulhado
+para uma travessia por render de fora de cada cena, com desvio quando o espelho nativo está instalado; o
+`?matrixFreeze` continua valendo (cena com auto-update já desligado passa direto).
 
 ## Consequências
 
