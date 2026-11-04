@@ -67,6 +67,24 @@ describe('World.tick — consulta em cache (ADR-0676)', () => {
     expect(all.seen[1]).toEqual([e1]);
   });
 
+  it('remover um componente ausente não invalida a consulta (SPEC-0673)', () => {
+    const { world, ab, e1 } = setup();
+    world.tick(16);
+    e1.removeComponent(class Absent extends Component {});
+    world.tick(16);
+    expect(ab.seen[1]).toBe(ab.seen[0]);
+  });
+
+  it('a invalidação não mexe no array do quadro anterior (SPEC-0673)', () => {
+    const { world, all } = setup();
+    world.tick(16);
+    const old = all.seen[0]!;
+    world.createEntity();
+    world.tick(16);
+    expect(old).toHaveLength(2);
+    expect(all.seen[1]).toHaveLength(3);
+  });
+
   it('entidade criada entra na ordem de inserção', () => {
     const { world, all, e1, e2 } = setup();
     world.tick(16);

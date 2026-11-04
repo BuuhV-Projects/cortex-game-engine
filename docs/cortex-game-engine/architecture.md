@@ -49,7 +49,10 @@ o código/JSON. Lógica de jogo vive em `Systems`/`Components` (ECS).
   estrutura muda (entidade criada/destruída, componente adicionado/removido — o contador
   de `ecs/structureVersion.ts`; ADR-0676). ⚠️ O array que o `update` recebe é
   **compartilhado** entre sistemas e quadros: não mute (`world.query` público continua
-  devolvendo array novo).
+  devolvendo array novo). É o único contador de estrutura (SPEC-0673/0674/0675 usam o mesmo).
+  O `Object3DSyncSystem` (SPEC-0673) guarda os pares Transform × Object3D enquanto o array
+  não troca e só escreve no `Object3D` o que difere do transform (sem recalcular quaternion
+  em entidade parada).
 - **Ordem do frame no `Game`** (SPEC-0351): input → `onUpdate` → `world.tick` →
   `onLateUpdate` → UI → editor → render. Quem anda o personagem é System (dentro do
   `world.tick`): lógica do jogo que **lê** esse movimento (animar pelo passo, seguir um

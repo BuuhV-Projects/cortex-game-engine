@@ -40,7 +40,7 @@ veg.writeInstances(0, cell) // só a faixa [0, cell.length/5) sobe
 
 > **new Vegetation**(`source`, `capacity?`): `Vegetation`
 
-Defined in: [src/scene/Vegetation.ts:107](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Vegetation.ts#L107)
+Defined in: [src/scene/Vegetation.ts:108](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Vegetation.ts#L108)
 
 `capacity` = máximo de instâncias (buffer pré-alocado). Default 8192.
 
@@ -76,7 +76,7 @@ Adicione à cena. Contém as InstancedMesh (uma por sub-malha do modelo).
 
 > **get** **count**(): `number`
 
-Defined in: [src/scene/Vegetation.ts:156](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Vegetation.ts#L156)
+Defined in: [src/scene/Vegetation.ts:165](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Vegetation.ts#L165)
 
 Número de instâncias espalhadas.
 
@@ -92,7 +92,7 @@ Número de instâncias espalhadas.
 
 > **get** **instanceData**(): `Readonly`\<`ArrayLike`\<`number`\>\>
 
-Defined in: [src/scene/Vegetation.ts:164](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Vegetation.ts#L164)
+Defined in: [src/scene/Vegetation.ts:173](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Vegetation.ts#L173)
 
 O armazenamento atual (`[x,y,z,rotY,scale]` por instância), **só leitura** e válido para as primeiras
 [count](#count) instâncias — sem a cópia de [getInstances](#getinstances) (SPEC-0675).
@@ -101,13 +101,30 @@ O armazenamento atual (`[x,y,z,rotY,scale]` por instância), **só leitura** e v
 
 `Readonly`\<`ArrayLike`\<`number`\>\>
 
+***
+
+### version
+
+#### Get Signature
+
+> **get** **version**(): `number`
+
+Defined in: [src/scene/Vegetation.ts:160](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Vegetation.ts#L160)
+
+Sobe a cada mudança das instâncias (ou da máscara de escondidas / do modelo): quem guarda uma cópia
+derivada delas — os troncos do [CharacterPhysicsSystem](CharacterPhysicsSystem.md) — só relê quando muda (SPEC-0674).
+
+##### Returns
+
+`number`
+
 ## Methods
 
 ### add()
 
 > **add**(`x`, `y`, `z`, `rotY`, `scale`): `boolean`
 
-Defined in: [src/scene/Vegetation.ts:255](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Vegetation.ts#L255)
+Defined in: [src/scene/Vegetation.ts:264](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Vegetation.ts#L264)
 
 Adiciona uma instância. Retorna `false` se a capacidade estourou.
 
@@ -143,7 +160,7 @@ Adiciona uma instância. Retorna `false` se a capacidade estourou.
 
 > **adoptInstances**(`data`, `count?`): `void`
 
-Defined in: [src/scene/Vegetation.ts:187](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Vegetation.ts#L187)
+Defined in: [src/scene/Vegetation.ts:196](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Vegetation.ts#L196)
 
 Substitui todas as instâncias **sem copiar** (SPEC-0675): `data` vira o armazenamento. Quem chama não muta
 `data` sem avisar por [syncInstances](#syncinstances) (ou escrever por [writeInstances](#writeinstances)). Zera a máscara da estrada.
@@ -172,7 +189,7 @@ Instâncias válidas em `data` (default: todas que cabem); limitado à capacidad
 
 > **dispose**(): `void`
 
-Defined in: [src/scene/Vegetation.ts:363](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Vegetation.ts#L363)
+Defined in: [src/scene/Vegetation.ts:374](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Vegetation.ts#L374)
 
 Libera as geometrias/materiais das instâncias.
 
@@ -186,7 +203,7 @@ Libera as geometrias/materiais das instâncias.
 
 > **getInstances**(): `number`[]
 
-Defined in: [src/scene/Vegetation.ts:247](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Vegetation.ts#L247)
+Defined in: [src/scene/Vegetation.ts:256](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Vegetation.ts#L256)
 
 Instâncias atuais no formato plano serializável (`[x,y,z,rotY,scale]`).
 
@@ -200,7 +217,7 @@ Instâncias atuais no formato plano serializável (`[x,y,z,rotY,scale]`).
 
 > **instanceAt**(`i`): \{ `rotY`: `number`; `scale`: `number`; `x`: `number`; `y`: `number`; `z`: `number`; \} \| `null`
 
-Defined in: [src/scene/Vegetation.ts:292](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Vegetation.ts#L292)
+Defined in: [src/scene/Vegetation.ts:301](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Vegetation.ts#L301)
 
 Transform da instância `i` (`[x,y,z,rotY,scale]`), ou `null` se fora de faixa.
 
@@ -220,7 +237,7 @@ Transform da instância `i` (`[x,y,z,rotY,scale]`), ou `null` se fora de faixa.
 
 > **modelBounds**(`out`): `Box3`
 
-Defined in: [src/scene/Vegetation.ts:311](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Vegetation.ts#L311)
+Defined in: [src/scene/Vegetation.ts:320](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Vegetation.ts#L320)
 
 Bounding box do MODELO em escala 1 (união das sub-malhas) — p/ gizmos de seleção.
 
@@ -240,7 +257,7 @@ Bounding box do MODELO em escala 1 (união das sub-malhas) — p/ gizmos de sele
 
 > **removeAt**(`i`): `boolean`
 
-Defined in: [src/scene/Vegetation.ts:300](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Vegetation.ts#L300)
+Defined in: [src/scene/Vegetation.ts:309](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Vegetation.ts#L309)
 
 Remove a instância `i` (seleção individual no editor). Retorna `true` se removeu.
 
@@ -260,7 +277,7 @@ Remove a instância `i` (seleção individual no editor). Retorna `true` se remo
 
 > **removeNear**(`x`, `z`, `radius`): `number`
 
-Defined in: [src/scene/Vegetation.ts:267](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Vegetation.ts#L267)
+Defined in: [src/scene/Vegetation.ts:276](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Vegetation.ts#L276)
 
 Remove instâncias cujo XZ está dentro de `radius` de `(x,z)` (borracha do pincel).
 Retorna quantas removeu.
@@ -289,7 +306,7 @@ Retorna quantas removeu.
 
 > **setHidden**(`hidden`): `void`
 
-Defined in: [src/scene/Vegetation.ts:240](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Vegetation.ts#L240)
+Defined in: [src/scene/Vegetation.ts:249](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Vegetation.ts#L249)
 
 **Esconde instâncias** sem apagá-las (SPEC-0631 §3b: árvore no corredor da estrada).
 `hidden[i] = 1` desenha a instância `i` com escala 0 (some do desenho, da sombra e do
@@ -311,7 +328,7 @@ raycast); [getInstances](#getinstances) continua com todas. `null` mostra todas 
 
 > **setInstances**(`flat`): `void`
 
-Defined in: [src/scene/Vegetation.ts:169](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Vegetation.ts#L169)
+Defined in: [src/scene/Vegetation.ts:178](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Vegetation.ts#L178)
 
 Substitui todas as instâncias (ex.: restaurar do overlay) e atualiza as malhas. Copia `flat`.
 
@@ -331,7 +348,7 @@ Substitui todas as instâncias (ex.: restaurar do overlay) e atualiza as malhas.
 
 > **setSource**(`source`): `void`
 
-Defined in: [src/scene/Vegetation.ts:145](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Vegetation.ts#L145)
+Defined in: [src/scene/Vegetation.ts:146](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Vegetation.ts#L146)
 
 **Troca o modelo** mantendo o grupo (mesmo `Object3D` na cena) e as instâncias —
 descarta as InstancedMesh atuais, reconstrói a partir do `source` novo e
@@ -353,7 +370,7 @@ reaplica o espalhamento. Usado pelo editor pra trocar placeholder → `.glb` rea
 
 > **syncInstances**(`first`, `count`): `void`
 
-Defined in: [src/scene/Vegetation.ts:229](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Vegetation.ts#L229)
+Defined in: [src/scene/Vegetation.ts:238](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Vegetation.ts#L238)
 
 Atualiza a faixa `[first, first+count)` depois que o chamador mutou o buffer adotado no lugar (SPEC-0675).
 Limitada ao total atual.
@@ -378,7 +395,7 @@ Limitada ao total atual.
 
 > **writeInstances**(`first`, `flat`, `count?`): `void`
 
-Defined in: [src/scene/Vegetation.ts:205](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Vegetation.ts#L205)
+Defined in: [src/scene/Vegetation.ts:214](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Vegetation.ts#L214)
 
 Escreve a faixa de instâncias `[first, first+count)` e atualiza **só ela** (SPEC-0675): matrizes, faixa de upload
 do `instanceMatrix` e a esfera de culling, que só cresce (encolhe na próxima escrita inteira). A faixa passando do
