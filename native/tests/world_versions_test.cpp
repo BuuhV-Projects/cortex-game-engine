@@ -18,6 +18,8 @@ using scene::SceneMirror;
 
 float identidade[16] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
 const double kViewProj[16] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
+/** Posição da translação x na matriz de mundo (coluna-maior). */
+constexpr int kTranslacaoX = 12;
 
 /** Frustum enorme: tudo entra. */
 std::vector<double> planosAmplos() {
@@ -45,14 +47,15 @@ NodeDesc grupo(scene::NodeIndex pai) {
   return no;
 }
 
-/** Linha de sync de um nó visível em `x`. */
-std::vector<double> linha(double indice, double x) {
+/** Linha de sync de um nó em `x` com os `flags` dados (padrão: malha visível). */
+std::vector<double> linha(double indice, double x,
+                          double flags = scene::kSyncVisible | scene::kSyncMaterialVisible | scene::kSyncFrustumCulled) {
   std::vector<double> sync(scene::kSyncFloatsPerNode, 0.0);
   sync[0] = indice;
   sync[1] = x;
   sync[7] = 1;
   sync[8] = sync[9] = sync[10] = 1;
-  sync[scene::kSyncFlags] = scene::kSyncVisible | scene::kSyncMaterialVisible | scene::kSyncFrustumCulled;
+  sync[scene::kSyncFlags] = flags;
   return sync;
 }
 
@@ -122,7 +125,7 @@ void testWorldVersionEscritaDiretaDoJsGanhaVersaoNova() {
   montar(espelho);
   const uint64_t antes = versaoDe(culler, espelho, 3);
   const auto planos = planosAmplos();
-  espelho.worldData()[3 * scene::kMatrixFloats + 12] = 7;  // translação x, sem passar pelo host
+  espelho.worldData()[3 * scene::kMatrixFloats + kTranslacaoX] = 7;  // sem passar pelo host
   CHECK(culler.cull(espelho, planos.data(), kViewProj) == 2);
   uint64_t depois = 0;
   for (const auto& c : culler.candidates()) if (c.index == 3) depois = c.worldVersion;
@@ -161,17 +164,36 @@ void testWorldVersionUnicaEntreSlots() {
 }
 
 void testWorldVersionRecusaNaoTocaNasFotos() {
+  // Aceito (versão V), recusado com a matriz mexida, aceito de novo com a
+  // matriz de volta: a versão é V. Se a recusa carimbasse a foto (x=7), a
+  // volta para x=1 daria versão nova.
   std::vector<NodeDesc> nos;
   nos.push_back(grupo(kNoParent));
+  nos.push_back(malha(0, 1));  // 1
   NodeDesc lod = grupo(0);
   lod.flags = scene::kNodeMainUnsupported;
-  nos.push_back(malha(0, 1));
-  nos.push_back(lod);
+  lod.visible = false;
+  nos.push_back(lod);  // 2: inalcançável, não recusa
   SceneMirror espelho;
   MainPassCuller culler;
   CHECK(espelho.build(nos));
-  CHECK(versaoDe(culler, espelho, 1) == 0);  // recusado: sem candidatos, sem versão
+  const uint64_t aceita = versaoDe(culler, espelho, 1);
+  CHECK(aceita != 0);
+
+  const std::vector<float> amplos(scene::kFrustumPlanes * 4, 0.0f);
+  const auto planos = planosAmplos();
+  double* mundo = &espelho.worldData()[1 * scene::kMatrixFloats];
+  const auto mostra = linha(2, 0, scene::kSyncVisible | scene::kSyncMainUnsupported);
+  espelho.applyTransforms(mostra.data(), mostra.size());
+  espelho.updateAndCull(identidade, amplos.data());
+  mundo[kTranslacaoX] = 7;
+  CHECK(culler.cull(espelho, planos.data(), kViewProj) == scene::kMainCullRefused);
   CHECK(culler.refusedAt() == 2);
+
+  mundo[kTranslacaoX] = 1;
+  const auto esconde = linha(2, 0, 0);
+  espelho.applyTransforms(esconde.data(), esconde.size());
+  CHECK(versaoDe(culler, espelho, 1) == aceita);
 }
 
 void testWorldVersionNaoMudaOrdemNemZ() {
