@@ -8,9 +8,11 @@
 
 > **mergeStaticScene**(`root`, `world?`, `extraDynamicRoots?`): [`StaticMergeStats`](../interfaces/StaticMergeStats.md)
 
-Defined in: [src/scene/StaticMerge.ts:243](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/StaticMerge.ts#L243)
+Defined in: [src/scene/StaticMerge.ts:197](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/StaticMerge.ts#L197)
 
-Funde a geometria estática sob `root` (ver doc do módulo). Idempotente na
+Funde a geometria estática sob `root` (ver doc do módulo) e, com `world`, congela
+no `Object3DSyncSystem` as entidades tratadas como cenário (SPEC-0684: saem do
+laço do sync; `Object3DSyncSystem.unfreeze` devolve). Idempotente na
 prática (malhas fundidas têm `cortexMergedStatic` e não são re-fundidas com
 ganho — mas o uso esperado é UMA vez, logo após o `buildScene`).
 

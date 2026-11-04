@@ -6,7 +6,7 @@
 
 # Interface: StaticMergeStats
 
-Defined in: [src/scene/StaticMerge.ts:60](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/StaticMerge.ts#L60)
+Defined in: [src/scene/StaticMerge.ts:58](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/StaticMerge.ts#L58)
 
 **Merge da geometria estática da cena** (SPEC-0120) — reduz draw calls fundindo
 as malhas paradas do cenário (ilhas, árvores, pedras, decoração) em poucas
@@ -50,11 +50,22 @@ chão/parede do Character enxerga a malha fundida (que preserva
 
 ## Properties
 
+### frozen
+
+> **frozen**: `number`
+
+Defined in: [src/scene/StaticMerge.ts:69](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/StaticMerge.ts#L69)
+
+Entidades congeladas no `Object3DSyncSystem` (SPEC-0684): as estáticas que o
+merge tratou como cenário saem do laço do sync. `0` sem `world`.
+
+***
+
 ### groups
 
 > **groups**: `number`
 
-Defined in: [src/scene/StaticMerge.ts:64](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/StaticMerge.ts#L64)
+Defined in: [src/scene/StaticMerge.ts:62](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/StaticMerge.ts#L62)
 
 Malhas fundidas criadas (≈ nº de materiais distintos do estático).
 
@@ -64,7 +75,7 @@ Malhas fundidas criadas (≈ nº de materiais distintos do estático).
 
 > **kept**: `number`
 
-Defined in: [src/scene/StaticMerge.ts:66](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/StaticMerge.ts#L66)
+Defined in: [src/scene/StaticMerge.ts:64](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/StaticMerge.ts#L64)
 
 Malhas elegíveis puladas (grupo de 1, mismatch de atributos, etc.).
 
@@ -74,6 +85,6 @@ Malhas elegíveis puladas (grupo de 1, mismatch de atributos, etc.).
 
 > **merged**: `number`
 
-Defined in: [src/scene/StaticMerge.ts:62](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/StaticMerge.ts#L62)
+Defined in: [src/scene/StaticMerge.ts:60](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/StaticMerge.ts#L60)
 
 Malhas originais fundidas (removidas da cena).
