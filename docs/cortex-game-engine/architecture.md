@@ -450,7 +450,13 @@ alvo é **Rapier** (WASM) como motor dinâmico único, estilo Unity.
   `COLLECT_INTERVAL_MS` (250 ms), e cada raio só testa as malhas cuja esfera em
   mundo alcança o personagem (`physics/nearMeshes.ts` → `NearMeshIndex`, com folga
   `MOVING_MARGIN` = 5 m só pra malha que se moveu desde a varredura anterior — a parada
-  usa `STATIC_MARGIN` = 0,5 m, SPEC-0323). Os 12 raios de parede só vão contra a malha
+  usa `STATIC_MARGIN` = 0,5 m, SPEC-0323). **Só o sujo (SPEC-0674):** com a mesma lista da varredura
+  anterior, o `rebuild` pula a malha parada (mesma `matrixWorld`, exato) e só a que mudou troca de célula na
+  grade; a varredura é o `CharacterSceneCollector` (`physics/characterCollect.ts`, pilha explícita, mesma poda e
+  ordem do `traverseCollidable`); os troncos só são relidos quando a `Vegetation.version` muda e o empurrão
+  consulta a `TrunkGrid` (`physics/trunkGrid.ts`) em ordem de índice, com volta ao laço linear se a soma dos
+  empurrões passar da folga. Visibilidade e flags de `userData` mudam sem evento (streaming, editor), por isso
+  continua uma varredura periódica, e não lista por `childadded`. Os 12 raios de parede só vão contra a malha
   cujos triângulos tocam a caixa que eles varrem (`touchingBox`: 1 `intersectsBox` da
   BVH por candidata, exato; sem árvore ou instanciada passa direto) — no meio da rua não
   sai raio de parede nenhum (SPEC-0323). **Quadro longo (SPEC-0648):** o `GameLoop`
@@ -533,7 +539,7 @@ alvo é **Rapier** (WASM) como motor dinâmico único, estilo Unity.
     ~13 raycasts/frame testam a **geometria real** — O(triângulos). Num prop denso
     (ponte de corda ~2000 tris) isso derrubava o FPS **no export nativo (Hermes)**.
     `three-mesh-bvh` constrói uma árvore por geometria (>512 tris **ou espalhada**:
-    esfera local ≥ `SPREAD_BVH_RADIUS` = 10 m, SPEC-0320) no `collectScene` →
+    esfera local ≥ `SPREAD_BVH_RADIUS` = 10 m, SPEC-0320) na varredura (`CharacterSceneCollector`) →
     O(log n). ⚠️ a fusão estática gera malha de POUCOS tris espalhada pela cidade: a
     esfera contém quase todo raio e o three testava os tris um a um (336 tris =
     0,54 ms/raio no Hermes, 7 ms/quadro só nela) — por isso o critério de espalhada. Patch global seguro (cai no raycast padrão sem árvore). **Não** use mesh
@@ -543,7 +549,9 @@ alvo é **Rapier** (WASM) como motor dinâmico único, estilo Unity.
     (que aterra pela altura **bilinear** `heightAt`) **não** trata Character — só
     `Platformer`/`Kinematic`. Os dois aterrando o mesmo corpo faziam ele **quicar** em
     rampas (raycast pousa no triângulo da malha, `heightAt` interpola → divergem). O
-    raycast já mira o terreno (é filho da cena), então cobre o caso.
+    raycast já mira o terreno (é filho da cena), então cobre o caso. O sistema guarda a classificação (terrenos/corpos)
+    e só refaz quando o contador de estrutura do ECS (`ecs/structureVersion.ts`: entidade criada/destruída,
+    componente posto/tirado) ou a lista recebida muda — o passo comum não busca componente (SPEC-0674).
   - ⚠️ Pra **pausar no editor**, o `buildScene` precisa do `physicsPaused`
     (`() => game.editorActive || game.gameplayPaused`). **Sem ele a física do
     Character roda no F2** — o player cai/treme editando e o autosave do editor
