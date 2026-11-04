@@ -56,6 +56,29 @@ describe('mergeStaticScene — congelamento do sync (SPEC-0684)', () => {
     for (const e of [trigger, marked, player]) expect(Object3DSyncSystem.isFrozen(e.entity)).toBe(false);
   });
 
+  it('congela o colisor invisível (caixa de colisão sem arte) e a célula escondida; a flag ainda barra', () => {
+    const world = new World();
+    const root = new Object3D();
+    const shared = new MeshBasicMaterial({ color: 0x808080 });
+    const box = collider(world, root, shared, 0);
+    box.mesh.visible = false; // caixa de colisão: não desenha, não se move
+    const cell = new Object3D();
+    cell.visible = false; // célula que o streaming escondeu no build
+    root.add(cell);
+    const inCell = collider(world, cell, shared, 2);
+    const flagged = collider(world, root, shared, 4);
+    flagged.mesh.visible = false;
+    flagged.mesh.userData['cortexDynamic'] = true;
+
+    const stats = mergeStaticScene(root, world);
+
+    expect(stats.merged).toBe(0); // o merge continua sem fundir o invisível
+    expect(Object3DSyncSystem.isFrozen(box.entity)).toBe(true);
+    expect(Object3DSyncSystem.isFrozen(inCell.entity)).toBe(true);
+    expect(Object3DSyncSystem.isFrozen(flagged.entity)).toBe(false);
+    expect(stats.frozen).toBe(2);
+  });
+
   it('não congela entidade sob raiz animada (extraDynamicRoots)', () => {
     const world = new World();
     const root = new Object3D();

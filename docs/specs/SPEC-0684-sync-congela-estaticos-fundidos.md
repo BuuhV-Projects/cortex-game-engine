@@ -49,7 +49,10 @@ nela a ordem `YXZ` e a pose do transform. O `freeze` faz exatamente essa escrita
 2. não tem o objeto sob uma raiz dinâmica (entidade dinâmica, script, `extraDynamicRoots` como as raízes do
    `SceneAnimator`);
 3. não tem o objeto (nem ancestral) marcado com exclusão de `userData` do merge (`cortexDynamic`, `cortexVehicle`,
-   água, vegetação, terreno, editor) nem invisível.
+   água, vegetação, terreno, editor). **A visibilidade não conta** (`hasExclusionFlag`, não `isExcludedByUserData`): o
+   merge não funde o invisível porque não há o que desenhar, mas visibilidade não move o transform. Medido no export do
+   DDD 00 (2026-11-04, `?cortexDebug=scene`): com o critério do merge só 1 entidade congelava; 1.815 eram colisores
+   estáticos com o próprio objeto invisível (caixas de colisão sem arte) e ficavam no laço por quadro.
 
 Ou seja: congela só o que o merge considerou cenário. O que ele deixou de fora (porque o jogo vai mexer) continua
 no laço. A classificação (`STATIC_COMPONENTS`, `isStaticEntity`, `dynamicRoots`, exclusão por `userData`) sai do

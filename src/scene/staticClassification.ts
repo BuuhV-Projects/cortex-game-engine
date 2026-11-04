@@ -23,14 +23,20 @@ const EXCLUDED_USER_DATA = [
   'cortexDynamic',
 ] as const;
 
-/** `obj` (ou ancestral) tem flag de exclusão (editor/vegetação/terreno/dinâmico do jogo) ou está invisível? */
-export function isExcludedByUserData(obj: Object3D): boolean {
-  let p: Object3D | null = obj;
-  while (p) {
+/** `obj` (ou ancestral) tem flag de exclusão (editor/vegetação/terreno/dinâmico do jogo)? */
+export function hasExclusionFlag(obj: Object3D): boolean {
+  for (let p: Object3D | null = obj; p; p = p.parent) {
     const ud = p.userData as Record<string, unknown>;
     for (const flag of EXCLUDED_USER_DATA) if (ud[flag]) return true;
+  }
+  return false;
+}
+
+/** `obj` (ou ancestral) tem flag de exclusão ou está invisível? É o critério do merge: não funde o que não é desenhado. */
+export function isExcludedByUserData(obj: Object3D): boolean {
+  if (hasExclusionFlag(obj)) return true;
+  for (let p: Object3D | null = obj; p; p = p.parent) {
     if (!p.visible) return true; // invisível (mannequin oculto, toggles)
-    p = p.parent;
   }
   return false;
 }
@@ -71,8 +77,8 @@ export function dynamicRoots(world: World | undefined): Set<Object3D> {
 
 /**
  * Congela no `Object3DSyncSystem` as entidades que o merge tratou como cenário
- * (SPEC-0684): estáticas pelos componentes, fora das raízes dinâmicas e sem
- * exclusão por `userData`. Chamado pelo `mergeStaticScene` DEPOIS de fundir — o
+ * (SPEC-0684): estáticas pelos componentes, fora das raízes dinâmicas e sem flag de
+ * exclusão no `userData` (a visibilidade não conta, ao contrário do merge). Chamado pelo `mergeStaticScene` DEPOIS de fundir — o
  * `freeze` faz a escrita que o primeiro quadro do sync faria.
  *
  * @returns Quantas entidades foram congeladas.
@@ -82,7 +88,9 @@ export function freezeStaticEntities(world: World, dynRoots: Set<Object3D>): num
   for (const e of world.query(Object3DComponent)) {
     if (!e.hasComponent(TransformComponent) || !isStaticEntity(e)) continue;
     const obj = e.getComponent(Object3DComponent)!.object;
-    if (isUnderAny(obj, dynRoots) || isExcludedByUserData(obj)) continue;
+    // Só a flag barra: a visibilidade não move o transform. O colisor invisível (caixa de colisão sem arte, ~1,8 mil
+    // no DDD 00) e a célula que o streaming escondeu no build são cenário parado como os outros.
+    if (isUnderAny(obj, dynRoots) || hasExclusionFlag(obj)) continue;
     if (Object3DSyncSystem.freeze(e)) frozen++;
   }
   return frozen;
