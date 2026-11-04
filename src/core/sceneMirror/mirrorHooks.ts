@@ -225,6 +225,10 @@ export function atualizarMundoSobPedido(this: Object3D, updateParents: boolean, 
   if (this.matrixAutoUpdate) this.updateMatrix();
   if (pai === null) this.matrixWorld.copy(this.matrix);
   else this.matrixWorld.multiplyMatrices(pai.matrixWorld, this.matrix);
+  // O mundo foi escrito pelo JS: o nó manda linha no próximo sync, e o host confere o mundo dele
+  // (`mundoEmDia`, SPEC-0678). Sem isso, um filho escrito sob pose transitória do pai ficava velho
+  // quando o pai voltava e mandava linha igual, porque linha igual não propaga.
+  avisarSujo(this.position as unknown as VetorEnganchado);
   if (updateChildren === true) {
     for (const filho of this.children) filho.updateWorldMatrix(false, true);
   }

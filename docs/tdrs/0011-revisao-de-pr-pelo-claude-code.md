@@ -1,7 +1,7 @@
 # 0011 - Revisão de PR pelo Claude Code no lugar do Greptile
 
 **Data:** 2026-11-03
-**Status:** aceito; o comentário pelo Claude GitHub App foi substituído por 0012
+**Status:** aceito; o comentário pelo Claude GitHub App foi substituído por 0012; a autenticação por WIF (e a regra do runner self-hosted) foi substituída por 0013
 
 ## Contexto
 

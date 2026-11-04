@@ -156,7 +156,12 @@ export class CharacterSceneCollector {
     this.lastVeg.length = this.lastVegVersions.length = n;
     for (let i = 0; i < n; i++) {
       const inst = this.veg[i]!.getInstances();
-      for (let k = 0; k < inst.length; k += VEG_STRIDE) trunks.push(inst[k]!, inst[k + 2]!, TRUNK_RADIUS * inst[k + 4]!);
+      for (let k = 0; k < inst.length; k += VEG_STRIDE) {
+        const scale = inst[k + 4]!;
+        // Escala 0 (o vão que o `writeInstances` zera, SPEC-0675) não desenha: não é tronco na origem.
+        if (scale === 0) continue;
+        trunks.push(inst[k]!, inst[k + 2]!, TRUNK_RADIUS * scale);
+      }
       this.lastVeg[i] = this.veg[i]!;
       this.lastVegVersions[i] = this.vegVersions[i]!;
     }

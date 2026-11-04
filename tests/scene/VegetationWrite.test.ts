@@ -85,6 +85,7 @@ describe('Vegetation — escrita direta e sem cópia (SPEC-0675)', () => {
   it('writeInstances escreve só a faixa e marca o upload dela', () => {
     const veg = new Vegetation(makePlaceholderVegetation('tree'), TREES);
     veg.setInstances(forest(TREES));
+    meshes(veg)[0]!.instanceMatrix.clearUpdateRanges(); // o render subiu a escrita inteira
     const before = Array.from(meshes(veg)[0]!.instanceMatrix.array.subarray(0, 16));
     const cell = forest(4, 99);
     veg.writeInstances(10, cell);
@@ -93,6 +94,19 @@ describe('Vegetation — escrita direta e sem cópia (SPEC-0675)', () => {
     expect(mesh.instanceMatrix.updateRanges).toEqual([{ start: 10 * 16, count: 4 * 16 }]);
     expect(veg.instanceAt(10)).toEqual({ x: cell[0], y: cell[1], z: cell[2], rotY: cell[3], scale: cell[4] });
     expect(veg.count).toBe(TREES);
+  });
+
+  it('escrita inteira e faixa no mesmo quadro sobem as duas', () => {
+    const veg = new Vegetation(makePlaceholderVegetation('tree'), TREES);
+    veg.setInstances(forest(TREES));
+    veg.writeInstances(10, forest(4, 99));
+    const ranges = meshes(veg)[0]!.instanceMatrix.updateRanges;
+    // Lista vazia faria o `three` subir tudo; com faixa, a inteira precisa estar nela.
+    expect(ranges.length).toBeGreaterThan(0);
+    const lo = Math.min(...ranges.map((r) => r.start));
+    const hi = Math.max(...ranges.map((r) => r.start + r.count));
+    expect(lo).toBe(0);
+    expect(hi).toBeGreaterThanOrEqual(TREES * 16);
   });
 
   it('a esfera cresce para cobrir a faixa escrita longe', () => {

@@ -151,4 +151,18 @@ describe('NativeSceneMirror — só o sujo de verdade (SPEC-0678)', () => {
     expect(esferas).toHaveLength(1);
     expect(esferas[0]![4]).toBeCloseTo(Math.sqrt(75));
   });
+
+  it('mundo escrito pelo JS (updateWorldMatrix) manda a linha do nó no próximo sync', () => {
+    const registro = instalarPonte();
+    const pai = new Object3D();
+    const filho = new Object3D();
+    pai.add(filho);
+    const espelho = new NativeSceneMirror();
+    espelho.install(cenaComFilhos(pai));
+    quadro(espelho, registro);
+    // O host confere o mundo só de quem tem linha: o filho escrito sob pose transitória do pai precisa dela.
+    filho.updateWorldMatrix(false, false);
+    expect(quadro(espelho, registro)).toHaveLength(1);
+    expect(quadro(espelho, registro)).toHaveLength(0);
+  });
 });
