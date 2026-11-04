@@ -111,3 +111,10 @@ onde o merge roda, mover o transform de uma estática fundida já não tinha efe
   contagem de pares, `unfreeze` devolve, componente novo descongela, componente estático novo não, troca do
   `Object3DComponent`) e `tests/scene/staticMergeFreeze.test.ts` (equivalência com o caminho antigo depois do
   merge; estática congelada, dinâmica, gatilho, `cortexDynamic` e raiz animada não; sem `world`, nada congela).
+
+## Resultado medido (2026-11-04)
+
+Export nativo do DDD 00, poses fixas da SPEC-0112 do jogo, 3 rodadas intercaladas por lado, junto com a SPEC-0685 e
+o LOD dos pedestres do jogo (SPEC-0129 de lá): `mergeStatic` congela 1.816 entidades; `world` de ~5,2 para ~3,9 ms
+(o `Object3DSync`, 20–21% do `world`, sai da lista); JS por quadro de 20,6 para 17,8 ms no centro e de 19,5 para
+17,6 ms no bairro.
