@@ -95,17 +95,22 @@ edições do editor copiam para um array próprio antes de mexer.
 ### (c) CSM escalonado no caminho `three`
 
 `CameraFollowingCSM` (agora em `src/scene/CameraFollowingCSM.ts`; o `OutdoorLighting.ts` tinha 582 linhas) ganha
-`farCascadeInterval` (opção `shadowFarCascadeInterval` do `setupOutdoorLighting`, default **2**): com o `three`
-desenhando as cascatas (Studio, navegador, ou o nativo devolvendo um quadro), a cascata 0 redesenha todo quadro e a
-cascata `i > 0` só nos quadros em que `(quadro + i) % intervalo === 0` — as distantes se revezam e não caem todas no
-mesmo quadro. `1` volta ao comportamento antigo.
+`farCascadeInterval` (opção `shadowFarCascadeInterval` do `setupOutdoorLighting`, default **2**): sem espelho
+nativo instalado (Studio, navegador — o `three` é o único que desenha as cascatas), a cascata 0 redesenha todo quadro
+e a cascata `i > 0` só nos quadros em que `(quadro + i) % intervalo === 0` — as distantes se revezam e não caem todas
+no mesmo quadro. `1` volta ao comportamento antigo.
 
 - Seguro porque o `three` só recalcula `shadow.matrix` (o `lightShadowMatrix` que amostra o mapa) dentro do
   `updateShadow`: a cascata que pulou o quadro amostra o mapa e a matriz do MESMO quadro anterior. Estático fica
   certo; objeto andando na cascata distante atrasa até `intervalo − 1` quadros.
 - Troca de câmera (`updateFrustums`, editor ↔ play) força todas as cascatas no quadro.
-- Com o passe nativo assumindo (SPEC-0245) nada muda: lá o `autoUpdate` já é `false` em todas, e o escalonamento só
-  age quando o nativo não assumiu. `?semPasseDeSombra=1` continua congelando tudo.
+- Com espelho nativo instalado nada muda: o passe nativo (SPEC-0245) é dono do `autoUpdate`, e num quadro que ele
+  devolve ao `three` já chamou o `updateMatrices` das cascatas — pular o redesenho ali daria mapa velho com matriz
+  nova. `?semPasseDeSombra=1` continua congelando tudo.
+- Dois lixos por quadro do mesmo arquivo saem junto (valem no nativo): as queries `?semPasseDeSombra` e
+  `?semPasseDeSombraNativo` eram um `URLSearchParams` novo por pergunta, 2–3 por quadro (agora só quando
+  `location.search` muda), e a linha de relato do passe nativo (`ASSUMIU desenhados=…`) era montada todo quadro com o
+  log desligado — o `desenhados` muda quase todo quadro (agora só com `debug('perf')` ligado).
 
 ## Medidas
 

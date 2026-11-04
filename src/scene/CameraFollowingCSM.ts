@@ -1,18 +1,39 @@
 /**
  * O CSM do `setupOutdoorLighting` (SPEC-0197, SPEC-0245): cascatas que seguem a câmera do quadro, o filtro de
- * casters por tamanho angular e o passe de sombra nativo.
- * Saiu do `OutdoorLighting.ts` (582 linhas) pela regra de 500 linhas (SPEC-0668).
+ * casters por tamanho angular, o passe de sombra nativo e o escalonamento das cascatas distantes no caminho `three`
+ * (SPEC-0675). Saiu do `OutdoorLighting.ts` (582 linhas) pela regra de 500 linhas (SPEC-0668).
  */
 import { Matrix4, Vector3, type Camera, type Object3D, type BufferGeometry, VSMShadowMap } from 'three';
 import { CSMShadowNode } from 'three/examples/jsm/csm/CSMShadowNode.js';
 import { cullShadowCasters, DEFAULT_SHADOW_CASTER_MIN_RATIO } from './ShadowCasterCulling.js';
-import { debug } from '../core/debug.js';
+import { debug, isDebug } from '../core/debug.js';
 import { activeSceneMirror } from '../core/NativeSceneMirror.js';
 import { CasterGeometryRegistry } from '../render/CasterGeometryRegistry.js';
 import { ShadowAlphaClipSync } from '../render/ShadowAlphaClipSync.js';
 
 /** Frames entre passadas do shadow caster culling (SPEC-0197). */
 const SHADOW_CULL_INTERVAL = 10;
+
+/** Default de {@link CameraFollowingCSM.farCascadeInterval} (SPEC-0675). */
+export const DEFAULT_FAR_CASCADE_INTERVAL = 2;
+
+/** `location.search` da última leitura das queries de medição e o que ela deu. */
+let _buscaLida: string | null = null;
+let _semPasseDeSombra = false;
+let _semPasseDeSombraNativo = false;
+
+/**
+ * Lê as duas queries de medição só quando `location.search` muda: as duas são perguntadas todo quadro, e um
+ * `URLSearchParams` novo por pergunta era lixo por quadro no Hermes (SPEC-0675).
+ */
+function lerQueriesDeMedicao(): void {
+  const busca = typeof location === 'undefined' ? '' : (location.search ?? '');
+  if (busca === _buscaLida) return;
+  _buscaLida = busca;
+  const params = new URLSearchParams(busca);
+  _semPasseDeSombra = params.get('semPasseDeSombra') === '1';
+  _semPasseDeSombraNativo = params.get('semPasseDeSombraNativo') === '1';
+}
 
 /**
  * `?semPasseDeSombra=1` — FERRAMENTA DE MEDIÇÃO, permanente (SPEC-0245).
@@ -29,8 +50,8 @@ const SHADOW_CULL_INTERVAL = 10;
  * materiais — desligar a luz junto derruba o subsistema e mede outra coisa.
  */
 function congelarPasseDeSombra(): boolean {
-  if (typeof location === 'undefined') return false;
-  return new URLSearchParams(location.search ?? '').get('semPasseDeSombra') === '1';
+  lerQueriesDeMedicao();
+  return _semPasseDeSombra;
 }
 
 /**
@@ -46,8 +67,8 @@ function congelarPasseDeSombra(): boolean {
  * perde sombra nenhuma — quem desenha volta a ser o `three`.
  */
 function passeDeSombraNativoDesligado(): boolean {
-  if (typeof location === 'undefined') return false;
-  return new URLSearchParams(location.search ?? '').get('semPasseDeSombraNativo') === '1';
+  lerQueriesDeMedicao();
+  return _semPasseDeSombraNativo;
 }
 
 /**
@@ -99,6 +120,16 @@ export class CameraFollowingCSM extends CSMShadowNode {
    * Público: o Inspector/cena pode mudar em runtime.
    */
   shadowCasterMinRatio = DEFAULT_SHADOW_CASTER_MIN_RATIO;
+
+  /**
+   * CSM escalonado (SPEC-0675): sem o passe nativo (Studio/navegador), a cascata 0 redesenha todo quadro e a
+   * cascata `i > 0` só quando `(quadro + i) % farCascadeInterval === 0`. `1` redesenha todas todo quadro.
+   * Público: o jogo/Inspector pode mudar em runtime.
+   */
+  farCascadeInterval = DEFAULT_FAR_CASCADE_INTERVAL;
+
+  /** Quadros contados pelo escalonamento. */
+  private _quadroDoEscalonamento = 0;
 
   /** Frames desde a última passada do culling. */
   private _sinceCull = SHADOW_CULL_INTERVAL;
@@ -180,7 +211,8 @@ export class CameraFollowingCSM extends CSMShadowNode {
     }
     const cam = (frame as unknown as { camera?: { isPerspectiveCamera?: boolean } } | null)?.camera;
     const self = this as unknown as { camera: unknown; updateFrustums: () => void };
-    if (cam?.isPerspectiveCamera && cam !== self.camera) {
+    const trocouCamera = cam?.isPerspectiveCamera === true && cam !== self.camera;
+    if (trocouCamera) {
       self.camera = cam;
       self.updateFrustums();
     }
@@ -217,8 +249,31 @@ export class CameraFollowingCSM extends CSMShadowNode {
     // e recompõe a ortho de cada uma. Desenhar antes usaria o frustum do frame
     // passado e a sombra divergiria a cada quadro em que a câmera anda.
     const resultado = super.updateBefore(frame);
-    if (cam?.isPerspectiveCamera) this._desenharPasseDeSombraNativo(frame);
+    if (cam?.isPerspectiveCamera) {
+      this._desenharPasseDeSombraNativo(frame);
+      this._escalonarCascatas(trocouCamera);
+    }
     return resultado;
+  }
+
+  /**
+   * CSM escalonado (SPEC-0675): só onde o `three` é o único que desenha as cascatas (sem espelho nativo instalado).
+   * Com o espelho, o passe nativo é dono do `autoUpdate` — e num quadro recusado ele já chamou o `updateMatrices`
+   * das cascatas, então pular o redesenho daria mapa velho com matriz nova. A cascata que pula o quadro fica com o
+   * mapa e a matriz do MESMO quadro anterior (o `three` só recalcula `shadow.matrix` no `updateShadow`).
+   *
+   * @param todas - Redesenha todas neste quadro (troca de câmera: as cascatas foram recalculadas).
+   */
+  private _escalonarCascatas(todas: boolean): void {
+    if (this._congelouParaMedicao || congelarPasseDeSombra() || activeSceneMirror()?.installed) return;
+    const cascatas = (this as unknown as { lights?: CascataDoCsm[] }).lights;
+    if (!cascatas) return;
+    const intervalo = Math.max(1, Math.floor(this.farCascadeInterval));
+    const quadro = ++this._quadroDoEscalonamento;
+    for (let i = 0; i < cascatas.length; i++) {
+      const sombra = cascatas[i]!.shadow;
+      if (sombra) sombra.autoUpdate = todas || i === 0 || (quadro + i) % intervalo === 0;
+    }
   }
 
   /**
@@ -360,12 +415,16 @@ export class CameraFollowingCSM extends CSMShadowNode {
 
     // Quantos frames seguidos ficaram com o `three` antes de o nativo
     // reassumir (SPEC-0289): é o custo real de cada geometria nova do streaming.
+    // O relato só é montado com o `debug('perf')` ligado: o `desenhados` muda quase todo quadro, e a linha era uma
+    // string nova por quadro no Hermes mesmo com o log desligado (SPEC-0675).
+    const relatar = isDebug('perf');
     let devolvidos = '';
     if (!assumiu) this._framesDevolvidos++;
     else if (this._framesDevolvidos > 0) {
-      devolvidos = ` apos ${this._framesDevolvidos} frame(s) devolvido(s)`;
+      if (relatar) devolvidos = ` apos ${this._framesDevolvidos} frame(s) devolvido(s)`;
       this._framesDevolvidos = 0;
     }
+    if (!relatar) return;
     const linha = assumiu
       ? `ASSUMIU desenhados=${desenhados} cascatas=${cascatas.length}${devolvidos}`
       : `DEVOLVEU ao three motivo=${motivo}`;

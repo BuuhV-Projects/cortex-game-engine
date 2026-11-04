@@ -13,7 +13,7 @@ import { DEFAULT_SHADOW_CASTER_MIN_RATIO } from './ShadowCasterCulling.js';
 import { debug } from '../core/debug.js';
 import { enableNativeToneMapping } from '../core/nativePostFX.js';
 import { adaptsOutdoorLightingToNativeHost, foldIntoHemisphere } from './NativeOutdoorLighting.js';
-import { CameraFollowingCSM } from './CameraFollowingCSM.js';
+import { CameraFollowingCSM, DEFAULT_FAR_CASCADE_INTERVAL } from './CameraFollowingCSM.js';
 
 /** Opções de {@link setupOutdoorLighting}. Todas opcionais — defaults "verão". */
 export interface OutdoorLightingOptions {
@@ -68,6 +68,12 @@ export interface OutdoorLightingOptions {
    * desliga. Medido no `kart-racer`: 2807 → 1966 draws, sem diferença visível.
    */
   shadowCasterMinRatio?: number;
+  /**
+   * **CSM escalonado** (SPEC-0675, só com `csm`, só sem o passe de sombra nativo — Studio/navegador): a cascata 0
+   * redesenha todo quadro e as distantes a cada N quadros, revezando. Objeto andando longe atrasa até N − 1 quadros
+   * na sombra; o estático não muda. `1` redesenha todas todo quadro. Default `2`.
+   */
+  shadowFarCascadeInterval?: number;
 }
 
 /** Luzes criadas por {@link setupOutdoorLighting} — ajuste-as em runtime. */
@@ -127,6 +133,7 @@ export function setupOutdoorLighting(
     lightMargin = 200,
     shadowFade = true,
     shadowCasterMinRatio = DEFAULT_SHADOW_CASTER_MIN_RATIO,
+    shadowFarCascadeInterval = DEFAULT_FAR_CASCADE_INTERVAL,
   } = options;
 
   // Host com o renderer próprio: ACES no composite e ambiente no hemisfério (SPEC-0645).
@@ -186,6 +193,7 @@ export function setupOutdoorLighting(
       });
       (csmNode as unknown as { fade: boolean }).fade = shadowFade; // suaviza a emenda das cascatas
       csmNode.shadowCasterMinRatio = shadowCasterMinRatio; // SPEC-0197
+      csmNode.farCascadeInterval = shadowFarCascadeInterval; // SPEC-0675
       (sun.shadow as unknown as { shadowNode: unknown }).shadowNode = csmNode;
 
     }
