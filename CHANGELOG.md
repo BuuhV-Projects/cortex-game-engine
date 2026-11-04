@@ -1,3 +1,15 @@
+# [0.104.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.103.1...v0.104.0) (2026-11-04)
+
+
+### Bug Fixes
+
+* **trace:** PerfTrace.d.ts autocontido para o vendor (SPEC-0688) ([6d41a97](https://github.com/BuuhV-Projects/cortex-game-engine/commit/6d41a975ae6dba48c600b386465409f710b09af1))
+
+
+### Features
+
+* **trace:** contadores de diagnóstico no perf-trace (SPEC-0688) ([74323a3](https://github.com/BuuhV-Projects/cortex-game-engine/commit/74323a3c0437a2705c650b41209c0d4e86a9c8b6))
+
 ## [0.103.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.103.0...v0.103.1) (2026-11-04)
 
 
