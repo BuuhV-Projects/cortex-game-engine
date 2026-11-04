@@ -1,6 +1,7 @@
 name: PR checks
 
-# Gate de merge na `main` (TDR-0005).
+# Gate de merge na `main` (TDR-0005). Roda em PR para QUALQUER base (TDR-0014): o PR
+# empilhado (base `perf/...`) também é testado, antes de chegar a vez dele na `main`.
 #
 # Até aqui a pipeline só acordava DEPOIS do merge: `release.yml` dispara em
 # `push: main`, então o `yarn test` reprovava um commit que já estava na `main`
@@ -27,7 +28,6 @@ name: PR checks
 
 on:
   pull_request:
-    branches: [main]
   workflow_dispatch: # pra rodar o gate à mão numa branch sem abrir PR
 
 permissions:
@@ -113,7 +113,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # `trail check` compara contra origin/main
+          fetch-depth: 0 # `trail check` compara contra a base do PR
 
       - name: Setup Node ${{ env.NODE_VERSION }}
         uses: actions/setup-node@v4
@@ -137,7 +137,8 @@ jobs:
         run: trail build
 
       - name: trail check
-        run: trail check --base origin/main
+        # Base real do PR (a `main` ou a branch do PR de baixo, na pilha); no disparo manual, a `main`.
+        run: trail check --base "origin/${{ github.base_ref || 'main' }}"
 
   test:
     name: Tests (Vitest)
