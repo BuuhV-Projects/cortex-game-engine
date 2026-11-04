@@ -1,3 +1,22 @@
+# [0.102.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.101.1...v0.102.0) (2026-11-04)
+
+
+### Bug Fixes
+
+* **sync:** congela também o colisor estático invisível (SPEC-0684) ([79b4c3c](https://github.com/BuuhV-Projects/cortex-game-engine/commit/79b4c3c01425feed26543c066c414d2c1b29af26))
+
+
+### Features
+
+* **native:** versão da matriz de mundo por candidato da projeção principal (SPEC-0682) ([41cb51c](https://github.com/BuuhV-Projects/cortex-game-engine/commit/41cb51ccab89340189432b361d60b163d7ffa66e))
+* **render:** projeção repassa a versão do mundo e RS1/renderer nativo pulam a matriz parada (SPEC-0682) ([86a2098](https://github.com/BuuhV-Projects/cortex-game-engine/commit/86a2098b2837f919b59824e8fbff815d39d8415f))
+
+
+### Performance Improvements
+
+* **render:** uma travessia de matriz por render de cena no caminho three (SPEC-0680) ([60a7b68](https://github.com/BuuhV-Projects/cortex-game-engine/commit/60a7b686722cba8efb46d383e941932a848cb30f))
+* **sync:** congela no Object3DSync as entidades estáticas fundidas pelo merge (SPEC-0684) ([770d32b](https://github.com/BuuhV-Projects/cortex-game-engine/commit/770d32b49d99c5c7058fbc6d0d66ff27a0e60b0c))
+
 ## [0.101.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.101.0...v0.101.1) (2026-11-04)
 
 
