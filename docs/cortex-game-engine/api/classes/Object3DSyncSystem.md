@@ -6,7 +6,7 @@
 
 # Class: Object3DSyncSystem
 
-Defined in: [src/systems/Object3DSyncSystem.ts:23](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/Object3DSyncSystem.ts#L23)
+Defined in: [src/systems/Object3DSyncSystem.ts:29](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/Object3DSyncSystem.ts#L29)
 
 Sincroniza `TransformComponent` → `Object3D.position` / `rotation.y`.
 
@@ -22,6 +22,10 @@ Só escreve o que difere do transform (SPEC-0673): cada setter de `Euler`
 recalcula o quaternion (`sin`/`cos`), e a maioria das entidades (colisores
 estáticos, carros dormindo) não se move. O resultado é o mesmo de escrever
 sempre — inclusive para quem escreve direto em `transform.x` ou no `Object3D`.
+
+Entidade **congelada** (SPEC-0684) fica fora do laço: o `mergeStaticScene`
+congela as estáticas cuja arte fundiu (no host nativo; no browser/Studio nada
+congela). Para mover uma delas, [Object3DSyncSystem.unfreeze](#unfreeze).
 
 ## Extends
 
@@ -85,7 +89,7 @@ a gameplay (física/input) enquanto o editor está ativo
 
 > **priority**: `number` = `10`
 
-Defined in: [src/systems/Object3DSyncSystem.ts:26](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/Object3DSyncSystem.ts#L26)
+Defined in: [src/systems/Object3DSyncSystem.ts:32](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/Object3DSyncSystem.ts#L32)
 
 Prioridade de execução deste sistema.
 
@@ -102,7 +106,7 @@ Sistemas com valores menores executam antes. Padrão: `0`.
 
 > `readonly` **profileLabel**: `"Object3DSyncSystem"` = `'Object3DSyncSystem'`
 
-Defined in: [src/systems/Object3DSyncSystem.ts:24](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/Object3DSyncSystem.ts#L24)
+Defined in: [src/systems/Object3DSyncSystem.ts:30](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/Object3DSyncSystem.ts#L30)
 
 Nome do sistema no perfil por sistema (`World.enableSystemProfile`, SPEC-0236).
 Sem ele o perfil usa `constructor.name`, que no bundle minificado vira `fx`,
@@ -116,9 +120,9 @@ Sem ele o perfil usa `constructor.name`, que no bundle minificado vira `fx`,
 
 ### requiredComponents
 
-> `static` **requiredComponents**: (*typeof* [`Object3DComponent`](Object3DComponent.md) \| *typeof* [`TransformComponent`](TransformComponent.md))[]
+> `static` **requiredComponents**: (*typeof* [`TransformComponent`](TransformComponent.md) \| *typeof* [`Object3DComponent`](Object3DComponent.md))[]
 
-Defined in: [src/systems/Object3DSyncSystem.ts:25](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/Object3DSyncSystem.ts#L25)
+Defined in: [src/systems/Object3DSyncSystem.ts:31](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/Object3DSyncSystem.ts#L31)
 
 Construtores dos componentes que este sistema requer.
 
@@ -165,7 +169,7 @@ handles nativos que o GC não coleta sozinho (ex.: o mundo do Rapier em
 
 > **update**(`entities`): `void`
 
-Defined in: [src/systems/Object3DSyncSystem.ts:33](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/Object3DSyncSystem.ts#L33)
+Defined in: [src/systems/Object3DSyncSystem.ts:93](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/Object3DSyncSystem.ts#L93)
 
 Executa a lógica do sistema para o frame/passo atual.
 
@@ -188,3 +192,83 @@ Entidades filtradas pelo `World` que possuem todos os
 #### Overrides
 
 [`System`](System.md).[`update`](System.md#update)
+
+***
+
+### freeze()
+
+> `static` **freeze**(`entity`): `boolean`
+
+Defined in: [src/systems/Object3DSyncSystem.ts:51](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/Object3DSyncSystem.ts#L51)
+
+Congela a entidade (SPEC-0684): copia o transform para o `Object3D` uma vez
+(posição, ordem `YXZ` e yaw — o que um quadro do sync faria) e a tira do laço
+a partir do próximo quadro. Ganhar depois um componente fora do conjunto
+estático a descongela sozinha.
+
+#### Parameters
+
+##### entity
+
+[`Entity`](Entity.md)
+
+#### Returns
+
+`boolean`
+
+`false` se faltar `TransformComponent` ou `Object3DComponent`.
+
+#### Example
+
+```ts
+Object3DSyncSystem.freeze(placa); // não se move mais; o sync deixa de visitá-la
+```
+
+***
+
+### isFrozen()
+
+> `static` **isFrozen**(`entity`): `boolean`
+
+Defined in: [src/systems/Object3DSyncSystem.ts:81](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/Object3DSyncSystem.ts#L81)
+
+A entidade está congelada (fora do laço do sync, SPEC-0684)?
+
+#### Parameters
+
+##### entity
+
+[`Entity`](Entity.md)
+
+#### Returns
+
+`boolean`
+
+***
+
+### unfreeze()
+
+> `static` **unfreeze**(`entity`): `void`
+
+Defined in: [src/systems/Object3DSyncSystem.ts:73](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/Object3DSyncSystem.ts#L73)
+
+Devolve a entidade ao laço (SPEC-0684): no próximo quadro o transform volta a
+ser copiado para o `Object3D`. Para mover uma estática que o merge congelou —
+a arte fundida dela continua na malha fundida; só o que ficou fora acompanha.
+
+#### Parameters
+
+##### entity
+
+[`Entity`](Entity.md)
+
+#### Returns
+
+`void`
+
+#### Example
+
+```ts
+Object3DSyncSystem.unfreeze(porta);
+porta.getComponent(TransformComponent)!.rotationY = Math.PI / 2;
+```

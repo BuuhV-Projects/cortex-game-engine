@@ -31,11 +31,23 @@ export class Entity {
 
   private readonly _components: Map<string, Component> = new Map();
 
+  /** Contador de mudanças de componente desta entidade (ver {@link componentsVersion}). */
+  private _componentsVersion = 0;
+
   constructor() {
     this.id = crypto.randomUUID();
   }
 
   // ─── Public API ────────────────────────────────────────────────────────────
+
+  /**
+   * Versão dos componentes desta entidade: sobe a cada `addComponent` (inclusive substituição do mesmo tipo) e a
+   * cada `removeComponent` que remove de fato. Serve para quem guardou uma conclusão sobre os componentes (o
+   * congelamento do `Object3DSyncSystem`, SPEC-0684) saber, com uma comparação, se precisa conferir de novo.
+   */
+  get componentsVersion(): number {
+    return this._componentsVersion;
+  }
 
   /**
    * Adiciona um componente à entidade.
@@ -45,6 +57,7 @@ export class Entity {
    */
   addComponent(component: Component): this {
     this._components.set(component.type, component);
+    this._componentsVersion++;
     bumpStructureVersion(); // a consulta do `World.tick` remonta (ADR-0676)
     return this;
   }
@@ -54,7 +67,10 @@ export class Entity {
    * Sem efeito se o componente não estiver presente.
    */
   removeComponent<T extends Component>(ComponentClass: ComponentClass<T>): void {
-    if (this._components.delete(ComponentClass.name)) bumpStructureVersion();
+    if (this._components.delete(ComponentClass.name)) {
+      this._componentsVersion++;
+      bumpStructureVersion();
+    }
   }
 
   /**

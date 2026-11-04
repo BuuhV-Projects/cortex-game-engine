@@ -70,7 +70,7 @@ lado).
 
 | Sistema | Uso |
 |---|---|
-| `Object3DSyncSystem` | Copia `TransformComponent` → `Object3D` da cena a cada frame. |
+| `Object3DSyncSystem` | Copia `TransformComponent` → `Object3D` da cena a cada frame. Entidade congelada (`Object3DSyncSystem.freeze`/`unfreeze`/`isFrozen`, SPEC-0684) fica fora do laço. |
 | `ThirdPersonCameraSystem` | Câmera de perseguição da entity com `FollowCameraTargetComponent`. |
 | `FirstPersonCameraSystem` | Câmera/controle de **1ª pessoa** (FPS): mouse-look (pointer lock) + WASD + pulo sobre o player `CharacterBodyComponent`. Helper: `setupFirstPerson(game)`. |
 | `FollowCamera2DSystem` | Câmera 2.5D de plataforma (segue no plano XY; roll/pitch/yaw e preset isométrico opcionais). |
@@ -823,6 +823,10 @@ entidades dinâmicas (scripts/player/Rapier), animados, skinned, vegetação,
 terreno, água, `InstancedMesh`/`BatchedMesh`, **gatilhos** (`collider.solid: false`,
 ADR-0220) e subárvores marcadas com **`userData.cortexDynamic = true`**. Física
 preservada (`cortexSolid` e `cortexRoad` sobrevivem; colliders derivam antes).
+Depois de fundir, o merge **congela** no `Object3DSyncSystem` as entidades estáticas
+que tratou como cenário (SPEC-0684, `stats.frozen`): escrever no `TransformComponent`
+delas não chega mais ao `Object3D`. Para mover uma: `Object3DSyncSystem.unfreeze(entity)`
+(ou marque `cortexDynamic` antes do build). Ganhar um componente de jogo descongela sozinho.
 
 > ⚠️ **Objeto criado em código que vai se MEXER (posição, `visible`, material,
 > geometria) e entra na cena antes do `buildScene`: marque a raiz com

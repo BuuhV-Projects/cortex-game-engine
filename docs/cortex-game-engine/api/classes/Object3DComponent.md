@@ -6,12 +6,13 @@
 
 # Class: Object3DComponent
 
-Defined in: [src/components/Object3DComponent.ts:12](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/Object3DComponent.ts#L12)
+Defined in: [src/components/Object3DComponent.ts:13](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/Object3DComponent.ts#L13)
 
 Liga uma entidade ao seu `Object3D` (Mesh/Group) na cena Three.js.
 
 O `Object3DSyncSystem` copia o `TransformComponent` da entidade para
-`object.position` / `object.rotation.y` a cada frame.
+`object.position` / `object.rotation.y` a cada frame — exceto quando ela está
+congelada (SPEC-0684, ver [Object3DComponent.frozen](#frozen)).
 
 ## Extends
 
@@ -23,7 +24,7 @@ O `Object3DSyncSystem` copia o `TransformComponent` da entidade para
 
 > **new Object3DComponent**(`object`): `Object3DComponent`
 
-Defined in: [src/components/Object3DComponent.ts:13](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/Object3DComponent.ts#L13)
+Defined in: [src/components/Object3DComponent.ts:29](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/Object3DComponent.ts#L29)
 
 #### Parameters
 
@@ -55,11 +56,24 @@ Indica se o componente está ativo. Systems podem ignorar componentes desativado
 
 ***
 
+### frozen
+
+> **frozen**: `boolean` = `false`
+
+Defined in: [src/components/Object3DComponent.ts:20](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/Object3DComponent.ts#L20)
+
+Fora do laço do `Object3DSyncSystem` (SPEC-0684): o transform não é mais copiado
+para o objeto. O `mergeStaticScene` congela as entidades estáticas cuja arte
+fundiu. Não escreva direto: use `Object3DSyncSystem.freeze`/`unfreeze`, que
+sincronizam e avisam o sistema.
+
+***
+
 ### object
 
 > **object**: `Object3D`
 
-Defined in: [src/components/Object3DComponent.ts:13](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/Object3DComponent.ts#L13)
+Defined in: [src/components/Object3DComponent.ts:29](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/Object3DComponent.ts#L29)
 
 ## Accessors
 
