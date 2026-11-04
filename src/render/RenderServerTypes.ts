@@ -93,6 +93,8 @@ export interface NativeDrawer {
   beginFrame(camera: unknown, scene: unknown): void;
   /** `version`: world matrix version of the candidate (SPEC-0682); -1 = unknown, compare the matrix. */
   take(object: Object3D, material: unknown, geometry: unknown, version?: number): NativeEntry | null;
+  /** Once per list, before its `recipeFor` calls (SPEC-0685): reads the target formats once. Optional. */
+  beginList?(renderContext: unknown): void;
   /** Recipe id of one pass for the render context's target formats; -1 = the three draws it at its place. */
   recipeFor(entry: NativeEntry, renderContext: unknown, pass?: number): number;
 }

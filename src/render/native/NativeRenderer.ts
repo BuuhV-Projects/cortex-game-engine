@@ -30,6 +30,7 @@ import { FRAME_BLOCKS } from './frame/index.js';
 import type { FrameBlock, FrameBlockFactory } from './frame/FrameBlock.js';
 import { OBJECT_FLOATS, OBJECT_NORMAL_AT, VIEW_FLOATS, VIEW_TIME_AT, type NativeModelDef } from './models/NativeModel.js';
 import { NativeGeometryStore } from './NativeGeometryStore.js';
+import { NO_TARGET, RecipeTarget } from './NativeRecipeTarget.js';
 import { NativeMaterialStore } from './NativeMaterialStore.js';
 import { NativePipelineStore, type NativeLayouts } from './NativePipelineStore.js';
 import {
@@ -38,7 +39,7 @@ import {
   NO_RECIPE, NO_TONE_MAPPING, NORMAL_BLENDING, OBJECT_SEMANTICS, OBJECT_SLOTS_PER_CHUNK, REPORT_FRAMES, REPORT_REASONS,
   RETRY_REASONS, ROW_FLOATS, SKIN_SEMANTICS, STAGE_FRAGMENT, STAGE_VERTEX, TINT_QUERY,
   TRIANGLE_VERTICES, UNIFORM_ALIGN_BYTES, drawState, nativePrecompileRequested, nativeRendererModels,
-  type GeometryLike, type Gpu, type Inst, type NativeRendererHost, type NativeRendererStats, type Refusal,
+  type GeometryLike, type Gpu, type Inst, type RecipeRecord, type NativeRendererHost, type NativeRendererStats, type Refusal,
 } from './nativeRendererShared.js';
 
 export {
@@ -89,6 +90,8 @@ export class NativeRenderer implements NativeDrawer {
   }
   /** Render context of the last main pass: `precompile` runs after the warm-up frame, outside it. */
   private _context: unknown = null;
+  /** Alvo da lista corrente (SPEC-0685). */
+  private readonly _target = new RecipeTarget();
 
   constructor(
     private readonly _host: NativeRendererHost,
@@ -132,6 +135,7 @@ export class NativeRenderer implements NativeDrawer {
 
   beginFrame(camera: unknown, scene: unknown): void {
     this._frame++;
+    this._target.reset();
     const c = camera as { projectionMatrix: { elements: ArrayLike<number> }; matrixWorldInverse: { elements: ArrayLike<number> } };
     const v = this._viewData;
     for (let i = 0; i < MAT4_FLOATS; i++) {
@@ -180,24 +184,41 @@ export class NativeRenderer implements NativeDrawer {
     return inst;
   }
 
+  /** Once per list (SPEC-0685): reads the target formats of the render context for every entry of it. */
+  beginList(renderContext: unknown): void {
+    this._context = renderContext;
+    this._target.use(this._host.backend.utils, renderContext);
+  }
+
   recipeFor(entry: NativeEntry, renderContext: unknown, pass = 0): number {
     const inst = entry as Inst;
-    this._context = renderContext;
-    const u = this._host.backend.utils;
-    const color = u.getCurrentColorFormat(renderContext);
-    const depth = u.getCurrentDepthStencilFormat(renderContext);
-    const samples = u.getSampleCountRenderContext(renderContext);
-    const target = `${color}|${depth}|${samples}|${pass}`;
+    const t = this._target;
+    if (renderContext !== t.context) this.beginList(renderContext);
+    // Atalho (SPEC-0685): a receita do mesmo alvo e passe, ainda válida, sem string nem Map.get.
+    const last = inst.passRecipe[pass];
+    if (
+      inst.passTarget[pass] === t.id && last !== undefined &&
+      last.generation === inst.mat.generation && last.frame === this._frameGeneration
+    ) return last.id;
+    const target = t.key(pass);
     const known = inst.recipes.get(target);
-    if (known && known.generation === inst.mat.generation && known.frame === this._frameGeneration) return known.id;
+    if (known && known.generation === inst.mat.generation && known.frame === this._frameGeneration) return this._remember(inst, pass, known);
     if (known) this._bridge.release(known.id);
-    const pipeline = this._pipelines.pipeline(inst, color, depth, samples, target, inst.state.culls[pass]!, this._frame);
+    const pipeline = this._pipelines.pipeline(inst, t.color, t.depth, t.samples, target, inst.state.culls[pass]!, this._frame);
     if (!pipeline || !inst.mat.group) return NO_RECIPE;
     const id = this._bridge.record(pipeline, [this._viewGroup, this._frameGroup, inst.mat.group, inst.group], inst.vertexBuffers, inst.geo.index, inst.geo.index32);
     if (id === NO_RECIPE) return NO_RECIPE;
-    inst.recipes.set(target, { id, generation: inst.mat.generation, frame: this._frameGeneration });
+    const recipe = { id, generation: inst.mat.generation, frame: this._frameGeneration };
+    inst.recipes.set(target, recipe);
     this.stats.recipes++;
-    return id;
+    return this._remember(inst, pass, recipe);
+  }
+
+  /** Guarda a receita devolvida no atalho do passe (SPEC-0685). */
+  private _remember(inst: Inst, pass: number, recipe: RecipeRecord): number {
+    inst.passTarget[pass] = this._target.id;
+    inst.passRecipe[pass] = recipe;
+    return recipe.id;
   }
 
   // ── Instances ──────────────────────────────────────────────────────────────────────
@@ -275,6 +296,8 @@ export class NativeRenderer implements NativeDrawer {
       last: new Float32Array(MAT4_FLOATS).fill(Number.NaN),
       worldVersion: NO_VERSION,
       recipes: new Map(),
+      passTarget: new Int32Array(state.culls.length).fill(NO_TARGET),
+      passRecipe: [],
       count: 0,
       first: 0,
       triangles: 0,
@@ -419,6 +442,7 @@ export class NativeRenderer implements NativeDrawer {
   }
 
   private _sweep(root: Object3D, layers: Layers, context: unknown): void {
+    this.beginList(context);
     root.traverse((object) => {
       const mesh = object as Object3D & { isMesh?: boolean; material?: Material | Material[]; geometry?: unknown };
       if (!mesh.isMesh || !mesh.material || Array.isArray(mesh.material) || !mesh.material.visible || !object.layers.test(layers)) return;

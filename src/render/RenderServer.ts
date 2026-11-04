@@ -259,6 +259,8 @@ export class RenderServer {
     // Up to MAX_PASSES commands per entry (transparent DoubleSide).
     if (this._commands.length < n * MAX_PASSES * COMMAND_INTS) this._commands = new Int32Array(n * MAX_PASSES * COMMAND_INTS * 2);
     const cmds = this._commands;
+    // O alvo (formatos, chave) é o mesmo para a lista inteira: lido uma vez (SPEC-0685).
+    this._native?.beginList?.(this._owner);
     let k = 0;
     for (let s = 0; s < n; s++) {
       const i = order[s]!;
