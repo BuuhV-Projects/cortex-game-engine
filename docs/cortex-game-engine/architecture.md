@@ -433,6 +433,10 @@ alvo é **Rapier** (WASM) como motor dinâmico único, estilo Unity.
   - **`physics.advance(dt, antesDeCadaPasso)`** — passo semi-fixo (≤ 1/60, N
     passos iguais; ADR-0257). Use no lugar de um `step()` por frame, que amarra a
     velocidade da física ao fps.
+    Teto de `physics.maxStepsPerFrame` passos (default 3, ADR-0672): acima de 50 ms
+    o excedente é descartado e a física desacelera, em vez de espiral de subpassos.
+    O cálculo puro é `physicsSubsteps`; o `RapierPhysics.ts` delega a módulos
+    internos (`rapierRuntime`, `vehicleInternals`) fora do `.d.ts` público (SPEC-0671).
 - **CharacterBody** (`CharacterBodyComponent`+`CharacterPhysicsSystem`) — controller
   cápsula (gravidade/pulo/step) com **chão por raycast** + piso `groundY` de
   fallback, e **colisão de parede** (horizontal): depenetra a cápsula de geometria

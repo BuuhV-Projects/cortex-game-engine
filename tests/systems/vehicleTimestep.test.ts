@@ -67,10 +67,11 @@ describe('passo do VehicleControlSystem (ADR-0257)', () => {
     expect(stepped).toHaveLength(75);
   });
 
-  it('nenhum passo passa de 1/60 s (limite de estabilidade da suspensão)', async () => {
+  it('nenhum passo passa de 1/60 s, e o quadro lento para no teto de passos (ADR-0672)', async () => {
     const { system, stepped } = await setup();
     system.update([], 100); // pior caso: o teto de delta do GameLoop
-    expect(stepped.length).toBe(6);
+    // 3 passos de 1/60 (50 ms simulados): o resto do quadro é descartado.
+    expect(stepped.length).toBe(3);
     for (const dt of stepped) expect(dt).toBeLessThanOrEqual(RAPIER_DEFAULT_TIMESTEP + 1e-7);
   });
 
