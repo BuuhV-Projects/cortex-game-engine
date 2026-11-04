@@ -167,7 +167,7 @@ jobs:
         run: yarn electron:build
 
       - name: Anexar instaladores à release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ needs.release.outputs.tag }}
           token: ${{ github.token }}
