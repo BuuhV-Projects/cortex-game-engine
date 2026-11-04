@@ -122,7 +122,7 @@ Sem ele o perfil usa `constructor.name`, que no bundle minificado vira `fx`,
 
 ### requiredComponents
 
-> `static` **requiredComponents**: (*typeof* [`Collider2DComponent`](Collider2DComponent.md) \| *typeof* [`TransformComponent`](TransformComponent.md))[]
+> `static` **requiredComponents**: (*typeof* [`TransformComponent`](TransformComponent.md) \| *typeof* [`Collider2DComponent`](Collider2DComponent.md))[]
 
 Defined in: [src/systems/PlatformerPhysicsSystem.ts:32](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/PlatformerPhysicsSystem.ts#L32)
 

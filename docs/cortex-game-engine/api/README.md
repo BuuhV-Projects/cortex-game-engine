@@ -327,6 +327,7 @@
 - [Vec3](type-aliases/Vec3.md)
 - [VegetationNode](type-aliases/VegetationNode.md)
 - [VehicleAnimState](type-aliases/VehicleAnimState.md)
+- [VehiclePoseOwner](type-aliases/VehiclePoseOwner.md)
 - [VertexSemantic](type-aliases/VertexSemantic.md)
 - [WaterNode](type-aliases/WaterNode.md)
 

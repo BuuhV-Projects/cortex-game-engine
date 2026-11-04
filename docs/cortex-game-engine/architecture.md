@@ -441,6 +441,8 @@ alvo é **Rapier** (WASM) como motor dinâmico único, estilo Unity.
     `GroundAdhesion` restringe altura/pitch/roll ao chão e cancela a gravidade ao
     longo da pista — o feel de kart. Com a frota, o `VehicleControlSystem` do
     jogador vai com `stepPhysics: false` (senão o mundo anda duas vezes).
+    Carro com `poseOwner = 'external'` (SPEC-0687) sai da lista compacta do
+    sistema: quem marcou escreve a malha (trilho cinemático, congelado).
     **Progresso em rota** (volta, posição, IA): `src/scene/Route.ts`, funções puras
     sobre uma rota fechada — as regras da corrida ficam no jogo.
   - **Piloto no veículo (ADR-0274, SPEC-0275):** `VehicleSeatAttachmentComponent`
