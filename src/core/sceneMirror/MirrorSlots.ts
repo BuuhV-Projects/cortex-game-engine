@@ -10,6 +10,8 @@ import type { BufferGeometry, Object3D } from 'three';
 import { MainPassKind, mainPassKind, mainPassUnsupportedType } from '../../render/MainPassKind.js';
 import { hostSceneMirrorBridge, mainPassBridge, type SceneMirrorBridge } from './mirrorBridge.js';
 import { engancharNo, type MirrorSink, type ObjetoEnganchado, type VetorEnganchado } from './mirrorHooks.js';
+import { engancharCamadas, type LayersSink } from './mirrorLayers.js';
+import { ObjectSphereSync } from './objectSpheres.js';
 import {
   ESTATICO_GRUPO,
   ESTATICO_SEM_QUADRO,
@@ -30,8 +32,20 @@ import {
 
 /** Lista vazia compartilhada: o caso comum de {@link MirrorSlots.drainNewGeometries}. */
 const SEM_GEOMETRIAS: BufferGeometry[] = [];
+/** Máscara de um `new Layers()` (`kDefaultLayers` do host, SPEC-0686). */
+const DEFAULT_LAYERS_MASK = 1;
 
-export abstract class MirrorSlots implements MirrorSink {
+/** O que a projeção nativa lê do espelho (SPEC-0332, SPEC-0686). */
+export interface MirrorProjectionView {
+  nodes: readonly (Object3D | undefined)[];
+  kinds: Uint8Array;
+  /** O host filtra pelas camadas: o JS não testa `layers` por candidato. */
+  layersInHost?: boolean;
+  /** Por slot, 1 = o host corta pela esfera do objeto (e dá o `z`); ausente sem o recurso. */
+  objectSpheres?: Uint8Array;
+}
+
+export abstract class MirrorSlots implements MirrorSink, LayersSink {
   protected readonly _bridge = hostSceneMirrorBridge();
   /** Um por slot do espelho; `undefined` é slot de nó que saiu da cena. */
   protected _nodes: (Object3D | undefined)[] = [];
@@ -80,6 +94,12 @@ export abstract class MirrorSlots implements MirrorSink {
   protected _ocultoAcima = new Uint16Array(0);
   protected readonly _pilhaOculto: Object3D[] = [];
   protected readonly _mainPass = mainPassBridge();
+  /** Esferas do objeto mandadas ao host (SPEC-0686). */
+  protected readonly _esferas = new ObjectSphereSync(this._mainPass);
+  /** O host filtra pelas camadas (SPEC-0686): os nós têm as `layers` enganchadas. */
+  protected readonly _camadasNoHost = this._mainPass?.layerMask === true && typeof this._mainPass.setLayers === 'function';
+  /** Última máscara de camadas mandada ao host, por slot (`Float64Array`: a `mask` vai a 2^31). */
+  protected _camadasEnviadas = new Float64Array(0);
   /** Onde a varredura das flags parou. */
   protected _cursorVarredura = 0;
   protected _sincronizadosNoQuadro = 0;
@@ -165,6 +185,25 @@ export abstract class MirrorSlots implements MirrorSink {
     this._ocultoAcima = new Uint16Array(capacidade);
     this._qtdSujos = 0;
     this._cursorVarredura = 0;
+    // O espelho renasceu: o host esquece camadas e esferas, e o JS recomeça do padrão (SPEC-0686).
+    this._mainPass?.resetSlots?.();
+    this._camadasEnviadas = new Float64Array(capacidade).fill(DEFAULT_LAYERS_MASK);
+    this._esferas.reserve(capacidade);
+  }
+
+  /**
+   * @internal A `layers.mask` do nó do slot mudou (gancho, SPEC-0686): vai ao
+   * host na hora, só se difere da que ele tem.
+   */
+  _camadasMudaram(slot: number, mask: number): void {
+    if (this._camadasEnviadas[slot] === mask) return;
+    this._camadasEnviadas[slot] = mask;
+    this._mainPass!.setLayers!(slot, mask);
+  }
+
+  /** @internal Antes do `cull` do quadro: esferas do objeto em dia no host (SPEC-0686). */
+  _refreshObjectSpheres(): void {
+    this._esferas.refresh(this._nodes, this._tipoPorSlot, this._ocultoAcima, this._flagsEnviadas, this);
   }
 
   /** O slot entra no espelho: gancho + flags de partida (as do `build`). */
@@ -179,6 +218,8 @@ export abstract class MirrorSlots implements MirrorSink {
     const paiSlot = pai ? this._indicePorObjeto.get(pai) : undefined;
     this._ocultoAcima[slot] = paiSlot === undefined ? 0 : this._ocultoAcima[paiSlot]! + (pai!.visible ? 0 : 1);
     engancharNo(objeto, this, slot);
+    this._esferas.adopt(objeto, slot, this._tipoPorSlot[slot]!);
+    if (this._camadasNoHost) this._camadasMudaram(slot, engancharCamadas(objeto, this, slot));
     // Depois do gancho: as flags leem o `visible` do armazenamento dele.
     this._flagsEnviadas[slot] = flagsDoQuadro(objeto, this._estaticoPorSlot[slot]!);
   }
@@ -193,8 +234,13 @@ export abstract class MirrorSlots implements MirrorSink {
    * do `_projectObject` de cada slot.
    * @internal
    */
-  _projectionView(): { nodes: readonly (Object3D | undefined)[]; kinds: Uint8Array } {
-    return { nodes: this._nodes, kinds: this._tipoPorSlot };
+  _projectionView(): MirrorProjectionView {
+    return {
+      nodes: this._nodes,
+      kinds: this._tipoPorSlot,
+      layersInHost: this._camadasNoHost,
+      objectSpheres: this._esferas.enabled ? this._esferas.host : undefined,
+    };
   }
 
   /**
