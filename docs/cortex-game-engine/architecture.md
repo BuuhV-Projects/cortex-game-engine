@@ -45,6 +45,14 @@ o código/JSON. Lógica de jogo vive em `Systems`/`Components` (ECS).
   O perfil por sistema (`enableSystemProfile`, SPEC-0236) acumula por
   `system.profileLabel ?? constructor.name`: todo sistema da engine declara o seu
   `profileLabel`, senão o bundle minificado mostra `fx`, `DBe`… (SPEC-0671).
+  A consulta do `tick` fica em cache por `requiredComponents` e só remonta quando a
+  estrutura muda (entidade criada/destruída, componente adicionado/removido — o contador
+  de `ecs/structureVersion.ts`; ADR-0676). ⚠️ O array que o `update` recebe é
+  **compartilhado** entre sistemas e quadros: não mute (`world.query` público continua
+  devolvendo array novo). É o único contador de estrutura (SPEC-0673/0674/0675 usam o mesmo).
+  O `Object3DSyncSystem` (SPEC-0673) guarda os pares Transform × Object3D enquanto o array
+  não troca e só escreve no `Object3D` o que difere do transform (sem recalcular quaternion
+  em entidade parada).
 - **Ordem do frame no `Game`** (SPEC-0351): input → `onUpdate` → `world.tick` →
   `onLateUpdate` → UI → editor → render. Quem anda o personagem é System (dentro do
   `world.tick`): lógica do jogo que **lê** esse movimento (animar pelo passo, seguir um
@@ -127,6 +135,14 @@ senão o **editor do Studio** não resolve o tipo (runtime funciona, IntelliSens
   fica em `userData.cortexShadowAuthored` e o filtro só tira, nunca dá. Skinned
   e `InstancedMesh` ficam de fora (bounding sphere não descreve o conjunto).
   Medido no `kart-racer`: 2807 → 1966 draws, sem diferença visível.
+
+- **CSM escalonado (`scene/CameraFollowingCSM.ts`, SPEC-0675):** sem espelho nativo
+  (Studio/navegador), a cascata 0 redesenha todo quadro e as distantes a cada
+  `shadowFarCascadeInterval` quadros (default 2), revezando. A cascata que pula fica
+  com mapa e `shadow.matrix` do mesmo quadro anterior (o `three` só recalcula a matriz
+  no `updateShadow`). ⚠️ Com espelho nativo o passe nativo é dono do `autoUpdate`:
+  num quadro recusado ele já chamou `updateMatrices`, e pular daria mapa velho com
+  matriz nova — por isso o escalonamento não age lá.
 
 - **Pré-aquecimento de pipeline (`Renderer.precompile`, SPEC-0196):** o three
   compila o pipeline na PRIMEIRA aparição de cada material — numa largada de
@@ -450,7 +466,13 @@ alvo é **Rapier** (WASM) como motor dinâmico único, estilo Unity.
   `COLLECT_INTERVAL_MS` (250 ms), e cada raio só testa as malhas cuja esfera em
   mundo alcança o personagem (`physics/nearMeshes.ts` → `NearMeshIndex`, com folga
   `MOVING_MARGIN` = 5 m só pra malha que se moveu desde a varredura anterior — a parada
-  usa `STATIC_MARGIN` = 0,5 m, SPEC-0323). Os 12 raios de parede só vão contra a malha
+  usa `STATIC_MARGIN` = 0,5 m, SPEC-0323). **Só o sujo (SPEC-0674):** com a mesma lista da varredura
+  anterior, o `rebuild` pula a malha parada (mesma `matrixWorld`, exato) e só a que mudou troca de célula na
+  grade; a varredura é o `CharacterSceneCollector` (`physics/characterCollect.ts`, pilha explícita, mesma poda e
+  ordem do `traverseCollidable`); os troncos só são relidos quando a `Vegetation.version` muda e o empurrão
+  consulta a `TrunkGrid` (`physics/trunkGrid.ts`) em ordem de índice, com volta ao laço linear se a soma dos
+  empurrões passar da folga. Visibilidade e flags de `userData` mudam sem evento (streaming, editor), por isso
+  continua uma varredura periódica, e não lista por `childadded`. Os 12 raios de parede só vão contra a malha
   cujos triângulos tocam a caixa que eles varrem (`touchingBox`: 1 `intersectsBox` da
   BVH por candidata, exato; sem árvore ou instanciada passa direto) — no meio da rua não
   sai raio de parede nenhum (SPEC-0323). **Quadro longo (SPEC-0648):** o `GameLoop`
@@ -533,7 +555,7 @@ alvo é **Rapier** (WASM) como motor dinâmico único, estilo Unity.
     ~13 raycasts/frame testam a **geometria real** — O(triângulos). Num prop denso
     (ponte de corda ~2000 tris) isso derrubava o FPS **no export nativo (Hermes)**.
     `three-mesh-bvh` constrói uma árvore por geometria (>512 tris **ou espalhada**:
-    esfera local ≥ `SPREAD_BVH_RADIUS` = 10 m, SPEC-0320) no `collectScene` →
+    esfera local ≥ `SPREAD_BVH_RADIUS` = 10 m, SPEC-0320) na varredura (`CharacterSceneCollector`) →
     O(log n). ⚠️ a fusão estática gera malha de POUCOS tris espalhada pela cidade: a
     esfera contém quase todo raio e o three testava os tris um a um (336 tris =
     0,54 ms/raio no Hermes, 7 ms/quadro só nela) — por isso o critério de espalhada. Patch global seguro (cai no raycast padrão sem árvore). **Não** use mesh
@@ -543,7 +565,9 @@ alvo é **Rapier** (WASM) como motor dinâmico único, estilo Unity.
     (que aterra pela altura **bilinear** `heightAt`) **não** trata Character — só
     `Platformer`/`Kinematic`. Os dois aterrando o mesmo corpo faziam ele **quicar** em
     rampas (raycast pousa no triângulo da malha, `heightAt` interpola → divergem). O
-    raycast já mira o terreno (é filho da cena), então cobre o caso.
+    raycast já mira o terreno (é filho da cena), então cobre o caso. O sistema guarda a classificação (terrenos/corpos)
+    e só refaz quando o contador de estrutura do ECS (`ecs/structureVersion.ts`: entidade criada/destruída,
+    componente posto/tirado) ou a lista recebida muda — o passo comum não busca componente (SPEC-0674).
   - ⚠️ Pra **pausar no editor**, o `buildScene` precisa do `physicsPaused`
     (`() => game.editorActive || game.gameplayPaused`). **Sem ele a física do
     Character roda no F2** — o player cai/treme editando e o autosave do editor
@@ -1575,7 +1599,7 @@ no logo da splash enquanto montava os seis carros.
 | Narrativa (diálogo/UI/flags) | `src/dialogue/` · `src/narrative/` (ADR-0070) |
 | Blockout / ProBuilder | `src/probuilder/` (formas + `EditableMesh`) · editor: `MeshAuthoring`, `MeshEditSystem`, `EditorShapePanel` (SPEC-0071) |
 | Estrada por spline | `src/road/` (spline, fita, greide/corte puros, `roadFields`) · `src/scene/RoadBuild.ts` (nó → pista + corte) · editor: `RoadAuthoring`, `RoadDrawSystem`, `RoadEditSystem`, `RoadInspectorSection` (ADR-0630/SPEC-0631) |
-| Vegetação (instanciada) | `src/scene/Vegetation.ts` (InstancedMesh + placeholder) · editor: `VegetationAuthoring` (pincel de espalhar) · nó `vegetation` (SPEC-0077) · culling por esfera das instâncias, por nó (SPEC-0299; a sombra nativa não corta instanced; folhagem com `alphaTest` projeta sombra recortada no passe nativo — SPEC-0642, `src/render/ShadowAlphaClipSync.ts`) |
+| Vegetação (instanciada) | `src/scene/Vegetation.ts` (InstancedMesh + placeholder; matriz e esfera escritas direto por `vegetationMatrices.ts`; `adoptInstances` sem cópia, `writeInstances`/`syncInstances` por faixa com `addUpdateRange` — SPEC-0675) · editor: `VegetationAuthoring` (pincel de espalhar) · nó `vegetation` (SPEC-0077) · culling por esfera das instâncias, por nó (SPEC-0299; a sombra nativa não corta instanced; folhagem com `alphaTest` projeta sombra recortada no passe nativo — SPEC-0642, `src/render/ShadowAlphaClipSync.ts`) |
 | Input por ação + remapeamento | `src/input/` (`InputActions`, `bindings`, `ControlsScreen`) · gate: `src/core/gamePlatform.ts` (ADR-0164/SPEC-0165) |
 | Editor (F2) + autorias | `src/editor/` · `src/editor/authoring/` |
 | Física Rapier | `src/physics/` |

@@ -6,18 +6,22 @@
 
 # Class: Object3DSyncSystem
 
-Defined in: [src/systems/Object3DSyncSystem.ts:18](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/Object3DSyncSystem.ts#L18)
+Defined in: [src/systems/Object3DSyncSystem.ts:23](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/Object3DSyncSystem.ts#L23)
 
 Sincroniza `TransformComponent` → `Object3D.position` / `rotation.y`.
 
 Roda depois da movimentação/física (priority 10) pra garantir que o frame
 renderizado reflita o estado lógico atualizado.
 
-Seta `rotation.order = 'YXZ'` a cada frame de propósito: assim o yaw
-(`rotation.y`) é aplicado primeiro e pitch/roll (`rotation.x`/`.z`) — que
-outros sistemas (ex.: conformação ao terreno do jogo) aplicam direto no
-`Object3D` — ficam "locais" à entidade já virada. Setar toda frame protege
-contra algo que tenha trocado a ordem.
+Garante `rotation.order = 'YXZ'`: assim o yaw (`rotation.y`) é aplicado
+primeiro e pitch/roll (`rotation.x`/`.z`) — que outros sistemas (ex.:
+conformação ao terreno do jogo) aplicam direto no `Object3D` — ficam "locais"
+à entidade já virada. Corrige a ordem se algo a trocou.
+
+Só escreve o que difere do transform (SPEC-0673): cada setter de `Euler`
+recalcula o quaternion (`sin`/`cos`), e a maioria das entidades (colisores
+estáticos, carros dormindo) não se move. O resultado é o mesmo de escrever
+sempre — inclusive para quem escreve direto em `transform.x` ou no `Object3D`.
 
 ## Extends
 
@@ -81,7 +85,7 @@ a gameplay (física/input) enquanto o editor está ativo
 
 > **priority**: `number` = `10`
 
-Defined in: [src/systems/Object3DSyncSystem.ts:21](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/Object3DSyncSystem.ts#L21)
+Defined in: [src/systems/Object3DSyncSystem.ts:26](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/Object3DSyncSystem.ts#L26)
 
 Prioridade de execução deste sistema.
 
@@ -98,7 +102,7 @@ Sistemas com valores menores executam antes. Padrão: `0`.
 
 > `readonly` **profileLabel**: `"Object3DSyncSystem"` = `'Object3DSyncSystem'`
 
-Defined in: [src/systems/Object3DSyncSystem.ts:19](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/Object3DSyncSystem.ts#L19)
+Defined in: [src/systems/Object3DSyncSystem.ts:24](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/Object3DSyncSystem.ts#L24)
 
 Nome do sistema no perfil por sistema (`World.enableSystemProfile`, SPEC-0236).
 Sem ele o perfil usa `constructor.name`, que no bundle minificado vira `fx`,
@@ -114,7 +118,7 @@ Sem ele o perfil usa `constructor.name`, que no bundle minificado vira `fx`,
 
 > `static` **requiredComponents**: (*typeof* [`Object3DComponent`](Object3DComponent.md) \| *typeof* [`TransformComponent`](TransformComponent.md))[]
 
-Defined in: [src/systems/Object3DSyncSystem.ts:20](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/Object3DSyncSystem.ts#L20)
+Defined in: [src/systems/Object3DSyncSystem.ts:25](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/Object3DSyncSystem.ts#L25)
 
 Construtores dos componentes que este sistema requer.
 
@@ -140,7 +144,7 @@ static requiredComponents = [TransformComponent, VelocityComponent];
 
 > **dispose**(): `void`
 
-Defined in: [src/ecs/System.ts:97](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L97)
+Defined in: [src/ecs/System.ts:100](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L100)
 
 Libera recursos ao remover o sistema — chamado por [World.clear](World.md#clear) (e
 pode ser chamado manualmente). No-op por padrão; sobrescreva pra liberar
@@ -161,7 +165,7 @@ handles nativos que o GC não coleta sozinho (ex.: o mundo do Rapier em
 
 > **update**(`entities`): `void`
 
-Defined in: [src/systems/Object3DSyncSystem.ts:23](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/Object3DSyncSystem.ts#L23)
+Defined in: [src/systems/Object3DSyncSystem.ts:33](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/Object3DSyncSystem.ts#L33)
 
 Executa a lógica do sistema para o frame/passo atual.
 
@@ -172,7 +176,10 @@ Executa a lógica do sistema para o frame/passo atual.
 [`Entity`](Entity.md)[]
 
 Entidades filtradas pelo `World` que possuem todos os
-                   componentes declarados em `requiredComponents`.
+                   componentes declarados em `requiredComponents`. O array é
+                   compartilhado com outros sistemas e reaproveitado entre
+                   quadros enquanto a estrutura do ECS não muda (ADR-0676):
+                   leia, guarde a referência se quiser, mas **não mute**.
 
 #### Returns
 

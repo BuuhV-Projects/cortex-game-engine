@@ -35,7 +35,7 @@ Mundo do Rapier (uso avançado).
 
 > **addBody**(`spec`): [`PhysicsBody`](../interfaces/PhysicsBody.md)
 
-Defined in: [src/physics/RapierPhysics.ts:217](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L217)
+Defined in: [src/physics/RapierPhysics.ts:218](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L218)
 
 Adiciona um corpo (RigidBody + Collider) e devolve seu handle.
 
@@ -55,7 +55,7 @@ Adiciona um corpo (RigidBody + Collider) e devolve seu handle.
 
 > **addTrimesh**(`vertices`, `indices`, `position?`): `void`
 
-Defined in: [src/physics/RapierPhysics.ts:270](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L270)
+Defined in: [src/physics/RapierPhysics.ts:271](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L271)
 
 Adiciona um collider **trimesh estático** (fixo) — pro chão/terreno/road.
 
@@ -83,7 +83,7 @@ Adiciona um collider **trimesh estático** (fixo) — pro chão/terreno/road.
 
 > **addTrimeshFromObject**(`obj`): `void`
 
-Defined in: [src/physics/RapierPhysics.ts:283](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L283)
+Defined in: [src/physics/RapierPhysics.ts:284](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L284)
 
 Cria colliders trimesh estáticos a partir das MALHAS de um `Object3D` (geometria
 em espaço-mundo) — ex.: terreno + road viram chão pras rodas do [Vehicle](Vehicle.md)
@@ -105,7 +105,7 @@ raycastarem. Uma malha = um collider.
 
 > **advance**(`dt`, `beforeEachStep?`): `number`
 
-Defined in: [src/physics/RapierPhysics.ts:255](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L255)
+Defined in: [src/physics/RapierPhysics.ts:256](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L256)
 
 Avança a simulação `dt` segundos em passos IGUAIS de no máximo
 [MAX\_PHYSICS\_STEP\_S](../variables/MAX_PHYSICS_STEP_S.md) (semi-fixed timestep — ADR-0257), com no máximo
@@ -150,7 +150,7 @@ physics.advance(dtSeconds, (step) => vehicle.update(step));
 
 > **createVehicle**(`spec`): [`Vehicle`](Vehicle.md)
 
-Defined in: [src/physics/RapierPhysics.ts:293](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L293)
+Defined in: [src/physics/RapierPhysics.ts:294](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L294)
 
 Cria um **veículo raycast** (ADR-0081) — chassi (rigid body dinâmico + box) +
 rodas por raycast com suspensão/esterço/motor/freio, via o
@@ -173,7 +173,7 @@ rodas por raycast com suspensão/esterço/motor/freio, via o
 
 > **dispose**(): `void`
 
-Defined in: [src/physics/RapierPhysics.ts:301](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L301)
+Defined in: [src/physics/RapierPhysics.ts:302](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L302)
 
 Libera o mundo (memória WASM).
 
@@ -187,7 +187,7 @@ Libera o mundo (memória WASM).
 
 > **step**(): `void`
 
-Defined in: [src/physics/RapierPhysics.ts:232](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L232)
+Defined in: [src/physics/RapierPhysics.ts:233](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L233)
 
 Avança a simulação um passo (timestep fixo configurado no mundo).
 
@@ -201,7 +201,7 @@ Avança a simulação um passo (timestep fixo configurado no mundo).
 
 > `static` **create**(`gravity?`): `Promise`\<`RapierPhysics`\>
 
-Defined in: [src/physics/RapierPhysics.ts:211](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L211)
+Defined in: [src/physics/RapierPhysics.ts:212](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L212)
 
 Inicializa o Rapier (async) e cria o mundo com a gravidade dada.
 

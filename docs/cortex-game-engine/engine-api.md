@@ -51,7 +51,7 @@ lado).
 | `World` | `.createEntity()`, `.addSystem(sys)`, `.removeSystem(Class)`, `.query(...ComponentClasses)`. |
 | `Entity` | `.addComponent(c)`, `.getComponent(Class)`, `.hasComponent(Class)`, `.removeComponent(Class)`. |
 | `Component` | Base — **só dados** (campos públicos), sem lógica. |
-| `System` | Base abstrata — **só lógica**. `static requiredComponents = [...]` + `update(entities, dt)`. Sem estado interno. |
+| `System` | Base abstrata — **só lógica**. `static requiredComponents = [...]` + `update(entities, dt)`. Sem estado interno. O array `entities` é compartilhado e reaproveitado entre quadros (ADR-0676): leia, **não mute**. |
 
 ---
 
@@ -892,6 +892,21 @@ placeholder), `instances` (plano `[x,y,z,rotY,scale]` por instância), `capacity
 
 O controlador vive em `group.userData.cortexVegetation` (o pincel do editor espalha/apaga).
 Sem `model`, usa uma árvore/grama placeholder — troque por `.glb` quando tiver arte.
+`veg.version` sobe a cada mudança das instâncias: quem deriva algo delas (os troncos do
+`CharacterPhysicsSystem`) só relê quando muda (SPEC-0674).
+
+**Escrita em runtime (SPEC-0675):** `setInstances(flat)` copia e reescreve tudo;
+`adoptInstances(float32, count)` usa o buffer do chamador **sem cópia**;
+`writeInstances(first, flat)` reescreve só a faixa (upload por `addUpdateRange`, esfera de
+culling só cresce); `syncInstances(first, count)` depois de mutar o buffer adotado no lugar;
+`instanceData` lê sem a cópia de `getInstances()`.
+
+```ts
+const veg = node.userData.cortexVegetation as Vegetation
+const slots = new Float32Array(36 * 64 * FLOATS_PER_INSTANCE) // 36 células × 64 tufos
+veg.adoptInstances(slots, 0)
+veg.writeInstances(cell * 64, cellTufts) // só a célula que entrou sobe
+```
 
 **Culling por nó (SPEC-0299):** cada nó `vegetation` é cortado pelo frustum pela esfera
 das suas instâncias reais. Em mapa grande, divida a vegetação em **vários nós por célula**

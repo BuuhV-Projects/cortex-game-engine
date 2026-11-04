@@ -47,8 +47,7 @@ import {
   type RenderIdRendererLike,
 } from '../render/RenderIdRefresh.js';
 import { installWriteBufferCensus } from '../render/WriteBufferCensus.js';
-import { createNativeUiRenderer, type NativeUiRenderer } from '../render/native/ui/NativeUiRenderer.js';
-import { mainPassArm } from '../render/MainPassArm.js';
+import { UiLayerRender } from '../render/UiLayerRender.js';
 
 // ─── Tipos públicos ────────────────────────────────────────────────────────────
 
@@ -103,9 +102,6 @@ export { Camera, OrthographicCamera, PerspectiveCamera } from 'three';
 
 // ─── Classe Renderer ───────────────────────────────────────────────────────────
 
-/** Cor de clear salva/restaurada no `renderUiLayer` — reaproveitada (SPEC-0334). */
-const _prevClearColor = new THREE.Color();
-
 export class Renderer {
   private readonly _renderer: WebGPURenderer;
   /** Handler de resize mantido para remoção no dispose(). */
@@ -114,13 +110,8 @@ export class Renderer {
   private _width: number;
   private _height: number;
 
-  /**
-   * RenderTarget própria da UI de runtime no host nativo (ADR-0105). A UI é
-   * desenhada aqui (em LINEAR, sem OETF — RenderTarget própria não passa pelo
-   * output color space do three) e o host compõe sobre o jogo EM GAMA, casando
-   * o blend translúcido com o DOM/CSS. Criada sob demanda em `renderUiLayer`.
-   */
-  private _uiTarget: THREE.RenderTarget | null = null;
+  /** A camada de UI do host (ADR-0105, SPEC-0679): RT própria, composta em gama pelo host. */
+  private readonly _uiLayer: UiLayerRender;
 
   /**
    * RenderTarget HDR da CENA pro bloom nativo (ADR-0147/0149). O jogo é desenhado
@@ -129,9 +120,6 @@ export class Renderer {
    * (é cena 3D, ao contrário da RT da UI). Criada sob demanda em `renderSceneHDR`.
    */
   private _sceneHdrTarget: THREE.RenderTarget | null = null;
-
-  /** Runtime UI drawn by the native renderer (`?nativeUi=1`, SPEC-0616); `undefined` = not decided yet. */
-  private _nativeUi: NativeUiRenderer | null | undefined;
 
   /** `true` quando o backend (WebGPU ou fallback WebGL2) terminou o init. */
   private _initialized = false;
@@ -168,6 +156,7 @@ export class Renderer {
     }
 
     this._renderer = new WebGPURenderer({ canvas, antialias, forceWebGL });
+    this._uiLayer = new UiLayerRender(this._renderer);
     // Lights without shadow batched per type, Godot-style (SPEC-0435 (d′)); host only.
     if (isNativeHost() && dynamicLightingRequested(true)) installDynamicLighting(this._renderer as unknown as { lighting: unknown });
     // Receiving the shadow stops splitting the shared "render" group per material (SPEC-0445); host only.
@@ -342,46 +331,7 @@ export class Renderer {
     height: number,
   ): unknown {
     if (!this._initialized || width <= 0 || height <= 0) return null;
-    if (this._nativeUi === undefined) this._nativeUi = createNativeUiRenderer(this._renderer);
-    if (this._nativeUi && !mainPassArm.uiThree) {
-      const texture = this._nativeUi.render(scene, camera, width, height);
-      // The trace `draws` keeps counting the UI draws, as when the three drew them (SPEC-0616).
-      const info = (this._renderer as unknown as { info?: { render?: { drawCalls: number } } }).info?.render;
-      if (info) info.drawCalls += this._nativeUi.stats.draws;
-      return texture;
-    }
-    if (!this._uiTarget || this._uiTarget.width !== width || this._uiTarget.height !== height) {
-      this._uiTarget?.dispose();
-      this._uiTarget = new THREE.RenderTarget(width, height, {
-        type: THREE.HalfFloatType, // linear em 16f: sem banding nos tons escuros do scrim
-        format: THREE.RGBAFormat,
-        depthBuffer: false,
-        stencilBuffer: false,
-        minFilter: THREE.LinearFilter,
-        magFilter: THREE.LinearFilter,
-      });
-    }
-    // Clear transparente do alvo da UI (autoClear é false globalmente → explícito).
-    // Salva/restaura a cor de clear global pra não vazar pro render do jogo.
-    const prevColor = _prevClearColor;
-    // getClearColor do WebGPURenderer tipa `Color4` (com `.a`); em runtime aceita
-    // um `Color` (só preenche r/g/b). O alpha vem do getClearAlpha à parte.
-    (this._renderer.getClearColor as unknown as (t: THREE.Color) => void)(prevColor);
-    const prevAlpha = this._renderer.getClearAlpha();
-    this._renderer.setRenderTarget(this._uiTarget);
-    this._renderer.setClearColor(0x000000, 0);
-    this._renderer.clear(true, false, false);
-    this._renderer.render(scene, camera);
-    this._renderer.setRenderTarget(null);
-    this._renderer.setClearColor(prevColor, prevAlpha);
-    // Handle da GPUTexture do backend (o host embrulha as texturas com wrapHandle,
-    // então este mesmo objeto desembrulha pro WGPUTexture no passe de composição).
-    const backend = (
-      this._renderer as unknown as {
-        backend?: { get(t: unknown): { texture?: unknown } | undefined };
-      }
-    ).backend;
-    return backend?.get(this._uiTarget.texture)?.texture ?? null;
+    return this._uiLayer.render(scene, camera, width, height);
   }
 
   /**
@@ -463,9 +413,7 @@ export class Renderer {
     if (typeof window !== 'undefined') {
       window.removeEventListener('resize', this._resizeHandler);
     }
-    this._uiTarget?.dispose();
-    this._uiTarget = null;
-    this._nativeUi?.dispose();
+    this._uiLayer.dispose();
     this._sceneHdrTarget?.dispose();
     this._sceneHdrTarget = null;
     this._renderer.dispose();
