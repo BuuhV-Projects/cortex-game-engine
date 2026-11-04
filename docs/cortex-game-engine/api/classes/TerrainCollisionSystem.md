@@ -6,7 +6,7 @@
 
 # Class: TerrainCollisionSystem
 
-Defined in: [src/systems/TerrainCollisionSystem.ts:29](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TerrainCollisionSystem.ts#L29)
+Defined in: [src/systems/TerrainCollisionSystem.ts:33](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TerrainCollisionSystem.ts#L33)
 
 **Colisão com o terreno** (heightmap) — mantém os corpos EM CIMA da superfície:
 se um corpo cai abaixo da altura do terreno no seu `(x, z)`, é subido até a
@@ -24,6 +24,9 @@ as alturas divergem e brigavam a cada frame. Uma autoridade só (o raycast).
 
 Roda **depois da física** (priority 5) e **antes do** `Object3DSyncSystem`
 (priority 10), pra a mesh refletir a posição já corrigida.
+
+Recebe todas as entidades, mas só as reclassifica (terrenos e corpos) quando a estrutura do ECS muda ou a lista
+recebida não é a mesma: o passo comum não busca componente nenhum (SPEC-0674).
 
 ## Extends
 
@@ -87,7 +90,7 @@ a gameplay (física/input) enquanto o editor está ativo
 
 > **priority**: `number` = `7`
 
-Defined in: [src/systems/TerrainCollisionSystem.ts:32](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TerrainCollisionSystem.ts#L32)
+Defined in: [src/systems/TerrainCollisionSystem.ts:36](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TerrainCollisionSystem.ts#L36)
 
 Prioridade de execução deste sistema.
 
@@ -104,7 +107,7 @@ Sistemas com valores menores executam antes. Padrão: `0`.
 
 > `readonly` **profileLabel**: `"TerrainCollisionSystem"` = `'TerrainCollisionSystem'`
 
-Defined in: [src/systems/TerrainCollisionSystem.ts:30](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TerrainCollisionSystem.ts#L30)
+Defined in: [src/systems/TerrainCollisionSystem.ts:34](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TerrainCollisionSystem.ts#L34)
 
 Nome do sistema no perfil por sistema (`World.enableSystemProfile`, SPEC-0236).
 Sem ele o perfil usa `constructor.name`, que no bundle minificado vira `fx`,
@@ -120,7 +123,7 @@ Sem ele o perfil usa `constructor.name`, que no bundle minificado vira `fx`,
 
 > `static` **requiredComponents**: `never`[] = `[]`
 
-Defined in: [src/systems/TerrainCollisionSystem.ts:31](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TerrainCollisionSystem.ts#L31)
+Defined in: [src/systems/TerrainCollisionSystem.ts:35](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TerrainCollisionSystem.ts#L35)
 
 Construtores dos componentes que este sistema requer.
 
@@ -167,7 +170,7 @@ handles nativos que o GC não coleta sozinho (ex.: o mundo do Rapier em
 
 > **update**(`entities`): `void`
 
-Defined in: [src/systems/TerrainCollisionSystem.ts:34](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TerrainCollisionSystem.ts#L34)
+Defined in: [src/systems/TerrainCollisionSystem.ts:49](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TerrainCollisionSystem.ts#L49)
 
 Executa a lógica do sistema para o frame/passo atual.
 

@@ -892,6 +892,8 @@ placeholder), `instances` (plano `[x,y,z,rotY,scale]` por instância), `capacity
 
 O controlador vive em `group.userData.cortexVegetation` (o pincel do editor espalha/apaga).
 Sem `model`, usa uma árvore/grama placeholder — troque por `.glb` quando tiver arte.
+`veg.version` sobe a cada mudança das instâncias: quem deriva algo delas (os troncos do
+`CharacterPhysicsSystem`) só relê quando muda (SPEC-0674).
 
 **Culling por nó (SPEC-0299):** cada nó `vegetation` é cortado pelo frustum pela esfera
 das suas instâncias reais. Em mapa grande, divida a vegetação em **vários nós por célula**

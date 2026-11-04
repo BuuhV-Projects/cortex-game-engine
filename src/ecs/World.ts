@@ -1,6 +1,7 @@
 import { Component } from './Component.js';
 import { Entity } from './Entity.js';
 import { System } from './System.js';
+import { bumpEcsStructure } from './structureVersion.js';
 
 /**
  * Tipo utilitário para o construtor de uma subclasse de Component.
@@ -58,6 +59,7 @@ export class World {
   createEntity(): Entity {
     const entity = new Entity();
     this._entities.add(entity);
+    bumpEcsStructure();
     return entity;
   }
 
@@ -68,7 +70,7 @@ export class World {
    * @param entity - A entity a ser destruída.
    */
   destroyEntity(entity: Entity): void {
-    this._entities.delete(entity);
+    if (this._entities.delete(entity)) bumpEcsStructure();
   }
 
   // ─── System Management ─────────────────────────────────────────────────────
@@ -121,6 +123,7 @@ export class World {
     for (const entity of [...this._entities]) {
       if (!entity.keepOnClear) this._entities.delete(entity);
     }
+    bumpEcsStructure();
   }
 
   /**
