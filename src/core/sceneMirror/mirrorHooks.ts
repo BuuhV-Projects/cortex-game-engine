@@ -3,6 +3,7 @@
  * SPEC-0678). Saíram do `MirrorSink.ts` na divisão da SPEC-0678.
  */
 import type { Object3D, Quaternion, Vector3 } from 'three';
+import { desengancharCamadas } from './mirrorLayers.js';
 
 /** O que os ganchos chamam no espelho dono do slot. */
 export interface MirrorSink {
@@ -246,6 +247,7 @@ export function engancharNo(objeto: Object3D, espelho: MirrorSink, slot: number)
 
 export function desengancharNo(objeto: Object3D): void {
   desengancharVisible(objeto);
+  desengancharCamadas(objeto);
   desengancharVetor(objeto.position);
   desengancharVetor(objeto.scale);
   desengancharCallback(objeto.quaternion as unknown as ComCallback);

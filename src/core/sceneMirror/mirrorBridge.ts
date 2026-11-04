@@ -84,10 +84,23 @@ export interface ShadowPassOutcome {
 /** A ponte do passe principal (SPEC-0332); ausente em host antigo e no browser. */
 export interface MainPassBridge {
   /** Com `versions` (host com {@link MainPassBridge.worldVersions}): a versão do mundo de cada candidato (SPEC-0682). */
-  project(planes: Float64Array, viewProj: Float64Array, indices: Int32Array, depths: Float64Array, versions?: Float64Array): number;
+  /** Com `cameraLayers` (host com {@link MainPassBridge.layerMask}): o host filtra pelas camadas (SPEC-0686). */
+  project(
+    planes: Float64Array, viewProj: Float64Array, indices: Int32Array, depths: Float64Array, versions?: Float64Array, cameraLayers?: number,
+  ): number;
   /** O host aceita o 5º argumento de `project` (SPEC-0682); ausente em host antigo. */
   readonly worldVersions?: boolean;
   setBounds(index: number, cx: number, cy: number, cz: number, radius: number): void;
+  /** O host filtra pelas camadas: 6º argumento de `project`, `setLayers` e `resetSlots` (SPEC-0686). */
+  readonly layerMask?: boolean;
+  /** O host corta pela esfera do OBJETO: `setObjectSphere`/`clearObjectSphere` (SPEC-0686). */
+  readonly objectSpheres?: boolean;
+  setLayers?(index: number, mask: number): void;
+  /** Esfera do objeto (corte) e centro da esfera da geometria (`z`), locais. */
+  setObjectSphere?(index: number, ocx: number, ocy: number, ocz: number, oradius: number, gcx: number, gcy: number, gcz: number): void;
+  clearObjectSphere?(index: number): void;
+  /** O espelho foi reconstruído: camadas e esferas de todos os slots voltam ao padrão. */
+  resetSlots?(): void;
 }
 
 /** `__cortexMainPass`, quando o host o publica. */

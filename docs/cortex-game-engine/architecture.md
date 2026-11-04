@@ -1327,7 +1327,16 @@ segue 100% no `three`. `?nativeMainPass=0` desliga tudo; cada etapa tem o seu.
   `_projectObject` da **cena espelhada** (chamada de topo, `sortObjects`, sem
   `ArrayCamera`) vira uma chamada `__cortexMainPass.project`; o C++ faz
   visibilidade herdada, frustum pela esfera da geometria e o `z`; o JS faz
-  camadas, material (array/grupo/`visible`) e o `renderList.push`. Ordem de
+  material (array/grupo/`visible`) e o `renderList.push`. **Camadas e esfera do
+  objeto no C++ (SPEC-0686):** com `__cortexMainPass.layerMask`, o
+  `src/core/sceneMirror/mirrorLayers.ts` engancha `layers`/`layers.mask` e manda
+  `setLayers` quando a máscara muda, e o `project` recebe no 6º argumento a máscara
+  da câmera (o JS não chama mais `layers.test`; host sem o recurso testa em linha).
+  Com `objectSpheres`, o `ObjectSphereSync` (`src/core/sceneMirror/objectSpheres.ts`)
+  confere por quadro as esferas dos `JsCull` visíveis (pega a esfera mutada no
+  lugar) e manda `setObjectSphere`/`clearObjectSphere`; o host corta esses nós pela
+  esfera do objeto e o `MainProjector` usa o `z` do C++ para eles. Esfera `null`
+  tira o slot do host e o JS faz o teste do `three` (preserva o `SkinnedMesh`). Ordem de
   inserção diferente não importa: o sort da RenderList é ordem total.
   `MainPassKind.ts` classifica o nó (ramos do `_projectObject`). **Versão do
   mundo por candidato (SPEC-0682, ADR-0683):** com `__cortexMainPass.worldVersions`,

@@ -109,6 +109,9 @@ export class MainProjector {
       this._versions = new Float64Array(capacidade);
     }
 
+    // Esferas do objeto em dia antes do `cull` (SPEC-0686); a linha do `frustumCulled` sai no `syncPending`.
+    const esferas = view.objectSpheres;
+    if (esferas !== undefined) this._mirror._refreshObjectSpheres();
     // Escrita feita depois do `update` do quadro (dentro do render) entra agora.
     this._mirror.syncPending();
     this._viewProjection.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
@@ -123,22 +126,29 @@ export class MainProjector {
     escreverPlanos(this._frustum, this._planes);
     this._vp.set(this._viewProjection.elements);
 
+    const camadas = camera.layers;
+    const mascara = camadas.mask;
     beginSection('nativeCull');
     const comVersoes = this._bridge.worldVersions === true;
-    const n = comVersoes
-      ? this._bridge.project(this._planes, this._vp, this._indices, this._depths, this._versions)
-      : this._bridge.project(this._planes, this._vp, this._indices, this._depths);
+    // O host filtra pelas camadas (SPEC-0686) quando o espelho mandou as de cada nó.
+    const camadasNoHost = comVersoes && view.layersInHost === true;
+    const n = camadasNoHost
+      ? this._bridge.project(this._planes, this._vp, this._indices, this._depths, this._versions, mascara)
+      : comVersoes
+        ? this._bridge.project(this._planes, this._vp, this._indices, this._depths, this._versions)
+        : this._bridge.project(this._planes, this._vp, this._indices, this._depths);
     endSection('nativeCull');
     if (n < 0) {
       this._recusar(n === PROJECT_REFUSED ? `no ${this._indices[0]} nao reproduzivel` : `codigo ${n}`, view.nodes, n);
       return false;
     }
 
-    const camadas = camera.layers;
     for (let k = 0; k < n; k++) {
       const slot = this._indices[k]!;
       const objeto = view.nodes[slot] as Candidato | undefined;
-      if (!objeto || !objeto.layers.test(camadas)) continue;
+      if (!objeto) continue;
+      // O `Layers.test` do `three`, em linha (sem a chamada), quando o host não filtrou.
+      if (!camadasNoHost && (objeto.layers.mask & mascara) === 0) continue;
       const tipo = view.kinds[slot];
       if (tipo === MainPassKind.Light) {
         renderList.pushLight(objeto);
@@ -156,9 +166,12 @@ export class MainProjector {
         continue;
       }
       if (tipo === MainPassKind.JsCull) {
-        // O teste exato do `three`, com a esfera do OBJETO (instâncias, rig).
-        if (objeto.frustumCulled && !this._dentro(objeto)) continue;
-        z = this._zDoThree(objeto);
+        // O host cortou pela esfera do OBJETO e deu o `z` da geometria (SPEC-0686).
+        if (esferas === undefined || esferas[slot] === 0) {
+          // O teste exato do `three`, com a esfera do OBJETO (instâncias, rig, esfera ainda `null`).
+          if (objeto.frustumCulled && !this._dentro(objeto)) continue;
+          z = this._zDoThree(objeto);
+        }
         // The native renderer (ADR-0465) may own instanced/skinned objects the RS1 never takes.
         if (ofertavel && server!.offerNative(objeto, objeto.material, objeto.geometry, clippingContext, z, versao)) continue;
       }
