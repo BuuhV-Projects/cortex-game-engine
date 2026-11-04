@@ -59,6 +59,8 @@ int MainPassCuller::cull(const SceneMirror& mirror, const double* planes, const 
     }
     candidates_.push_back({index, sortDepth(viewProj, cx, cy, cz)});
   }
+  // Só no quadro aceito (SPEC-0682): a recusa não mexe nas fotos.
+  for (MainCandidate& c : candidates_) c.worldVersion = versions_.stamp(mirror, c.index);
   return static_cast<int>(candidates_.size());
 }
 
