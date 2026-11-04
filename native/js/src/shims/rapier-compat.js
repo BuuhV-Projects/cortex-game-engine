@@ -2,6 +2,9 @@
 // O bundle.mjs aponta o import do compat pra cá; o engine (RapierPhysics.ts)
 // não sabe que trocou de implementação. Cobre a superfície que o engine usa;
 // veículo (DynamicRayCastVehicleController) é pendência documentada no M1.
+// Consultas e veículo moram em módulos próprios (SPEC-0671); este instala os dois no World.
+import { castRayAndGetNormal, castRay, contactPairsWith, contactPair } from './rapier-compat-queries.js';
+import { VehicleController, createVehicleController, vehicleControllersProperty } from './rapier-compat-vehicle.js';
 
 const KIND = { dynamic: 0, fixed: 1, kinematicPositionBased: 2 };
 const SHAPE = { cuboid: 0, ball: 1, capsule: 2 };
@@ -295,125 +298,10 @@ World.prototype.forEachRigidBody = function (callback) {
   for (let i = 0; i < snapshot.length; i++) callback(snapshot[i]);
 };
 
-/**
- * Máscara de `filterFlags` — os mesmos bits do `QueryFilterFlags` do Rapier,
- * que o Rust aplica DENTRO da travessia (SPEC-0216).
- */
-const QUERY_EXCLUDE_FIXED = 1;
-const QUERY_EXCLUDE_DYNAMIC = 2;
-const QUERY_EXCLUDE_KINEMATIC = 4;
-const QUERY_EXCLUDE_SENSORS = 8;
-/** Todos os bits que sabemos traduzir (o resto é ignorado, como no browser). */
-const QUERY_FLAGS_CONHECIDAS =
-  QUERY_EXCLUDE_FIXED | QUERY_EXCLUDE_DYNAMIC | QUERY_EXCLUDE_KINEMATIC | QUERY_EXCLUDE_SENSORS;
-/** `-1` = não excluir corpo nenhum (o Rust trata negativo como "sem exclusão"). */
-const SEM_CORPO_EXCLUIDO = -1;
-
-/** Quantos acertos recusados pelo predicate tentamos pular antes de desistir. */
-const MAX_ACERTOS_RECUSADOS = 8;
-/** Avanço além do acerto recusado, pra não reacertar o mesmo ponto. */
-const EPSILON_AVANCO = 1e-4;
-
-/**
- * Lança um raio e devolve o primeiro acerto ACEITO, com a NORMAL da superfície,
- * ou `null`. Mesma assinatura do `@dimforge/rapier3d-compat`, porque é o que o
- * engine e os jogos chamam — o `followGround` do carro usa isto por roda, todo
- * frame, pra colar o chassi no chão (SPEC-0216).
- *
- * Quando o `filterPredicate` RECUSA um acerto, a busca CONTINUA: a origem
- * avança logo além do ponto recusado e o raio é relançado. Sem isso, um sensor
- * no caminho (os gates de checkpoint ficam sobre a pista) devolvia `null`, o
- * carro perdia o chão e afundava no asfalto.
- */
-World.prototype.castRayAndGetNormal = function (
-  ray, maxToi, solid, filterFlags, filterGroups, filterExcludeCollider,
-  filterExcludeRigidBody, filterPredicate,
-) {
-  const origin = ray && ray.origin ? ray.origin : { x: 0, y: 0, z: 0 };
-  const dir = ray && ray.dir ? ray.dir : { x: 0, y: -1, z: 0 };
-  const flags = (typeof filterFlags === 'number' ? filterFlags : 0) & QUERY_FLAGS_CONHECIDAS;
-  const excluir = filterExcludeRigidBody && typeof filterExcludeRigidBody.handle === 'number'
-    ? filterExcludeRigidBody.handle
-    : SEM_CORPO_EXCLUIDO;
-
-  const temPredicate = typeof filterPredicate === 'function';
-  const s = this.__scratch;
-  // Origem que anda a cada recusa; `percorrido` guarda a distância desde a
-  // origem ORIGINAL, que é o que o chamador espera receber.
-  let ox = origin.x, oy = origin.y, oz = origin.z;
-  let percorrido = 0;
-
-  for (let tentativa = 0; tentativa <= MAX_ACERTOS_RECUSADOS; tentativa++) {
-    const restante = maxToi - percorrido;
-    if (restante <= 0) return null;
-    const acertou = __rapierNative.worldCastRay(
-      this.__ptr, ox, oy, oz, dir.x, dir.y, dir.z,
-      restante, solid ? 1 : 0, flags, excluir,
-    );
-    if (acertou !== 1) return null;
-
-    const distancia = percorrido + s[0];
-    const collider = new Collider(this.__ptr, s[4], this.__scratch);
-    if (!temPredicate || filterPredicate(collider)) {
-      return {
-        collider,
-        // O runtime vendorizado lê `timeOfImpact`; tipagens antigas leem `toi`.
-        // O `followGround` do kart-racer aceita os dois — devolvemos ambos.
-        timeOfImpact: distancia,
-        toi: distancia,
-        normal: { x: s[1], y: s[2], z: s[3] },
-        point: {
-          x: origin.x + dir.x * distancia,
-          y: origin.y + dir.y * distancia,
-          z: origin.z + dir.z * distancia,
-        },
-      };
-    }
-    // Recusado: anda além dele e procura o próximo.
-    const avanco = s[0] + EPSILON_AVANCO;
-    percorrido += avanco;
-    ox += dir.x * avanco;
-    oy += dir.y * avanco;
-    oz += dir.z * avanco;
-  }
-  return null;
+World.prototype.__collider = function (handle) {
+  return new Collider(this.__ptr, handle, this.__scratch);
 };
-
-// Narrow-phase contacts (SPEC-0393). The scratch is shared and the callbacks
-// usually query again (contactPairsWith → contactPair), so every page / manifold
-// is copied out of the scratch before a callback runs.
-const SCRATCH_SIZE = 16;
-
-function ContactManifold(dists) {
-  this.__dists = dists;
-}
-ContactManifold.prototype.numContacts = function () { return this.__dists.length; };
-ContactManifold.prototype.contactDist = function (i) { return this.__dists[i]; };
-
-/** Calls `callback(collider2)` for every narrow-phase pair of `collider1`, like rapier3d-compat. */
-World.prototype.contactPairsWith = function (collider1, callback) {
-  const others = [];
-  let written = SCRATCH_SIZE;
-  while (written === SCRATCH_SIZE) {
-    written = __rapierNative.worldContactPairsWith(this.__ptr, collider1.handle, others.length);
-    for (let i = 0; i < written; i++) others.push(this.__scratch[i]);
-  }
-  for (let i = 0; i < others.length; i++) {
-    callback(new Collider(this.__ptr, others[i], this.__scratch));
-  }
-};
-
-/** Calls `callback(manifold, flipped)` once per contact manifold of the (collider1, collider2) pair. */
-World.prototype.contactPair = function (collider1, collider2, callback) {
-  for (let m = 0; ; m++) {
-    const points = __rapierNative.worldContactPair(this.__ptr, collider1.handle, collider2.handle, m);
-    if (points < 0) return;
-    const flipped = this.__scratch[0] === 1;
-    const dists = Array.from(this.__scratch.subarray(1, 1 + points));
-    callback(new ContactManifold(dists), flipped);
-  }
-};
-
+Object.assign(World.prototype, { castRayAndGetNormal, castRay, contactPairsWith, contactPair });
 /**
  * Corpo pelo handle, ou `null`. O Rapier do browser resolve na arena interna;
  * aqui a arena vive no Rust, então procuramos entre os wrappers entregues —
@@ -437,26 +325,6 @@ World.prototype.removeRigidBody = function (body) {
   if (i >= 0) this.__bodies.splice(i, 1);
 };
 
-/**
- * Raycast sem normal — mesma busca do {@link World.castRayAndGetNormal}, só que
- * devolvendo `{ collider, toi, timeOfImpact }`. O kart-racer usa pros mísseis
- * acharem parede.
- */
-World.prototype.castRay = function (
-  ray, maxToi, solid, filterFlags, filterGroups, filterExcludeCollider,
-  filterExcludeRigidBody, filterPredicate,
-) {
-  const acerto = this.castRayAndGetNormal(
-    ray, maxToi, solid, filterFlags, filterGroups, filterExcludeCollider,
-    filterExcludeRigidBody, filterPredicate,
-  );
-  if (!acerto) return null;
-  return {
-    collider: acerto.collider,
-    timeOfImpact: acerto.timeOfImpact,
-    toi: acerto.toi,
-  };
-};
 
 // `world.bodies` — o RigidBodySet do Rapier do browser (SPEC-0313): o DDD 61
 // itera `world.bodies.forEach` pra achar os corpos que um helper acabou de
@@ -489,156 +357,8 @@ World.prototype.createCollider = function (desc, body) {
     desc.massMode, desc.massValue, desc.ox, desc.oy, desc.oz,
   );
 };
-// ─── Veiculo raycast (SPEC-0209) ──────────────────────────────────────────
-//
-// Reconstroi a FORMA do DynamicRayCastVehicleController do Rapier do browser,
-// pra o engine (src/physics/RapierPhysics.ts) nao saber a diferenca. O estado
-// vetorial vem pelo scratch do mundo, como no RigidBody.
-
-/** Codigos de parametro de roda — espelham as constantes WHEEL_* do lib.rs. */
-const WHEEL = {
-  suspensionStiffness: 0,
-  dampingCompression: 1,
-  dampingRelaxation: 2,
-  maxSuspensionTravel: 3,
-  frictionSlip: 4,
-  suspensionRestLength: 5,
-  engineForce: 6,
-  brake: 7,
-  steering: 8,
-};
-
-function VehicleController(worldPtr, scratch, ptr, chassis) {
-  this.__world = worldPtr;
-  this.__scratch = scratch;
-  this.__ptr = ptr;
-  this.__chassis = chassis;
-  this.__wheels = 0;
-  // Descrição de cada roda como o JOGO lê (`vehicle.wheels[i].position`): o
-  // Rapier do browser expõe isso, e o `followGround` do carro usa pra saber de
-  // onde sai o raio de cada roda (SPEC-0216).
-  this.__wheelData = [];
-  this.__upAxis = 1;
-}
-
-/** O corpo do chassi — jogos comparam `chassis().handle` pra achar o seu. */
-VehicleController.prototype.chassis = function () { return this.__chassis; };
-
-// `indexUpAxis` e PROPRIEDADE no Rapier (o engine faz `ctrl.indexUpAxis = 1`),
-// entao aqui tambem — o setter repassa pro nativo.
-Object.defineProperty(VehicleController.prototype, 'indexUpAxis', {
-  get: function () { return this.__upAxis; },
-  set: function (axis) {
-    this.__upAxis = axis;
-    __rapierNative.vehicleSetUpAxis(this.__ptr, axis);
-  },
-});
-
-VehicleController.prototype.addWheel = function (position, direction, axle, restLength, radius) {
-  __rapierNative.vehicleAddWheel(
-    this.__ptr,
-    position.x, position.y, position.z,
-    direction.x, direction.y, direction.z,
-    axle.x, axle.y, axle.z,
-    restLength, radius,
-  );
-  this.__wheels++;
-  // Cópia por valor: o chamador reusa o mesmo vetor entre as rodas.
-  this.__wheelData.push({
-    position: { x: position.x, y: position.y, z: position.z },
-    direction: { x: direction.x, y: direction.y, z: direction.z },
-    axle: { x: axle.x, y: axle.y, z: axle.z },
-    suspensionRestLength: restLength,
-    radius,
-  });
-};
-
-VehicleController.prototype.numWheels = function () { return this.__wheels; };
-
-/** Nº de rodas como PROPRIEDADE (o jogo faz `for (i < vehicle.wheelCount)`). */
-Object.defineProperty(VehicleController.prototype, 'wheelCount', {
-  get: function () { return this.__wheels; },
-});
-
-/** As rodas como o Rapier do browser expõe: `wheels[i].position`/`.radius`. */
-Object.defineProperty(VehicleController.prototype, 'wheels', {
-  get: function () { return this.__wheelData; },
-});
-
-VehicleController.prototype.__set = function (index, param, value) {
-  __rapierNative.vehicleSetWheel(this.__ptr, index, param, value);
-};
-VehicleController.prototype.setWheelSuspensionStiffness = function (i, v) { this.__set(i, WHEEL.suspensionStiffness, v); };
-VehicleController.prototype.setWheelSuspensionCompression = function (i, v) { this.__set(i, WHEEL.dampingCompression, v); };
-VehicleController.prototype.setWheelSuspensionRelaxation = function (i, v) { this.__set(i, WHEEL.dampingRelaxation, v); };
-VehicleController.prototype.setWheelMaxSuspensionTravel = function (i, v) { this.__set(i, WHEEL.maxSuspensionTravel, v); };
-VehicleController.prototype.setWheelFrictionSlip = function (i, v) { this.__set(i, WHEEL.frictionSlip, v); };
-VehicleController.prototype.setWheelSuspensionRestLength = function (i, v) { this.__set(i, WHEEL.suspensionRestLength, v); };
-VehicleController.prototype.setWheelEngineForce = function (i, v) { this.__set(i, WHEEL.engineForce, v); };
-VehicleController.prototype.setWheelBrake = function (i, v) { this.__set(i, WHEEL.brake, v); };
-VehicleController.prototype.setWheelSteering = function (i, v) { this.__set(i, WHEEL.steering, v); };
-
-/**
- * Integra o veiculo. A assinatura completa do Rapier e
- * `(dt, filterFlags, filterGroups, filterPredicate)`; aqui os GRUPOS sao
- * repassados ao filtro nativo e o **predicate e ignorado** — ele exigiria
- * chamar JS de dentro do Rust a cada collider candidato, por roda, por frame
- * (ver SPEC-0209, "o que falta"). O aviso sai UMA vez, senao inundaria o log.
- */
-VehicleController.prototype.updateVehicle = function (dt, _flags, groups, predicate) {
-  if (predicate && !VehicleController.__warnedPredicate) {
-    VehicleController.__warnedPredicate = true;
-    console.warn(
-      '[cortex] filtro por callback do raycast das rodas ainda nao roda no host ' +
-      '(SPEC-0209): as rodas enxergam todos os colliders permitidos pelos grupos.',
-    );
-  }
-  __rapierNative.vehicleUpdate(
-    this.__ptr, this.__world, dt,
-    typeof groups === 'number' ? groups : -1,
-  );
-};
-
-// Estado da roda: uma chamada nativa preenche o scratch, os getters leem dali.
-VehicleController.prototype.__state = function (index) {
-  __rapierNative.vehicleWheelState(this.__ptr, this.__world, index);
-  return this.__scratch;
-};
-VehicleController.prototype.wheelIsInContact = function (i) { return this.__state(i)[0] !== 0; };
-VehicleController.prototype.wheelContactPoint = function (i) {
-  const s = this.__state(i);
-  // O Rapier devolve `null` quando a roda esta no ar — o engine checa isso.
-  if (s[0] === 0) return null;
-  return { x: s[1], y: s[2], z: s[3] };
-};
-VehicleController.prototype.wheelChassisConnectionPointCs = function (i) {
-  const s = this.__state(i);
-  return { x: s[4], y: s[5], z: s[6] };
-};
-VehicleController.prototype.wheelSuspensionLength = function (i) { return this.__state(i)[7]; };
-VehicleController.prototype.wheelSteering = function (i) { return this.__state(i)[8]; };
-VehicleController.prototype.wheelRotation = function (i) { return this.__state(i)[9]; };
-
-World.prototype.createVehicleController = function (chassis) {
-  const ptr = __rapierNative.vehicleNew(this.__ptr, chassis.handle);
-  if (!ptr) throw new Error('CortexNative: chassi invalido em createVehicleController');
-  const ctrl = new VehicleController(this.__ptr, this.__scratch, ptr, chassis);
-  this.__vehicles.push(ctrl);
-  return ctrl;
-};
-
-// `world.vehicleControllers` e ITERAVEL no Rapier do browser (um Set nativo) —
-// jogos varrem pra achar o controller de um chassi. Aqui e um array com
-// Symbol.iterator, que e o que `[...world.vehicleControllers]` precisa.
-Object.defineProperty(World.prototype, 'vehicleControllers', {
-  get: function () {
-    const list = this.__vehicles;
-    return {
-      length: list.length,
-      [Symbol.iterator]: function () { return list[Symbol.iterator](); },
-    };
-  },
-});
+World.prototype.createVehicleController = createVehicleController;
+Object.defineProperty(World.prototype, 'vehicleControllers', vehicleControllersProperty);
 
 const RAPIER = {
   init: function () { return Promise.resolve(); },

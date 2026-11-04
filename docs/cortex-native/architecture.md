@@ -477,6 +477,11 @@ Native (que roda milhares de libs sobre Hermes em produção):
   método dá `undefined` e conta TODO corpo como acordado — o R2b culpou o sono
   dos cinemáticos por isso. E cinemático nunca dorme no Rapier mesmo (browser
   e host): o custo real era o broad-phase, resolvido no patch da ADR-0336.
+- **O shim do Rapier é dividido** (SPEC-0671): `rapier-compat.js` (corpos, colliders,
+  World) instala no `World.prototype` as consultas de `rapier-compat-queries.js`
+  (raycast, contatos) e o veículo de `rapier-compat-vehicle.js`. O veículo guarda o
+  estado de cada roda por GERAÇÃO (invalidada em `updateVehicle` e nos setters de
+  roda): uma chamada `vehicleWheelState` por roda por quadro, não uma por getter.
 - **O `rapier-compat` cobre um SUBCONJUNTO do Rapier** (SPEC-0208): o que falta
   aparece só em runtime, como `undefined is not a function` no meio do setup do
   jogo — sem dizer qual função. Foi assim que o `forEachRigidBody` apareceu

@@ -129,6 +129,40 @@ describe('estado da roda (layout do scratch)', () => {
   });
 });
 
+describe('estado da roda lido uma vez por geração (SPEC-0671)', () => {
+  it('os getters de uma roda fazem UMA chamada nativa entre dois updateVehicle', () => {
+    const ctrl = vehicleWithWheel();
+    ctrl.wheelChassisConnectionPointCs(0);
+    ctrl.wheelSuspensionLength(0);
+    ctrl.wheelSteering(0);
+    ctrl.wheelRotation(0);
+    ctrl.wheelIsInContact(0);
+    expect(argsOf('vehicleWheelState')).toEqual([[99, 1, 0]]);
+  });
+
+  it('updateVehicle e setters de roda invalidam a cópia', () => {
+    const ctrl = vehicleWithWheel();
+    expect(ctrl.wheelSuspensionLength(0)).toBe(0.25);
+    wheelState = [1, 10, 20, 30, 1, 2, 3, 0.4, 0.5, 7];
+    expect(ctrl.wheelSuspensionLength(0)).toBe(0.25); // mesma geração: a cópia
+    ctrl.updateVehicle(1 / 60);
+    expect(ctrl.wheelSuspensionLength(0)).toBe(0.4);
+    wheelState = [1, 10, 20, 30, 1, 2, 3, 0.4, -0.3, 7];
+    ctrl.setWheelSteering(0, -0.3);
+    expect(ctrl.wheelSteering(0)).toBe(-0.3);
+    expect(argsOf('vehicleWheelState')).toHaveLength(3);
+  });
+
+  it('a cópia é por roda: o scratch compartilhado do mundo não vaza entre rodas', () => {
+    const ctrl = vehicleWithWheel();
+    ctrl.addWheel({ x: -1, y: -0.3, z: 1.2 }, { x: 0, y: -1, z: 0 }, { x: -1, y: 0, z: 0 }, 0.3, 0.35);
+    expect(ctrl.wheelSuspensionLength(0)).toBe(0.25);
+    wheelState = [1, 10, 20, 30, 1, 2, 3, 0.1, 0.5, 7];
+    expect(ctrl.wheelSuspensionLength(1)).toBe(0.1);
+    expect(ctrl.wheelSuspensionLength(0)).toBe(0.25);
+  });
+});
+
 describe('updateVehicle', () => {
   it('passa veículo, mundo, dt e grupos — nessa ordem', () => {
     const ctrl = vehicleWithWheel();
