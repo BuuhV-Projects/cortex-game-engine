@@ -113,6 +113,20 @@ describe('Renderer', () => {
       .toBeLessThan(rendererSpies.render.mock.invocationCallOrder[0]!);
   });
 
+  it('render() percorre a matriz da cena uma vez e desliga o auto-update dentro do render do three (SPEC-0680)', async () => {
+    const r = await makeReadyRenderer();
+    const updateMatrixWorld = vi.fn();
+    const scene = { matrixWorldAutoUpdate: true, updateMatrixWorld } as unknown as import('three').Scene;
+    let duranteORender: boolean | undefined;
+    rendererSpies.render.mockImplementationOnce((s: { matrixWorldAutoUpdate: boolean }) => {
+      duranteORender = s.matrixWorldAutoUpdate;
+    });
+    r.render(scene, fakeCamera);
+    expect(updateMatrixWorld).toHaveBeenCalledOnce();
+    expect(duranteORender).toBe(false);
+    expect(scene.matrixWorldAutoUpdate).toBe(true);
+  });
+
   // ── clear() ────────────────────────────────────────────────────────────────
 
   it('clear() delega para o renderer (após init)', async () => {

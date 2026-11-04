@@ -930,6 +930,12 @@ level.json (nó)  ──buildScene──▶  Object3D (mesh)  + Entidade ECS (co
   `updateMatrixWorld(true)` na cena (e o `addSceneNode` no objeto adicionado) —
   raycast funciona no frame 0 sem depender de render prévio. Ao criar outro
   caminho que **monta objetos e raycasta no mesmo tick**, garanta a mesma passada.
+- **Dentro do `render` a cena está com `matrixWorldAutoUpdate = false` (SPEC-0680, ADR-0681).** O
+  `installSingleMatrixUpdate` (`src/render/SingleMatrixUpdate.ts`, instalado no construtor do `Renderer`) faz UMA
+  travessia por render de fora de cada cena e desliga o auto-update até o fim dele, para os renders aninhados (cascatas
+  de sombra) não percorrerem a árvore de novo. Quem MOVE pose no meio do render (callback de render, `updateBefore` de
+  nó — o CSM com as luzes das cascatas) atualiza a matriz do que moveu; fora do render a cena volta ao normal. Com o
+  espelho nativo instalado o embrulho passa direto.
 - **Raycast de gameplay tem que ignorar o chrome do editor.** O gizmo
   (`TransformControls`) e helpers ficam **na mesma cena** (bundle de dev). O
   `editorInternal` fica na **raiz** do helper, mas o raycast acerta as **peças
