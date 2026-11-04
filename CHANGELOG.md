@@ -1,3 +1,15 @@
+# [0.103.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.102.1...v0.103.0) (2026-11-04)
+
+
+### Features
+
+* **native:** camadas e esfera do objeto no culler do passe principal (SPEC-0686) ([dae59e2](https://github.com/BuuhV-Projects/cortex-game-engine/commit/dae59e27cf7abf84244b02ee61bf23ac31fe5d2a))
+
+
+### Performance Improvements
+
+* **render:** projeção nativa sem layers.test e sem teste de esfera do objeto em JS (SPEC-0686) ([d3c37e3](https://github.com/BuuhV-Projects/cortex-game-engine/commit/d3c37e32b88bf6a48e466526f846376952186cb5))
+
 ## [0.102.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.102.0...v0.102.1) (2026-11-04)
 
 
