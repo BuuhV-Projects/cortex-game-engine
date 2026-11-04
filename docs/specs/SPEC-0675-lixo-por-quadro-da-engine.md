@@ -93,7 +93,9 @@ Mudança (`src/scene/Vegetation.ts`, `src/scene/vegetationMatrices.ts`):
    (`clearUpdateRanges` + `addUpdateRange(0, n × 16)`), não a lista vazia. Com a lista vazia ("sobe tudo"), uma
    escrita por faixa no mesmo quadro, antes do upload, fazia o `three` subir só a faixa e perder a escrita inteira.
 6. O vão que o `writeInstances` abre além do total (`[total, first)`) fica com escala 0 no armazenamento próprio (com buffer adotado, com o que o buffer tiver): não desenha, e o coletor do
-   personagem não faz tronco de escala 0 (antes virava um tronco invisível na origem).
+   personagem não faz tronco de escala 0 (antes virava um tronco invisível na origem). Instância de escala 0 (o vão e
+   a escondida pela máscara da estrada) também não entra na esfera de culling: a matriz nula levaria a esfera da
+   geometria para a origem e esticaria a esfera da malha até lá, desligando o culling da SPEC-0299 nas vistas.
 
 `add`, `removeNear`, `removeAt` (editor) e `getInstances` seguem com o mesmo comportamento; com buffer adotado, as
 edições do editor copiam para um array próprio antes de mexer.
@@ -112,6 +114,9 @@ no mesmo quadro. `1` volta ao comportamento antigo.
   cobre a área da câmera do quadro anterior, e com a câmera rápida a borda dela pode ficar sem sombra por até
   `intervalo − 1` quadros.
 - Troca de câmera (`updateFrustums`, editor ↔ play) força todas as cascatas no quadro.
+- O 1º quadro escalonado também força todas: nenhuma cascata tem mapa ainda, e a que pulasse amostraria a textura
+  de profundidade zerada (a faixa dela inteira em sombra). O `_init` do CSM já guarda a câmera do build, então a
+  troca de câmera não cobre esse quadro.
 - Com espelho nativo instalado nada muda: o passe nativo (SPEC-0245) é dono do `autoUpdate`, e num quadro que ele
   devolve ao `three` já chamou o `updateMatrices` das cascatas — pular o redesenho ali daria mapa velho com matriz
   nova. `?semPasseDeSombra=1` continua congelando tudo.
