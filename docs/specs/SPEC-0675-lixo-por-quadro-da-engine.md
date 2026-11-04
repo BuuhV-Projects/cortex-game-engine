@@ -114,14 +114,26 @@ no mesmo quadro. `1` volta ao comportamento antigo.
 
 ## Medidas
 
-Microbench de alocação com JIT (`heapUsed` antes/depois de rodadas de chamadas, menor rodada sem coleta, como o
-`tests/perf/alloc.perf.ts` do DDD 00). O V8 tem objetos menores que o Hermes e otimiza o iterador do `Set` com JIT:
-o número compara antes e depois, não soma com o nativo.
+Microbench de alocação (`heapUsed` antes/depois de rodadas de chamadas, menor rodada sem coleta, como o
+`tests/perf/alloc.perf.ts` do DDD 00) nos testes `tests/ecs/worldQueryAlloc.test.ts` e
+`tests/scene/vegetationWriteBench.test.ts`, que rodam com JIT; os mesmos arquivos empacotados e rodados com
+`node --jitless` (o proxy do Hermes, young generation de 512 MB para não coletar no meio da rodada) dão a coluna sem
+JIT. O V8 tem objetos menores que o Hermes, e com JIT otimiza o iterador do `Set` que o Hermes aloca por passo: os
+números comparam antes e depois, não somam com o nativo.
 
 | rotina | antes | depois |
 | --- | --- | --- |
-| `World.tick`, 2,1 mil entidades, 25 sistemas `[]` + 3 com 2 componentes | ~490 KB/tick | ~0 B/tick |
-| `Vegetation.setInstances` 1.900 × 2 sub-malhas, `--jitless` | ~55 ms | ver commit (medido no teste) |
+| `World.tick`, 2,1 mil entidades, 25 sistemas `[]` + 3 com 2 componentes, com JIT | 88 KB/tick | 66 B/tick |
+| idem, sem JIT | **4,19 MB/tick**, 4,5 ms/tick | 1,5 KB/tick, 0,005 ms/tick |
+| `Vegetation.setInstances` 1.900 × 2 sub-malhas, com JIT | 0,57–0,60 ms | 0,25 ms |
+| idem, sem JIT | 17,7 ms | 6,2 ms (`adoptInstances`: 5,8 ms) |
+| `Vegetation.writeInstances` de uma faixa de 64, sem JIT | — (escrevia tudo) | 0,21 ms |
+
+O que cai por quadro no DDD 00 (estimativa, a confirmar na medição do nativo): a consulta do `World.tick` era
+~4 MB/quadro sem JIT no V8 para a forma da cena do DDD 00 (~2,1 mil entidades, ~28 sistemas) — a maior parte dos
+~5,8 MB da engine — e some; o tempo de percorrer as entidades (~4,5 ms sem JIT no V8) também. A `Vegetation` não é
+por quadro: o ganho é no quadro em que o LOD da mata reescreve uma célula (~17,7 → ~6,2 ms, ou só a faixa com
+`writeInstances`). O CSM escalonado é só do Studio.
 
 ## Pendências
 

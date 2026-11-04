@@ -189,7 +189,10 @@ Executa a lógica do sistema para o frame/passo atual.
 [`Entity`](Entity.md)[]
 
 Entidades filtradas pelo `World` que possuem todos os
-                   componentes declarados em `requiredComponents`.
+                   componentes declarados em `requiredComponents`. O array é
+                   compartilhado com outros sistemas e reaproveitado entre
+                   quadros enquanto a estrutura do ECS não muda (ADR-0676):
+                   leia, guarde a referência se quiser, mas **não mute**.
 
 ##### deltaTime
 

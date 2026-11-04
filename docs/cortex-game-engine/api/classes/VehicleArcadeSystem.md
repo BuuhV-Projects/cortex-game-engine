@@ -161,7 +161,7 @@ static requiredComponents = [TransformComponent, VelocityComponent];
 
 > **dispose**(): `void`
 
-Defined in: [src/ecs/System.ts:97](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L97)
+Defined in: [src/ecs/System.ts:100](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L100)
 
 Libera recursos ao remover o sistema — chamado por [World.clear](World.md#clear) (e
 pode ser chamado manualmente). No-op por padrão; sobrescreva pra liberar
@@ -193,7 +193,10 @@ Executa a lógica do sistema para o frame/passo atual.
 [`Entity`](Entity.md)[]
 
 Entidades filtradas pelo `World` que possuem todos os
-                   componentes declarados em `requiredComponents`.
+                   componentes declarados em `requiredComponents`. O array é
+                   compartilhado com outros sistemas e reaproveitado entre
+                   quadros enquanto a estrutura do ECS não muda (ADR-0676):
+                   leia, guarde a referência se quiser, mas **não mute**.
 
 ##### deltaTime
 
