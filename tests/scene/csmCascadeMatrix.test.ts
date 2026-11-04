@@ -3,11 +3,14 @@
  * a travessia única por render, o `CameraFollowingCSM` atualiza a matriz de mundo deles ali mesmo — senão o
  * `shadow.updateMatrices` de cada cascata leria a pose do quadro anterior.
  */
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { DirectionalLight, PerspectiveCamera, Scene as ThreeScene, Vector3 } from 'three';
 import { setupOutdoorLighting } from '../../src/scene/OutdoorLighting.js';
 import type { Scene } from '../../src/core/Scene.js';
 import type { Renderer } from '../../src/core/Renderer.js';
+
+const espelho = vi.hoisted(() => ({ atual: undefined as { installed: boolean } | undefined }));
+vi.mock('../../src/core/NativeSceneMirror.js', () => ({ activeSceneMirror: () => espelho.atual }));
 
 type CsmSondado = { updateBefore(frame: never): void; camera: unknown; lights: DirectionalLight[] };
 
@@ -40,6 +43,10 @@ function csmComLuzesDeVerdade(): { csm: CsmSondado; three: ThreeScene; camera: P
 }
 
 describe('CameraFollowingCSM atualiza a matriz das cascatas que move (SPEC-0680)', () => {
+  afterEach(() => {
+    espelho.atual = undefined;
+  });
+
   it('luz e alvo de cada cascata saem do updateBefore com o matrixWorld da pose nova', () => {
     const { csm, three, camera } = csmComLuzesDeVerdade();
     csm.updateBefore({ camera, scene: three } as never);
@@ -54,5 +61,14 @@ describe('CameraFollowingCSM atualiza a matriz das cascatas que move (SPEC-0680)
     (csm.lights as unknown[]).push({ shadow: { autoUpdate: true, needsUpdate: false } });
     Object.getPrototypeOf(Object.getPrototypeOf(csm)).updateBefore = () => undefined;
     expect(() => csm.updateBefore({ camera, scene: three } as never)).not.toThrow();
+  });
+
+  it('com o espelho nativo instalado a matriz das cascatas é do host e não é recalculada', () => {
+    const { csm, three, camera } = csmComLuzesDeVerdade();
+    espelho.atual = { installed: true };
+    csm.updateBefore({ camera, scene: three } as never);
+    csm.lights.forEach((luz) => {
+      expect(new Vector3().setFromMatrixPosition(luz.matrixWorld).x).toBe(0);
+    });
   });
 });

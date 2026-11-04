@@ -35,6 +35,13 @@ vi.mock('three/webgpu', () => ({
   }),
 }));
 
+/** Espelho nativo simulado: instalado, o embrulho da travessia única passa direto (SPEC-0680). */
+const espelho = vi.hoisted(() => ({ atual: undefined as { installed: boolean } | undefined }));
+vi.mock('../../src/core/NativeSceneMirror.js', async (original) => ({
+  ...(await original<typeof import('../../src/core/NativeSceneMirror.js')>()),
+  activeSceneMirror: () => espelho.atual,
+}));
+
 // Import depois do mock — caso contrário pega a classe real.
 import { Renderer } from '../../src/core/Renderer.js';
 
@@ -68,6 +75,7 @@ describe('Renderer', () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
+    espelho.atual = undefined;
   });
 
   // ── Construção / configuração ──────────────────────────────────────────────
@@ -125,6 +133,20 @@ describe('Renderer', () => {
     expect(updateMatrixWorld).toHaveBeenCalledOnce();
     expect(duranteORender).toBe(false);
     expect(scene.matrixWorldAutoUpdate).toBe(true);
+  });
+
+  it('render() com o espelho nativo instalado deixa a matriz da cena com o three (SPEC-0680)', async () => {
+    const r = await makeReadyRenderer();
+    espelho.atual = { installed: true };
+    const updateMatrixWorld = vi.fn();
+    const scene = { matrixWorldAutoUpdate: true, updateMatrixWorld } as unknown as import('three').Scene;
+    let duranteORender: boolean | undefined;
+    rendererSpies.render.mockImplementationOnce((s: { matrixWorldAutoUpdate: boolean }) => {
+      duranteORender = s.matrixWorldAutoUpdate;
+    });
+    r.render(scene, fakeCamera);
+    expect(updateMatrixWorld).not.toHaveBeenCalled();
+    expect(duranteORender).toBe(true);
   });
 
   // ── clear() ────────────────────────────────────────────────────────────────
