@@ -2,7 +2,7 @@
 // É o default export (namespace), que serve como qualificador de tipo (RAPIER.World).
 import type RAPIER from '@dimforge/rapier3d-compat';
 import type { Vector3, Quaternion, Object3D } from 'three';
-import { physicsSubsteps } from './physicsSubsteps.js';
+import { physicsSubsteps, type PhysicsSubsteps } from './physicsSubsteps.js';
 import { RapierBody, colliderDescFor, forEachWorldTrimesh, loadRapier, rapier } from './rapierRuntime.js';
 import {
   DEFAULT_SUSPENSION_REST_LENGTH,
@@ -202,6 +202,7 @@ export class RapierPhysics {
    * física acompanhar o relógio em quadros lentos, ao custo de mais passos justo quando o quadro pesa.
    */
   maxStepsPerFrame: number = MAX_PHYSICS_STEPS;
+  private readonly substeps: PhysicsSubsteps = { steps: 0, step: 0 }; // scratch do advance: não aloca por quadro
 
   private constructor(world: RAPIER.World) {
     this.world = world;
@@ -253,7 +254,7 @@ export class RapierPhysics {
    * physics.advance(dtSeconds, (step) => vehicle.update(step));
    */
   advance(dt: number, beforeEachStep?: (step: number) => void): number {
-    const { steps, step } = physicsSubsteps(dt, MAX_PHYSICS_STEP_S, this.maxStepsPerFrame);
+    const { steps, step } = physicsSubsteps(dt, MAX_PHYSICS_STEP_S, this.maxStepsPerFrame, this.substeps);
     if (steps === 0) return 0;
     // O mundo pode ser compartilhado com quem confia no timestep padrão.
     const previous = this.world.timestep;

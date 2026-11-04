@@ -37,6 +37,15 @@ describe('physicsSubsteps', () => {
     expect(physicsSubsteps(0.02, STEP, 0)).toEqual({ steps: 0, step: 0 });
   });
 
+  it('escreve no `out` recebido e o devolve, sem alocar (o advance roda todo quadro)', () => {
+    const out = { steps: 9, step: 9 };
+    expect(physicsSubsteps(0.1, STEP, 3, out)).toBe(out);
+    expect(out.steps).toBe(3);
+    expect(out.step).toBeCloseTo(STEP, 12);
+    expect(physicsSubsteps(0, STEP, 3, out)).toBe(out);
+    expect(out).toEqual({ steps: 0, step: 0 });
+  });
+
   it('o RapierPhysics usa o teto padrão de 3 e respeita o do jogo', async () => {
     expect(MAX_PHYSICS_STEPS).toBe(3);
     expect(MAX_PHYSICS_STEP_S).toBe(STEP);

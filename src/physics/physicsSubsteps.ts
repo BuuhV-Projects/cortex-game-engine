@@ -14,11 +14,24 @@ export interface PhysicsSubsteps {
  * em vez de gastar mais passos num quadro que já está lento.
  *
  * `dt` zero, negativo ou `NaN` dá `{ steps: 0, step: 0 }`.
+ *
+ * Escreve em `out` e o devolve: o `advance` roda todo quadro e passa um scratch
+ * próprio, sem alocar um objeto por chamada.
  */
-export function physicsSubsteps(dt: number, maxStep: number, maxSteps: number): PhysicsSubsteps {
-  if (!(dt > 0) || !(maxSteps >= 1)) return { steps: 0, step: 0 };
+export function physicsSubsteps(
+  dt: number,
+  maxStep: number,
+  maxSteps: number,
+  out: PhysicsSubsteps = { steps: 0, step: 0 },
+): PhysicsSubsteps {
+  if (!(dt > 0) || !(maxSteps >= 1)) {
+    out.steps = 0;
+    out.step = 0;
+    return out;
+  }
   const wanted = Math.ceil(dt / maxStep - STEP_ROUNDING_EPSILON);
   const steps = Math.min(Math.max(wanted, 1), Math.floor(maxSteps));
-  const simulated = Math.min(dt, steps * maxStep);
-  return { steps, step: simulated / steps };
+  out.steps = steps;
+  out.step = Math.min(dt, steps * maxStep) / steps;
+  return out;
 }
