@@ -6,7 +6,7 @@
 
 # Class: World
 
-Defined in: [src/ecs/World.ts:46](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/World.ts#L46)
+Defined in: [src/ecs/World.ts:48](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/World.ts#L48)
 
 Registro central do sistema ECS — vide ADR-0002.
 
@@ -48,7 +48,7 @@ world.tick(16); // executa um frame de 16 ms
 
 > **addSystem**(`system`): `void`
 
-Defined in: [src/ecs/World.ts:105](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/World.ts#L105)
+Defined in: [src/ecs/World.ts:109](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/World.ts#L109)
 
 Adiciona um system ao world.
 
@@ -74,7 +74,7 @@ Instância do system a registrar.
 
 > **clear**(): `void`
 
-Defined in: [src/ecs/World.ts:134](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/World.ts#L134)
+Defined in: [src/ecs/World.ts:138](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/World.ts#L138)
 
 Esvazia o world pra trocar de fase/cena: remove entities e systems, chamando
 `dispose()` nos systems removidos (libera handles nativos, ex.: mundo do
@@ -95,7 +95,7 @@ O objeto `World` continua o MESMO (só é esvaziado), então referências a
 
 > **createEntity**(): [`Entity`](Entity.md)
 
-Defined in: [src/ecs/World.ts:77](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/World.ts#L77)
+Defined in: [src/ecs/World.ts:81](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/World.ts#L81)
 
 Cria uma nova entity, registra-a no world e a retorna.
 
@@ -111,7 +111,7 @@ A entity recém-criada com UUID único.
 
 > **destroyEntity**(`entity`): `void`
 
-Defined in: [src/ecs/World.ts:90](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/World.ts#L90)
+Defined in: [src/ecs/World.ts:94](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/World.ts#L94)
 
 Remove a entity do world.
 Sem efeito se a entity não pertencer a este world.
@@ -134,7 +134,7 @@ A entity a ser destruída.
 
 > **enableSystemProfile**(): `Map`\<`string`, `number`\>
 
-Defined in: [src/ecs/World.ts:266](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/World.ts#L266)
+Defined in: [src/ecs/World.ts:276](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/World.ts#L276)
 
 Liga o perfil por sistema e devolve o mapa vivo (nome → ms acumulados). O nome
 é o `profileLabel` do sistema, ou o nome da classe quando ele não declara um.
@@ -151,7 +151,7 @@ não comportamento de produção.
 
 > **hasSystem**(`SystemClass`): `boolean`
 
-Defined in: [src/ecs/World.ts:155](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/World.ts#L155)
+Defined in: [src/ecs/World.ts:159](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/World.ts#L159)
 
 `true` se já existe um system registrado da classe `SystemClass`. Útil para
 registrar um system **sob demanda só uma vez** (ex.: o `buildScene` liga o
@@ -175,7 +175,7 @@ Construtor da classe do system a procurar.
 
 > **query**\<`T`\>(...`componentClasses`): [`Entity`](Entity.md)[]
 
-Defined in: [src/ecs/World.ts:172](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/World.ts#L172)
+Defined in: [src/ecs/World.ts:176](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/World.ts#L176)
 
 Retorna todas as entities que possuem **todos** os componentes especificados.
 
@@ -213,7 +213,7 @@ const moving = world.query(TransformComponent, VelocityComponent);
 
 > **removeSystem**(`SystemClass`): `void`
 
-Defined in: [src/ecs/World.ts:116](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/World.ts#L116)
+Defined in: [src/ecs/World.ts:120](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/World.ts#L120)
 
 Remove o primeiro system cuja classe corresponda a `SystemClass`.
 Sem efeito se nenhum system do tipo especificado estiver registrado.
@@ -236,7 +236,7 @@ Construtor da classe do system a remover.
 
 > **resetSystemProfile**(): `void`
 
-Defined in: [src/ecs/World.ts:272](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/World.ts#L272)
+Defined in: [src/ecs/World.ts:283](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/World.ts#L283)
 
 Zera os acumuladores do perfil por sistema, mantendo-o ligado.
 
@@ -250,7 +250,7 @@ Zera os acumuladores do perfil por sistema, mantendo-o ligado.
 
 > **tick**(`deltaTime`): `void`
 
-Defined in: [src/ecs/World.ts:239](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/World.ts#L239)
+Defined in: [src/ecs/World.ts:243](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/World.ts#L243)
 
 Executa um passo de simulação, iterando todos os systems em ordem de
 prioridade crescente.

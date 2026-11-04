@@ -6,17 +6,33 @@
 
 # Interface: PerfSample
 
-Defined in: [src/core/PerfTrace.ts:85](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L85)
+Defined in: [src/core/PerfTrace.ts:81](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L81)
 
-Uma amostra do trace, como vai serializada em JSONL.
+Uma amostra do trace, como vai serializada em JSONL. Os campos de diagnóstico vêm de TraceCounterFields (SPEC-0688).
+
+## Extends
+
+- `TraceCounterFields`
 
 ## Properties
+
+### alloc?
+
+> `optional` **alloc?**: `AllocSample`
+
+Defined in: [src/core/perfTrace/traceCounters.ts:108](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/perfTrace/traceCounters.ts#L108)
+
+#### Inherited from
+
+`TraceCounterFields.alloc`
+
+***
 
 ### born?
 
 > `optional` **born?**: `object`
 
-Defined in: [src/core/PerfTrace.ts:116](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L116)
+Defined in: [src/core/PerfTrace.ts:112](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L112)
 
 Recursos de GPU CRIADOS desde o boot (SPEC-0252) — acumulados.
 
@@ -46,7 +62,7 @@ quantos NASCEM — e só isso denuncia compilação dentro do frame.
 
 > **cam**: `object`
 
-Defined in: [src/core/PerfTrace.ts:138](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L138)
+Defined in: [src/core/PerfTrace.ts:134](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L134)
 
 Posição da câmera (x, y, z) e direção para onde olha.
 
@@ -80,7 +96,7 @@ Posição da câmera (x, y, z) e direção para onde olha.
 
 > **cpu**: `Record`\<`string`, `number`\>
 
-Defined in: [src/core/PerfTrace.ts:93](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L93)
+Defined in: [src/core/PerfTrace.ts:89](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L89)
 
 ms de CPU por seção do FrameProfiler (`{ render: 28.1, … }`).
 
@@ -90,7 +106,7 @@ ms de CPU por seção do FrameProfiler (`{ render: 28.1, … }`).
 
 > **cpuAvg**: `Record`\<`string`, `number`\>
 
-Defined in: [src/core/PerfTrace.ts:98](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L98)
+Defined in: [src/core/PerfTrace.ts:94](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L94)
 
 Custo TÍPICO por seção — a média da janela de 240 frames do
 FrameProfiler, não o frame sorteado que vai em [cpu](#cpu).
@@ -101,7 +117,7 @@ FrameProfiler, não o frame sorteado que vai em [cpu](#cpu).
 
 > **cpuP99**: `Record`\<`string`, `number`\>
 
-Defined in: [src/core/PerfTrace.ts:104](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L104)
+Defined in: [src/core/PerfTrace.ts:100](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L100)
 
 PIOR CASO por seção (p99 da mesma janela). A distância até [cpuAvg](#cpuavg)
 é a variância da seção, que é o que o jogador sente como oscilação —
@@ -113,7 +129,7 @@ PIOR CASO por seção (p99 da mesma janela). A distância até [cpuAvg](#cpuavg)
 
 > **draws**: `number`
 
-Defined in: [src/core/PerfTrace.ts:135](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L135)
+Defined in: [src/core/PerfTrace.ts:131](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L131)
 
 ***
 
@@ -121,7 +137,7 @@ Defined in: [src/core/PerfTrace.ts:135](https://github.com/BuuhV-Projects/cortex
 
 > **fps**: `number`
 
-Defined in: [src/core/PerfTrace.ts:90](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L90)
+Defined in: [src/core/PerfTrace.ts:86](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L86)
 
 ***
 
@@ -129,7 +145,7 @@ Defined in: [src/core/PerfTrace.ts:90](https://github.com/BuuhV-Projects/cortex-
 
 > **frameMs**: `number`
 
-Defined in: [src/core/PerfTrace.ts:91](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L91)
+Defined in: [src/core/PerfTrace.ts:87](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L87)
 
 ***
 
@@ -137,7 +153,7 @@ Defined in: [src/core/PerfTrace.ts:91](https://github.com/BuuhV-Projects/cortex-
 
 > `optional` **game?**: `Record`\<`string`, `number`\>
 
-Defined in: [src/core/PerfTrace.ts:142](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L142)
+Defined in: [src/core/PerfTrace.ts:138](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L138)
 
 Medidores do jogo ([setPerfTraceGauge](../functions/setPerfTraceGauge.md), SPEC-0595): ausente sem nenhum registrado.
 
@@ -147,7 +163,7 @@ Medidores do jogo ([setPerfTraceGauge](../functions/setPerfTraceGauge.md), SPEC-
 
 > `optional` **gc?**: [`GcTotals`](GcTotals.md)
 
-Defined in: [src/core/PerfTrace.ts:134](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L134)
+Defined in: [src/core/PerfTrace.ts:130](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L130)
 
 Coletor de lixo do Hermes desde o boot (SPEC-0264) — acumulado; compare
 amostras. `oldWallMs` é parede: uma coleta velha concorrente que atravesse
@@ -159,7 +175,7 @@ vários quadros aparece inteira. Ausente fora do host.
 
 > `optional` **heap?**: [`HeapStats`](HeapStats.md)
 
-Defined in: [src/core/PerfTrace.ts:89](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L89)
+Defined in: [src/core/PerfTrace.ts:85](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L85)
 
 Heap do Hermes (SPEC-0664); ausente fora do host nativo.
 
@@ -169,7 +185,7 @@ Heap do Hermes (SPEC-0664); ausente fora do host nativo.
 
 > `optional` **nativePipelinesBorn?**: [`PipelineBirth`](PipelineBirth.md)[]
 
-Defined in: [src/core/PerfTrace.ts:123](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L123)
+Defined in: [src/core/PerfTrace.ts:119](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L119)
 
 Pipelines born in the engine's own renderer since the previous sample (SPEC-0585).
 
@@ -179,7 +195,7 @@ Pipelines born in the engine's own renderer since the previous sample (SPEC-0585
 
 > `optional` **pipelineLookups?**: `number`
 
-Defined in: [src/core/PerfTrace.ts:128](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L128)
+Defined in: [src/core/PerfTrace.ts:124](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L124)
 
 Consultas ao cache de pipeline desde a instalação — acumulado, ACERTOS
 incluídos (SPEC-0261). Consulta sem nascimento = pipeline reaproveitado.
@@ -190,10 +206,34 @@ incluídos (SPEC-0261). Consulta sem nascimento = pipeline reaproveitado.
 
 > `optional` **pipelinesBorn?**: [`PipelineBirth`](PipelineBirth.md)[]
 
-Defined in: [src/core/PerfTrace.ts:121](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L121)
+Defined in: [src/core/PerfTrace.ts:117](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L117)
 
 QUAIS pipelines nasceram desde a amostra anterior (SPEC-0261): objeto,
 material, passada e custo. Ausente quando nada nasceu.
+
+***
+
+### renderServer?
+
+> `optional` **renderServer?**: `RenderServerSample`
+
+Defined in: [src/core/perfTrace/traceCounters.ts:106](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/perfTrace/traceCounters.ts#L106)
+
+#### Inherited from
+
+`TraceCounterFields.renderServer`
+
+***
+
+### sunShadow?
+
+> `optional` **sunShadow?**: `SunShadowSample`
+
+Defined in: [src/core/perfTrace/traceCounters.ts:105](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/perfTrace/traceCounters.ts#L105)
+
+#### Inherited from
+
+`TraceCounterFields.sunShadow`
 
 ***
 
@@ -201,7 +241,7 @@ material, passada e custo. Ausente quando nada nasceu.
 
 > **t**: `number`
 
-Defined in: [src/core/PerfTrace.ts:87](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L87)
+Defined in: [src/core/PerfTrace.ts:83](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L83)
 
 ms desde o boot.
 
@@ -211,7 +251,19 @@ ms desde o boot.
 
 > **tris**: `number`
 
-Defined in: [src/core/PerfTrace.ts:136](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L136)
+Defined in: [src/core/PerfTrace.ts:132](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L132)
+
+***
+
+### uiUploads?
+
+> `optional` **uiUploads?**: `UiUploadsSample`
+
+Defined in: [src/core/perfTrace/traceCounters.ts:107](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/perfTrace/traceCounters.ts#L107)
+
+#### Inherited from
+
+`TraceCounterFields.uiUploads`
 
 ***
 
@@ -219,6 +271,6 @@ Defined in: [src/core/PerfTrace.ts:136](https://github.com/BuuhV-Projects/cortex
 
 > **visible**: [`VisibleNode`](VisibleNode.md)[]
 
-Defined in: [src/core/PerfTrace.ts:140](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L140)
+Defined in: [src/core/PerfTrace.ts:136](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L136)
 
 Nós de cena dentro do frustum, do mais caro (em triângulos) pro menos.

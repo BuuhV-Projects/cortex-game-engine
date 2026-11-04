@@ -6,7 +6,7 @@
 
 # Interface: SampleInput
 
-Defined in: [src/core/PerfTrace.ts:467](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L467)
+Defined in: [src/core/PerfTrace.ts:182](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L182)
 
 Dados do frame que a amostra precisa, já lidos pelo chamador.
 
@@ -16,7 +16,7 @@ Dados do frame que a amostra precisa, já lidos pelo chamador.
 
 > `optional` **born?**: `object`
 
-Defined in: [src/core/PerfTrace.ts:475](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L475)
+Defined in: [src/core/PerfTrace.ts:190](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L190)
 
 #### buffers
 
@@ -36,7 +36,7 @@ Defined in: [src/core/PerfTrace.ts:475](https://github.com/BuuhV-Projects/cortex
 
 > **camera**: `Camera`
 
-Defined in: [src/core/PerfTrace.ts:482](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L482)
+Defined in: [src/core/PerfTrace.ts:197](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L197)
 
 ***
 
@@ -44,7 +44,7 @@ Defined in: [src/core/PerfTrace.ts:482](https://github.com/BuuhV-Projects/cortex
 
 > **cpu**: `Record`\<`string`, `number`\>
 
-Defined in: [src/core/PerfTrace.ts:470](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L470)
+Defined in: [src/core/PerfTrace.ts:185](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L185)
 
 ***
 
@@ -52,7 +52,7 @@ Defined in: [src/core/PerfTrace.ts:470](https://github.com/BuuhV-Projects/cortex
 
 > `optional` **cpuAvg?**: `Record`\<`string`, `number`\>
 
-Defined in: [src/core/PerfTrace.ts:473](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L473)
+Defined in: [src/core/PerfTrace.ts:188](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L188)
 
 Opcionais porque `buildSample` é pública e já tinha chamadores; ausentes
 viram `{}`, que é o que um trace sem a janela do profiler tem a dizer.
@@ -63,7 +63,7 @@ viram `{}`, que é o que um trace sem a janela do profiler tem a dizer.
 
 > `optional` **cpuP99?**: `Record`\<`string`, `number`\>
 
-Defined in: [src/core/PerfTrace.ts:474](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L474)
+Defined in: [src/core/PerfTrace.ts:189](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L189)
 
 ***
 
@@ -71,7 +71,7 @@ Defined in: [src/core/PerfTrace.ts:474](https://github.com/BuuhV-Projects/cortex
 
 > **draws**: `number`
 
-Defined in: [src/core/PerfTrace.ts:480](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L480)
+Defined in: [src/core/PerfTrace.ts:195](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L195)
 
 ***
 
@@ -79,7 +79,7 @@ Defined in: [src/core/PerfTrace.ts:480](https://github.com/BuuhV-Projects/cortex
 
 > **frameMs**: `number`
 
-Defined in: [src/core/PerfTrace.ts:469](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L469)
+Defined in: [src/core/PerfTrace.ts:184](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L184)
 
 ***
 
@@ -87,7 +87,7 @@ Defined in: [src/core/PerfTrace.ts:469](https://github.com/BuuhV-Projects/cortex
 
 > `optional` **game?**: `Record`\<`string`, `number`\>
 
-Defined in: [src/core/PerfTrace.ts:484](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L484)
+Defined in: [src/core/PerfTrace.ts:199](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L199)
 
 ***
 
@@ -95,7 +95,7 @@ Defined in: [src/core/PerfTrace.ts:484](https://github.com/BuuhV-Projects/cortex
 
 > `optional` **gc?**: [`GcTotals`](GcTotals.md)
 
-Defined in: [src/core/PerfTrace.ts:479](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L479)
+Defined in: [src/core/PerfTrace.ts:194](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L194)
 
 ***
 
@@ -103,7 +103,7 @@ Defined in: [src/core/PerfTrace.ts:479](https://github.com/BuuhV-Projects/cortex
 
 > `optional` **nativePipelinesBorn?**: [`PipelineBirth`](PipelineBirth.md)[]
 
-Defined in: [src/core/PerfTrace.ts:477](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L477)
+Defined in: [src/core/PerfTrace.ts:192](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L192)
 
 ***
 
@@ -111,7 +111,7 @@ Defined in: [src/core/PerfTrace.ts:477](https://github.com/BuuhV-Projects/cortex
 
 > `optional` **pipelineLookups?**: `number`
 
-Defined in: [src/core/PerfTrace.ts:478](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L478)
+Defined in: [src/core/PerfTrace.ts:193](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L193)
 
 ***
 
@@ -119,7 +119,7 @@ Defined in: [src/core/PerfTrace.ts:478](https://github.com/BuuhV-Projects/cortex
 
 > `optional` **pipelinesBorn?**: [`PipelineBirth`](PipelineBirth.md)[]
 
-Defined in: [src/core/PerfTrace.ts:476](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L476)
+Defined in: [src/core/PerfTrace.ts:191](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L191)
 
 ***
 
@@ -127,7 +127,7 @@ Defined in: [src/core/PerfTrace.ts:476](https://github.com/BuuhV-Projects/cortex
 
 > **timeMs**: `number`
 
-Defined in: [src/core/PerfTrace.ts:468](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L468)
+Defined in: [src/core/PerfTrace.ts:183](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L183)
 
 ***
 
@@ -135,7 +135,7 @@ Defined in: [src/core/PerfTrace.ts:468](https://github.com/BuuhV-Projects/cortex
 
 > **tris**: `number`
 
-Defined in: [src/core/PerfTrace.ts:481](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L481)
+Defined in: [src/core/PerfTrace.ts:196](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L196)
 
 ***
 
@@ -143,4 +143,4 @@ Defined in: [src/core/PerfTrace.ts:481](https://github.com/BuuhV-Projects/cortex
 
 > **visible**: [`VisibleNode`](VisibleNode.md)[]
 
-Defined in: [src/core/PerfTrace.ts:483](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L483)
+Defined in: [src/core/PerfTrace.ts:198](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L198)

@@ -8,7 +8,7 @@
 
 > **hasNativeTextRaster**(): `boolean`
 
-Defined in: [src/ui/runtime/RendererUiBackend.ts:42](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/RendererUiBackend.ts#L42)
+Defined in: [src/ui/runtime/RendererUiBackend.ts:44](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/RendererUiBackend.ts#L44)
 
 O host expõe o raster? (é assim que o backend renderer é selecionado.)
 
