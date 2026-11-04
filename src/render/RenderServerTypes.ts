@@ -8,6 +8,8 @@ import type { DrawBatch, ServerRecipe } from './DrawBatch.js';
 import type { CheckResult } from './RenderServer.js';
 
 const TRIANGLE_VERTICES = 3;
+/** "No world version" (SPEC-0682): the host never gives 0 or a negative version. */
+export const NO_VERSION = -1;
 
 // ── Shapes of the b.1 data and the three 0.184 internals used here ──────────
 
@@ -37,8 +39,11 @@ export interface ServerAccess {
   /** The recording for the main pass (`passId` null) in this render context. */
   recordingOf(object: object, context: unknown): ServerRecording | undefined;
   disposed(ro: object): boolean;
-  /** The snapshot check of the b.1, split at the matrix: `clean` / `moved` / `dirty`. */
-  check(g: ServerRecording): CheckResult;
+  /**
+   * The snapshot check of the b.1, split at the matrix: `clean` / `moved` / `dirty`. With the
+   * candidate's world `version` (SPEC-0682) equal to the one adopted, the matrix part is skipped.
+   */
+  check(g: ServerRecording, version: number): CheckResult;
   /** Per shader state per call: updateBefore, render nodes, shared refs, shared groups. */
   prepareCall(r: ServerRendererLike, g: ServerRecording, calls: number): void;
   envKey(r: ServerRendererLike, scene: unknown, lightsNode: unknown): unknown;
@@ -86,7 +91,8 @@ export interface NativeEntry {
 export interface NativeDrawer {
   /** Once per top-level projection of the mirrored scene: view block (camera, fog). */
   beginFrame(camera: unknown, scene: unknown): void;
-  take(object: Object3D, material: unknown, geometry: unknown): NativeEntry | null;
+  /** `version`: world matrix version of the candidate (SPEC-0682); -1 = unknown, compare the matrix. */
+  take(object: Object3D, material: unknown, geometry: unknown, version?: number): NativeEntry | null;
   /** Recipe id of one pass for the render context's target formats; -1 = the three draws it at its place. */
   recipeFor(entry: NativeEntry, renderContext: unknown, pass?: number): number;
 }

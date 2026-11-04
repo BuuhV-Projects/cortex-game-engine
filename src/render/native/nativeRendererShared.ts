@@ -248,6 +248,8 @@ export interface Inst extends NativeEntry {
   chunk: Gpu;
   group: Gpu;
   last: Float32Array;
+  /** World matrix version whose matrix is in `last` and the object block (SPEC-0682); -1 = none. */
+  worldVersion: number;
   recipes: Map<string, { id: number; generation: number; frame: number }>;
   // Per frame (`getDrawParameters` of the three): drawRange, InstancedMesh.count.
   count: number;

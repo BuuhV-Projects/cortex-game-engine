@@ -83,7 +83,10 @@ export interface ShadowPassOutcome {
 
 /** A ponte do passe principal (SPEC-0332); ausente em host antigo e no browser. */
 export interface MainPassBridge {
-  project(planes: Float64Array, viewProj: Float64Array, indices: Int32Array, depths: Float64Array): number;
+  /** Com `versions` (host com {@link MainPassBridge.worldVersions}): a versão do mundo de cada candidato (SPEC-0682). */
+  project(planes: Float64Array, viewProj: Float64Array, indices: Int32Array, depths: Float64Array, versions?: Float64Array): number;
+  /** O host aceita o 5º argumento de `project` (SPEC-0682); ausente em host antigo. */
+  readonly worldVersions?: boolean;
   setBounds(index: number, cx: number, cy: number, cz: number, radius: number): void;
 }
 

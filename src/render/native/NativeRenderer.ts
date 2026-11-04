@@ -20,6 +20,7 @@ import { Matrix3, type Layers, type Material, type Object3D } from 'three';
 import { debug } from '../../core/debug.js';
 import type { DrawBatchBridge } from '../DrawBatch.js';
 import type { NativeDrawer, NativeEntry } from '../RenderServer.js';
+import { NO_VERSION } from '../RenderServerTypes.js';
 import { queryFlagRequested } from '../TransformOnlyRefresh.js';
 import { classifyDrawable } from './RendererClassifier.js';
 import { GAME_MATERIAL_PREFIX, gameMaterialModel } from './GameMaterials.js';
@@ -157,7 +158,8 @@ export class NativeRenderer implements NativeDrawer {
     if (this._frame % REPORT_FRAMES === 0 || this._frame === EARLY_REPORT_FRAME) this._report();
   }
 
-  take(object: Object3D, material: unknown, geometry: unknown): NativeEntry | null {
+  /** `worldVersion`: the candidate's world matrix version from the projection (SPEC-0682); -1 = unknown. */
+  take(object: Object3D, material: unknown, geometry: unknown, worldVersion = NO_VERSION): NativeEntry | null {
     const cached = this._byObject.get(object);
     const version = (material as Material).version;
     const instanceColor = (object as { instanceColor?: unknown }).instanceColor ?? null;
@@ -166,7 +168,7 @@ export class NativeRenderer implements NativeDrawer {
       cached.version === version && cached.instanceColor === instanceColor
     ) {
       if (!('mat' in cached)) return null;
-      if (this._refreshInstance(cached)) {
+      if (this._refreshInstance(cached, worldVersion)) {
         this.stats.taken++;
         return cached;
       }
@@ -271,6 +273,7 @@ export class NativeRenderer implements NativeDrawer {
       instanceColor: (object as { instanceColor?: unknown }).instanceColor ?? null,
       vertexBuffers: extra ? [...geo.buffers, ...extra.buffers] : geo.buffers,
       last: new Float32Array(MAT4_FLOATS).fill(Number.NaN),
+      worldVersion: NO_VERSION,
       recipes: new Map(),
       count: 0,
       first: 0,
@@ -290,7 +293,6 @@ export class NativeRenderer implements NativeDrawer {
     return inst;
   }
 
-
   /** A game WGSL material (`wgsl:<name>`, SPEC-0565) allowed by `?nativeRendererModels=`. */
   private _gameModel(name: string): NativeModelDef | undefined {
     const a = this._allowed;
@@ -306,9 +308,10 @@ export class NativeRenderer implements NativeDrawer {
 
   /**
    * Per frame: material snapshot (once per material), buffer versions, draw range and instance
-   * count, matrix. `false` = a source array was replaced: the instance has to be rebuilt.
+   * count, matrix (skipped when `worldVersion` is the one adopted: same matrix, SPEC-0682). `false` = a
+   * source array was replaced: the instance has to be rebuilt.
    */
-  private _refreshInstance(inst: Inst): boolean {
+  private _refreshInstance(inst: Inst, worldVersion = NO_VERSION): boolean {
     const mat = inst.mat;
     if (mat.frame !== this._frame) {
       mat.frame = this._frame;
@@ -317,6 +320,9 @@ export class NativeRenderer implements NativeDrawer {
     if (!this._geometries.refreshGeometry(inst.geometry, inst.geo) || (inst.extra !== null && !this._geometries.refreshSet(inst.extra))) return false;
     this._drawParameters(inst);
     if (inst.skin) this._geometries.writeSkin(inst.object, inst.skin, this._frame);
+    if (worldVersion > NO_VERSION && inst.worldVersion === worldVersion) return true;
+    // The matrix read below is the one of this version (nothing writes it during the projection).
+    inst.worldVersion = worldVersion;
     const e = inst.object.matrixWorld.elements;
     const last = inst.last;
     let moved = false;

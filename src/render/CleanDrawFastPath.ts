@@ -30,7 +30,7 @@ import {
 } from './DrawBatch.js';
 import { applyPlan, queryFlagRequested, type NodeFrameLike, type UniformsGroupLike } from './TransformOnlyRefresh.js';
 import {
-  CheckResult,
+  NO_VERSION,
   RenderServer,
   renderServerRequested,
   setActiveRenderServer,
@@ -41,6 +41,7 @@ import {
   MATRIX_ELEMENTS,
   SNAPSHOT_MIN_CAPACITY,
   SnapshotCursor,
+  checkRecording,
   matrixMatch,
   restMatch,
   walkSnapshot,
@@ -253,7 +254,7 @@ export function installCleanDrawFastPath(
       g = {
         ro, material: ro.material, context: r._currentRenderContext, passId, lights: lightsNode, clipping,
         envKey: undefined, contextNodeVersion: 0, vigias: p.vigias, instantaneo: new Float64Array(n), plan: p.plan,
-        sharedRefs: p.sharedRefs,
+        sharedRefs: p.sharedRefs, versaoDoMundo: NO_VERSION,
       };
       porPasse.set(passId, g);
     }
@@ -261,6 +262,7 @@ export function installCleanDrawFastPath(
     g.lights = lightsNode;
     g.clipping = clipping;
     g.server = undefined;
+    g.versaoDoMundo = NO_VERSION;
     // A mais recente fica no próprio objeto: o caso comum (um contexto, um
     // passe) resolve com uma leitura de campo, sem as três buscas em mapa.
     (o as ComGravacao)._cxGravacao = g;
@@ -317,6 +319,8 @@ export function installCleanDrawFastPath(
     applyPlan(frame as unknown as NodeFrameLike, g.plan.object, updateBinding);
     const m = ro.object.matrixWorld.elements;
     for (let k = 0; k < MATRIX_ELEMENTS; k++) g.instantaneo[k] = m[k]!;
+    // Copiada fora da projeção: a versão adotada já não descreve esta matriz (SPEC-0682).
+    g.versaoDoMundo = NO_VERSION;
     stats.moved++;
     return true;
   };
@@ -413,11 +417,7 @@ export function installCleanDrawFastPath(
         return (g !== undefined && g.context === context && g.passId === null ? g : gravacaoDe(object, context, null)) as never;
       },
       disposed: (ro) => descartados.has(ro),
-      check: (gs) => {
-        const g = gs as unknown as Gravacao;
-        if (!restMatch(g.ro, g.vigias, g.instantaneo)) return CheckResult.Dirty;
-        return matrixMatch(g.ro, g.instantaneo) ? CheckResult.Clean : CheckResult.Moved;
-      },
+      check: (gs, version) => checkRecording(gs as unknown as Gravacao, version),
       prepareCall: (_r, g, calls) => prepararChamada(g as unknown as Gravacao, calls),
       envKey: (r, scene, lightsNode) => chaveDeAmbiente(r as CleanDrawRendererLike, scene, lightsNode),
       applyMoved: (_r, g) => aplicarMovimento(g as unknown as Gravacao),

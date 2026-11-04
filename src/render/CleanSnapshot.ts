@@ -5,7 +5,7 @@
  */
 import { modelNormalMatrix, modelWorldMatrixInverse } from 'three/tsl';
 import type { buildRenderIdPlan } from './RenderIdRefresh.js';
-import type { ServerInstance } from './RenderServer.js';
+import { CheckResult, NO_VERSION, type ServerInstance } from './RenderServer.js';
 
 const UPDATE_OBJECT = 'object';
 export const MATRIX_ELEMENTS = 16;
@@ -178,6 +178,11 @@ export interface Gravacao {
   sharedRefs: NoLike[];
   /** Instância do RenderServer (RS1b): `undefined` = recalcular; refeita a cada gravação. */
   server?: ServerInstance | null;
+  /**
+   * Versão do mundo (SPEC-0682) cuja matriz é a do instantâneo, adotada na projeção; -1 = nenhuma.
+   * Toda escrita da matriz do instantâneo fora da projeção a zera.
+   */
+  versaoDoMundo: number;
 }
 
 /**
@@ -449,6 +454,21 @@ export function restMatch(ro: CleanRoLike, vigias: Vigia[], inst: Float64Array):
     }
   }
   return k === inst.length;
+}
+
+/**
+ * A conferência do RS1 (`ServerAccess.check`, SPEC-0425) com a versão do mundo do candidato
+ * (SPEC-0682): `restMatch` sempre; a matriz só é comparada quando a versão não é a adotada, e a
+ * versão é adotada quando a matriz bate (a da foto do host daquele `cull`).
+ */
+export function checkRecording(
+  g: Pick<Gravacao, 'ro' | 'vigias' | 'instantaneo' | 'versaoDoMundo'>, version: number,
+): CheckResult {
+  if (!restMatch(g.ro, g.vigias, g.instantaneo)) return CheckResult.Dirty;
+  if (version > NO_VERSION && g.versaoDoMundo === version) return CheckResult.Clean;
+  if (!matrixMatch(g.ro, g.instantaneo)) return CheckResult.Moved;
+  g.versaoDoMundo = version;
+  return CheckResult.Clean;
 }
 
 /** Instantâneo como lista (gravação e testes). `false` = algo não conferível. */

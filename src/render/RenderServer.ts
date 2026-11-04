@@ -25,6 +25,7 @@ import { debug } from '../core/debug.js';
 import { queryFlagRequested } from './TransformOnlyRefresh.js';
 import {
   buildServerInstance,
+  NO_VERSION,
   keyBelow,
   sameShared,
   sharedHandles,
@@ -143,10 +144,11 @@ export class RenderServer {
   /**
    * Native renderer only (objects the RS1 never takes: instanced, skinned, transparent); `true` = the
    * native renderer took it into the list. Same sort key as the three's lists (with `renderOrder`).
+   * `version`: world matrix version of the candidate (SPEC-0682), -1 = unknown.
    */
-  offerNative(object: Object3D, material: unknown, geometry: unknown, clipping: unknown, z: number): boolean {
+  offerNative(object: Object3D, material: unknown, geometry: unknown, clipping: unknown, z: number, version = NO_VERSION): boolean {
     if (this._native === null) return false;
-    const entry = this._native.take(object, material, geometry);
+    const entry = this._native.take(object, material, geometry, version);
     if (entry === null) return false;
     this._push(null, entry, object, material, clipping, z, false);
     return true;
@@ -170,11 +172,12 @@ export class RenderServer {
 
   /**
    * `true` = the candidate went to the server list (not to the RenderList).
-   * `z` is the sort depth the three would use (from the native projection).
+   * `z` is the sort depth the three would use (from the native projection); `version` the
+   * world matrix version of the candidate (SPEC-0682), -1 = unknown.
    */
-  offer(object: Object3D, material: unknown, geometry: unknown, clipping: unknown, z: number): boolean {
+  offer(object: Object3D, material: unknown, geometry: unknown, clipping: unknown, z: number, version = NO_VERSION): boolean {
     this.stats.offered++;
-    if (this.offerNative(object, material, geometry, clipping, z)) return true;
+    if (this.offerNative(object, material, geometry, clipping, z, version)) return true;
     const g = this._access.recordingOf(object, this._owner);
     if (
       g === undefined || g.material !== material || g.ro.geometry !== geometry || g.clipping !== clipping ||
@@ -185,7 +188,7 @@ export class RenderServer {
     let inst = g.server;
     if (inst === undefined) inst = g.server = buildServerInstance(g, this._access.batch);
     if (inst === null) return false;
-    const r = this._access.check(g);
+    const r = this._access.check(g, version);
     if (r === CheckResult.Dirty) {
       this.stats.refused++;
       return false;
