@@ -1,0 +1,503 @@
+import { Box3, Sphere, type Object3D, type Ray } from 'three';
+import { rayMayHitSphere } from './instancedRaycast.js';
+
+/**
+ * Índice "só o que está perto" das malhas de colisão (SPEC-0302/0323/0328): esferas e caixas em mundo numa
+ * grade XZ. Separado de `nearMeshes.ts` (SPEC-0674); `nearMeshes.ts` o reexporta.
+ */
+
+interface WithSphere {
+  isInstancedMesh?: boolean;
+  boundingSphere?: Sphere | null;
+  computeBoundingSphere?(): void;
+  geometry?: { boundingSphere: Sphere | null; computeBoundingSphere(): void };
+  matrixWorld: Object3D['matrixWorld'];
+}
+
+/**
+ * Folga (m) pro que se move entre duas varreduras (a cada `COLLECT_INTERVAL_MS`):
+ * um carro a 17 m/s anda ~4,3 m em 250 ms. Mais rápido que isso pode ser ignorado
+ * por até uma varredura.
+ */
+export const MOVING_MARGIN = 5;
+
+/**
+ * Folga (m) da malha que NÃO se mexeu desde a varredura anterior (SPEC-0323): cobre
+ * quem começa a andar logo depois dela (parado → 2 m/s² por 250 ms anda 6 cm).
+ */
+export const STATIC_MARGIN = 0.5;
+
+/** Diferença (m) de centro/raio da esfera abaixo da qual a malha conta como parada. */
+export const MOVE_EPSILON = 1e-3;
+
+const tmp = new Sphere();
+
+/** Esfera envolvente de `o` em mundo, ou `null` se não tiver geometria. */
+export function worldSphere(o: Object3D, out: Sphere = tmp): Sphere | null {
+  const m = o as unknown as WithSphere;
+  if (m.isInstancedMesh) {
+    if (!m.boundingSphere) m.computeBoundingSphere?.();
+    return m.boundingSphere ? out.copy(m.boundingSphere).applyMatrix4(m.matrixWorld) : null;
+  }
+  const g = m.geometry;
+  if (!g) return null;
+  if (!g.boundingSphere) g.computeBoundingSphere();
+  return g.boundingSphere ? out.copy(g.boundingSphere).applyMatrix4(m.matrixWorld) : null;
+}
+
+/** Floats por malha no índice: esfera (x, y, z, raio) e caixa (min x/y/z, máx x/y/z), já com a folga. */
+const STRIDE = 10;
+/**
+ * Números guardados da varredura anterior: esfera (centro + raio), caixa em mundo SEM folga,
+ * giro/escala (3×3) de quando a caixa foi feita, a `matrixWorld` inteira e a esfera local
+ * da varredura anterior (SPEC-0328: as duas últimas dizem "nada mudou, reaproveite").
+ */
+const PREV_STRIDE = 39;
+/** Onde começa o 3×3 da `matrixWorld` no registro guardado. */
+const PREV_BASIS = 10;
+/** Onde começa a `matrixWorld` (16) da varredura anterior. */
+const PREV_MATRIX = 19;
+/** Onde começa a esfera LOCAL (centro + raio) da varredura anterior. */
+const PREV_LOCAL = 35;
+const MATRIX_SIZE = 16;
+/** Índices do 3×3 (giro/escala) nos `elements` de uma Matrix4. */
+const BASIS = [0, 1, 2, 4, 5, 6, 8, 9, 10] as const;
+/** Deslocamento da caixa dentro do registro de cada malha. */
+const BOX = 4;
+
+interface WithBox {
+  isInstancedMesh?: boolean;
+  boundingBox?: Box3 | null;
+  computeBoundingBox?(): void;
+  geometry?: { boundingBox: Box3 | null; computeBoundingBox(): void };
+  matrixWorld: Object3D['matrixWorld'];
+}
+
+const tmpBox = new Box3();
+
+/** Lado (m) da célula da grade XZ do índice (SPEC-0328). */
+export const GRID_CELL = 8;
+/** Malha cuja caixa cobre mais células que isto fica na lista "larga" (testada sempre). */
+const MAX_CELLS_PER_MESH = 16;
+/** Consulta que cobre mais células que isto varre a lista inteira (mais barato que a grade). */
+const MAX_QUERY_CELLS = 64;
+/** Chave da célula: `ix * GRID_KEY_SPAN + iz` (|iz| < metade do vão: ~260 km com células de 8 m). */
+const GRID_KEY_SPAN = 65536;
+
+/** Caixa alinhada aos eixos de `o` em mundo, ou `null` se não tiver geometria (SPEC-0323). */
+export function worldBox(o: Object3D, out: Box3 = tmpBox): Box3 | null {
+  const m = o as unknown as WithBox;
+  if (m.isInstancedMesh) {
+    if (!m.boundingBox) m.computeBoundingBox?.();
+    return m.boundingBox ? out.copy(m.boundingBox).applyMatrix4(m.matrixWorld) : null;
+  }
+  const g = m.geometry;
+  if (!g) return null;
+  if (!g.boundingBox) g.computeBoundingBox();
+  return g.boundingBox ? out.copy(g.boundingBox).applyMatrix4(m.matrixWorld) : null;
+}
+
+/**
+ * Malhas + esferas e caixas em mundo, calculadas em {@link NearMeshIndex.rebuild} (junto
+ * da varredura da cena). Uma malha só passa se a esfera E a caixa alcançam — as duas
+ * contêm a geometria, e a caixa é bem mais justa em malha comprida (rua, fileira de
+ * casas, célula fundida — SPEC-0323). Malha sem geometria entra sempre (não arrisca).
+ */
+export class NearMeshIndex {
+  private meshes: readonly Object3D[] = [];
+  private data = new Float32Array(0);
+  /** Esfera e caixa em mundo de cada malha na varredura anterior (SPEC-0323). */
+  private previous = new WeakMap<Object3D, Float64Array>();
+  /** Grade XZ (SPEC-0328): célula → índices das malhas cuja caixa (com folga) a toca. */
+  private readonly cells = new Map<number, number[]>();
+  /** Malhas grandes demais pra grade (rua, célula fundida, sem geometria): entram em toda consulta. */
+  private readonly wide: number[] = [];
+  /** Índices da consulta atual e a marca de "já pego" por malha (sem repetir quem está em 2 células). */
+  private readonly picked: number[] = [];
+  private stamp = new Uint32Array(0);
+  private query = 0;
+
+  /** Cópia da lista do rebuild anterior: o chamador reescreve a dele no lugar (SPEC-0674). */
+  private readonly last: Object3D[] = [];
+  /** Registro de cada slot (o mesmo objeto do `previous`): com a lista igual, sem `WeakMap` (SPEC-0674). */
+  private readonly slotPrev: (Float64Array | undefined)[] = [];
+  /** 1 = o slot é recalculado no próximo rebuild (está com a folga de movimento, ou não tem esfera). */
+  private recheck = new Uint8Array(0);
+  /** Os números do slot da vez, antes de irem pro `data`. */
+  private readonly row = new Float64Array(STRIDE);
+
+  /**
+   * Recalcula esferas e caixas (a caixa só de quem se mexeu: a da parada vem guardada —
+   * transformar os 8 cantos de ~900 malhas a cada varredura custava mais que o ganho) de `meshes` (chamar quando a lista é remontada). A folga
+   * é {@link MOVING_MARGIN} pra quem se mexeu desde o rebuild anterior (ou é nova) e
+   * {@link STATIC_MARGIN} pra quem ficou parada (SPEC-0323). Com a MESMA lista do rebuild anterior,
+   * só o slot sujo é recalculado e só ele muda de célula na grade (SPEC-0674) — os números são os mesmos.
+   */
+  rebuild(meshes: readonly Object3D[]): void {
+    const same = this.sameAsLast(meshes);
+    this.meshes = meshes;
+    if (same) {
+      this.rebuildDirty();
+      return;
+    }
+    if (this.data.length < meshes.length * STRIDE) this.data = new Float32Array(meshes.length * STRIDE);
+    if (this.recheck.length < meshes.length) this.recheck = new Uint8Array(meshes.length);
+    this.last.length = this.slotPrev.length = meshes.length;
+    const d = this.data;
+    const row = this.row;
+    for (let i = 0; i < meshes.length; i++) {
+      const mesh = meshes[i]!;
+      this.last[i] = mesh;
+      this.fill(i, mesh, this.previous.get(mesh));
+      const k = i * STRIDE;
+      for (let j = 0; j < STRIDE; j++) d[k + j] = row[j]!;
+    }
+    this.buildGrid();
+  }
+
+  /** Mesmos objetos, na mesma ordem, do rebuild anterior? */
+  private sameAsLast(meshes: readonly Object3D[]): boolean {
+    if (meshes.length !== this.last.length) return false;
+    for (let i = 0; i < meshes.length; i++) if (meshes[i] !== this.last[i]) return false;
+    return true;
+  }
+
+  /** A lista não mudou: pula a parada que já está com a folga estática e reposiciona só o slot que mudou. */
+  private rebuildDirty(): void {
+    const d = this.data;
+    const row = this.row;
+    for (let i = 0; i < this.meshes.length; i++) {
+      const mesh = this.meshes[i]!;
+      const prev = this.slotPrev[i];
+      if (this.recheck[i] === 0 && prev && unchanged(prev, mesh)) continue; // o caminho completo escreveria o mesmo
+      this.fill(i, mesh, prev);
+      const k = i * STRIDE;
+      let diff = false;
+      for (let j = 0; j < STRIDE && !diff; j++) diff = d[k + j] !== Math.fround(row[j]!);
+      if (!diff) continue;
+      this.unplace(i);
+      for (let j = 0; j < STRIDE; j++) d[k + j] = row[j]!;
+      this.place(i);
+    }
+  }
+
+  /** Os números do slot `i` em `row` (o cálculo da SPEC-0323/0328) e se ele volta a ser conferido. */
+  private fill(i: number, mesh: Object3D, prev: Float64Array | undefined): void {
+    const row = this.row;
+    this.slotPrev[i] = prev;
+    if (prev && unchanged(prev, mesh)) {
+      // parada desde a anterior (mesma matrixWorld e esfera local): reaproveita tudo (SPEC-0328)
+      writeRow(row, prev[0]!, prev[1]!, prev[2]!, prev[3]!, prev, STATIC_MARGIN);
+      this.recheck[i] = 0;
+      return;
+    }
+    const s = worldSphere(mesh);
+    if (!s) {
+      row[0] = row[1] = row[2] = 0;
+      row[3] = Infinity;
+      row[BOX] = row[BOX + 1] = row[BOX + 2] = -Infinity;
+      row[BOX + 3] = row[BOX + 4] = row[BOX + 5] = Infinity;
+      this.recheck[i] = 1;
+      return;
+    }
+    const moved =
+      !prev ||
+      Math.abs(prev[0]! - s.center.x) > MOVE_EPSILON ||
+      Math.abs(prev[1]! - s.center.y) > MOVE_EPSILON ||
+      Math.abs(prev[2]! - s.center.z) > MOVE_EPSILON ||
+      Math.abs(prev[3]! - s.radius) > MOVE_EPSILON ||
+      turned(prev, mesh.matrixWorld.elements);
+    if (!prev) this.previous.set(mesh, (prev = new Float64Array(PREV_STRIDE)));
+    this.slotPrev[i] = prev;
+    remember(prev, mesh);
+    prev[0] = s.center.x;
+    prev[1] = s.center.y;
+    prev[2] = s.center.z;
+    prev[3] = s.radius;
+    if (moved) {
+      // giro em volta do centro não muda a esfera, mas muda a caixa: o 3×3 entra no teste
+      const e = mesh.matrixWorld.elements;
+      for (let j = 0; j < BASIS.length; j++) prev[PREV_BASIS + j] = e[BASIS[j]]!;
+      const wb = worldBox(mesh);
+      if (wb) {
+        prev[BOX] = wb.min.x;
+        prev[BOX + 1] = wb.min.y;
+        prev[BOX + 2] = wb.min.z;
+        prev[BOX + 3] = wb.max.x;
+        prev[BOX + 4] = wb.max.y;
+        prev[BOX + 5] = wb.max.z;
+      } else {
+        prev[BOX] = prev[BOX + 1] = prev[BOX + 2] = -Infinity;
+        prev[BOX + 3] = prev[BOX + 4] = prev[BOX + 5] = Infinity;
+      }
+    }
+    writeRow(row, s.center.x, s.center.y, s.center.z, s.radius, prev, moved ? MOVING_MARGIN : STATIC_MARGIN);
+    this.recheck[i] = moved ? 1 : 0;
+  }
+
+  /** Distribui as malhas nas células da grade pela caixa (com folga) — SPEC-0328. */
+  private buildGrid(): void {
+    for (const [key, list] of this.cells) {
+      if (list.length === 0) this.cells.delete(key); // vazia desde a anterior: some (o mapa não cresce sem fim)
+      else list.length = 0;
+    }
+    this.wide.length = 0;
+    if (this.stamp.length < this.meshes.length) this.stamp = new Uint32Array(this.meshes.length);
+    for (let i = 0; i < this.meshes.length; i++) this.place(i);
+  }
+
+  /** Põe o slot `i` nas células que a caixa dele (já no `data`) toca, ou na lista larga. */
+  private place(i: number): void {
+    const b = i * STRIDE + BOX;
+    const d = this.data;
+    const ix0 = Math.floor(d[b]! / GRID_CELL);
+    const iz0 = Math.floor(d[b + 2]! / GRID_CELL);
+    const ix1 = Math.floor(d[b + 3]! / GRID_CELL);
+    const iz1 = Math.floor(d[b + 5]! / GRID_CELL);
+    if (!((ix1 - ix0 + 1) * (iz1 - iz0 + 1) <= MAX_CELLS_PER_MESH)) {
+      this.wide.push(i); // também pega NaN/Infinity (sem geometria)
+      return;
+    }
+    for (let ix = ix0; ix <= ix1; ix++) {
+      for (let iz = iz0; iz <= iz1; iz++) {
+        const key = ix * GRID_KEY_SPAN + iz;
+        let list = this.cells.get(key);
+        if (!list) this.cells.set(key, (list = []));
+        list.push(i);
+      }
+    }
+  }
+
+  /** Tira o slot `i` das células da caixa dele (ainda a antiga, no `data`); a ordem na célula não importa. */
+  private unplace(i: number): void {
+    const b = i * STRIDE + BOX;
+    const d = this.data;
+    const ix0 = Math.floor(d[b]! / GRID_CELL);
+    const iz0 = Math.floor(d[b + 2]! / GRID_CELL);
+    const ix1 = Math.floor(d[b + 3]! / GRID_CELL);
+    const iz1 = Math.floor(d[b + 5]! / GRID_CELL);
+    if (!((ix1 - ix0 + 1) * (iz1 - iz0 + 1) <= MAX_CELLS_PER_MESH)) {
+      swapRemove(this.wide, i);
+      return;
+    }
+    for (let ix = ix0; ix <= ix1; ix++) {
+      for (let iz = iz0; iz <= iz1; iz++) {
+        const key = ix * GRID_KEY_SPAN + iz;
+        const list = this.cells.get(key);
+        if (!list) continue;
+        swapRemove(list, i);
+        if (list.length === 0) this.cells.delete(key);
+      }
+    }
+  }
+
+  /**
+   * Índices (crescentes, sem repetição) das malhas nas células que o retângulo XZ toca,
+   * mais as largas; `null` = retângulo grande/infinito, varra todas (SPEC-0328).
+   */
+  private gather(minX: number, minZ: number, maxX: number, maxZ: number): number[] | null {
+    const ix0 = Math.floor(minX / GRID_CELL);
+    const iz0 = Math.floor(minZ / GRID_CELL);
+    const ix1 = Math.floor(maxX / GRID_CELL);
+    const iz1 = Math.floor(maxZ / GRID_CELL);
+    if (!((ix1 - ix0 + 1) * (iz1 - iz0 + 1) <= MAX_QUERY_CELLS)) return null;
+    const out = this.picked;
+    out.length = 0;
+    const stamp = this.stamp;
+    const q = ++this.query;
+    for (let j = 0; j < this.wide.length; j++) {
+      stamp[this.wide[j]!] = q;
+      out.push(this.wide[j]!);
+    }
+    for (let ix = ix0; ix <= ix1; ix++) {
+      for (let iz = iz0; iz <= iz1; iz++) {
+        const list = this.cells.get(ix * GRID_KEY_SPAN + iz);
+        if (!list) continue;
+        for (let j = 0; j < list.length; j++) {
+          const i = list[j]!;
+          if (stamp[i] === q) continue;
+          stamp[i] = q;
+          out.push(i);
+        }
+      }
+    }
+    // ordem da lista original: desempate igual ao da varredura linear
+    for (let a = 1; a < out.length; a++) {
+      const v = out[a]!;
+      let c = a;
+      while (c > 0 && out[c - 1]! > v) {
+        out[c] = out[c - 1]!;
+        c--;
+      }
+      out[c] = v;
+    }
+    return out;
+  }
+
+  /**
+   * As que alcançam (x, z) no plano até `reach` — raios verticais e paredes curtas.
+   * `minY`/`maxY` (SPEC-0307): descarta a malha toda abaixo de `minY` ou toda acima
+   * de `maxY` (ex.: o raio de chão, que só desce, passa `maxY` = altura da origem).
+   */
+  nearXZ(x: number, z: number, reach: number, out: Object3D[], minY = -Infinity, maxY = Infinity): Object3D[] {
+    out.length = 0;
+    const d = this.data;
+    const list = this.gather(x - reach, z - reach, x + reach, z + reach);
+    const n = list ? list.length : this.meshes.length;
+    for (let q = 0; q < n; q++) {
+      const i = list ? list[q]! : q;
+      const k = i * STRIDE;
+      const b = k + BOX;
+      if (d[b + 1]! > maxY || d[b + 4]! < minY) continue;
+      if (d[b]! > x + reach || d[b + 3]! < x - reach || d[b + 2]! > z + reach || d[b + 5]! < z - reach) continue;
+      const r = d[k + 3]! + reach;
+      const dx = d[k]! - x;
+      const dz = d[k + 2]! - z;
+      if (dx * dx + dz * dz <= r * r) out.push(this.meshes[i]!);
+    }
+    return out;
+  }
+
+  /**
+   * As que o SEGMENTO do raio cruza (SPEC-0328): caixa em mundo (com a folga) por slab
+   * e esfera. Grava em `entry[i]` a distância em que o raio entra na caixa de `out[i]`
+   * e devolve as duas listas ORDENADAS por ela (mais perto primeiro). Conservador: todo
+   * acerto possível entre `near` e `far` está nas candidatas, e acontece a uma distância
+   * >= a entrada da caixa dela. `ray.direction` tem que ser unitária (como no Raycaster).
+   * `pad` (SPEC-0646) infla caixa e esfera: a lista vale pra todo raio paralelo a até
+   * `pad` deste (o feixe do braço da câmera).
+   */
+  alongRay(ray: Ray, near: number, far: number, out: Object3D[], entry: number[], pad = 0): Object3D[] {
+    out.length = 0;
+    entry.length = 0;
+    const d = this.data;
+    const o = ray.origin;
+    const v = ray.direction;
+    // retângulo XZ do segmento (direção 0 no eixo: fica na origem, mesmo com `far` infinito)
+    const ex = v.x === 0 ? o.x : o.x + v.x * far;
+    const ez = v.z === 0 ? o.z : o.z + v.z * far;
+    const list = this.gather(Math.min(o.x, ex) - pad, Math.min(o.z, ez) - pad, Math.max(o.x, ex) + pad, Math.max(o.z, ez) + pad);
+    const n = list ? list.length : this.meshes.length;
+    for (let q = 0; q < n; q++) {
+      const i = list ? list[q]! : q;
+      const k = i * STRIDE;
+      const b = k + BOX;
+      let t0 = near;
+      let t1 = far;
+      // slab por eixo; direção 0 = só confere se a origem está dentro da faixa
+      if (v.x === 0) {
+        if (o.x < d[b]! - pad || o.x > d[b + 3]! + pad) continue;
+      } else {
+        const ta = (d[b]! - pad - o.x) / v.x;
+        const tb = (d[b + 3]! + pad - o.x) / v.x;
+        t0 = Math.max(t0, Math.min(ta, tb));
+        t1 = Math.min(t1, Math.max(ta, tb));
+        if (t0 > t1) continue;
+      }
+      if (v.y === 0) {
+        if (o.y < d[b + 1]! - pad || o.y > d[b + 4]! + pad) continue;
+      } else {
+        const ta = (d[b + 1]! - pad - o.y) / v.y;
+        const tb = (d[b + 4]! + pad - o.y) / v.y;
+        t0 = Math.max(t0, Math.min(ta, tb));
+        t1 = Math.min(t1, Math.max(ta, tb));
+        if (t0 > t1) continue;
+      }
+      if (v.z === 0) {
+        if (o.z < d[b + 2]! - pad || o.z > d[b + 5]! + pad) continue;
+      } else {
+        const ta = (d[b + 2]! - pad - o.z) / v.z;
+        const tb = (d[b + 5]! + pad - o.z) / v.z;
+        t0 = Math.max(t0, Math.min(ta, tb));
+        t1 = Math.min(t1, Math.max(ta, tb));
+        if (t0 > t1) continue;
+      }
+      if (!rayMayHitSphere(o, v, far, d[k]!, d[k + 1]!, d[k + 2]!, d[k + 3]! + pad)) continue;
+      // inserção ordenada: a lista é curta (o que o raio cruza)
+      let j = out.length;
+      out.push(this.meshes[i]!);
+      entry.push(t0);
+      while (j > 0 && entry[j - 1]! > t0) {
+        out[j] = out[j - 1]!;
+        entry[j] = entry[j - 1]!;
+        j--;
+      }
+      out[j] = this.meshes[i]!;
+      entry[j] = t0;
+    }
+    return out;
+  }
+}
+
+/** Os 10 números do slot (esfera + caixa, com a folga `margin`) a partir da esfera e da caixa guardada. */
+function writeRow(row: Float64Array, cx: number, cy: number, cz: number, r: number, prev: Float64Array, margin: number): void {
+  row[0] = cx;
+  row[1] = cy;
+  row[2] = cz;
+  row[3] = r + margin;
+  row[BOX] = prev[BOX]! - margin;
+  row[BOX + 1] = prev[BOX + 1]! - margin;
+  row[BOX + 2] = prev[BOX + 2]! - margin;
+  row[BOX + 3] = prev[BOX + 3]! + margin;
+  row[BOX + 4] = prev[BOX + 4]! + margin;
+  row[BOX + 5] = prev[BOX + 5]! + margin;
+}
+
+/** Tira `v` de `list` trocando pelo último (sem `splice`, que aloca o array dos removidos). */
+function swapRemove(list: number[], v: number): void {
+  const at = list.indexOf(v);
+  if (at < 0) return;
+  list[at] = list[list.length - 1]!;
+  list.length--;
+}
+
+/** Esfera local de onde sai a esfera em mundo (a mesma que `worldSphere` usa). */
+function localSphere(o: Object3D): Sphere | null | undefined {
+  const m = o as unknown as WithSphere;
+  return m.isInstancedMesh ? m.boundingSphere : m.geometry?.boundingSphere;
+}
+
+/**
+ * As 16 posições da `matrixWorld` iguais às guardadas (exato; translação primeiro). Desenrolado: no
+ * interpretador (Hermes sem JIT) o laço custava o dobro, e roda por malha a cada varredura (SPEC-0674).
+ */
+function sameMatrix(p: Float64Array, e: ArrayLike<number>): boolean {
+  const m = PREV_MATRIX;
+  return (
+    p[m + 12] === e[12] && p[m + 13] === e[13] && p[m + 14] === e[14] &&
+    p[m] === e[0] && p[m + 1] === e[1] && p[m + 2] === e[2] && p[m + 3] === e[3] &&
+    p[m + 4] === e[4] && p[m + 5] === e[5] && p[m + 6] === e[6] && p[m + 7] === e[7] &&
+    p[m + 8] === e[8] && p[m + 9] === e[9] && p[m + 10] === e[10] && p[m + 11] === e[11] &&
+    p[m + 15] === e[15]
+  );
+}
+
+/** Nada que define a esfera/caixa em mundo mudou desde a varredura anterior (comparação exata)? */
+function unchanged(prev: Float64Array, o: Object3D): boolean {
+  if (!sameMatrix(prev, o.matrixWorld.elements)) return false;
+  const ls = localSphere(o);
+  if (!ls) return false;
+  return (
+    prev[PREV_LOCAL] === ls.center.x &&
+    prev[PREV_LOCAL + 1] === ls.center.y &&
+    prev[PREV_LOCAL + 2] === ls.center.z &&
+    prev[PREV_LOCAL + 3] === ls.radius
+  );
+}
+
+/** Guarda a `matrixWorld` e a esfera local desta varredura (depois do `worldSphere`, que a calcula). */
+function remember(prev: Float64Array, o: Object3D): void {
+  const e = o.matrixWorld.elements;
+  for (let j = 0; j < MATRIX_SIZE; j++) prev[PREV_MATRIX + j] = e[j]!;
+  const ls = localSphere(o)!;
+  prev[PREV_LOCAL] = ls.center.x;
+  prev[PREV_LOCAL + 1] = ls.center.y;
+  prev[PREV_LOCAL + 2] = ls.center.z;
+  prev[PREV_LOCAL + 3] = ls.radius;
+}
+
+/** O 3×3 (giro/escala) mudou desde o guardado? */
+function turned(prev: Float64Array, e: ArrayLike<number>): boolean {
+  for (let j = 0; j < BASIS.length; j++) if (Math.abs(prev[PREV_BASIS + j]! - e[BASIS[j]]!) > MOVE_EPSILON) return true;
+  return false;
+}
