@@ -1,3 +1,33 @@
+## [0.101.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.101.0...v0.101.1) (2026-11-04)
+
+
+### Bug Fixes
+
+* **ecs:** cache da consulta do tick em WeakMap e descrição fiel da esfera da Vegetation (SPEC-0675, ADR-0676) ([deef88a](https://github.com/BuuhV-Projects/cortex-game-engine/commit/deef88a9fe2b8dc5e4fbc5c89ef71a780cced923))
+* **mirror:** linha igual refaz o mundo escrito pelo JS e nó oculto confere a geometria ao reaparecer (SPEC-0678) ([402486e](https://github.com/BuuhV-Projects/cortex-game-engine/commit/402486e76c85110225df6a93afaeee9f2e41b576))
+* **perf:** escrita inteira da Vegetation com faixa explícita, updateWorldMatrix suja o slot e escala 0 não é tronco (SPEC-0675/0678) ([44595c1](https://github.com/BuuhV-Projects/cortex-game-engine/commit/44595c1af288bd4dcc13dad27b9cfe6ca3979536)), closes [#46](https://github.com/BuuhV-Projects/cortex-game-engine/issues/46)
+* **scene:** 1º quadro do CSM escalonado redesenha todas; esfera da vegetação ignora escala 0 (SPEC-0675) ([8ac41ac](https://github.com/BuuhV-Projects/cortex-game-engine/commit/8ac41aceedebc07215b5cb885e2d4fb858a8bf4e))
+
+
+### Performance Improvements
+
+* **ecs:** consulta do tick em cache por versão de estrutura, sem iterador nem array por quadro (SPEC-0675, ADR-0676) ([bc380e3](https://github.com/BuuhV-Projects/cortex-game-engine/commit/bc380e39b9a182e96a99e685ee6276b1ec02c932))
+* **ecs:** perfil por sistema usa o profileLabel, legível no bundle minificado (SPEC-0671) ([be9759d](https://github.com/BuuhV-Projects/cortex-game-engine/commit/be9759d29ea7a271d82675a0392adecfa81720ac))
+* **ecs:** TerrainCollisionSystem só reclassifica quando a estrutura do ECS muda (SPEC-0674) ([dce5eb2](https://github.com/BuuhV-Projects/cortex-game-engine/commit/dce5eb21f897453b4ae479c0aa71890c18d81965))
+* **ecs:** World.tick reusa a query de cada sistema enquanto a estrutura não muda (SPEC-0673) ([7990fec](https://github.com/BuuhV-Projects/cortex-game-engine/commit/7990fec752bb6940c6e5d97916e9c972552ef5a2))
+* **editor:** throttle da ponte segura a descrição do estado, não só o envio (SPEC-0671) ([49d28d6](https://github.com/BuuhV-Projects/cortex-game-engine/commit/49d28d6aa4a63b851162836723d1c523c724e1f6))
+* **mirror:** rotação reescrita com o mesmo valor não suja o slot e a varredura pula nó oculto e sem material (SPEC-0678) ([50c4ff7](https://github.com/BuuhV-Projects/cortex-game-engine/commit/50c4ff746bede6f082b79994ee2dc82e0560bcd6))
+* **native:** estado da roda lido uma vez por roda por quadro no shim do Rapier (SPEC-0671) ([971b349](https://github.com/BuuhV-Projects/cortex-game-engine/commit/971b3498b1cc0e0c621dfaa6fc04e20a1d1f2738))
+* **native:** linha de sync igual não recompõe nem propaga a subárvore no espelho (SPEC-0678) ([af5b217](https://github.com/BuuhV-Projects/cortex-game-engine/commit/af5b217cec4a0d467cd4abf5cbd59c83365d988f))
+* **physics:** advance calcula os subpassos num scratch, sem alocar por quadro (SPEC-0671) ([f3f0894](https://github.com/BuuhV-Projects/cortex-game-engine/commit/f3f0894355944d40f8cf5f30740edb426d898cbd))
+* **physics:** coleta do personagem em pilha explícita, troncos por versão e em grade (SPEC-0674) ([ee49f1b](https://github.com/BuuhV-Projects/cortex-game-engine/commit/ee49f1b185f38be8be6b92b9ad4af5c92ed7ff17))
+* **physics:** rebuild do NearMeshIndex só recalcula e reposiciona o slot sujo (SPEC-0674) ([e2d76f1](https://github.com/BuuhV-Projects/cortex-game-engine/commit/e2d76f16718dd0431d4041e01e64ff3ce82523f4))
+* **physics:** teto de 3 subpassos por quadro no advance, com o excedente descartado (SPEC-0671, ADR-0672) ([73bce40](https://github.com/BuuhV-Projects/cortex-game-engine/commit/73bce40d24798bf0dd9b643d24c3fb226299b088))
+* **scene:** CSM escalonado no caminho three e queries de medição lidas só quando mudam (SPEC-0675) ([f840df7](https://github.com/BuuhV-Projects/cortex-game-engine/commit/f840df7333121f868d258022e849b6a124b0f380))
+* **scene:** Vegetation escreve a matriz e a esfera direto, com escrita sem cópia e por faixa (SPEC-0675) ([f1e67ff](https://github.com/BuuhV-Projects/cortex-game-engine/commit/f1e67ff82309cca5ee30216a1221b8747fdaad00))
+* **systems:** Object3DSyncSystem só escreve no Object3D o que difere do transform (SPEC-0673) ([a929edb](https://github.com/BuuhV-Projects/cortex-game-engine/commit/a929edb05843c36fe016515842abb04cde5210b6))
+* **ui:** camada de UI do host limpa no passe do render, sem submit avulso, e mede na seção uiLayer (SPEC-0679) ([1afe276](https://github.com/BuuhV-Projects/cortex-game-engine/commit/1afe276b01fbdfee8d6acafbf3b8d1bda77520a7))
+
 # [0.101.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.100.1...v0.101.0) (2026-11-03)
 
 
