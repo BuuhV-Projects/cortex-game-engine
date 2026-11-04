@@ -50,6 +50,7 @@ const _cp = new Vector3();
  * })
  */
 export class SkidMarkSystem extends System {
+  override readonly profileLabel = 'SkidMarkSystem';
   static override requiredComponents = [];
   override priority = 31;
 

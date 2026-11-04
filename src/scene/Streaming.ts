@@ -70,6 +70,7 @@ function dist2(ax: number, az: number, bx: number, bz: number): number {
 }
 
 export class CellStreamingSystem extends System {
+  override readonly profileLabel = 'CellStreamingSystem';
   /** Roda ANTES de tudo — o render vê a residência já atualizada neste frame. */
   override priority = -1000;
 

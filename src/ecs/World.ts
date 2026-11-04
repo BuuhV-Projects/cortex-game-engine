@@ -192,13 +192,15 @@ export class World {
       }
       const started = performance.now();
       system.update(entities, deltaTime);
-      const name = system.constructor.name;
+      // `profileLabel` primeiro: no bundle minificado o nome da classe é ilegível (SPEC-0671).
+      const name = system.profileLabel ?? system.constructor.name;
       profile.set(name, (profile.get(name) ?? 0) + (performance.now() - started));
     }
   }
 
   /**
-   * Liga o perfil por sistema e devolve o mapa vivo (nome → ms acumulados).
+   * Liga o perfil por sistema e devolve o mapa vivo (nome → ms acumulados). O nome
+   * é o `profileLabel` do sistema, ou o nome da classe quando ele não declara um.
    * Desligado por default: cronometrar todo sistema todo frame é instrumento,
    * não comportamento de produção.
    */

@@ -116,6 +116,7 @@ const _wq = new Quaternion();
  * sobrescreveria a chase cam ao dirigir). As rodas raycastam no WASM (sem custo de CPU).
  */
 export class VehicleControlSystem extends System {
+  override readonly profileLabel = 'VehicleControlSystem';
   static override requiredComponents = [];
   override priority = 30;
 

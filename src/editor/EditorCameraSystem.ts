@@ -33,6 +33,7 @@ export interface EditorPose {
  * simulação.
  */
 export class EditorCameraSystem extends System {
+  override readonly profileLabel = 'EditorCameraSystem';
   static override requiredComponents = [TransformComponent, EditableTargetComponent];
   override priority = 25;
 

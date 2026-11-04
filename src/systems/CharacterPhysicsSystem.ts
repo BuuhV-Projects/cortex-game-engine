@@ -182,6 +182,7 @@ export function resolveWallPush(
  * world.addSystem(new CharacterPhysicsSystem())
  */
 export class CharacterPhysicsSystem extends System {
+  override readonly profileLabel = 'CharacterPhysicsSystem';
   static override requiredComponents = [TransformComponent, CharacterBodyComponent];
   override priority = 5;
 

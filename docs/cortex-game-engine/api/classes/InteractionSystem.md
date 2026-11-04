@@ -25,7 +25,7 @@ então funciona com o player a pé ou o carro (o "player do momento"). `priority
 
 > **new InteractionSystem**(`options`, `gamepad?`, `input?`): `InteractionSystem`
 
-Defined in: [src/systems/InteractionSystem.ts:48](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/InteractionSystem.ts#L48)
+Defined in: [src/systems/InteractionSystem.ts:49](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/InteractionSystem.ts#L49)
 
 #### Parameters
 
@@ -72,7 +72,7 @@ nem remove) ao trocar de cena. Para overlays que sobrevivem à troca de fase
 
 > `optional` **pauseWhen?**: () => `boolean`
 
-Defined in: [src/ecs/System.ts:73](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L73)
+Defined in: [src/ecs/System.ts:80](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L80)
 
 Predicado opcional de PAUSA: se definido e retornar `true` num tick, o
 `World` pula o `update` deste sistema nesse frame. Usado, por ex., pra pausar
@@ -93,7 +93,7 @@ a gameplay (física/input) enquanto o editor está ativo
 
 > **priority**: `number` = `25`
 
-Defined in: [src/systems/InteractionSystem.ts:43](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/InteractionSystem.ts#L43)
+Defined in: [src/systems/InteractionSystem.ts:44](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/InteractionSystem.ts#L44)
 
 Prioridade de execução deste sistema.
 
@@ -106,11 +106,27 @@ Sistemas com valores menores executam antes. Padrão: `0`.
 
 ***
 
+### profileLabel
+
+> `readonly` **profileLabel**: `"InteractionSystem"` = `'InteractionSystem'`
+
+Defined in: [src/systems/InteractionSystem.ts:42](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/InteractionSystem.ts#L42)
+
+Nome do sistema no perfil por sistema (`World.enableSystemProfile`, SPEC-0236).
+Sem ele o perfil usa `constructor.name`, que no bundle minificado vira `fx`,
+`DBe`… — por isso todo sistema da engine declara o seu (SPEC-0671).
+
+#### Overrides
+
+[`System`](System.md).[`profileLabel`](System.md#profilelabel)
+
+***
+
 ### requiredComponents
 
 > `static` **requiredComponents**: (*typeof* [`TransformComponent`](TransformComponent.md) \| *typeof* [`InteractionComponent`](InteractionComponent.md))[]
 
-Defined in: [src/systems/InteractionSystem.ts:42](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/InteractionSystem.ts#L42)
+Defined in: [src/systems/InteractionSystem.ts:43](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/InteractionSystem.ts#L43)
 
 Construtores dos componentes que este sistema requer.
 
@@ -138,7 +154,7 @@ static requiredComponents = [TransformComponent, VelocityComponent];
 
 > **get** **active**(): [`InteractionComponent`](InteractionComponent.md) \| `null`
 
-Defined in: [src/systems/InteractionSystem.ts:58](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/InteractionSystem.ts#L58)
+Defined in: [src/systems/InteractionSystem.ts:59](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/InteractionSystem.ts#L59)
 
 Interação atualmente em alcance (ou `null`) — útil pra HUD externa.
 
@@ -152,7 +168,7 @@ Interação atualmente em alcance (ou `null`) — útil pra HUD externa.
 
 > **dispose**(): `void`
 
-Defined in: [src/ecs/System.ts:90](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L90)
+Defined in: [src/ecs/System.ts:97](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L97)
 
 Libera recursos ao remover o sistema — chamado por [World.clear](World.md#clear) (e
 pode ser chamado manualmente). No-op por padrão; sobrescreva pra liberar
@@ -173,7 +189,7 @@ handles nativos que o GC não coleta sozinho (ex.: o mundo do Rapier em
 
 > **update**(`entities`): `void`
 
-Defined in: [src/systems/InteractionSystem.ts:62](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/InteractionSystem.ts#L62)
+Defined in: [src/systems/InteractionSystem.ts:63](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/InteractionSystem.ts#L63)
 
 Executa a lógica do sistema para o frame/passo atual.
 

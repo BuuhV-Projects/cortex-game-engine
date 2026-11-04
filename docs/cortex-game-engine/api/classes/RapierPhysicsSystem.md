@@ -34,7 +34,7 @@ world.addSystem(new RapierPhysicsSystem(physics))
 
 > **new RapierPhysicsSystem**(`physics`): `RapierPhysicsSystem`
 
-Defined in: [src/systems/RapierPhysicsSystem.ts:36](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/RapierPhysicsSystem.ts#L36)
+Defined in: [src/systems/RapierPhysicsSystem.ts:37](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/RapierPhysicsSystem.ts#L37)
 
 #### Parameters
 
@@ -73,7 +73,7 @@ nem remove) ao trocar de cena. Para overlays que sobrevivem à troca de fase
 
 > `optional` **pauseWhen?**: () => `boolean`
 
-Defined in: [src/ecs/System.ts:73](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L73)
+Defined in: [src/ecs/System.ts:80](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L80)
 
 Predicado opcional de PAUSA: se definido e retornar `true` num tick, o
 `World` pula o `update` deste sistema nesse frame. Usado, por ex., pra pausar
@@ -94,7 +94,7 @@ a gameplay (física/input) enquanto o editor está ativo
 
 > **priority**: `number` = `8`
 
-Defined in: [src/systems/RapierPhysicsSystem.ts:27](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/RapierPhysicsSystem.ts#L27)
+Defined in: [src/systems/RapierPhysicsSystem.ts:28](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/RapierPhysicsSystem.ts#L28)
 
 Prioridade de execução deste sistema.
 
@@ -107,11 +107,27 @@ Sistemas com valores menores executam antes. Padrão: `0`.
 
 ***
 
+### profileLabel
+
+> `readonly` **profileLabel**: `"RapierPhysicsSystem"` = `'RapierPhysicsSystem'`
+
+Defined in: [src/systems/RapierPhysicsSystem.ts:26](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/RapierPhysicsSystem.ts#L26)
+
+Nome do sistema no perfil por sistema (`World.enableSystemProfile`, SPEC-0236).
+Sem ele o perfil usa `constructor.name`, que no bundle minificado vira `fx`,
+`DBe`… — por isso todo sistema da engine declara o seu (SPEC-0671).
+
+#### Overrides
+
+[`System`](System.md).[`profileLabel`](System.md#profilelabel)
+
+***
+
 ### requiredComponents
 
 > `static` **requiredComponents**: (*typeof* [`Object3DComponent`](Object3DComponent.md) \| *typeof* [`RapierBodyComponent`](RapierBodyComponent.md))[]
 
-Defined in: [src/systems/RapierPhysicsSystem.ts:26](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/RapierPhysicsSystem.ts#L26)
+Defined in: [src/systems/RapierPhysicsSystem.ts:27](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/RapierPhysicsSystem.ts#L27)
 
 Construtores dos componentes que este sistema requer.
 
@@ -137,7 +153,7 @@ static requiredComponents = [TransformComponent, VelocityComponent];
 
 > **dispose**(): `void`
 
-Defined in: [src/systems/RapierPhysicsSystem.ts:41](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/RapierPhysicsSystem.ts#L41)
+Defined in: [src/systems/RapierPhysicsSystem.ts:42](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/RapierPhysicsSystem.ts#L42)
 
 Libera o mundo do Rapier (handle nativo/WASM) — chamado no World.clear.
 
@@ -155,7 +171,7 @@ Libera o mundo do Rapier (handle nativo/WASM) — chamado no World.clear.
 
 > **update**(`entities`, `deltaTime`): `void`
 
-Defined in: [src/systems/RapierPhysicsSystem.ts:45](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/RapierPhysicsSystem.ts#L45)
+Defined in: [src/systems/RapierPhysicsSystem.ts:46](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/RapierPhysicsSystem.ts#L46)
 
 Executa a lógica do sistema para o frame/passo atual.
 

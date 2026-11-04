@@ -17,6 +17,7 @@ import { PlatformerBodyComponent } from '../components/PlatformerBodyComponent.j
  * `PlatformerBodyComponent.moveDir`/`jumpQueued` em vez deste sistema.
  */
 export class PlatformerInputSystem extends System {
+  override readonly profileLabel = 'PlatformerInputSystem';
   static override requiredComponents = [PlatformerBodyComponent];
   override priority = 1;
 

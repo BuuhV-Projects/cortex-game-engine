@@ -90,7 +90,7 @@ nem remove) ao trocar de cena. Para overlays que sobrevivem à troca de fase
 
 > `optional` **pauseWhen?**: () => `boolean`
 
-Defined in: [src/ecs/System.ts:73](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L73)
+Defined in: [src/ecs/System.ts:80](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L80)
 
 Predicado opcional de PAUSA: se definido e retornar `true` num tick, o
 `World` pula o `update` deste sistema nesse frame. Usado, por ex., pra pausar
@@ -116,11 +116,23 @@ Sistemas com valores menores executam antes. Padrão: `0`.
 
 ***
 
+### profileLabel?
+
+> `readonly` `optional` **profileLabel?**: `string`
+
+Defined in: [src/ecs/System.ts:58](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L58)
+
+Nome do sistema no perfil por sistema (`World.enableSystemProfile`, SPEC-0236).
+Sem ele o perfil usa `constructor.name`, que no bundle minificado vira `fx`,
+`DBe`… — por isso todo sistema da engine declara o seu (SPEC-0671).
+
+***
+
 ### requiredComponents
 
 > `static` **requiredComponents**: `ComponentClass`[] = `[]`
 
-Defined in: [src/ecs/System.ts:65](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L65)
+Defined in: [src/ecs/System.ts:72](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L72)
 
 Construtores dos componentes que este sistema requer.
 
@@ -142,7 +154,7 @@ static requiredComponents = [TransformComponent, VelocityComponent];
 
 > **dispose**(): `void`
 
-Defined in: [src/ecs/System.ts:90](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L90)
+Defined in: [src/ecs/System.ts:97](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L97)
 
 Libera recursos ao remover o sistema — chamado por [World.clear](World.md#clear) (e
 pode ser chamado manualmente). No-op por padrão; sobrescreva pra liberar
@@ -159,7 +171,7 @@ handles nativos que o GC não coleta sozinho (ex.: o mundo do Rapier em
 
 > `abstract` **update**(`entities`, `deltaTime`): `void`
 
-Defined in: [src/ecs/System.ts:82](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L82)
+Defined in: [src/ecs/System.ts:89](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L89)
 
 Executa a lógica do sistema para o frame/passo atual.
 

@@ -62,6 +62,7 @@ const PITCH_LIMIT = Math.PI / 2 - 0.08;
  * game.world.addSystem(fps)
  */
 export class FirstPersonCameraSystem extends System {
+  override readonly profileLabel = 'FirstPersonCameraSystem';
   static override requiredComponents = [TransformComponent, CharacterBodyComponent];
   override priority = 20;
 

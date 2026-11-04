@@ -134,9 +134,10 @@ A entity a ser destruída.
 
 > **enableSystemProfile**(): `Map`\<`string`, `number`\>
 
-Defined in: [src/ecs/World.ts:205](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/World.ts#L205)
+Defined in: [src/ecs/World.ts:207](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/World.ts#L207)
 
-Liga o perfil por sistema e devolve o mapa vivo (nome → ms acumulados).
+Liga o perfil por sistema e devolve o mapa vivo (nome → ms acumulados). O nome
+é o `profileLabel` do sistema, ou o nome da classe quando ele não declara um.
 Desligado por default: cronometrar todo sistema todo frame é instrumento,
 não comportamento de produção.
 
@@ -235,7 +236,7 @@ Construtor da classe do system a remover.
 
 > **resetSystemProfile**(): `void`
 
-Defined in: [src/ecs/World.ts:211](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/World.ts#L211)
+Defined in: [src/ecs/World.ts:213](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/World.ts#L213)
 
 Zera os acumuladores do perfil por sistema, mantendo-o ligado.
 

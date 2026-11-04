@@ -6,15 +6,26 @@
 
 # Class: RapierPhysics
 
-Defined in: [src/physics/RapierPhysics.ts:262](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L262)
+Defined in: [src/physics/RapierPhysics.ts:197](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L197)
 
 ## Properties
+
+### maxStepsPerFrame
+
+> **maxStepsPerFrame**: `number` = `MAX_PHYSICS_STEPS`
+
+Defined in: [src/physics/RapierPhysics.ts:204](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L204)
+
+Máximo de passos por [RapierPhysics.advance](#advance) (ADR-0672; default [MAX\_PHYSICS\_STEPS](../variables/MAX_PHYSICS_STEPS.md)). Suba para a
+física acompanhar o relógio em quadros lentos, ao custo de mais passos justo quando o quadro pesa.
+
+***
 
 ### world
 
 > `readonly` **world**: `World`
 
-Defined in: [src/physics/RapierPhysics.ts:264](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L264)
+Defined in: [src/physics/RapierPhysics.ts:199](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L199)
 
 Mundo do Rapier (uso avançado).
 
@@ -24,7 +35,7 @@ Mundo do Rapier (uso avançado).
 
 > **addBody**(`spec`): [`PhysicsBody`](../interfaces/PhysicsBody.md)
 
-Defined in: [src/physics/RapierPhysics.ts:277](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L277)
+Defined in: [src/physics/RapierPhysics.ts:217](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L217)
 
 Adiciona um corpo (RigidBody + Collider) e devolve seu handle.
 
@@ -44,7 +55,7 @@ Adiciona um corpo (RigidBody + Collider) e devolve seu handle.
 
 > **addTrimesh**(`vertices`, `indices`, `position?`): `void`
 
-Defined in: [src/physics/RapierPhysics.ts:329](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L329)
+Defined in: [src/physics/RapierPhysics.ts:270](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L270)
 
 Adiciona um collider **trimesh estático** (fixo) — pro chão/terreno/road.
 
@@ -72,7 +83,7 @@ Adiciona um collider **trimesh estático** (fixo) — pro chão/terreno/road.
 
 > **addTrimeshFromObject**(`obj`): `void`
 
-Defined in: [src/physics/RapierPhysics.ts:342](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L342)
+Defined in: [src/physics/RapierPhysics.ts:283](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L283)
 
 Cria colliders trimesh estáticos a partir das MALHAS de um `Object3D` (geometria
 em espaço-mundo) — ex.: terreno + road viram chão pras rodas do [Vehicle](Vehicle.md)
@@ -94,10 +105,12 @@ raycastarem. Uma malha = um collider.
 
 > **advance**(`dt`, `beforeEachStep?`): `number`
 
-Defined in: [src/physics/RapierPhysics.ts:313](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L313)
+Defined in: [src/physics/RapierPhysics.ts:255](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L255)
 
 Avança a simulação `dt` segundos em passos IGUAIS de no máximo
-[MAX\_PHYSICS\_STEP\_S](../variables/MAX_PHYSICS_STEP_S.md) (semi-fixed timestep — ADR-0257).
+[MAX\_PHYSICS\_STEP\_S](../variables/MAX_PHYSICS_STEP_S.md) (semi-fixed timestep — ADR-0257), com no máximo
+[RapierPhysics.maxStepsPerFrame](#maxstepsperframe) passos (ADR-0672): acima disso o
+excedente é descartado e a simulação anda menos que `dt`.
 
 Use no lugar de um `step()` por frame: aquele anda sempre 1/60 s, então a
 velocidade da física passa a depender do fps (a 75 fps, 25% rápida demais).
@@ -137,7 +150,7 @@ physics.advance(dtSeconds, (step) => vehicle.update(step));
 
 > **createVehicle**(`spec`): [`Vehicle`](Vehicle.md)
 
-Defined in: [src/physics/RapierPhysics.ts:372](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L372)
+Defined in: [src/physics/RapierPhysics.ts:293](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L293)
 
 Cria um **veículo raycast** (ADR-0081) — chassi (rigid body dinâmico + box) +
 rodas por raycast com suspensão/esterço/motor/freio, via o
@@ -160,7 +173,7 @@ rodas por raycast com suspensão/esterço/motor/freio, via o
 
 > **dispose**(): `void`
 
-Defined in: [src/physics/RapierPhysics.ts:419](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L419)
+Defined in: [src/physics/RapierPhysics.ts:301](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L301)
 
 Libera o mundo (memória WASM).
 
@@ -174,7 +187,7 @@ Libera o mundo (memória WASM).
 
 > **step**(): `void`
 
-Defined in: [src/physics/RapierPhysics.ts:292](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L292)
+Defined in: [src/physics/RapierPhysics.ts:232](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L232)
 
 Avança a simulação um passo (timestep fixo configurado no mundo).
 
@@ -188,7 +201,7 @@ Avança a simulação um passo (timestep fixo configurado no mundo).
 
 > `static` **create**(`gravity?`): `Promise`\<`RapierPhysics`\>
 
-Defined in: [src/physics/RapierPhysics.ts:271](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L271)
+Defined in: [src/physics/RapierPhysics.ts:211](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L211)
 
 Inicializa o Rapier (async) e cria o mundo com a gravidade dada.
 

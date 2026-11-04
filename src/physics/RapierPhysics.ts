@@ -1,10 +1,20 @@
 ﻿// Tipos do Rapier (apagados na compilação) — pra anotar sem trazer o valor.
 // É o default export (namespace), que serve como qualificador de tipo (RAPIER.World).
 import type RAPIER from '@dimforge/rapier3d-compat';
-import { Vector3, Quaternion, type Object3D, type Mesh } from 'three';
-
-/** Tipo do namespace-valor do Rapier (o default export), carregado sob demanda. */
-type RapierApi = (typeof import('@dimforge/rapier3d-compat'))['default'];
+import type { Vector3, Quaternion, Object3D } from 'three';
+import { physicsSubsteps, type PhysicsSubsteps } from './physicsSubsteps.js';
+import { RapierBody, colliderDescFor, forEachWorldTrimesh, loadRapier, rapier } from './rapierRuntime.js';
+import {
+  DEFAULT_SUSPENSION_REST_LENGTH,
+  DEFAULT_SUSPENSION_STIFFNESS,
+  applyBoxMassProperties,
+  applyUprightCorrection,
+  applyWheelTuning,
+  axisSpeed,
+  buildVehicleController,
+  writeWheelLocalPose,
+  writeWheelWorldPose,
+} from './vehicleInternals.js';
 
 /**
  * **Integração com o Rapier** (motor de física dinâmica em WASM; TDR-0002). Wrapper
@@ -164,104 +174,35 @@ export interface PhysicsBody {
    */
   reset(position?: Vec3Like, rotation?: QuatLike): void;
 }
-
-let api: RapierApi | null = null;
-let initPromise: Promise<void> | null = null;
 /**
  * Carrega o Rapier (dynamic import do chunk `rapier.js`) e inicializa o WASM —
  * uma vez só, idempotente. Chamado por {@link RapierPhysics.create}.
  */
 export function initRapier(): Promise<void> {
-  return (initPromise ??= (async () => {
-    const mod = await import('@dimforge/rapier3d-compat');
-    api = mod.default;
-    await api.init();
-  })());
+  return loadRapier();
 }
-/** O namespace do Rapier já inicializado (erro se chamado antes do init). */
+
 /**
  * Maior passo de {@link RapierPhysics.advance} (s). Acima disso a suspensão
  * raycast perde estabilidade; é também o timestep padrão do Rapier, então a
  * 60 fps nada muda.
  */
 export const MAX_PHYSICS_STEP_S = 1 / 60;
-/** Folga do arredondamento: dt exatamente 1/60 não pode virar dois passos. */
-const STEP_ROUNDING_EPSILON = 1e-6;
-
-/** Suspensão padrão do {@link RapierPhysics.createVehicle}. */
-const DEFAULT_SUSPENSION_REST_LENGTH = 0.3;
-const DEFAULT_SUSPENSION_STIFFNESS = 24;
 /**
- * Correção de rolagem (rad/s por passo) abaixo da qual o {@link Vehicle.keepUpright}
- * não escreve nada: ~0,0006°/s, invisível, e o caso comum de carro nivelado.
+ * Teto padrão de passos por quadro de {@link RapierPhysics.advance} (ADR-0672). Acima de 3 × 1/60 s (50 ms) o
+ * excedente é descartado: a física desacelera em vez de gastar mais passos num quadro lento.
  */
-const UPRIGHT_MIN_CORRECTION = 1e-5;
-
-/** Índices 0..n−1 de uma malha sem índice, num laço (sem array JS intermediário). */
-function sequentialIndices(n: number): Uint32Array {
-  const out = new Uint32Array(n);
-  for (let i = 0; i < n; i++) out[i] = i;
-  return out;
-}
-
-function rapier(): RapierApi {
-  if (!api) throw new Error('Rapier não inicializado — use RapierPhysics.create() (await).');
-  return api;
-}
-
-class RapierBody implements PhysicsBody {
-  constructor(private readonly body: RAPIER.RigidBody) {}
-  translation(): Vec3Like {
-    const t = this.body.translation();
-    return { x: t.x, y: t.y, z: t.z };
-  }
-  rotation(): QuatLike {
-    const r = this.body.rotation();
-    return { x: r.x, y: r.y, z: r.z, w: r.w };
-  }
-  linvel(): Vec3Like {
-    const v = this.body.linvel();
-    return { x: v.x, y: v.y, z: v.z };
-  }
-  angvel(): Vec3Like {
-    const v = this.body.angvel();
-    return { x: v.x, y: v.y, z: v.z };
-  }
-  setNextKinematicTranslation(p: Vec3Like): void {
-    this.body.setNextKinematicTranslation(p);
-  }
-  applyImpulse(impulse: Vec3Like, wakeUp = true): void {
-    this.body.applyImpulse(impulse, wakeUp);
-  }
-  applyTorqueImpulse(torque: Vec3Like, wakeUp = true): void {
-    this.body.applyTorqueImpulse(torque, wakeUp);
-  }
-  setLinvel(velocity: Vec3Like, wakeUp = true): void {
-    this.body.setLinvel(velocity, wakeUp);
-  }
-  setAngvel(velocity: Vec3Like, wakeUp = true): void {
-    this.body.setAngvel(velocity, wakeUp);
-  }
-  setTranslation(p: Vec3Like, wakeUp = true): void {
-    this.body.setTranslation(p, wakeUp);
-  }
-  setRotation(q: QuatLike, wakeUp = true): void {
-    this.body.setRotation(q, wakeUp);
-  }
-  wakeUp(): void {
-    this.body.wakeUp();
-  }
-  reset(position?: Vec3Like, rotation?: QuatLike): void {
-    this.body.setLinvel({ x: 0, y: 0, z: 0 }, true);
-    this.body.setAngvel({ x: 0, y: 0, z: 0 }, true);
-    if (position) this.body.setTranslation(position, true);
-    if (rotation) this.body.setRotation(rotation, true);
-  }
-}
+export const MAX_PHYSICS_STEPS = 3;
 
 export class RapierPhysics {
   /** Mundo do Rapier (uso avançado). */
   readonly world: RAPIER.World;
+  /**
+   * Máximo de passos por {@link RapierPhysics.advance} (ADR-0672; default {@link MAX_PHYSICS_STEPS}). Suba para a
+   * física acompanhar o relógio em quadros lentos, ao custo de mais passos justo quando o quadro pesa.
+   */
+  maxStepsPerFrame: number = MAX_PHYSICS_STEPS;
+  private readonly substeps: PhysicsSubsteps = { steps: 0, step: 0 }; // scratch do advance: não aloca por quadro
 
   private constructor(world: RAPIER.World) {
     this.world = world;
@@ -269,7 +210,7 @@ export class RapierPhysics {
 
   /** Inicializa o Rapier (async) e cria o mundo com a gravidade dada. */
   static async create(gravity: Vec3Like = { x: 0, y: -9.81, z: 0 }): Promise<RapierPhysics> {
-    await initRapier();
+    await loadRapier();
     return new RapierPhysics(new (rapier().World)(gravity));
   }
 
@@ -284,7 +225,7 @@ export class RapierPhysics {
           : R.RigidBodyDesc.fixed();
     if (spec.position) desc.setTranslation(spec.position.x, spec.position.y, spec.position.z);
     const body = this.world.createRigidBody(desc);
-    this.world.createCollider(this.colliderDesc(spec), body);
+    this.world.createCollider(colliderDescFor(spec), body);
     return new RapierBody(body);
   }
 
@@ -295,7 +236,9 @@ export class RapierPhysics {
 
   /**
    * Avança a simulação `dt` segundos em passos IGUAIS de no máximo
-   * {@link MAX_PHYSICS_STEP_S} (semi-fixed timestep — ADR-0257).
+   * {@link MAX_PHYSICS_STEP_S} (semi-fixed timestep — ADR-0257), com no máximo
+   * {@link RapierPhysics.maxStepsPerFrame} passos (ADR-0672): acima disso o
+   * excedente é descartado e a simulação anda menos que `dt`.
    *
    * Use no lugar de um `step()` por frame: aquele anda sempre 1/60 s, então a
    * velocidade da física passa a depender do fps (a 75 fps, 25% rápida demais).
@@ -311,9 +254,8 @@ export class RapierPhysics {
    * physics.advance(dtSeconds, (step) => vehicle.update(step));
    */
   advance(dt: number, beforeEachStep?: (step: number) => void): number {
-    if (!(dt > 0)) return 0;
-    const steps = Math.ceil(dt / MAX_PHYSICS_STEP_S - STEP_ROUNDING_EPSILON);
-    const step = dt / steps;
+    const { steps, step } = physicsSubsteps(dt, MAX_PHYSICS_STEP_S, this.maxStepsPerFrame, this.substeps);
+    if (steps === 0) return 0;
     // O mundo pode ser compartilhado com quem confia no timestep padrão.
     const previous = this.world.timestep;
     this.world.timestep = step;
@@ -340,27 +282,7 @@ export class RapierPhysics {
    * raycastarem. Uma malha = um collider.
    */
   addTrimeshFromObject(obj: Object3D): void {
-    obj.updateWorldMatrix(true, true);
-    const v = new Vector3();
-    obj.traverse((o) => {
-      const mesh = o as Mesh;
-      if (mesh.userData['cortexOutline'] === true) return;
-      if (!(mesh as { isMesh?: boolean }).isMesh || !mesh.geometry) return;
-      const pos = mesh.geometry.attributes['position'];
-      if (!pos) return;
-      const verts = new Float32Array(pos.count * 3);
-      for (let i = 0; i < pos.count; i++) {
-        v.fromBufferAttribute(pos, i).applyMatrix4(mesh.matrixWorld);
-        verts[i * 3] = v.x;
-        verts[i * 3 + 1] = v.y;
-        verts[i * 3 + 2] = v.z;
-      }
-      // Typed → typed, sem array JS no meio: no Hermes o `Uint32Array.from` montava um array do tamanho
-      // da malha e estourava o heap do export com ~1,2 M vértices de rua + terreno (SPEC-0661).
-      const idx = mesh.geometry.index;
-      const indices = idx ? new Uint32Array(idx.array) : sequentialIndices(pos.count);
-      this.addTrimesh(verts, indices);
-    });
+    forEachWorldTrimesh(obj, (verts, indices) => this.addTrimesh(verts, indices));
   }
 
   /**
@@ -370,48 +292,9 @@ export class RapierPhysics {
    * (terreno precisa ser collider), tudo no WASM (sem custo de CPU/JS). Ver {@link Vehicle}.
    */
   createVehicle(spec: VehicleSpec): Vehicle {
-    const R = rapier();
-    const he = spec.chassisHalfExtents;
-    const desc = R.RigidBodyDesc.dynamic();
-    if (spec.position) desc.setTranslation(spec.position.x, spec.position.y, spec.position.z);
-    // Pode dormir (SPEC-0655): o VehicleArcadeSystem põe o carro parado para dormir, e
-    // `setEngineForce`/`setSteering` o acordam. Com `setCanSleep(false)` o Rapier o acordava no passo seguinte.
-    const chassis = this.world.createRigidBody(desc);
-    const mass = spec.mass ?? 1200;
-    const cd = R.ColliderDesc.cuboid(he.x, he.y, he.z).setFriction(spec.chassisFriction ?? 0.4);
-    if (spec.chassisOffset) cd.setTranslation(spec.chassisOffset.x, spec.chassisOffset.y, spec.chassisOffset.z);
-    if (spec.centerOfMass) {
-      // CM EXPLÍCITO (anti-capotamento): collider sem massa; massa/CM/inércia vão por
-      // `vehicle.setMassProperties` (abaixo) — também usado pra editar massa/CM AO VIVO.
-      cd.setDensity(0);
-    } else {
-      cd.setMass(mass);
-    }
-    this.world.createCollider(cd, chassis);
-
-    const ctrl = this.world.createVehicleController(chassis);
-    ctrl.indexUpAxis = 1; // Y é "pra cima" (a API é propriedade, não método)
-
-    const restLen = spec.suspensionRestLength ?? DEFAULT_SUSPENSION_REST_LENGTH;
-    const stiffness = spec.suspensionStiffness ?? DEFAULT_SUSPENSION_STIFFNESS;
-    spec.wheels.forEach((w) => {
-      ctrl.addWheel(
-        { x: w.position.x, y: w.position.y, z: w.position.z },
-        { x: 0, y: -1, z: 0 }, // suspensão aponta pra baixo
-        { x: -1, y: 0, z: 0 }, // eixo da roda = X (→ frente = +Z)
-        restLen,
-        w.radius,
-      );
-    });
-    for (let i = 0; i < spec.wheels.length; i++) {
-      ctrl.setWheelSuspensionStiffness(i, stiffness);
-      ctrl.setWheelSuspensionCompression(i, spec.suspensionCompression ?? 0.82);
-      ctrl.setWheelSuspensionRelaxation(i, spec.suspensionRelaxation ?? 0.88);
-      ctrl.setWheelMaxSuspensionTravel(i, spec.maxSuspensionTravel ?? 0.3);
-      ctrl.setWheelFrictionSlip(i, (spec.frictionSlip ?? 2.5) * (spec.wheels[i]?.gripScale ?? 1)); // grip (×escala da roda)
-    }
-    const vehicle = new Vehicle(ctrl, chassis, spec.wheels, he, { restLength: restLen, stiffness });
-    if (spec.centerOfMass) vehicle.setMassProperties(mass, spec.centerOfMass, spec.yawInertiaScale ?? 1);
+    const { ctrl, chassis, restLength, stiffness } = buildVehicleController(rapier(), this.world, spec);
+    const vehicle = new Vehicle(ctrl, chassis, spec.wheels, spec.chassisHalfExtents, { restLength, stiffness });
+    if (spec.centerOfMass) vehicle.setMassProperties(spec.mass ?? 1200, spec.centerOfMass, spec.yawInertiaScale ?? 1);
     return vehicle;
   }
 
@@ -419,26 +302,7 @@ export class RapierPhysics {
   dispose(): void {
     this.world.free();
   }
-
-  private colliderDesc(spec: BodySpec): RAPIER.ColliderDesc {
-    const R = rapier();
-    const s = spec.shape;
-    let c: RAPIER.ColliderDesc;
-    if (s.kind === 'box') c = R.ColliderDesc.cuboid(s.halfExtents.x, s.halfExtents.y, s.halfExtents.z);
-    else if (s.kind === 'ball') c = R.ColliderDesc.ball(s.radius);
-    else c = R.ColliderDesc.capsule(s.halfHeight, s.radius);
-    if (spec.restitution != null) c.setRestitution(spec.restitution);
-    if (spec.friction != null) c.setFriction(spec.friction);
-    if (spec.isSensor) c.setSensor(true);
-    return c;
-  }
 }
-
-// Scratch reutilizável (sem alocar por frame) pro transform das rodas.
-const _wv = new Vector3();
-const _wq = new Quaternion();
-const _wq2 = new Quaternion();
-const _wax = new Vector3();
 
 /**
  * **Veículo raycast** (ADR-0081) — wrapper do `DynamicRayCastVehicleController` do
@@ -473,10 +337,7 @@ export class Vehicle {
     readonly wheels: VehicleWheelSpec[],
     /** Meia-extensão do chassi (pra recalcular a inércia ao mudar massa/CM). */
     private readonly halfExtents: Vec3Like = { x: 1, y: 0.5, z: 2 },
-    suspension: { restLength: number; stiffness: number } = {
-      restLength: DEFAULT_SUSPENSION_REST_LENGTH,
-      stiffness: DEFAULT_SUSPENSION_STIFFNESS,
-    },
+    suspension = { restLength: DEFAULT_SUSPENSION_REST_LENGTH, stiffness: DEFAULT_SUSPENSION_STIFFNESS },
   ) {
     this._suspensionRestLength = suspension.restLength;
     this._suspensionStiffness = suspension.stiffness;
@@ -502,19 +363,7 @@ export class Vehicle {
    * com `centerOfMass` (collider sem massa).
    */
   setMassProperties(mass: number, centerOfMass: Vec3Like, yawInertiaScale = 1): void {
-    const he = this.halfExtents;
-    const ix = (mass / 3) * (he.y * he.y + he.z * he.z);
-    // Inércia de GUINADA (eixo Y / curva): escalar < 1 deixa o carro mais ágil pra virar
-    // (menos "pesado"); 1 = físico. Entendimento (vira a roda mas o carro não roda) cai com isso.
-    const iy = (mass / 3) * (he.x * he.x + he.z * he.z) * yawInertiaScale;
-    const iz = (mass / 3) * (he.x * he.x + he.y * he.y);
-    this.body.setAdditionalMassProperties(
-      mass,
-      { x: centerOfMass.x, y: centerOfMass.y, z: centerOfMass.z },
-      { x: ix, y: iy, z: iz },
-      { x: 0, y: 0, z: 0, w: 1 },
-      true,
-    );
+    applyBoxMassProperties(this.body, this.halfExtents, mass, centerOfMass, yawInertiaScale);
   }
 
   /** Força do motor nas rodas com tração (N). 0 = desliga. Força ≠ 0 acorda o chassi (SPEC-0655). */
@@ -560,18 +409,12 @@ export class Vehicle {
 
   /** Velocidade ao longo do forward (+Z local) do chassi, m/s (sinal = frente/ré). */
   forwardSpeed(): number {
-    const v = this.body.linvel();
-    const r = this.body.rotation();
-    _wv.set(0, 0, 1).applyQuaternion(_wq.set(r.x, r.y, r.z, r.w));
-    return v.x * _wv.x + v.y * _wv.y + v.z * _wv.z;
+    return axisSpeed(this.body, 0, 0, 1);
   }
 
   /** Velocidade LATERAL (eixo +X local) do chassi, m/s — alto = derrapando/drift. */
   lateralSpeed(): number {
-    const v = this.body.linvel();
-    const r = this.body.rotation();
-    _wv.set(1, 0, 0).applyQuaternion(_wq.set(r.x, r.y, r.z, r.w));
-    return v.x * _wv.x + v.y * _wv.y + v.z * _wv.z;
+    return axisSpeed(this.body, 1, 0, 0);
   }
 
   /** A roda `i` está tocando o chão? */
@@ -603,35 +446,19 @@ export class Vehicle {
 
   /** Escreve em `outPos`/`outQuat` o transform MUNDIAL da roda `i` (pra a malha). */
   wheelTransform(i: number, outPos: Vector3, outQuat: Quaternion): void {
-    const t = this.body.translation();
-    const r = this.body.rotation();
-    _wq.set(r.x, r.y, r.z, r.w); // rotação do chassi
-    const cp = this.ctrl.wheelChassisConnectionPointCs(i) ?? { x: 0, y: 0, z: 0 };
-    const len = this.ctrl.wheelSuspensionLength(i) ?? 0;
-    outPos.set(cp.x, cp.y - len, cp.z).applyQuaternion(_wq); // conexão + suspensão (baixo)
-    outPos.x += t.x;
-    outPos.y += t.y;
-    outPos.z += t.z;
-    const steer = this.ctrl.wheelSteering(i) ?? 0;
-    const spin = this.ctrl.wheelRotation(i) ?? 0;
-    outQuat.copy(_wq).multiply(_wq2.setFromAxisAngle(_wax.set(0, 1, 0), steer)); // esterço (Y)
-    outQuat.multiply(_wq2.setFromAxisAngle(_wax.set(1, 0, 0), spin)); // giro (eixo X)
+    writeWheelWorldPose(this.ctrl, this.body, i, outPos, outQuat);
   }
 
   /**
    * Transform LOCAL da roda `i` (relativo ao chassi) — pra sincronizar a malha da roda
    * quando ela é **filha** do carro (que já segue o chassi). Inclui suspensão (sobe/desce),
    * esterço (gira no Y) e rolagem (gira no eixo X).
+   *
+   * `spinAngle` (rolagem) é fornecido pelo chamador — o wheelRotation do Rapier não é
+   * confiável pra visual, então o sistema acumula o giro pela velocidade do carro.
    */
   wheelLocalTransform(i: number, outPos: Vector3, outQuat: Quaternion, spinAngle = 0): void {
-    const cp = this.ctrl.wheelChassisConnectionPointCs(i) ?? { x: 0, y: 0, z: 0 };
-    const len = this.ctrl.wheelSuspensionLength(i) ?? 0;
-    outPos.set(cp.x, cp.y - len, cp.z);
-    const steer = this.ctrl.wheelSteering(i) ?? 0;
-    // `spinAngle` (rolagem) é fornecido pelo chamador — o wheelRotation do Rapier não é
-    // confiável pra visual, então o sistema acumula o giro pela velocidade do carro.
-    outQuat.setFromAxisAngle(_wax.set(0, 1, 0), steer); // esterço (Y)
-    outQuat.multiply(_wq2.setFromAxisAngle(_wax.set(1, 0, 0), spinAngle)); // giro (eixo X)
+    writeWheelLocalPose(this.ctrl, i, outPos, outQuat, spinAngle);
   }
 
   /**
@@ -649,14 +476,7 @@ export class Vehicle {
   }): void {
     if (t.suspensionStiffness != null) this._suspensionStiffness = t.suspensionStiffness;
     if (t.suspensionRestLength != null) this._suspensionRestLength = t.suspensionRestLength;
-    for (let i = 0; i < this.wheels.length; i++) {
-      if (t.suspensionStiffness != null) this.ctrl.setWheelSuspensionStiffness(i, t.suspensionStiffness);
-      if (t.suspensionRestLength != null) this.ctrl.setWheelSuspensionRestLength(i, t.suspensionRestLength);
-      if (t.suspensionCompression != null) this.ctrl.setWheelSuspensionCompression(i, t.suspensionCompression);
-      if (t.suspensionRelaxation != null) this.ctrl.setWheelSuspensionRelaxation(i, t.suspensionRelaxation);
-      if (t.maxSuspensionTravel != null) this.ctrl.setWheelMaxSuspensionTravel(i, t.maxSuspensionTravel);
-      if (t.frictionSlip != null) this.ctrl.setWheelFrictionSlip(i, t.frictionSlip * (this.wheels[i]?.gripScale ?? 1));
-    }
+    applyWheelTuning(this.ctrl, this.wheels.map((w) => w.gripScale), t);
   }
 
   /**
@@ -667,20 +487,7 @@ export class Vehicle {
    * curva/relevo. Mexe na velocidade angular (independe da inércia → fácil de tunar).
    */
   keepUpright(strength: number, damping: number, dt: number): void {
-    const r = this.body.rotation();
-    _wq.set(r.x, r.y, r.z, r.w);
-    const rightY = _wv.set(1, 0, 0).applyQuaternion(_wq).y; // 0 = de pé; ≠0 = inclinado
-    _wax.set(0, 0, 1).applyQuaternion(_wq); // forward = eixo da rolagem
-    const av = this.body.angvel();
-    const rollRate = av.x * _wax.x + av.y * _wax.y + av.z * _wax.z;
-    const delta = (-rightY * strength - rollRate * damping) * dt;
-    // Nivelado e sem rolar: nada a corrigir — sem escrita (e sem acordar o
-    // corpo, o que deixava QUALQUER veículo com estabilizador sempre acordado) (SPEC-0337).
-    if (Math.abs(delta) < UPRIGHT_MIN_CORRECTION) return;
-    this.body.setAngvel(
-      { x: av.x + _wax.x * delta, y: av.y + _wax.y * delta, z: av.z + _wax.z * delta },
-      true,
-    );
+    applyUprightCorrection(this.body, strength, damping, dt);
   }
 
   /** Reseta o chassi (respawn): zera velocidades + (opcional) posiciona/orienta. */

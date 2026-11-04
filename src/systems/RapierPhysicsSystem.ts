@@ -23,6 +23,7 @@ const _size = new Vector3();
  * world.addSystem(new RapierPhysicsSystem(physics))
  */
 export class RapierPhysicsSystem extends System {
+  override readonly profileLabel = 'RapierPhysicsSystem';
   static override requiredComponents = [Object3DComponent, RapierBodyComponent];
   override priority = 8;
 

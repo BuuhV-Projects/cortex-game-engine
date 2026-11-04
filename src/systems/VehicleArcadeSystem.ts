@@ -28,6 +28,7 @@ import { REST_STEPS, nextRestSteps } from '../physics/VehicleRest.js';
  * world.addSystem(new VehicleArcadeSystem(physics));
  */
 export class VehicleArcadeSystem extends System {
+  override readonly profileLabel = 'VehicleArcadeSystem';
   static override requiredComponents = [Object3DComponent, ArcadeVehicleComponent];
   override priority = 8;
 

@@ -25,6 +25,7 @@ const GIZMO_SIZE = 0.8;
  * overlay. **Delete** remove o ponto selecionado (mínimo 2). **Esc** ou Tab sai.
  */
 export class RoadEditSystem extends System {
+  override readonly profileLabel = 'RoadEditSystem';
   static override requiredComponents = [];
   override priority = 29; // logo após o MeshEditSystem (28)
 

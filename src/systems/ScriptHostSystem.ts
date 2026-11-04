@@ -62,6 +62,7 @@ export interface ScriptHostGates {
  * {@link ScriptHostGates} e o ADR-0184.
  */
 export class ScriptHostSystem extends System {
+  override readonly profileLabel = 'ScriptHostSystem';
   static override requiredComponents = [ScriptComponent];
   override priority = 50;
 

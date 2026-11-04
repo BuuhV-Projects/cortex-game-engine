@@ -48,6 +48,7 @@ const VERT_NDC = 0.025; // tolerância de clique (NDC) pra vértice/aresta
  * `Tab` = sair pro modo objeto; `Esc` = limpar a seleção de elemento.
  */
 export class MeshEditSystem extends System {
+  override readonly profileLabel = 'MeshEditSystem';
   static override requiredComponents = [];
   override priority = 28; // logo após o ObjectEditSystem (27)
 

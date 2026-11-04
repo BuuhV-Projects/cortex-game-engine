@@ -28,6 +28,7 @@ import { penetrate, heightfieldY, type Shape2D } from './collide2d.js';
  * `Object3DSyncSystem` (priority 10), pra a mesh refletir a posição resolvida.
  */
 export class PlatformerPhysicsSystem extends System {
+  override readonly profileLabel = 'PlatformerPhysicsSystem';
   static override requiredComponents = [TransformComponent, Collider2DComponent];
   override priority = 5;
 

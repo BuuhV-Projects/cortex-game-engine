@@ -1381,7 +1381,7 @@ a frota abaixo. Não misture os dois no mesmo `RapierPhysics`.
 | `GroundAdhesion(physics, vehicle, opts?)` | **Feel arcade**: cola altura/pitch/roll no chão sob as rodas e cancela a gravidade ao longo da pista (subida e descida respondem igual ao acelerador). Solta na borda, em parede (`minNormalY`) e em salto maior que `snapDistance`. `.grounded`, `.groundNormal`. |
 | `ArcadeVehicleComponent(vehicle, adhesion?)` | Um carro da frota (junto de `Object3DComponent` com a malha). |
 | `VehicleArcadeSystem(physics)` | Avança o mundo UMA vez por passo para todos os carros e escreve a pose na malha. Prioridade 8. |
-| `physics.advance(dt, antesDeCadaPasso?)` | Passo semi-fixo (≤ 1/60): a física anda o tempo do relógio a qualquer fps. |
+| `physics.advance(dt, antesDeCadaPasso?)` | Passo semi-fixo (≤ 1/60): a física anda o tempo do relógio a qualquer fps, até `physics.maxStepsPerFrame` passos (default 3 = 50 ms, ADR-0672); acima disso o excedente é descartado. |
 | `Route` (`sampleRoute`, `nearestRoutePoint`, `projectOnRoute`, `routeSeparation`, `crossesGate`, `sectorProgress`, `routeCurvature`, `routeFrame`) | **Progresso em rota fechada** (pontos no sentido de percurso): quem está na frente e por quantos metros, passou pela chegada, ponto a N metros, curvatura à frente (IA). Puro — volta, posição e regras são do jogo. `nearestRoutePoint(pos, rota, semente)` com a semente do frame anterior é O(1). |
 
 **Pilotos só escrevem forças.** O jogador (input) e a IA (um `ScriptBehavior`)

@@ -16,6 +16,7 @@ import { Object3DComponent } from '../components/Object3DComponent.js';
  * contra algo que tenha trocado a ordem.
  */
 export class Object3DSyncSystem extends System {
+  override readonly profileLabel = 'Object3DSyncSystem';
   static override requiredComponents = [TransformComponent, Object3DComponent];
   override priority = 10;
 

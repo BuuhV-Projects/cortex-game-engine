@@ -33,7 +33,7 @@ enxergar a transição. Os dois gates vêm nomeados no construtor — ver
 
 > **new ScriptHostSystem**(`ctx`, `gates?`): `ScriptHostSystem`
 
-Defined in: [src/systems/ScriptHostSystem.ts:77](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ScriptHostSystem.ts#L77)
+Defined in: [src/systems/ScriptHostSystem.ts:78](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ScriptHostSystem.ts#L78)
 
 #### Parameters
 
@@ -76,7 +76,7 @@ nem remove) ao trocar de cena. Para overlays que sobrevivem à troca de fase
 
 > `optional` **pauseWhen?**: () => `boolean`
 
-Defined in: [src/ecs/System.ts:73](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L73)
+Defined in: [src/ecs/System.ts:80](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L80)
 
 Predicado opcional de PAUSA: se definido e retornar `true` num tick, o
 `World` pula o `update` deste sistema nesse frame. Usado, por ex., pra pausar
@@ -97,7 +97,7 @@ a gameplay (física/input) enquanto o editor está ativo
 
 > **priority**: `number` = `50`
 
-Defined in: [src/systems/ScriptHostSystem.ts:66](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ScriptHostSystem.ts#L66)
+Defined in: [src/systems/ScriptHostSystem.ts:67](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ScriptHostSystem.ts#L67)
 
 Prioridade de execução deste sistema.
 
@@ -110,11 +110,27 @@ Sistemas com valores menores executam antes. Padrão: `0`.
 
 ***
 
+### profileLabel
+
+> `readonly` **profileLabel**: `"ScriptHostSystem"` = `'ScriptHostSystem'`
+
+Defined in: [src/systems/ScriptHostSystem.ts:65](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ScriptHostSystem.ts#L65)
+
+Nome do sistema no perfil por sistema (`World.enableSystemProfile`, SPEC-0236).
+Sem ele o perfil usa `constructor.name`, que no bundle minificado vira `fx`,
+`DBe`… — por isso todo sistema da engine declara o seu (SPEC-0671).
+
+#### Overrides
+
+[`System`](System.md).[`profileLabel`](System.md#profilelabel)
+
+***
+
 ### requiredComponents
 
 > `static` **requiredComponents**: *typeof* [`ScriptComponent`](ScriptComponent.md)[]
 
-Defined in: [src/systems/ScriptHostSystem.ts:65](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ScriptHostSystem.ts#L65)
+Defined in: [src/systems/ScriptHostSystem.ts:66](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ScriptHostSystem.ts#L66)
 
 Construtores dos componentes que este sistema requer.
 
@@ -140,7 +156,7 @@ static requiredComponents = [TransformComponent, VelocityComponent];
 
 > **dispose**(): `void`
 
-Defined in: [src/systems/ScriptHostSystem.ts:138](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ScriptHostSystem.ts#L138)
+Defined in: [src/systems/ScriptHostSystem.ts:139](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ScriptHostSystem.ts#L139)
 
 Teardown na TROCA DE FASE (`World.clear` chama) — o buraco que vazava a
 fase inteira (SPEC-0152): sem isto, o `onDestroy` dos scripts NUNCA rodava
@@ -162,7 +178,7 @@ entity → object3d → a CENA COMPLETA da fase anterior, uma por troca.
 
 > **update**(`entities`, `deltaTime`): `void`
 
-Defined in: [src/systems/ScriptHostSystem.ts:86](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ScriptHostSystem.ts#L86)
+Defined in: [src/systems/ScriptHostSystem.ts:87](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ScriptHostSystem.ts#L87)
 
 Executa a lógica do sistema para o frame/passo atual.
 

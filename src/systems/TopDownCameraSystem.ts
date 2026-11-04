@@ -44,6 +44,7 @@ const _up = new Vector3();
  * // marque o player como alvo: entity.addComponent(new FollowCameraTargetComponent())
  */
 export class TopDownCameraSystem extends System {
+  override readonly profileLabel = 'TopDownCameraSystem';
   static override requiredComponents = [TransformComponent, FollowCameraTargetComponent];
   override priority = 30; // depois da física/sync (igual à FollowCamera2D)
 

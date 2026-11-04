@@ -120,6 +120,7 @@ function approachAngle(current: number, target: number, t: number): number {
  * (SPEC-0352). Pausa no editor via `pauseWhen`.
  */
 export class ThirdPersonControlSystem extends System {
+  override readonly profileLabel = 'ThirdPersonControlSystem';
   static override requiredComponents = [TransformComponent, CharacterBodyComponent];
   override priority = 6;
 

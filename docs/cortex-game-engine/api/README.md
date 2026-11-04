@@ -375,6 +375,7 @@
 - [ISOMETRIC\_YAW](variables/ISOMETRIC_YAW.md)
 - [KART\_ANCHORS](variables/KART_ANCHORS.md)
 - [MAX\_PHYSICS\_STEP\_S](variables/MAX_PHYSICS_STEP_S.md)
+- [MAX\_PHYSICS\_STEPS](variables/MAX_PHYSICS_STEPS.md)
 - [MAX\_PITCH\_STICK\_S](variables/MAX_PITCH_STICK_S.md)
 - [MIN\_STEP\_S](variables/MIN_STEP_S.md)
 - [NATIVE\_KTX2\_FLAG](variables/NATIVE_KTX2_FLAG.md)
