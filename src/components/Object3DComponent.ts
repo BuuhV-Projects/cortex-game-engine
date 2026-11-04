@@ -7,9 +7,25 @@ import type { World } from '../ecs/World.js';
  * Liga uma entidade ao seu `Object3D` (Mesh/Group) na cena Three.js.
  *
  * O `Object3DSyncSystem` copia o `TransformComponent` da entidade para
- * `object.position` / `object.rotation.y` a cada frame.
+ * `object.position` / `object.rotation.y` a cada frame — exceto quando ela está
+ * congelada (SPEC-0684, ver {@link Object3DComponent.frozen}).
  */
 export class Object3DComponent extends Component {
+  /**
+   * Fora do laço do `Object3DSyncSystem` (SPEC-0684): o transform não é mais copiado
+   * para o objeto. O `mergeStaticScene` congela as entidades estáticas cuja arte
+   * fundiu. Não escreva direto: use `Object3DSyncSystem.freeze`/`unfreeze`, que
+   * sincronizam e avisam o sistema.
+   */
+  frozen = false;
+
+  /**
+   * `entity.componentsVersion` no momento do congelamento: o sync só confere de novo
+   * os tipos dos componentes quando ela muda.
+   * @internal
+   */
+  frozenComponentsVersion = -1;
+
   constructor(public object: THREE.Object3D) {
     super();
   }

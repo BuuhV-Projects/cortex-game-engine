@@ -27,7 +27,7 @@ const t = entity.getComponent(TransformComponent);
 
 > **new Entity**(): `Entity`
 
-Defined in: [src/ecs/Entity.ts:34](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Entity.ts#L34)
+Defined in: [src/ecs/Entity.ts:37](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Entity.ts#L37)
 
 #### Returns
 
@@ -55,13 +55,31 @@ Se `true`, `World.clear()` PRESERVA esta entidade (não a remove ao
 trocar de cena). Usado por overlays que sobrevivem à troca de fase — ex.: o
 "alvo" invisível do editor F2. Por padrão `false` (entidade da cena, morre).
 
+## Accessors
+
+### componentsVersion
+
+#### Get Signature
+
+> **get** **componentsVersion**(): `number`
+
+Defined in: [src/ecs/Entity.ts:48](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Entity.ts#L48)
+
+Versão dos componentes desta entidade: sobe a cada `addComponent` (inclusive substituição do mesmo tipo) e a
+cada `removeComponent` que remove de fato. Serve para quem guardou uma conclusão sobre os componentes (o
+congelamento do `Object3DSyncSystem`, SPEC-0684) saber, com uma comparação, se precisa conferir de novo.
+
+##### Returns
+
+`number`
+
 ## Methods
 
 ### addComponent()
 
 > **addComponent**(`component`): `this`
 
-Defined in: [src/ecs/Entity.ts:46](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Entity.ts#L46)
+Defined in: [src/ecs/Entity.ts:58](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Entity.ts#L58)
 
 Adiciona um componente à entidade.
 Se já existir um componente do mesmo tipo, ele é substituído.
@@ -84,7 +102,7 @@ Se já existir um componente do mesmo tipo, ele é substituído.
 
 > **getAllComponents**(): [`Component`](Component.md)[]
 
-Defined in: [src/ecs/Entity.ts:82](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Entity.ts#L82)
+Defined in: [src/ecs/Entity.ts:98](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Entity.ts#L98)
 
 Retorna todos os componentes da entidade como array.
 A ordem reflete a ordem de inserção no Map.
@@ -99,7 +117,7 @@ A ordem reflete a ordem de inserção no Map.
 
 > **getComponent**\<`T`\>(`ComponentClass`): `T` \| `undefined`
 
-Defined in: [src/ecs/Entity.ts:67](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Entity.ts#L67)
+Defined in: [src/ecs/Entity.ts:83](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Entity.ts#L83)
 
 Retorna o componente do tipo especificado, ou `undefined` se ausente.
 
@@ -132,7 +150,7 @@ if (t) { t.position.x = 10; }
 
 > **hasComponent**\<`T`\>(`ComponentClass`): `boolean`
 
-Defined in: [src/ecs/Entity.ts:74](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Entity.ts#L74)
+Defined in: [src/ecs/Entity.ts:90](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Entity.ts#L90)
 
 Verifica se a entidade possui um componente do tipo especificado.
 
@@ -158,7 +176,7 @@ Verifica se a entidade possui um componente do tipo especificado.
 
 > **removeComponent**\<`T`\>(`ComponentClass`): `void`
 
-Defined in: [src/ecs/Entity.ts:56](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Entity.ts#L56)
+Defined in: [src/ecs/Entity.ts:69](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Entity.ts#L69)
 
 Remove o componente do tipo especificado.
 Sem efeito se o componente não estiver presente.

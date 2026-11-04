@@ -12,9 +12,7 @@ import { BundleGroup } from 'three/webgpu';
 import { isSkinned } from '../physics/raycastAccel.js';
 import { debug } from '../core/debug.js';
 import type { World } from '../ecs/World.js';
-import { Object3DComponent } from '../components/Object3DComponent.js';
-import { ScriptComponent } from '../components/ScriptComponent.js';
-import { Collider2DComponent } from '../components/Collider2DComponent.js';
+import { dynamicRoots, freezeStaticEntities, isExcludedByUserData, isUnderAny } from './staticClassification.js';
 
 /**
  * **Merge da geometria estática da cena** (SPEC-0120) — reduz draw calls fundindo
@@ -64,57 +62,11 @@ export interface StaticMergeStats {
   groups: number;
   /** Malhas elegíveis puladas (grupo de 1, mismatch de atributos, etc.). */
   kept: number;
-}
-
-/** Componentes que NÃO tornam uma entidade dinâmica (por nome de classe). */
-const STATIC_COMPONENTS = new Set(['TransformComponent', 'Object3DComponent', 'Collider2DComponent']);
-
-/** `obj` (ou ancestral) tem flag de exclusão (editor/vegetação/terreno/dinâmico do jogo)? */
-function isExcludedByUserData(obj: Object3D): boolean {
-  let p: Object3D | null = obj;
-  while (p) {
-    const ud = p.userData as Record<string, unknown>;
-    if (ud['editorInternal'] || ud['cortexVegetation'] || ud['cortexVegetationSub'] || ud['cortexTerrain'] || ud['cortexWater'] || ud['cortexUnderlay'] || ud['cortexVehicle'] || ud['cortexDynamic']) return true;
-    if (!p.visible) return true; // invisível (mannequin oculto, toggles)
-    p = p.parent;
-  }
-  return false;
-}
-
-/** `obj` está sob (ou é) algum dos roots? */
-function isUnderAny(obj: Object3D, roots: Set<Object3D>): boolean {
-  let p: Object3D | null = obj;
-  while (p) {
-    if (roots.has(p)) return true;
-    p = p.parent;
-  }
-  return false;
-}
-
-/** Raízes de entidades dinâmicas do mundo (subárvores que o merge não toca). */
-function dynamicRoots(world: World | undefined): Set<Object3D> {
-  const roots = new Set<Object3D>();
-  if (!world) return roots;
-  for (const e of world.query(Object3DComponent)) {
-    // Collider NÃO-sólido = GATILHO (ADR-0220): objeto de jogo, não cenário — o
-    // jogo mede o bbox dele, esconde e consome (poder do kart-racer, gatilho de
-    // fase). Fundido, sobra um Group VAZIO: bbox vazio e `visible = false` sem
-    // efeito (a arte foi pra malha fundida). Fica de fora, como os de script.
-    const trigger = e.getComponent(Collider2DComponent)?.solid === false;
-    const isDynamic = trigger || e.getAllComponents().some((c) => !STATIC_COMPONENTS.has(c.type));
-    if (isDynamic) {
-      const obj = e.getComponent(Object3DComponent)?.object;
-      if (obj) roots.add(obj);
-    }
-  }
-  // Entidades de SCRIPT não têm Object3DComponent — o objeto vive DENTRO do
-  // ScriptComponent (moedas, balsas, checkpoints…). Fundi-las congelaria o
-  // comportamento (o script anima/esconde AQUELA malha).
-  for (const e of world.query(ScriptComponent)) {
-    const obj = e.getComponent(ScriptComponent)?.object;
-    if (obj) roots.add(obj);
-  }
-  return roots;
+  /**
+   * Entidades congeladas no `Object3DSyncSystem` (SPEC-0684): as estáticas que o
+   * merge tratou como cenário saem do laço do sync. `0` sem `world`.
+   */
+  frozen: number;
 }
 
 /** Assinatura de material — malhas com a MESMA assinatura podem dividir um draw. */
@@ -228,7 +180,9 @@ interface Candidate {
 }
 
 /**
- * Funde a geometria estática sob `root` (ver doc do módulo). Idempotente na
+ * Funde a geometria estática sob `root` (ver doc do módulo) e, com `world`, congela
+ * no `Object3DSyncSystem` as entidades tratadas como cenário (SPEC-0684: saem do
+ * laço do sync; `Object3DSyncSystem.unfreeze` devolve). Idempotente na
  * prática (malhas fundidas têm `cortexMergedStatic` e não são re-fundidas com
  * ganho — mas o uso esperado é UMA vez, logo após o `buildScene`).
  *
@@ -295,7 +249,7 @@ export function mergeStaticScene(
     else groups.set(c.key, [c]);
   }
 
-  const stats: StaticMergeStats = { merged: 0, groups: 0, kept: 0 };
+  const stats: StaticMergeStats = { merged: 0, groups: 0, kept: 0, frozen: 0 };
   const toRemove = new Set<Object3D>();
   for (const list of groups.values()) {
     if (list.length < 2) {
@@ -332,7 +286,11 @@ export function mergeStaticScene(
     if (!mesh.parent || !isUnderAny(mesh.parent, toRemove)) mesh.removeFromParent();
   }
 
-  debug('scene', `mergeStatic: ${stats.merged} malhas → ${stats.groups} grupos (${stats.kept} mantidas)`);
+  // 5) Congela no sync as entidades que foram tratadas como cenário (SPEC-0684):
+  //    mover o transform delas já não aparece na tela (a arte está na malha fundida).
+  if (world) stats.frozen = freezeStaticEntities(world, dynRoots);
+
+  debug('scene', `mergeStatic: ${stats.merged} malhas → ${stats.groups} grupos (${stats.kept} mantidas, ${stats.frozen} entidades congeladas)`);
   return stats;
 }
 

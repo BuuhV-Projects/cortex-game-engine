@@ -189,7 +189,7 @@ Instâncias válidas em `data` (default: todas que cabem); limitado à capacidad
 
 > **dispose**(): `void`
 
-Defined in: [src/scene/Vegetation.ts:374](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Vegetation.ts#L374)
+Defined in: [src/scene/Vegetation.ts:376](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Vegetation.ts#L376)
 
 Libera as geometrias/materiais das instâncias.
 
