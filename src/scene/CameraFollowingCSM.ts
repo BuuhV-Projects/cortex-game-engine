@@ -269,10 +269,12 @@ export class CameraFollowingCSM extends CSMShadowNode {
     const cascatas = (this as unknown as { lights?: CascataDoCsm[] }).lights;
     if (!cascatas) return;
     const intervalo = Math.max(1, Math.floor(this.farCascadeInterval));
+    // No 1º quadro nenhuma cascata tem mapa ainda: pular uma faria amostrar a textura zerada (faixa toda em sombra).
+    const primeiro = this._quadroDoEscalonamento === 0;
     const quadro = ++this._quadroDoEscalonamento;
     for (let i = 0; i < cascatas.length; i++) {
       const sombra = cascatas[i]!.shadow;
-      if (sombra) sombra.autoUpdate = todas || i === 0 || (quadro + i) % intervalo === 0;
+      if (sombra) sombra.autoUpdate = todas || primeiro || i === 0 || (quadro + i) % intervalo === 0;
     }
   }
 

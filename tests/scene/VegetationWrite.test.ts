@@ -8,6 +8,8 @@ import { Vegetation, FLOATS_PER_INSTANCE, makePlaceholderVegetation } from '../.
 
 const TREES = 64;
 const DIGITS = 4;
+/** Folga do centro da esfera de uma árvore só até a base dela (copa do placeholder a ~3 m). */
+const NEAR_TREE = 5;
 
 function lcg(seed: number): () => number {
   let s = seed >>> 0;
@@ -115,6 +117,18 @@ describe('Vegetation — escrita direta e sem cópia (SPEC-0675)', () => {
     const far = new Vector3(5000, 0, 5000);
     veg.writeInstances(2, [far.x, far.y, far.z, 0, 1]);
     for (const mesh of meshes(veg)) expect(mesh.boundingSphere!.containsPoint(far)).toBe(true);
+  });
+
+  it('o vão de escala 0 não estica a esfera até a origem', () => {
+    const veg = new Vegetation(makePlaceholderVegetation('tree'), TREES);
+    const far = new Vector3(5000, 0, 5000);
+    veg.adoptInstances(new Float32Array(TREES * FLOATS_PER_INSTANCE), 0);
+    veg.writeInstances(10, [far.x, far.y, far.z, 0, 1]);
+    for (const mesh of meshes(veg)) {
+      // Só a árvore escrita: a esfera fica nela (tronco e copa), longe da origem.
+      expect(mesh.boundingSphere!.center.distanceTo(far)).toBeLessThan(NEAR_TREE);
+      expect(mesh.boundingSphere!.containsPoint(new Vector3())).toBe(false);
+    }
   });
 
   it('faixa além do total sobe o total e o vão fica invisível', () => {

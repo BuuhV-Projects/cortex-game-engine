@@ -10,6 +10,8 @@ status: active
 src: agent
 touches:
   - src/core/NativeSceneMirror.ts
+  - src/core/sceneMirror/mirrorLayout.ts
+  - src/core/sceneMirror/MirrorSlots.ts
   - tests/core/NativeSceneMirror.test.ts
   - docs/cortex-game-engine/architecture.md
   - docs/specs/SPEC-0658-espelho-respeita-matriz-manual.md
@@ -24,7 +26,7 @@ O espelho de cena nativo manda ao C++ só posição/rotação/escala e o host re
 - Cidade gerada diferente no Hermes: rodei grade+lotes no Hermes e no V8, saída idêntica.
 - Export de outra versão do jogo: reflog mostra o mesmo commit da main no horário do export.
 - Cook do GLB mexendo geometria/caixa: o cook só converte textura.
-- InstancedMesh com capacidade > count desenhando instâncias identidade: não era o caso das peças vistas.
+- InstancedMesh com capacidade > count desenhando instâncias identidade na origem como causa deste bug: não era o caso das peças vistas (descartado só como causa; InstancedMesh, escrita por faixa e count menor que a capacidade continuam válidos).
 - mergeSubtree recentrando a malha: não recentra.
 
 ## Watch out
@@ -32,4 +34,4 @@ O espelho de cena nativo manda ao C++ só posição/rotação/escala e o host re
 - Para comparar Studio x nativo, reproduza a câmera exata pelo `cam` (x,y,z,dx,dy,dz) do perf-trace.jsonl com `game.inspect.pose` na sonda do navegador.
 - No Port Hollow eram 573 malhas avulsas (528 mil tris) sempre na frente da câmera; o resto da carga do 1 fps (5,35 M tris da cidade, SSAA 2x, 738 malhas físicas recusadas pelo C++) é outra frente.
 
-In the code: src/core/NativeSceneMirror.ts (descreverNo, _escreverLinhas, escreverTrsDaMatriz); SPEC-0658; tests/core/NativeSceneMirror.test.ts; jogo: city/build/cells.ts (Cells.add).
+In the code: src/core/sceneMirror/mirrorLayout.ts (descreverNo, escreverTrsDaMatriz) e src/core/sceneMirror/MirrorSlots.ts (_escreverLinhas), divididos do NativeSceneMirror.ts na SPEC-0668; SPEC-0658; tests/core/NativeSceneMirror.test.ts; jogo: city/build/cells.ts (Cells.add).

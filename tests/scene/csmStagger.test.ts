@@ -1,6 +1,6 @@
 /**
  * SPEC-0675 (c): CSM escalonado no caminho `three` — a cascata 0 redesenha todo quadro e as distantes se revezam a
- * cada `farCascadeInterval` quadros; troca de câmera redesenha todas.
+ * cada `farCascadeInterval` quadros; o 1º quadro e a troca de câmera redesenham todas.
  */
 import { describe, expect, it } from 'vitest';
 import { PerspectiveCamera, Scene as ThreeScene } from 'three';
@@ -50,12 +50,12 @@ describe('CSM escalonado no caminho three (SPEC-0675)', () => {
   it('default 2: a cascata 0 todo quadro, as distantes se revezam', () => {
     const { csm, frame } = csmDoPreset();
     expect(csm.farCascadeInterval).toBe(2);
-    expect(padrao(csm, frame)).toEqual(['110', '101', '110', '101', '110', '101']);
+    expect(padrao(csm, frame)).toEqual(['111', '101', '110', '101', '110', '101']);
   });
 
   it('intervalo 3: cada cascata distante a cada 3 quadros, em quadros diferentes', () => {
     const { csm, frame } = csmDoPreset({ shadowFarCascadeInterval: 3 });
-    expect(padrao(csm, frame)).toEqual(['101', '110', '100', '101', '110', '100']);
+    expect(padrao(csm, frame)).toEqual(['111', '110', '100', '101', '110', '100']);
   });
 
   it('intervalo 1: todas todo quadro (o comportamento de antes)', () => {

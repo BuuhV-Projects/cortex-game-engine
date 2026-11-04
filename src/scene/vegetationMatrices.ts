@@ -131,7 +131,9 @@ function writeOne(
   const sy = m4 * m4 + m5 * m5 + m6 * m6;
   const sz = m8 * m8 + m9 * m9 + m10 * m10;
   const big = sx > sy ? (sx > sz ? sx : sz) : sy > sz ? sy : sz;
-  unite(acc, a, cx, cy, cz, g.radius * Math.sqrt(big));
+  // Escala 0 (vão de `writeInstances` ou máscara da estrada) não desenha: a matriz nula iria para a origem e
+  // esticaria a esfera de culling até lá.
+  if (scale !== 0) unite(acc, a, cx, cy, cz, g.radius * Math.sqrt(big));
 }
 
 /**
