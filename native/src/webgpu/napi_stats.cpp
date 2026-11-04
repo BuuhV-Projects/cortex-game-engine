@@ -7,8 +7,6 @@
 
 namespace webgpu {
 
-NapiFrameStats g_napiFrame;
-
 namespace {
 
 // Último frame COMPLETO. O HUD lê __cortexNapiStats() no meio de um frame (o
@@ -26,6 +24,9 @@ napi_value jsNapiStats(napi_env env, napi_callback_info) {
   };
   put("setPipeline", g_napiLast.setPipeline);
   put("setBindGroup", g_napiLast.setBindGroup);
+  // O mesmo total separado (SPEC-0688): replay em C++ do draw batch e chamada JS.
+  put("setBindGroupReplay", g_napiLast.setBindGroupReplay);
+  put("setBindGroupJs", setBindGroupJs(g_napiLast));
   put("setVertexBuffer", g_napiLast.setVertexBuffer);
   put("setIndexBuffer", g_napiLast.setIndexBuffer);
   put("draw", g_napiLast.draw);

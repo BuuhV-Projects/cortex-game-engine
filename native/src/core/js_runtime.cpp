@@ -46,6 +46,17 @@ napi_value jsGcStats(napi_env env, napi_callback_info) {
   return out;
 }
 
+// __cortexAllocatedBytes() — o mesmo total de `allocatedMB`, em bytes e como
+// número solto (SPEC-0688): sem objeto, a leitura não aloca e dá para medir a
+// alocação de cada sistema do ECS lendo antes e depois do `update`.
+napi_value jsAllocatedBytes(napi_env env, napi_callback_info) {
+  constexpr double kBytesPerMB = 1024.0 * 1024.0;
+  const double mb = g_runtimeForGc ? cortexHermesTotalAllocatedMB(g_runtimeForGc) : 0.0;
+  napi_value out = nullptr;
+  napi_create_double(env, mb * kBytesPerMB, &out);
+  return out;
+}
+
 // __cortexHeapSnapshot(path) — telemetria temporária (SPEC-0152).
 napi_value jsHeapSnapshot(napi_env env, napi_callback_info info) {
   size_t argc = 1;
@@ -110,6 +121,7 @@ JsRuntime::JsRuntime() {
   njs::setMethod(env_, global, "__cortexGC", jsCollectGarbage);
   njs::setMethod(env_, global, "__cortexHeapSnapshot", jsHeapSnapshot);
   njs::setMethod(env_, global, "__cortexGcStats", jsGcStats);
+  njs::setMethod(env_, global, "__cortexAllocatedBytes", jsAllocatedBytes);
 }
 
 JsRuntime::~JsRuntime() {

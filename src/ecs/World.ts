@@ -2,6 +2,8 @@ import { Component } from './Component.js';
 import { Entity } from './Entity.js';
 import { System } from './System.js';
 import { bumpStructureVersion, structureVersion } from './structureVersion.js';
+import { allocatedBytesReader } from '../core/perfTrace/hostStats.js';
+import { traceCountersActive, traceSystemAllocation } from '../core/perfTrace/traceCounters.js';
 
 /**
  * Tipo utilitário para o construtor de uma subclasse de Component.
@@ -66,6 +68,8 @@ export class World {
   private _systems: System[] = [];
   /** Perfil por sistema (SPEC-0236); null = desligado, que e o default. */
   private _systemProfile: Map<string, number> | null = null;
+  /** Leitor de bytes alocados do host, ligado com o perfil (SPEC-0688); null = sem medida por sistema. */
+  private _allocReader: (() => number) | null = null;
 
   // ─── Entity Management ─────────────────────────────────────────────────────
 
@@ -249,11 +253,17 @@ export class World {
         system.update(entities, deltaTime);
         continue;
       }
+      // Bytes alocados por sistema (SPEC-0688): lidos FORA do intervalo cronometrado, só com o trace ativo.
+      const readAlloc = this._allocReader !== null && traceCountersActive() ? this._allocReader : null;
+      const allocBefore = readAlloc ? readAlloc() : 0;
       const started = performance.now();
       system.update(entities, deltaTime);
+      const elapsed = performance.now() - started;
+      const allocAfter = readAlloc ? readAlloc() : 0;
       // `profileLabel` primeiro: no bundle minificado o nome da classe é ilegível (SPEC-0671).
       const name = system.profileLabel ?? system.constructor.name;
-      profile.set(name, (profile.get(name) ?? 0) + (performance.now() - started));
+      profile.set(name, (profile.get(name) ?? 0) + elapsed);
+      if (readAlloc) traceSystemAllocation(name, allocAfter - allocBefore);
     }
   }
 
@@ -265,6 +275,7 @@ export class World {
    */
   enableSystemProfile(): Map<string, number> {
     this._systemProfile ??= new Map<string, number>();
+    this._allocReader = allocatedBytesReader(); // host com `__cortexAllocatedBytes` (SPEC-0688)
     return this._systemProfile;
   }
 
