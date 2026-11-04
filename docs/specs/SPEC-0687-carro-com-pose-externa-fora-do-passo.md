@@ -41,7 +41,10 @@ car.poseOwner = 'external';
 
 ### 2. Lista compacta no sistema
 
-O sistema guarda arrays paralelos (componente, malha) **só dos carros `'physics'`**, refeitos quando:
+O sistema guarda arrays paralelos (componente, `Object3DComponent`, última malha escrita) **só dos carros
+`'physics'`**. O `.object` do `Object3DComponent` é lido a cada quadro (uma leitura por carro): trocar a malha em
+runtime não muda a estrutura, e a malha nova recebe a pose no mesmo quadro, mesmo com o carro dormindo. A lista é
+refeita quando:
 
 - o array `entities` da query muda de identidade (o `World` devolve o mesmo array até a estrutura mudar: qualquer
   `addComponent`/`removeComponent` cria outro); ou

@@ -43,8 +43,9 @@ async function fleet(cars: number) {
     const vehicle = makeVehicle(physics, i * CAR_SPACING);
     const object = new Object3D();
     const component = new ArcadeVehicleComponent(vehicle, new GroundAdhesion(physics, vehicle));
-    world.createEntity().addComponent(new Object3DComponent(object)).addComponent(component);
-    entries.push({ vehicle, object, component });
+    const holder = new Object3DComponent(object);
+    world.createEntity().addComponent(holder).addComponent(component);
+    entries.push({ vehicle, object, component, holder });
   }
   world.addSystem(new VehicleArcadeSystem(physics));
   return { world, physics, entries };
@@ -114,6 +115,23 @@ describe('VehicleArcadeSystem com poseOwner (SPEC-0687)', () => {
     expect(object.position.x).toBeCloseTo(vehicle.chassisTranslation().x, 6);
     // e depois não copia de novo enquanto dorme
     object.position.set(MARK, MARK, MARK);
+    world.tick(FRAME_MS_30FPS);
+    expect(object.position.x).toBe(MARK);
+  });
+
+  it('malha trocada no Object3DComponent recebe a pose, mesmo com o carro dormindo', async () => {
+    const { world, entries } = await fleet(1);
+    const { vehicle, object, holder } = entries[0]!;
+    vehicle.setBrake(50);
+    for (let i = 0; i < SLEEP_TRIES && !vehicle.body.isSleeping(); i++) world.tick(FRAME_MS_30FPS);
+    expect(vehicle.body.isSleeping()).toBe(true);
+    const swapped = new Object3D();
+    holder.object = swapped; // sem mudar a estrutura
+    world.tick(FRAME_MS_30FPS);
+    expect(swapped.position.x).toBeCloseTo(vehicle.chassisTranslation().x, 6);
+    // a malha antiga deixa de ser escrita
+    object.position.set(MARK, MARK, MARK);
+    vehicle.body.wakeUp();
     world.tick(FRAME_MS_30FPS);
     expect(object.position.x).toBe(MARK);
   });

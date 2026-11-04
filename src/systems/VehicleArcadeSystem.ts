@@ -37,8 +37,12 @@ export class VehicleArcadeSystem extends System {
   static override requiredComponents = [Object3DComponent, ArcadeVehicleComponent];
   override priority = 8;
 
-  /** Carros `'physics'` da última query (SPEC-0687): componente e malha em arrays paralelos. */
+  /**
+   * Carros `'physics'` da última query (SPEC-0687) em arrays paralelos: o componente, o `Object3DComponent` (lido a
+   * cada quadro: o jogo pode trocar o `.object` sem mudar a estrutura) e a malha em que a pose foi copiada por último.
+   */
   private readonly cars: ArcadeVehicleComponent[] = [];
+  private readonly holders: Object3DComponent[] = [];
   private readonly objects: Object3D[] = [];
   /** De onde e de qual versão de dono a lista foi montada. */
   private source: Entity[] | null = null;
@@ -72,10 +76,15 @@ export class VehicleArcadeSystem extends System {
     for (let i = 0; i < cars.length; i++) {
       const car = cars[i]!;
       const body = car.vehicle.body;
+      const object = this.holders[i]!.object;
+      if (object !== this.objects[i]) {
+        // malha trocada pelo jogo: a nova recebe a pose já, mesmo com o carro dormindo
+        this.objects[i] = object;
+        car.restingPoseCopied = false;
+      }
       if (!body.isSleeping()) car.restingPoseCopied = false;
       else if (car.restingPoseCopied) continue; // a pose não muda dormindo
       else car.restingPoseCopied = true; // dormiu neste quadro: copia a pose final uma vez
-      const object = this.objects[i]!;
       const t = body.translation();
       const r = body.rotation();
       object.position.set(t.x, t.y, t.z);
@@ -90,12 +99,15 @@ export class VehicleArcadeSystem extends System {
     this.source = entities;
     this.ownerVersion = version;
     this.cars.length = 0;
+    this.holders.length = 0;
     this.objects.length = 0;
     for (const entity of entities) {
       const car = entity.getComponent(ArcadeVehicleComponent)!;
       if (car.poseOwner !== 'physics') continue;
       this.cars.push(car);
-      this.objects.push(entity.getComponent(Object3DComponent)!.object);
+      const holder = entity.getComponent(Object3DComponent)!;
+      this.holders.push(holder);
+      this.objects.push(holder.object);
     }
   }
 }
