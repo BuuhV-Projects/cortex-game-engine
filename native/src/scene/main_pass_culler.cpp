@@ -21,7 +21,8 @@ double sortDepth(const double* viewProj, double x, double y, double z) {
   return viewProj[kRowZ0] * x + viewProj[kRowZ1] * y + viewProj[kRowZ2] * z + viewProj[kRowZ3];
 }
 
-int MainPassCuller::cull(const SceneMirror& mirror, const double* planes, const double* viewProj) {
+int MainPassCuller::cull(const SceneMirror& mirror, const double* planes, const double* viewProj,
+                         uint32_t cameraLayers) {
   const size_t count = mirror.size();
   effectiveVisible_.assign(count, 0);
   candidates_.clear();
@@ -42,21 +43,29 @@ int MainPassCuller::cull(const SceneMirror& mirror, const double* planes, const 
       return kMainCullRefused;
     }
 
+    // `Layers.test` do `three` (SPEC-0686): fora das camadas da câmera o nó não
+    // entra, mas a subárvore continua (a camada não poda os filhos).
+    if ((slots_.layers(index) & cameraLayers) == 0) continue;
+
     const uint16_t flags = mirror.flags(index);
-    if (isPassThrough(flags)) {
+    // Quem o `three` corta pela esfera do OBJETO, quando o JS a mandou (SPEC-0686).
+    const ObjectSphere* own = (flags & kNodeMainJsCull) != 0 ? slots_.objectSphere(index) : nullptr;
+    if (own == nullptr && isPassThrough(flags)) {
       candidates_.push_back({index, 0});
       continue;
     }
-    if ((flags & kNodeMainCull) == 0) continue;
+    if (own == nullptr && (flags & kNodeMainCull) == 0) continue;
 
     const double* world = mirror.worldMatrix(index);
-    const Bounds& local = mirror.bounds(index);
+    const Bounds& local = own != nullptr ? own->cull : mirror.bounds(index);
     double cx = 0, cy = 0, cz = 0;
     transformPoint(world, local, &cx, &cy, &cz);
     if ((mirror.mainFrameFlags(index) & kMainFrustumCulled) != 0 &&
         !intersectsSphere(planes, cx, cy, cz, local.radius * maxScaleOnAxis(world))) {
       continue;
     }
+    // O `z` do `three` é sempre o do centro da esfera da GEOMETRIA (`_projectObject`).
+    if (own != nullptr) transformPoint(world, Bounds{own->depthX, own->depthY, own->depthZ, 0}, &cx, &cy, &cz);
     candidates_.push_back({index, sortDepth(viewProj, cx, cy, cz)});
   }
   // Só no quadro aceito (SPEC-0682): a recusa não mexe nas fotos.
