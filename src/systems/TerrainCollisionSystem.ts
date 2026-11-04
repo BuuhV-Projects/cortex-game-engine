@@ -27,6 +27,7 @@ const _v = new Vector3();
  * (priority 10), pra a mesh refletir a posição já corrigida.
  */
 export class TerrainCollisionSystem extends System {
+  override readonly profileLabel = 'TerrainCollisionSystem';
   static override requiredComponents = []; // todas as entidades — filtra dentro
   override priority = 7;
 

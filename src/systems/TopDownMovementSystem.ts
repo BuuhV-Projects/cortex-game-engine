@@ -42,6 +42,7 @@ export interface TopDownMovementOptions {
  * game.world.addSystem(move)
  */
 export class TopDownMovementSystem extends System {
+  override readonly profileLabel = 'TopDownMovementSystem';
   static override requiredComponents = [TransformComponent, CharacterBodyComponent];
   override priority = 2;
 

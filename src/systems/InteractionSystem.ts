@@ -39,6 +39,7 @@ export interface InteractionSystemOptions {
  * (depois do controle de 3ª pessoa).
  */
 export class InteractionSystem extends System {
+  override readonly profileLabel = 'InteractionSystem';
   static override requiredComponents = [InteractionComponent, TransformComponent];
   override priority = 25;
 

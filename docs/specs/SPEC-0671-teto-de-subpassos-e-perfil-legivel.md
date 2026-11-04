@@ -38,9 +38,13 @@ pelo `index-runtime.ts`, nem referenciados pelo `.d.ts` público, então o `VEND
 
 ### 2. Perfil por sistema legível
 
-`System` ganha `label?: string`; o `World.tick` acumula em `system.label ?? system.constructor.name`. Cada sistema
-da engine declara `override readonly label = '<NomeDaClasse>'` — o mesmo texto que o perfil já mostrava sem
-minificação, então quem lê o perfil (`PerfTrace`) não muda.
+`System` ganha `profileLabel?: string`; o `World.tick` acumula em `system.profileLabel ?? system.constructor.name`.
+Cada sistema da engine declara `override readonly profileLabel = '<NomeDaClasse>'` — o mesmo texto que o perfil já
+mostrava sem minificação, então quem lê o perfil (`PerfTrace`) não muda.
+
+O nome é `profileLabel`, e não `label`, porque `label` já existe em sistemas (o `MeshEditSystem` tem um método
+privado `label`) e é provável em jogos. Uma subclasse de sistema da engine herda o rótulo da base; para aparecer com
+nome próprio no perfil, declara o seu.
 
 Ficaram SEM label, por estarem em arquivo acima de 500 linhas (rotulá-los exigiria dividir o arquivo nesta mudança):
 `PhysicsSystem` (`src/core/Physics.ts`, 811 linhas, física 2D) e `ObjectEditSystem` (`src/editor/ObjectEditSystem.ts`,
@@ -75,6 +79,7 @@ risco nesta mudança.
 
 - Abaixo de 20 fps a física desacelera (ver ADR-0672); o teste do passo semi-fixo passa a esperar 3 passos para
   um quadro de 100 ms.
-- O perfil por sistema é legível no bundle minificado.
+- O perfil por sistema é legível no bundle minificado. Subclasse de sistema da engine aparece com o rótulo da base
+  até declarar o seu `profileLabel`.
 - A ponte do editor deixa de serializar todo quadro em play.
 - No nativo, ler a pose das 4 rodas custa 4 chamadas nativas por quadro em vez de 12.

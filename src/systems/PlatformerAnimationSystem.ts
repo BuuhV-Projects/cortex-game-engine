@@ -80,6 +80,7 @@ export function resolvePlayerClip(
  * a IA/editor só preenchem o mapa ação→clipe; o resto é automático.
  */
 export class PlatformerAnimationSystem extends System {
+  override readonly profileLabel = 'PlatformerAnimationSystem';
   static override requiredComponents = [PlatformerBodyComponent, Object3DComponent, PlayerAnimatorComponent];
   override priority = 35; // depois da física/sync
 

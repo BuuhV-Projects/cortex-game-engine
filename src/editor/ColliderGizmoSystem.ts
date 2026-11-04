@@ -58,6 +58,7 @@ interface Gizmo {
  * só no bundle de dev; registrado pelo `attachEditor`.
  */
 export class ColliderGizmoSystem extends System {
+  override readonly profileLabel = 'ColliderGizmoSystem';
   static override requiredComponents = [Collider2DComponent, TransformComponent];
   // Depois da física/sync (priority baixa deles), pra ler a posição já atualizada.
   override priority = 200;

@@ -29,6 +29,7 @@ export interface ThirdPersonCameraOptions {
  * (espera no máximo uma). Serve qualquer entidade, não só veículos.
  */
 export class ThirdPersonCameraSystem extends System {
+  override readonly profileLabel = 'ThirdPersonCameraSystem';
   static override requiredComponents = [TransformComponent, FollowCameraTargetComponent];
   override priority = 20;
 

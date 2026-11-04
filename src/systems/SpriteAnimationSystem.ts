@@ -9,6 +9,7 @@ import { SpriteAnimationComponent } from '../components/SpriteAnimationComponent
  * `component.play('run')` — o sistema reflete no próximo tick.
  */
 export class SpriteAnimationSystem extends System {
+  override readonly profileLabel = 'SpriteAnimationSystem';
   static override requiredComponents = [SpriteAnimationComponent];
   override priority = 15;
 

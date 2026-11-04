@@ -226,6 +226,7 @@ function updatePose(c: ProceduralDriverPoseComponent, dt: number): void {
  * parâmetros (input 30, scripts de IA 50).
  */
 export class VehicleDriverSystem extends System {
+  override readonly profileLabel = 'VehicleDriverSystem';
   // Cada componente é opcional: o filtro é por entidade, dentro do update.
   static override requiredComponents = [];
   override priority = 55;

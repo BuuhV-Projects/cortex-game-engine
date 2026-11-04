@@ -42,6 +42,9 @@ o código/JSON. Lógica de jogo vive em `Systems`/`Components` (ECS).
   senão trocar a pausa depois (menu do jogo) se perde (SPEC-0306, `VehicleControlSystem`).
 - **`World`** — guarda entidades/sistemas; `tick(dt)` roda cada sistema com as
   entidades que casam `requiredComponents`. `query(...classes)`, `hasSystem`.
+  O perfil por sistema (`enableSystemProfile`, SPEC-0236) acumula por
+  `system.profileLabel ?? constructor.name`: todo sistema da engine declara o seu
+  `profileLabel`, senão o bundle minificado mostra `fx`, `DBe`… (SPEC-0671).
 - **Ordem do frame no `Game`** (SPEC-0351): input → `onUpdate` → `world.tick` →
   `onLateUpdate` → UI → editor → render. Quem anda o personagem é System (dentro do
   `world.tick`): lógica do jogo que **lê** esse movimento (animar pelo passo, seguir um

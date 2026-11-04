@@ -51,6 +51,13 @@ export abstract class System {
   keepOnClear: boolean = false;
 
   /**
+   * Nome do sistema no perfil por sistema (`World.enableSystemProfile`, SPEC-0236).
+   * Sem ele o perfil usa `constructor.name`, que no bundle minificado vira `fx`,
+   * `DBe`… — por isso todo sistema da engine declara o seu (SPEC-0671).
+   */
+  readonly profileLabel?: string;
+
+  /**
    * Construtores dos componentes que este sistema requer.
    *
    * O `World` usa essa lista para filtrar as entidades antes de chamar `update`,

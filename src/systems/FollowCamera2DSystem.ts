@@ -62,6 +62,7 @@ export interface FollowCamera2DOptions {
  * característico do 2.5D — o `pitch` reforça a profundidade/parallax.
  */
 export class FollowCamera2DSystem extends System {
+  override readonly profileLabel = 'FollowCamera2DSystem';
   static override requiredComponents = [TransformComponent, FollowCameraTargetComponent];
   override priority = 30; // depois da física/sync
 

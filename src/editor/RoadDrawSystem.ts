@@ -31,6 +31,7 @@ const MIN_POINTS = 2;
  * cancela. Enquanto desenha, `editorState.drawingShape` fica ligado (seleção/gizmo cedem).
  */
 export class RoadDrawSystem extends System {
+  override readonly profileLabel = 'RoadDrawSystem';
   static override requiredComponents = [];
   override priority = 26;
 

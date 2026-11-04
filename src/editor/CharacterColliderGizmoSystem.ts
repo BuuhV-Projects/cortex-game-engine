@@ -33,6 +33,7 @@ interface Gizmo {
  * bundle de dev (registrado pelo `attachEditor`).
  */
 export class CharacterColliderGizmoSystem extends System {
+  override readonly profileLabel = 'CharacterColliderGizmoSystem';
   static override requiredComponents = [CharacterBodyComponent, TransformComponent];
   override priority = 200;
 

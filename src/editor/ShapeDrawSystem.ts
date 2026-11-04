@@ -81,6 +81,7 @@ export function fitModelToBox(
  * MeshEditSystem cedem o clique. `Esc` cancela. Mostra um preview translúcido.
  */
 export class ShapeDrawSystem extends System {
+  override readonly profileLabel = 'ShapeDrawSystem';
   static override requiredComponents = [];
   override priority = 26; // antes do ObjectEditSystem (27)
 

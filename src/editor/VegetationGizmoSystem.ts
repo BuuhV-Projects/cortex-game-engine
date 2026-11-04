@@ -44,6 +44,7 @@ const _corners = Array.from({ length: 8 }, () => new Vector3());
  * (F2); puramente visual (`raycast` off, `editorInternal`). Bundle de dev.
  */
 export class VegetationGizmoSystem extends System {
+  override readonly profileLabel = 'VegetationGizmoSystem';
   static override requiredComponents = [];
   override priority = 201;
 
