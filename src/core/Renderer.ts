@@ -48,6 +48,8 @@ import {
 } from '../render/RenderIdRefresh.js';
 import { installWriteBufferCensus } from '../render/WriteBufferCensus.js';
 import { UiLayerRender } from '../render/UiLayerRender.js';
+import { installSingleMatrixUpdate, type MatrixRenderer } from '../render/SingleMatrixUpdate.js';
+import { activeSceneMirror } from './NativeSceneMirror.js';
 
 // ─── Tipos públicos ────────────────────────────────────────────────────────────
 
@@ -156,6 +158,8 @@ export class Renderer {
     }
 
     this._renderer = new WebGPURenderer({ canvas, antialias, forceWebGL });
+    // Uma travessia de matriz por render de cena, não uma por passe (SPEC-0680); o espelho nativo é dono das matrizes.
+    installSingleMatrixUpdate(this._renderer as unknown as MatrixRenderer, () => activeSceneMirror()?.installed === true);
     this._uiLayer = new UiLayerRender(this._renderer);
     // Lights without shadow batched per type, Godot-style (SPEC-0435 (d′)); host only.
     if (isNativeHost() && dynamicLightingRequested(true)) installDynamicLighting(this._renderer as unknown as { lighting: unknown });
