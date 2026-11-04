@@ -29,6 +29,7 @@ import { CasterGeometryRegistry } from '../../CasterGeometryRegistry.js';
 import { ShadowAlphaClipSync } from '../../ShadowAlphaClipSync.js';
 import { parityFreezeSeconds } from '../../MainPassArm.js';
 import { queryFlagRequested } from '../../TransformOnlyRefresh.js';
+import { traceSunShadowDrawn, traceSunShadowHandedBack } from '../../../core/perfTrace/traceCounters.js';
 
 const MAT4_FLOATS = 16;
 /**
@@ -90,6 +91,8 @@ export class NativeSunShadowPass {
   private _ownsAuto = false;
   private _hooked: unknown = null;
   private _lastReport = '';
+  /** Partes da última recusa, para o perf-trace (SPEC-0688). */
+  private _refusal: { reason: string; counts?: string; offender?: Object3D } = { reason: '' };
 
   constructor(
     private readonly _host: BackendHost,
@@ -111,10 +114,12 @@ export class NativeSunShadowPass {
     if (why === null) {
       shadow.needsUpdate = false;
       this.stats.drawn++;
+      traceSunShadowDrawn();
       this._report('ASSUMIU');
     } else {
       shadow.needsUpdate = true;
       this.stats.handedBack++;
+      traceSunShadowHandedBack(this._refusal.reason, this._refusal.counts, this._refusal.offender);
       this._report(`DEVOLVEU ao three motivo=${why}`);
     }
   }
@@ -122,14 +127,14 @@ export class NativeSunShadowPass {
   /** Draws the map in C++; `null` = drawn, otherwise the refusal reason. */
   private _draw(light: SunLight, scene: Object3D): string | null {
     const mirror = activeSceneMirror();
-    if (!mirror?.installed) return 'sem-espelho';
+    if (!mirror?.installed) return this._refuse('sem-espelho');
     const shadow = light.shadow;
     const depth = shadow.map?.depthTexture;
-    if (!depth) return 'sem-mapa';
+    if (!depth) return this._refuse('sem-mapa');
     const backend = this._host.backend;
     const target = backend.get(depth)['texture'];
     // The three creates the GPU texture on its first render into the map.
-    if (!target) return 'alvo-sem-gpu';
+    if (!target) return this._refuse('alvo-sem-gpu');
     this._registry.atualizar(scene, backend, mirror.drainNewGeometries());
     this._alphaClip.sync(mirror, backend);
     shadow.updateMatrices(light);
@@ -150,9 +155,15 @@ export class NativeSunShadowPass {
       shiftClipX(m.subarray(PROJECTION_AT, VIEW_AT), dx);
     }
     const r = mirror.drawShadowPass(cam, NO_CAMERA, NO_MIN_RATIO, m, target, NODES_NOT_MEASURED, false);
-    if (!r) return 'sem-ponte';
-    if (r.refused || r.drawn === 0) return `${r.reason}${r.counts ? ` [${r.counts}]` : ''}`;
+    if (!r) return this._refuse('sem-ponte');
+    if (r.refused || r.drawn === 0) return this._refuse(r.reason, r.counts, r.offender);
     return null;
+  }
+
+  /** Guarda as partes da recusa e devolve a linha de sempre (`motivo [counts]`). */
+  private _refuse(reason: string, counts?: string, offender?: Object3D): string {
+    this._refusal = { reason, counts, offender };
+    return `${reason}${counts ? ` [${counts}]` : ''}`;
   }
 
   /** Parity mode only: after every render the map is due again, so the three arm redraws it. */

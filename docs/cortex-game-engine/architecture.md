@@ -1197,6 +1197,14 @@ trecho” sem depender de print de HUD na hora certa.
   `System.update()` (o `tests/systems/noPerFrameAllocation.test.ts` trava), e no
   Hermes `for…of` em `Map`/`Set` aloca por passo (em `Array` não) — use
   `Map.forEach` com callback fixo.
+- **Contadores de diagnóstico (SPEC-0688)** em `src/core/perfTrace/traceCounters.ts`: as fontes registram e o
+  `PerfTrace` drena por amostra. `sunShadow` (redesenhos e devoluções da sombra do sol nativa, último motivo,
+  `counts` e ofensor), `renderServer` (Δ de `fallback`/`refused`/`fbEnv` e os 5 motivos de recusa do
+  `NativeRenderer`), `uiUploads` (reenvios de texto/canvas/imagem da UI por widget, top 5) e `alloc`
+  (`windowKB` e, com `?systemProfile=1`, `sysKB` por sistema, lido pelo `World` com `__cortexAllocatedBytes`).
+  `cpu.napiBindJs`/`cpu.napiBindReplay` separam o `napiBind`. O módulo só registra com a ponte do trace: fora
+  dele, cada registro é uma comparação. O censo da cena mora em `src/core/perfTrace/sceneCensus.ts` e os
+  leitores do host em `src/core/perfTrace/hostStats.ts`; o `PerfTrace.ts` re-exporta os nomes públicos.
 
 ## 8e3. Render bundles estão DESLIGADOS — ADR-0215
 

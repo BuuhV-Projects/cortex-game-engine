@@ -33,7 +33,7 @@ class WgpuEmitter final : public render::DrawEmitter {
     wgpuRenderPassEncoderSetPipeline(pass_, static_cast<WGPURenderPipeline>(p));
   }
   void setBindGroup(uint32_t i, void* g) override {
-    webgpu::bumpSetBindGroup();
+    webgpu::bumpSetBindGroupReplay();  // total + replay (SPEC-0688)
     wgpuRenderPassEncoderSetBindGroup(pass_, i, static_cast<WGPUBindGroup>(g), 0, nullptr);
   }
   void setVertexBuffer(uint32_t slot, void* b) override {

@@ -75,6 +75,7 @@ add_executable(cortex_host
   src/webgpu/device.cpp
   src/webgpu/enums.cpp
   src/webgpu/layouts.cpp
+  src/webgpu/napi_frame_stats.cpp
   src/webgpu/napi_stats.cpp
   src/webgpu/navigator.cpp
   src/webgpu/pipeline.cpp
@@ -331,6 +332,7 @@ add_executable(cortex_host_tests
   tests/pipeline_cache_test.cpp
   tests/geometry_registry_test.cpp
   tests/gc_stats_test.cpp
+  tests/napi_frame_stats_test.cpp
   tests/pass_timing_stats_test.cpp
   tests/blit_test.cpp
   tests/raycast_test.cpp
@@ -345,6 +347,7 @@ add_executable(cortex_host_tests
   src/webgpu/enums.cpp
   src/core/crash_handler.cpp
   src/core/gc_stats.cpp
+  src/webgpu/napi_frame_stats.cpp
   src/core/game_config.cpp
   src/scene/scene_mirror.cpp
   src/scene/shadow_caster_enumerator.cpp
