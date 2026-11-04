@@ -1,6 +1,7 @@
 import { Component } from './Component.js';
 import { Entity } from './Entity.js';
 import { System } from './System.js';
+import { bumpStructureVersion, structureVersion } from './structureVersion.js';
 
 /**
  * Tipo utilitário para o construtor de uma subclasse de Component.
@@ -13,6 +14,12 @@ type ComponentClass<T extends Component = Component> = new (...args: any[]) => T
  * Usado em `removeSystem` para identificar o sistema a remover.
  */
 type SystemClass = abstract new (...args: any[]) => System;
+
+/** Resultado de uma consulta do `tick` e a versão de estrutura em que foi montado (ADR-0676). */
+interface CachedQuery {
+  version: number;
+  entities: Entity[];
+}
 
 /**
  * Registro central do sistema ECS — vide ADR-0002.
@@ -39,6 +46,15 @@ type SystemClass = abstract new (...args: any[]) => System;
 export class World {
   /** Conjunto de todas as entities ativas (Set garante O(1) para delete/has). */
   private readonly _entities: Set<Entity> = new Set();
+  /**
+   * As mesmas entities em ordem de inserção, percorridas por índice: o `for…of` de um `Set` cria um objeto de
+   * resultado por passo no Hermes (ADR-0676). Remontada (array novo) quando a estrutura muda.
+   */
+  private _list: Entity[] = [];
+  /** Versão de estrutura em que `_list` foi montada; diferente da atual = remontar. */
+  private _listVersion = -1;
+  /** Consulta do `tick` por array `requiredComponents` (identidade), com a versão em que foi montada. */
+  private readonly _queries = new Map<readonly ComponentClass[], CachedQuery>();
 
   /**
    * Lista de systems registrados, mantida em ordem crescente de `priority`.
@@ -58,6 +74,7 @@ export class World {
   createEntity(): Entity {
     const entity = new Entity();
     this._entities.add(entity);
+    bumpStructureVersion();
     return entity;
   }
 
@@ -68,7 +85,7 @@ export class World {
    * @param entity - A entity a ser destruída.
    */
   destroyEntity(entity: Entity): void {
-    this._entities.delete(entity);
+    if (this._entities.delete(entity)) bumpStructureVersion();
   }
 
   // ─── System Management ─────────────────────────────────────────────────────
@@ -121,6 +138,8 @@ export class World {
     for (const entity of [...this._entities]) {
       if (!entity.keepOnClear) this._entities.delete(entity);
     }
+    this._queries.clear();
+    bumpStructureVersion();
   }
 
   /**
@@ -148,17 +167,53 @@ export class World {
    * const moving = world.query(TransformComponent, VelocityComponent);
    */
   query<T extends Component>(...componentClasses: ComponentClass<T>[]): Entity[] {
+    return this._filter(componentClasses);
+  }
+
+  /**
+   * Array novo com as entities que têm todos os `componentClasses`, na ordem de inserção. Laço por índice, sem
+   * `every` + closure (SPEC-0334) nem iterador de `Set` (ADR-0676).
+   */
+  private _filter(componentClasses: readonly ComponentClass[]): Entity[] {
+    const list = this._allEntities();
     const result: Entity[] = [];
-    // Laço simples, sem `every` + closure: roda por sistema e por quadro sobre
-    // todas as entidades, e no Hermes cada closure (com o escopo do `entity`)
-    // é uma alocação — milhares por quadro numa cena grande (SPEC-0334).
-    outer: for (const entity of this._entities) {
+    outer: for (let e = 0; e < list.length; e++) {
+      const entity = list[e]!;
       for (let i = 0; i < componentClasses.length; i++) {
         if (!entity.hasComponent(componentClasses[i]!)) continue outer;
       }
       result.push(entity);
     }
     return result;
+  }
+
+  /** Todas as entities em ordem de inserção; array novo só quando a estrutura mudou. */
+  private _allEntities(): Entity[] {
+    const version = structureVersion();
+    if (this._listVersion !== version) {
+      this._list = Array.from(this._entities);
+      this._listVersion = version;
+    }
+    return this._list;
+  }
+
+  /**
+   * A consulta do `tick` (ADR-0676): o mesmo array enquanto a estrutura não muda, sem varrer nem alocar.
+   * `requiredComponents = []` recebe a lista de todas as entities.
+   */
+  private _cachedQuery(required: readonly ComponentClass[]): Entity[] {
+    if (required.length === 0) return this._allEntities();
+    const version = structureVersion();
+    let cached = this._queries.get(required);
+    if (cached === undefined) {
+      cached = { version: -1, entities: [] };
+      this._queries.set(required, cached);
+    }
+    if (cached.version !== version) {
+      cached.entities = this._filter(required);
+      cached.version = version;
+    }
+    return cached.entities;
   }
 
   // ─── Tick ──────────────────────────────────────────────────────────────────
@@ -169,8 +224,9 @@ export class World {
    *
    * Para cada system, o `World`:
    * 1. Obtém `requiredComponents` declarado estaticamente na classe do system.
-   * 2. Chama `query(...requiredComponents)` para filtrar as entities elegíveis.
-   * 3. Repassa as entities filtradas ao `system.update(entities, deltaTime)`.
+   * 2. Filtra as entities elegíveis — em cache enquanto nenhuma entity nem componente muda (ADR-0676).
+   * 3. Repassa as entities filtradas ao `system.update(entities, deltaTime)`. O array é compartilhado
+   *    entre sistemas e quadros: o `update` não deve mutá-lo.
    *
    * Chamado pelo `GameLoop` a cada frame (passo variável) ou passo fixo de
    * física — vide ADR-0002.
@@ -185,7 +241,7 @@ export class World {
     for (const system of this._systems) {
       if (system.pauseWhen?.()) continue; // sistema pausado (ex.: gameplay no editor)
       const required = (system.constructor as typeof System).requiredComponents;
-      const entities = this.query(...required);
+      const entities = this._cachedQuery(required);
       if (profile === null) {
         system.update(entities, deltaTime);
         continue;

@@ -83,7 +83,10 @@ export abstract class System {
    * Executa a lógica do sistema para o frame/passo atual.
    *
    * @param entities  - Entidades filtradas pelo `World` que possuem todos os
-   *                    componentes declarados em `requiredComponents`.
+   *                    componentes declarados em `requiredComponents`. O array é
+   *                    compartilhado com outros sistemas e reaproveitado entre
+   *                    quadros enquanto a estrutura do ECS não muda (ADR-0676):
+   *                    leia, guarde a referência se quiser, mas **não mute**.
    * @param deltaTime - Tempo decorrido desde o último tick, em segundos.
    */
   abstract update(entities: Entity[], deltaTime: number): void;
