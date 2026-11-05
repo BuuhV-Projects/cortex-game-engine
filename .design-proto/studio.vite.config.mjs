@@ -1,10 +1,10 @@
 // Harness: builda o RENDERER real (electron/renderer) como página web pura, com
 // um stub de window.electronAPI, pra validar o studio via screenshot sem Electron.
 import { defineConfig } from 'vite'
-import monacoEditorPluginModule from 'vite-plugin-monaco-editor'
 import { resolve } from 'path'
 
-const monacoEditorPlugin = monacoEditorPluginModule.default
+// Os workers do Monaco vêm do `?worker` do Vite, registrados pelo renderer em
+// monacoWorkers.ts — sem plugin (ADR-0690).
 const root = resolve(process.cwd(), 'electron/renderer')
 
 // Stub clássico (roda ANTES do módulo main.ts, que é deferido) — define a API do
@@ -152,9 +152,6 @@ const STUB_BODY = `
 export default defineConfig({
   root,
   plugins: [
-    monacoEditorPlugin({
-      customDistPath: (_root, buildOutDir) => resolve(buildOutDir, 'monacoeditorwork'),
-    }),
     {
       name: 'electronapi-stub',
       transformIndexHtml: {
