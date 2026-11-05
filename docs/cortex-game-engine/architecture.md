@@ -371,6 +371,10 @@ senão o **editor do Studio** não resolve o tipo (runtime funciona, IntelliSens
   publica o `describeInspector`/outliner por **postMessage**; os painéis nativos da
   IDE (`electron/renderer/EditorPanels.ts`) renderizam e mandam de volta `field`/
   `button`/`select` → a ponte chama o handler → re-descreve → republica.
+  - A `state` leva **`loading`** (`inLoadingScope()` do `frameYield`: `setLoading`
+    ou `buildScene` em curso, SPEC-0695). O Preview do Studio
+    (`previewLoadingFlow.ts`) mantém o aviso "Montando a cena…" sobre o palco até
+    ele virar `false`; sem o campo (engine vendorizado antigo), fecha na 1ª `state`.
   - Campo **`file`** (importar asset, ex. textura do terreno): o file picker abre
     **no frame do renderizador** (clique do usuário = user activation; abrir no
     iframe do engine via postMessage seria bloqueado) e o conteúdo viaja como JSON

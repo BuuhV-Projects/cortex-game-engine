@@ -139,6 +139,8 @@
     "loading_preparing": "Preparando o projeto… (o vite monta as dependências no primeiro Play)",
     "loading_stalled": "O projeto não respondeu em 60 s. O vite pode ter travado no pré-bundle das dependências.",
     "loading_restart": "Reiniciar",
+    "loading_scene": "Montando a cena… (o jogo carrega objetos e aquece os shaders)",
+    "loading_scene_stalled": "A cena ainda não terminou após 3 min. Veja o Console: o jogo pode ter dado erro.",
     "placeholder_failed_html": "Projeto falhou ao iniciar.<br>Veja o Console. Se faltar o <code>vite</code>, rode <code>yarn install</code> no Terminal."
   },
   "editor": {
