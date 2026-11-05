@@ -1,3 +1,10 @@
+# [0.107.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.106.0...v0.107.0) (2026-11-05)
+
+
+### Features
+
+* **studio:** barra de progresso no carregamento do Play (SPEC-0694) ([#64](https://github.com/BuuhV-Projects/cortex-game-engine/issues/64)) ([82dacbd](https://github.com/BuuhV-Projects/cortex-game-engine/commit/82dacbd0e35d6bd168df9221f8e046e6b9138a0e))
+
 # [0.106.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.105.2...v0.106.0) (2026-11-05)
 
 
