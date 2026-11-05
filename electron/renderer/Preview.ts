@@ -62,7 +62,8 @@ export class Preview {
   private fullscreen = false
   /** Aviso "preparando/travado" sobre o palco até o `load` do iframe (SPEC-0694). */
   private readonly loading = new PreviewLoadingFlow({
-    render: (s, kind) => { if (this.stageEl) renderLoadingOverlay(this.stageEl, s, kind, () => void this.restartServer()) },
+    render: (s, kind, attempt) => { if (this.stageEl) renderLoadingOverlay(this.stageEl, s, kind, attempt, () => void this.restartServer()) },
+    restart: () => void this.restartServer(),
     projectDir: () => this.projectDir,
     store: localStorage,
     listen: (fn) => window.addEventListener('message', fn),
@@ -434,7 +435,8 @@ export class Preview {
     this.loading.cancel()
     const startedSuccessfully = this.serverUrl !== null
     this.serverUrl = null
-    if (this.stageEl) {
+    // Retentativa automática (SPEC-0696): o aviso "tentando de novo" fica no palco.
+    if (this.stageEl && !this.loading.restarting) {
       // Se nunca detectamos a URL do vite, é provável que tenha falhado a
       // inicializar — orienta o usuário a instalar deps.
       this.stageEl.innerHTML = startedSuccessfully
@@ -463,6 +465,8 @@ export class Preview {
   private async restartServer(): Promise<void> {
     if (this.running) await window.electronAPI.stopProject()
     this.running = false
+    // O Stop da retentativa já chegou: daqui em diante um Stop é do usuário (SPEC-0696).
+    this.loading.restartStopDone()
     await this.toggle()
   }
 

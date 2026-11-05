@@ -6,7 +6,7 @@
 import { t } from './i18n'
 import { h } from './ui'
 import type { LoadingSnapshot } from './previewLoading'
-import type { LoadingKind } from './previewLoadingFlow'
+import { MAX_AUTO_RETRIES, type LoadingKind } from './previewLoadingFlow'
 
 const OVERLAY_CLASS = 'preview-loading'
 
@@ -21,6 +21,7 @@ export function renderLoadingOverlay(
   stage: HTMLElement,
   snapshot: LoadingSnapshot,
   kind: LoadingKind,
+  attempt: number,
   onRestart: () => void,
 ): void {
   stage.querySelector(`.${OVERLAY_CLASS}`)?.remove()
@@ -28,8 +29,12 @@ export function renderLoadingOverlay(
 
   const stalled = snapshot.phase === 'stalled'
   const [loadingKey, stalledKey] = TEXT_KEYS[kind]
+  // Servidor reiniciado sozinho (SPEC-0696): mostra a tentativa em vez do texto normal.
+  const text = kind === 'server' && !stalled && attempt > 0
+    ? t('preview.loading_retrying', { n: attempt, max: MAX_AUTO_RETRIES })
+    : t(stalled ? stalledKey : loadingKey)
   const box = h('div', { class: `${OVERLAY_CLASS}${stalled ? ' stalled' : ''}` },
-    h('p', { class: 'preview-placeholder' }, t(stalled ? stalledKey : loadingKey)),
+    h('p', { class: 'preview-placeholder' }, text),
     h('div', { class: 'preview-loading-bar' },
       h('div', { class: 'fill', style: { width: `${snapshot.percent}%` } })),
     h('span', { class: 'preview-loading-percent mono' }, `${snapshot.percent}%`))
