@@ -37,6 +37,7 @@ add_executable(cortex_host
   src/shims/animation_frame.cpp
   src/shims/clock.cpp
   src/shims/scene_mirror_shim.cpp
+  src/shims/scene_mirror_shadow_shim.cpp
   src/shims/main_pass_shim.cpp
   src/shims/draw_batch_shim.cpp
   src/shims/geometry_registry_shim.cpp
@@ -85,6 +86,8 @@ add_executable(cortex_host
   src/webgpu/render_parity_capture.cpp
   src/render/geometry_registry.cpp
   src/render/shadow_pass.cpp
+  src/render/shadow_pass_status.cpp
+  src/render/shadow_pass_target.cpp
   src/render/instance_buffer_store.cpp
   src/render/alpha_clip_store.cpp
   src/scene/scene_mirror.cpp
@@ -328,6 +331,8 @@ add_executable(cortex_host_tests
   tests/main_pass_slots_test.cpp
   tests/draw_batch_test.cpp
   tests/shadow_pass_gate_test.cpp
+  tests/shadow_pass_exclusion_test.cpp
+  tests/shadow_pass_status_test.cpp
   tests/shadow_math_test.cpp
   tests/pipeline_cache_test.cpp
   tests/geometry_registry_test.cpp
@@ -356,6 +361,7 @@ add_executable(cortex_host_tests
   src/scene/main_pass_slots.cpp
   src/render/draw_batch.cpp
   src/scene/shadow_pass_gate.cpp
+  src/render/shadow_pass_status.cpp
   src/render/geometry_registry.cpp
   src/canvas2d/blit.cpp
 )

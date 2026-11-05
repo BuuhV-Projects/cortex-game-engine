@@ -18,8 +18,8 @@ import {
   SHADOW_MAP_SIZE_AT,
   SHADOW_MATRIX_AT,
   SHADOW_NORMAL_BIAS_AT,
-  SHADOW_PARAM_FLOATS,
   SHADOW_READY,
+  SHADOW_UBO_FLOATS,
   SHADOW_UV_SHIFT_AT,
   SHIFT_TEXELS,
 } from '../../../src/render/native/frame/shadow.js';
@@ -103,7 +103,7 @@ describe('shadow block (R1.3, SPEC-0545)', () => {
     const before = block.version;
     block.update(scene, null);
     const d = writes.at(-1)!;
-    expect(d.length).toBe(SHADOW_PARAM_FLOATS);
+    expect(d.length).toBe(SHADOW_UBO_FLOATS);
     expect(d[SHADOW_ENABLED_AT]).toBe(1);
     expect(d[SHADOW_NORMAL_BIAS_AT]).toBeCloseTo(0.04);
     expect(d[SHADOW_BIAS_AT]).toBeCloseTo(-0.0004);
@@ -193,9 +193,10 @@ describe('shadow block (R1.3, SPEC-0545)', () => {
     const wgsl = new ShadowBlock(device, host, true, false, null).wgsl;
     expect(wgsl.match(/nativeShadowTap\(uv/g)!.length).toBe(REFERENCE_TAPS + 1);
     expect(wgsl).toContain('1.0 - ndc.y');
-    expect(wgsl).toContain('fract(uv * s.mapSize + vec2<f32>(0.5))');
-    expect(wgsl).toContain('mix(1.0, sum * (1.0 / 9.0), s.intensity)');
-    expect(wgsl).toMatch(/fn nativeShadow\(positionWorld : vec3<f32>, normalWorld : vec3<f32>\) -> f32/);
+    expect(wgsl).toContain('fract(uv * mapSize + vec2<f32>(0.5))');
+    expect(wgsl).toContain('mix(1.0, sum * (1.0 / 9.0), nativeShadowParams.intensity)');
+    // SPEC-0690: the receivers pass positionView (the CSM picks the cascade by view depth).
+    expect(wgsl).toMatch(/fn nativeShadow\(positionWorld : vec3<f32>, normalWorld : vec3<f32>, positionView : vec3<f32>\) -> f32/);
   });
 });
 

@@ -27,7 +27,7 @@ import { classifyDrawable } from './RendererClassifier.js';
 import { GAME_MATERIAL_PREFIX, gameMaterialModel } from './GameMaterials.js';
 import { shaderTime } from './ShaderClock.js';
 import { NATIVE_MODELS } from './models/index.js';
-import { FRAME_BLOCKS } from './frame/index.js';
+import { FRAME_BLOCKS, countCsmReceiver } from './frame/index.js';
 import type { FrameBlock, FrameBlockFactory } from './frame/FrameBlock.js';
 import { OBJECT_FLOATS, OBJECT_NORMAL_AT, VIEW_FLOATS, VIEW_TIME_AT, type NativeModelDef } from './models/NativeModel.js';
 import { NativeGeometryStore } from './NativeGeometryStore.js';
@@ -173,15 +173,17 @@ export class NativeRenderer implements NativeDrawer {
       cached.version === version && cached.instanceColor === instanceColor
     ) {
       if (!('mat' in cached)) return null;
-      if (this._refreshInstance(cached, worldVersion)) {
-        this.stats.taken++;
-        return cached;
-      }
+      if (this._refreshInstance(cached, worldVersion)) return this._taken(cached);
     }
     if (cached !== undefined && 'mat' in cached) this._dropInstance(cached);
     const inst = this._build(object, material as Material, geometry as GeometryLike);
-    if (inst === null) return null;
+    return inst === null ? null : this._taken(inst);
+  }
+
+  /** A draw handed to the list; a shadow receiver also counts for the CSM trace (SPEC-0690). */
+  private _taken(inst: Inst): Inst {
     this.stats.taken++;
+    if (inst.receivesShadow) countCsmReceiver();
     return inst;
   }
 
@@ -306,6 +308,7 @@ export class NativeRenderer implements NativeDrawer {
       instances: 1,
       passes: state.culls.length,
       transparent: m.transparent === true,
+      receivesShadow: c.features.includes('receiveShadow'),
     };
     this._byObject.set(object, inst);
     object.addEventListener('removed', () => {

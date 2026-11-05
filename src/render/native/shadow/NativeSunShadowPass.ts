@@ -30,6 +30,7 @@ import { ShadowAlphaClipSync } from '../../ShadowAlphaClipSync.js';
 import { parityFreezeSeconds } from '../../MainPassArm.js';
 import { queryFlagRequested } from '../../TransformOnlyRefresh.js';
 import { traceSunShadowDrawn, traceSunShadowHandedBack } from '../../../core/perfTrace/traceCounters.js';
+import { shadowPassAccepted } from '../../../core/sceneMirror/shadowPassOutcome.js';
 
 const MAT4_FLOATS = 16;
 /**
@@ -68,6 +69,8 @@ export interface SunLight {
     needsUpdate: boolean;
     autoUpdate: boolean;
     updateMatrices(light: unknown): void;
+    /** The three's shadow node; a CSM here owns the cascades and the sun has no map (SPEC-0690). */
+    shadowNode?: unknown;
   };
 }
 
@@ -100,9 +103,13 @@ export class NativeSunShadowPass {
     private readonly _parity = parityFreezeSeconds() > 0,
   ) {}
 
-  /** Once per frame, before the three's `ShadowNode.updateBefore`. */
+  /**
+   * Once per frame, before the three's `ShadowNode.updateBefore`. With a CSM on the sun it does nothing: the
+   * cascades are drawn by the CSM node (SPEC-0690), and the sun's `autoUpdate`/`needsUpdate` are not touched.
+   */
   update(light: SunLight, scene: unknown, _camera: unknown): void {
     const shadow = light.shadow;
+    if ((shadow.shadowNode as { isCSMShadowNode?: boolean } | null | undefined)?.isCSMShadowNode === true) return;
     if (shadow.autoUpdate) {
       this._ownsAuto = true;
       shadow.autoUpdate = false;
@@ -156,7 +163,8 @@ export class NativeSunShadowPass {
     }
     const r = mirror.drawShadowPass(cam, NO_CAMERA, NO_MIN_RATIO, m, target, NODES_NOT_MEASURED, false);
     if (!r) return this._refuse('sem-ponte');
-    if (r.refused || r.drawn === 0) return this._refuse(r.reason, r.counts, r.offender);
+    // `cleared-empty` (no caster: the map was cleared) is a draw too (SPEC-0690).
+    if (!shadowPassAccepted(r)) return this._refuse(r.reason, r.counts, r.offender);
     return null;
   }
 

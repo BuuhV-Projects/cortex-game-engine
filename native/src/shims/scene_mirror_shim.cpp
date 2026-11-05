@@ -2,19 +2,11 @@
 #include "scene_mirror_shim.h"
 
 #include <cstdint>
-#include <cstring>
 #include <vector>
 
-#include "../core/host_gpu.h"
 #include "../napi/napi_util.h"
-#include "../render/shadow_pass.h"
-#include "../scene/scene_mirror.h"
-#include "../scene/shadow_caster_enumerator.h"
-#include "../scene/shadow_pass_gate.h"
-#include "../render/geometry_registry.h"
 #include "../render/alpha_clip_store.h"
-#include "../render/instance_buffer_store.h"
-#include "geometry_registry_shim.h"
+#include "scene_mirror_state.h"
 
 namespace shims {
 namespace {
@@ -38,27 +30,6 @@ constexpr int kBuildBoundsRadius = 18;
 constexpr int kBuildMaterialVisible = 19;
 /** Lado da face do passe de sombra INICIAL (ver `scene::ShadowSide`). */
 constexpr int kBuildShadowSide = 20;
-/** Floats do frustum: 6 planos de 4. */
-constexpr int kFrustumFloats = scene::kFrustumPlanes * 4;
-
-/**
- * Layout do vetor de saída do gate (ver {@link jsDrawShadowPass}).
- *
- * O gate roda por frame, então ele ESCREVE num buffer que o JS já tem em vez
- * de devolver um objeto novo: criar um `napi_value` por frame para relatar um
- * veredito seria gastar em alocação o que o marco quer ganhar em submissão.
- */
-constexpr int kGateOutRefusedCasters = scene::kShadowGateRefusalCount;
-constexpr int kGateOutTotalCasters = scene::kShadowGateRefusalCount + 1;
-/** Índice do primeiro nó ofensor, ou -1 (SPEC-0289). */
-constexpr int kGateOutFirstOffender = scene::kShadowGateRefusalCount + 2;
-constexpr int kGateOutFloats = scene::kShadowGateRefusalCount + 3;
-/** Argumentos de `drawShadowPass` (ver {@link jsDrawShadowPass}). */
-constexpr size_t kArgsDrawShadowPass = 10;
-/** Elementos de uma matriz 4x4. */
-constexpr size_t kMatrixElements = 16;
-/** `drawShadowPass` matrices with projection and view apart: viewProj + projection + view. */
-constexpr size_t kSplitMatrixElements = 3 * kMatrixElements;
 
 /** GPU do host, para o passe de sombra nativo (SPEC-0245, E5). */
 HostGpu* g_gpu = nullptr;
@@ -78,55 +49,8 @@ constexpr size_t kArgsAppendNodes = 2;
 /** Argumentos de `setInstances`: índice, matrizes e quantas (SPEC-0289). */
 constexpr size_t kArgsSetInstances = 3;
 
-/**
- * Consulta ao registro de geometria, na forma que o gate PURO aceita.
- *
- * O `GeometryRegistry` arrasta `webgpu.h`; o gate não pode vê-lo sem sair do
- * harness. Este adaptador mora aqui, que é onde os dois mundos já se encontram.
- */
-bool geometriaRegistrada(int32_t geometryId, void*) {
-  if (geometryId < 0) return false;
-  return geometryRegistry().find(static_cast<uint32_t>(geometryId)) != nullptr;
-}
-
-/**
- * Estado do espelho, um por processo.
- *
- * Vive em `static` e não em `napi_env` porque o host tem um runtime só e a cena
- * é única — e porque o `ArrayBuffer` externo que o JS segura aponta para a
- * memória daqui: ela precisa durar mais que qualquer escopo de callback.
- */
-struct MirrorState {
-  scene::SceneMirror mirror;
-  /** Enumerador do passe de sombra (SPEC-0245); guarda os buffers entre frames. */
-  scene::ShadowCasterEnumerator shadowCasters;
-  /** Transforms que o JS escreve por frame (só os nós dinâmicos), em dupla. */
-  std::vector<double> syncBuffer;
-  /**
-   * Lote do passe de sombra, reusado entre frames.
-   *
-   * Vive aqui, e não na pilha da chamada, pelo motivo de sempre nesta série:
-   * alocar por frame devolveria em malloc parte do que o marco ganha em
-   * submissão.
-   */
-  std::vector<render::ShadowDrawItem> shadowItems;
-  /** Matrizes de instância dos `InstancedMesh` (SPEC-0289). */
-  render::InstanceBufferStore instances;
-  bool built = false;
-};
-
-MirrorState& state() {
-  static MirrorState instance;
-  return instance;
-}
-
-/** O host tem as matrizes deste `InstancedMesh`? (a forma que o gate puro aceita) */
-bool instanciasPresentes(int32_t node, void*) { return state().instances.find(node) != nullptr; }
-
-/** O host tem o recorte alfa deste nó (SPEC-0642)? */
-bool recortePresente(int32_t node, void*) {
-  return render::alphaClipStore().find(node) != nullptr;
-}
+/** O estado do processo (ver scene_mirror_state.h). */
+MirrorState& state() { return mirrorState(); }
 
 /**
  * Lê uma linha do layout de construção (20 floats) num {@link scene::NodeDesc}.
@@ -387,148 +311,6 @@ napi_value jsUpdate(napi_env env, napi_callback_info info) {
 }
 
 /**
- * `drawShadowPass(minRatio, camX, camY, camZ, planos, viewProj, alvo,
- * nosDaCena, vsm, saida)` — o passe de sombra NATIVO (SPEC-0245, E5).
- *
- * Faz numa travessia de ponte só o que o `three` faz em JS por objeto:
- * enumera os casters, passa pelo gate e, se ele aceitar, desenha direto na
- * `ShadowDepthTexture` da cascata.
- *
- * `alvo` é o `GPUTexture` do `shadow.map.depthTexture`, identificado do lado
- * do JS por IDENTIDADE do objeto (nunca por dimensão — foi o que custou dois
- * dias no M5) e reaquirido por frame, porque o `three` recria a textura quando
- * o `mapSize` muda.
- *
- * `viewProj` é `Float64Array`, não `Float32Array`: a multiplicação por `model`
- * acontece em `double` no C++ e só o resultado vira `float`. Degradar antes é
- * o caminho conhecido para as bandas da SPEC-0234.
- *
- * @return `>= 0` — casters desenhados; `< 0` — recusado, com o código do
- *   motivo negado. `saida` traz a contagem por motivo nos dois casos.
- */
-napi_value jsDrawShadowPass(napi_env env, napi_callback_info info) {
-  size_t argc = kArgsDrawShadowPass;
-  napi_value args[kArgsDrawShadowPass];
-  napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
-  MirrorState& s = state();
-  if (!s.built || argc < kArgsDrawShadowPass) return njs::undefined(env);
-
-  scene::ShadowCasterParams params;
-  napi_get_value_double(env, args[0], &params.minRatio);
-  napi_get_value_double(env, args[1], &params.cameraX);
-  napi_get_value_double(env, args[2], &params.cameraY);
-  napi_get_value_double(env, args[3], &params.cameraZ);
-
-  napi_typedarray_type type;
-  void* planeData = nullptr;
-  size_t planeLength = 0;
-  napi_value planeBuffer;
-  size_t planeOffset = 0;
-  if (napi_get_typedarray_info(env, args[4], &type, &planeLength, &planeData, &planeBuffer,
-                               &planeOffset) != napi_ok ||
-      planeData == nullptr || planeLength < kFrustumFloats) {
-    return njs::undefined(env);
-  }
-
-  void* vpData = nullptr;
-  size_t vpLength = 0;
-  napi_value vpBuffer;
-  size_t vpOffset = 0;
-  if (napi_get_typedarray_info(env, args[5], &type, &vpLength, &vpData, &vpBuffer, &vpOffset) !=
-          napi_ok ||
-      vpData == nullptr || type != napi_float64_array || vpLength < kMatrixElements) {
-    return njs::undefined(env);
-  }
-  const auto* viewProjection = static_cast<const double*>(vpData);
-  // Optional extension (SPEC-0545): `[viewProj, projection, view]`, 48 doubles — the sun's
-  // single map is drawn in the three's float order; 16 doubles keeps the CSM path.
-  const bool splitMatrices = vpLength >= kSplitMatrixElements;
-  const double* projection = splitMatrices ? viewProjection + kMatrixElements : nullptr;
-  const double* view = splitMatrices ? viewProjection + 2 * kMatrixElements : nullptr;
-
-  napi_valuetype tipoAlvo = napi_undefined;
-  napi_typeof(env, args[6], &tipoAlvo);
-  WGPUTexture alvo = (tipoAlvo == napi_null || tipoAlvo == napi_undefined)
-                         ? nullptr
-                         : static_cast<WGPUTexture>(njs::unwrapValue(env, args[6]));
-
-  scene::ShadowGateFrame frame;
-  double sceneNodes = -1.0;
-  napi_get_value_double(env, args[7], &sceneNodes);
-  frame.sceneNodeCount = static_cast<int32_t>(sceneNodes);
-  bool vsm = false;
-  napi_get_value_bool(env, args[8], &vsm);
-  frame.vsmShadowMap = vsm;
-
-  void* outData = nullptr;
-  size_t outLength = 0;
-  napi_value outBuffer;
-  size_t outOffset = 0;
-  if (napi_get_typedarray_info(env, args[9], &type, &outLength, &outData, &outBuffer,
-                               &outOffset) != napi_ok ||
-      outData == nullptr || outLength < kGateOutFloats) {
-    return njs::undefined(env);
-  }
-
-  s.shadowCasters.enumerate(s.mirror, params, static_cast<const float*>(planeData));
-  const scene::ShadowGateResult veredito =
-      scene::evaluateShadowPassGate(s.mirror, s.shadowCasters.casters(), frame,
-                                    geometriaRegistrada, nullptr, instanciasPresentes,
-                                    recortePresente);
-
-  auto* out = static_cast<double*>(outData);
-  for (int i = 0; i < scene::kShadowGateRefusalCount; i++) out[i] = veredito.counts[i];
-  out[kGateOutRefusedCasters] = veredito.refusedCasters;
-  out[kGateOutTotalCasters] = veredito.totalCasters;
-  out[kGateOutFirstOffender] = veredito.firstOffender;
-
-  const bool pelaPorta = veredito.accepted;
-  napi_value saida;
-  if (!pelaPorta || alvo == nullptr) {
-    // Sem alvo o passe não pode assumir, e recusar é o lado seguro: o JS
-    // devolve o passe ao `three` e nada some da imagem.
-    const int motivo = pelaPorta ? static_cast<int>(scene::ShadowGateRefusal::kGeometryMissing)
-                                 : static_cast<int>(veredito.reason);
-    napi_create_double(env, static_cast<double>(-motivo), &saida);
-    return saida;
-  }
-
-  const std::vector<scene::NodeIndex>& casters = s.shadowCasters.casters();
-  s.shadowItems.clear();
-  s.shadowItems.reserve(casters.size());
-  for (const scene::NodeIndex index : casters) {
-    render::ShadowDrawItem item;
-    const int32_t geometria = s.mirror.geometryId(index);
-    if (geometria == scene::kNoGeometry) continue;
-    item.geometryId = static_cast<uint32_t>(geometria);
-    std::memcpy(item.model, s.mirror.worldMatrix(index), sizeof(item.model));
-    // O lado da face é do MATERIAL e chega por frame; o sentido depende ainda
-    // da matriz de mundo (escala espelhada inverte a face, como no `three`).
-    item.cullMode =
-        render::shadowCullMode(static_cast<uint8_t>(s.mirror.shadowSide(index)), item.model);
-    if (s.mirror.hasFlag(index, scene::kNodeInstanced)) {
-      // O gate já garantiu que existem; lote vazio sai como 0 instâncias.
-      const render::InstanceSet* lote = s.instances.find(static_cast<int32_t>(index));
-      if (lote == nullptr || lote->count == 0) continue;
-      item.instanceBuffer = lote->buffer;
-      item.instanceCount = lote->count;
-    }
-    // O gate já garantiu o recorte de quem tem alphaTest (SPEC-0642).
-    if (s.mirror.hasFlag(index, scene::kNodeAlphaClip)) {
-      item.alphaClip = render::alphaClipStore().find(static_cast<int32_t>(index));
-      if (item.alphaClip == nullptr) continue;
-    }
-    s.shadowItems.push_back(item);
-  }
-
-  const uint32_t desenhados = render::drawShadowCasters(
-      g_gpu, alvo, viewProjection, s.shadowItems.data(),
-      static_cast<uint32_t>(s.shadowItems.size()), projection, view);
-  napi_create_double(env, static_cast<double>(desenhados), &saida);
-  return saida;
-}
-
-/**
  * `setInstances(indice, matrizes, quantas)` — as matrizes de instância de um
  * `InstancedMesh` espelhado (SPEC-0289).
  *
@@ -564,6 +346,13 @@ napi_value jsSetInstances(napi_env env, napi_callback_info info) {
 }
 
 }  // namespace
+
+MirrorState& mirrorState() {
+  static MirrorState instance;
+  return instance;
+}
+
+HostGpu* mirrorGpu() { return g_gpu; }
 
 scene::SceneMirror* builtSceneMirror() {
   MirrorState& s = state();

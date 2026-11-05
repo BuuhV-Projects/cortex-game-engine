@@ -268,6 +268,8 @@ export interface Inst extends NativeEntry {
   instances: number;
   passes: number;
   transparent: boolean;
+  /** `receiveShadow` variant: samples the sun shadow (counted for `csmReceivers`, SPEC-0690). */
+  receivesShadow: boolean;
 }
 
 /** Refused (object, material, geometry): checked again only when one of them changes. */

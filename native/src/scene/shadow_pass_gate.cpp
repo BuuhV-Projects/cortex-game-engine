@@ -14,14 +14,15 @@ bool marcar(ShadowGateResult& r, ShadowGateRefusal reason) {
  * Motivos por caster, na ordem de prioridade do relato.
  *
  * A lista é percorrida inteira por caster (não para no primeiro): um objeto
- * skinado que também tem recorte alfa aparece nas duas contagens, e é isso que
- * permite ler do log se tirar uma condição bastaria para o gate aceitar.
+ * instanciado sem lote que também tem recorte alfa ausente aparece nas duas
+ * contagens, e é isso que permite ler do log se tirar uma condição bastaria
+ * para o gate aceitar. O skinado não entra aqui (SPEC-0690): é excluído antes
+ * de qualquer motivo e só conta em `excludedCasters`.
  */
 const ShadowGateRefusal kPerCasterOrder[] = {
-    ShadowGateRefusal::kSkinnedCaster,  ShadowGateRefusal::kInstancedCaster,
-    ShadowGateRefusal::kMaterialArray,  ShadowGateRefusal::kAlphaClip,
-    ShadowGateRefusal::kPositionNode,   ShadowGateRefusal::kGeometryMissing,
-    ShadowGateRefusal::kUnsupportedSide,
+    ShadowGateRefusal::kInstancedCaster, ShadowGateRefusal::kMaterialArray,
+    ShadowGateRefusal::kAlphaClip,       ShadowGateRefusal::kPositionNode,
+    ShadowGateRefusal::kGeometryMissing, ShadowGateRefusal::kUnsupportedSide,
 };
 
 /** `true` quando o caster cai em `reason` — o mesmo critério do laço do gate. */
@@ -50,8 +51,9 @@ bool caiNoMotivo(const SceneMirror& mirror, NodeIndex index, ShadowGateRefusal r
                  const Consultas& c) {
   GeometryPresence presence = c.presence;
   void* userData = c.userData;
+  // O excluído não está na lista do desenho, então não é ofensor de nada.
+  if (excludedFromShadowPass(mirror, index)) return false;
   switch (reason) {
-    case ShadowGateRefusal::kSkinnedCaster: return mirror.hasFlag(index, kNodeSkinned);
     case ShadowGateRefusal::kInstancedCaster:
       return instanciasAusentes(mirror, index, c.instances, userData);
     case ShadowGateRefusal::kMaterialArray: return mirror.hasFlag(index, kNodeMaterialArray);
@@ -84,6 +86,10 @@ int32_t primeiroOfensor(const SceneMirror& mirror, const std::vector<NodeIndex>&
 
 }  // namespace
 
+bool excludedFromShadowPass(const SceneMirror& mirror, NodeIndex index) {
+  return mirror.hasFlag(index, kNodeSkinned);
+}
+
 const char* shadowGateRefusalName(ShadowGateRefusal reason) {
   switch (reason) {
     case ShadowGateRefusal::kNone: return "aceito";
@@ -104,9 +110,14 @@ ShadowGateResult evaluateShadowPassGate(const SceneMirror& mirror,
                                         const std::vector<NodeIndex>& casters,
                                         const ShadowGateFrame& frame, GeometryPresence presence,
                                         void* userData, InstancePresence instances,
-                                        AlphaClipPresence alphaClip) {
+                                        AlphaClipPresence alphaClip,
+                                        std::vector<NodeIndex>* drawList) {
   ShadowGateResult r;
   r.totalCasters = static_cast<int32_t>(casters.size());
+  if (drawList) {
+    drawList->clear();
+    drawList->reserve(casters.size());
+  }
 
   // --- Fatos do frame inteiro ---------------------------------------------
   // A divergência vale mesmo sem caster nenhum: o nó que falta no espelho pode
@@ -126,10 +137,15 @@ ShadowGateResult evaluateShadowPassGate(const SceneMirror& mirror,
 
   // --- Um caster de cada vez ----------------------------------------------
   for (const NodeIndex index : casters) {
-    bool refused = false;
-    if (mirror.hasFlag(index, kNodeSkinned)) {
-      refused = marcar(r, ShadowGateRefusal::kSkinnedCaster);
+    // Skinado sai da lista ANTES dos outros motivos (SPEC-0690, ADR-0691): o
+    // player está sempre na cascata 0, e recusar por ele tiraria a CSM nativa
+    // inteira. Ele não é desenhado, então nada mais dele é julgado.
+    if (excludedFromShadowPass(mirror, index)) {
+      r.excludedCasters += 1;
+      continue;
     }
+    if (drawList) drawList->push_back(index);
+    bool refused = false;
     if (instanciasAusentes(mirror, index, instances, userData)) {
       refused = marcar(r, ShadowGateRefusal::kInstancedCaster);
     }

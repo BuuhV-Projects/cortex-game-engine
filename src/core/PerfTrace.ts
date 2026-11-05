@@ -7,6 +7,7 @@ import { readHeapStats, type HeapStats } from './heapStats.js';
 // Módulos internos (SPEC-0688): só nos corpos, nunca em assinatura pública — o PerfTrace.d.ts não os importa.
 import * as census from './perfTrace/sceneCensus.js';
 import { readGcTotals } from './perfTrace/hostStats.js';
+import * as gauges from './perfTrace/gauges.js';
 import { drainTraceCounters, setTraceCountersActive } from './perfTrace/traceCounters.js';
 import {
   MS_DECIMALS, PHASE_MS_DECIMALS, materialCoverageEvent, readHostSections, readPhaseSections, readSystemSections, round,
@@ -70,27 +71,18 @@ export interface PerfSample {
   frameMs: number;
   /** ms de CPU por seção do {@link FrameProfiler} (`{ render: 28.1, … }`). */
   cpu: Record<string, number>;
-  /**
-   * Custo TÍPICO por seção — a média da janela de 240 frames do
-   * {@link FrameProfiler}, não o frame sorteado que vai em {@link cpu}.
-   */
+  /** Custo TÍPICO por seção — a média da janela de 240 frames do {@link FrameProfiler}, não o frame de {@link cpu}. */
   cpuAvg: Record<string, number>;
   /**
-   * PIOR CASO por seção (p99 da mesma janela). A distância até {@link cpuAvg}
-   * é a variância da seção, que é o que o jogador sente como oscilação —
-   * `cpu` sozinho não responde isso (SPEC-0250).
+   * PIOR CASO por seção (p99 da mesma janela). A distância até {@link cpuAvg} é a variância da seção, que é o que
+   * o jogador sente como oscilação — `cpu` sozinho não responde isso (SPEC-0250).
    */
   cpuP99: Record<string, number>;
   /**
-   * Recursos de GPU CRIADOS desde o boot (SPEC-0252) — acumulados.
-   *
-   * A diferença entre duas amostras diz quantos nasceram no intervalo, que é a
-   * pergunta que os contadores de custo não respondem: um frame que engasga
-   * sem draws altos e sem seção cara estava criando alguma coisa.
-   *
-   * `pipelines` é o mais decisivo: diferente de `cpu.napiPipe` (que conta
-   * `setPipeline`, ou seja, quantas vezes um pipeline é LIGADO), este conta
-   * quantos NASCEM — e só isso denuncia compilação dentro do frame.
+   * Recursos de GPU CRIADOS desde o boot (SPEC-0252) — acumulados. A diferença entre duas amostras diz quantos
+   * nasceram no intervalo: um frame que engasga sem draws altos e sem seção cara estava criando alguma coisa.
+   * `pipelines` é o mais decisivo: `cpu.napiPipe` conta quantas vezes um pipeline é LIGADO, este conta quantos
+   * NASCEM — e só isso denuncia compilação dentro do frame.
    */
   born?: { pipelines: number; buffers: number; textures: number };
   /**
@@ -180,6 +172,20 @@ export interface SunShadowSample {
   reason?: string;
   counts?: string;
   offender?: ShadowOffender;
+  /** O último desenho de cada cascata da CSM nativa, na amostra em que algum valor mudou (SPEC-0690). */
+  cascades?: SunShadowCascadeSample[];
+  /** Draws nativos que amostraram a CSM na janela (SPEC-0690); ausente com zero. */
+  csmReceivers?: number;
+}
+
+/** Uma cascata em `sunShadow.cascades`: `status` é `ok`, `cleared-empty`, `not-ready`, `skipped`, `refused:<motivo>`. */
+export interface SunShadowCascadeSample {
+  status: string;
+  drawn: number;
+  skipped: number;
+  excluded: number;
+  /** ms da chamada `drawShadowPass` desta cascata (0 quando recusou antes da chamada). */
+  ms: number;
 }
 
 /** Campo `renderServer`: deltas da janela e os motivos de recusa mais frequentes do NativeRenderer. */
@@ -244,8 +250,6 @@ export function collectVisible(scene: Object3D, camera: Camera): VisibleNode[] {
   return census.collectVisible(scene, camera);
 }
 
-const gauges = new Map<string, () => number>();
-
 /**
  * Registra um medidor do jogo lido a cada amostra do trace (`game.<name>`), ou o remove com `null`.
  * Serve para o kit de medição validar o que só o jogo sabe (ex.: câmera dentro da cidade, carros do
@@ -255,17 +259,7 @@ const gauges = new Map<string, () => number>();
  * setPerfTraceGauge('urban', () => (insideCity(camera.position) ? 1 : 0));
  */
 export function setPerfTraceGauge(name: string, read: (() => number) | null): void {
-  if (read === null) gauges.delete(name);
-  else gauges.set(name, read);
-}
-
-function readGauges(): Record<string, number> | undefined {
-  if (gauges.size === 0) return undefined;
-  const out: Record<string, number> = {};
-  gauges.forEach((read, name) => {
-    out[name] = read();
-  });
-  return out;
+  gauges.setGauge(name, read);
 }
 
 /** A ponte do host: existe só com as métricas ativas. */
@@ -488,7 +482,7 @@ export class PerfTrace {
       tris: info?.triangles ?? 0,
       camera,
       visible: lap?.visibleNodes ?? [],
-      game: readGauges(),
+      game: gauges.readGauges(),
     });
     const heap = readHeapStats(); // SPEC-0664: tamanho do heap e memória externa do Hermes
     if (heap) sample.heap = heap;

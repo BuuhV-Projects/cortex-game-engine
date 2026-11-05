@@ -31,6 +31,7 @@
 
 #include "alpha_clip_store.h"
 #include "shadow_math.h"
+#include "shadow_pass_status.h"
 
 struct HostGpu;
 
@@ -80,16 +81,19 @@ struct ShadowDrawItem {
  * aqui: o `three` recria a textura quando a dimensão do shadow map muda, e um
  * handle guardado passaria a apontar para um recurso morto.
  *
- * Devolve quantos itens foram desenhados; caster cuja geometria não está no
- * registro é **pulado**, nunca aproximado — e o gate (E3) já deveria ter
- * recusado o frame antes de chegar aqui.
+ * O status separa os casos que antes saíam todos como 0 (SPEC-0690):
+ *  - lista vazia, ou só de lotes com `instanceCount == 0`: o alvo é LIMPO
+ *    (pass sem draws) e o status é `kClearedEmpty`;
+ *  - algum item sem geometria no registro, ou falha de pipeline/uniforme:
+ *    `kNotReady`, 0 desenhados e NADA submetido (o alvo fica como estava);
+ *  - o resto: `kOk`, com quantos itens foram desenhados.
  */
 // `projection` + `view` (16 doubles each, optional): the sun's single map draws with the
 // three's own float order instead of the double `viewProjection` (SPEC-0545, see
 // `shadowCasterMatrices`); `nullptr` keeps the CSM path.
-uint32_t drawShadowCasters(HostGpu* gpu, WGPUTexture alvoProfundidade,
-                           const double viewProjection[16], const ShadowDrawItem* itens,
-                           uint32_t total, const double* projection = nullptr,
-                           const double* view = nullptr);
+ShadowPassResult drawShadowCasters(HostGpu* gpu, WGPUTexture alvoProfundidade,
+                                   const double viewProjection[16], const ShadowDrawItem* itens,
+                                   uint32_t total, const double* projection = nullptr,
+                                   const double* view = nullptr);
 
 }  // namespace render
