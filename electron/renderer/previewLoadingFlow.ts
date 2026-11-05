@@ -83,14 +83,20 @@ export class PreviewLoadingFlow {
     })
   }
 
-  /** Stop: some com o aviso das duas fases, sem medir. */
+  /** Stop: some com o aviso das duas fases, sem medir, e esquece o iframe (um `load` atrasado dele é ignorado). */
   cancel(): void {
+    this.frame = null
     this.clearContact()
     this.server.cancel()
     this.scene.cancel()
   }
 
+  /**
+   * Também roda num `load` sem `begin()` antes: o reload completo que o vite faz ao
+   * editar código recarrega o iframe e o jogo monta a cena de novo — o aviso volta.
+   */
   private onFrameLoad(): void {
+    this.clearContact() // o prazo de um `load` anterior não pode derrubar este
     saveLoadMs(this.opts.store, this.opts.projectDir(), this.server.loaded())
     this.scene.begin(readExpectedLoadMs(this.opts.store, this.opts.projectDir(), SCENE_MS_KEY_PREFIX, DEFAULT_SCENE_EXPECTED_MS))
     this.contactHandle = this.timers.set(() => {

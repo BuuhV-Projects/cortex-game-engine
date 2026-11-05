@@ -113,6 +113,26 @@ describe('PreviewLoadingFlow — duas fases', () => {
     expect(map.has(SCENE_MS_KEY_PREFIX + PROJECT)).toBe(false)
   })
 
+  it('um segundo load (reload do vite) reabre a cena e o prazo antigo não a derruba', () => {
+    const { flow, last, load, send } = setup()
+    flow.begin()
+    load()
+    vi.advanceTimersByTime(BRIDGE_CONTACT_MS - 1_000)
+    load() // reload completo: o iframe navega de novo
+    send(state(true))
+    vi.advanceTimersByTime(BRIDGE_CONTACT_MS)
+    expect(last()).toEqual({ kind: 'scene', phase: 'preparing' })
+  })
+
+  it('load atrasado depois do Stop é ignorado', () => {
+    const { flow, rendered, load } = setup()
+    flow.begin()
+    flow.cancel()
+    const count = rendered.length
+    load()
+    expect(rendered).toHaveLength(count)
+  })
+
   it('reiniciar no meio da cena volta à fase servidor', () => {
     const { flow, last, load } = setup()
     flow.begin()

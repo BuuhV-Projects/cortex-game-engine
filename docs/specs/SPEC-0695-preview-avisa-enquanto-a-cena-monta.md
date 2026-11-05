@@ -30,7 +30,9 @@ quadro, inclusive durante a carga — é por ela que a Hierarquia se enche.
    não some: troca o texto para "Montando a cena…" e começa uma segunda barra
    estimada. Ela termina na primeira `state` vinda daquele iframe com `loading`
    diferente de `true` — então um jogo com o engine antigo (sem o campo) fecha o
-   aviso na primeira mensagem, como antes do campo existir.
+   aviso na primeira mensagem, como antes do campo existir. Um `load` novo do mesmo
+   iframe (o reload completo do vite ao editar código) reabre a fase 2 e descarta o
+   prazo do `load` anterior; um `load` atrasado depois do Stop é ignorado.
 
 3. **Mesmo mecanismo de barra da SPEC-0694**, com calibração própria
    (`preview_sceneMs:<dir>`, default 30 s) e prazo de travamento de **3 min**: aí o
