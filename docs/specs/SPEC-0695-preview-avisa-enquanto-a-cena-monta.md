@@ -28,9 +28,13 @@ quadro, inclusive durante a carga — é por ela que a Hierarquia se enche.
 
 2. **O aviso do Preview tem duas fases.** Depois do `load` do iframe, o overlay
    não some: troca o texto para "Montando a cena…" e começa uma segunda barra
-   estimada. Ela termina na primeira `state` vinda daquele iframe com `loading`
-   diferente de `true` — então um jogo com o engine antigo (sem o campo) fecha o
-   aviso na primeira mensagem, como antes do campo existir. Um `load` novo do mesmo
+   estimada. Ela termina numa `state` vinda daquele iframe com `loading` diferente
+   de `true`. Se a ponte já disse `true` nessa carga, o fim é imediato. Se não, o
+   `false` precisa se manter por **1,5 s**: a ponte nasce no `new Game` e pode
+   publicar antes do jogo abrir o escopo de carga (no DDD 00 há um
+   `await i18n.load` entre os dois), e um `true` dentro do prazo mantém a fase 2.
+   Um jogo com o engine antigo (sem o campo) fecha o aviso 1,5 s depois da primeira
+   mensagem. Um `load` novo do mesmo
    iframe (o reload completo do vite ao editar código) reabre a fase 2 e descarta o
    prazo do `load` anterior; um `load` atrasado depois do Stop é ignorado.
 

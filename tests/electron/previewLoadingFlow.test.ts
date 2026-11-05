@@ -3,7 +3,7 @@
  * até a ponte dizer `loading: false`, e o aviso some se a ponte nunca aparecer.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { BRIDGE_CONTACT_MS, PreviewLoadingFlow, type LoadingKind, type MessageLike } from '../../electron/renderer/previewLoadingFlow.js'
+import { BRIDGE_CONTACT_MS, PreviewLoadingFlow, SETTLE_MS, type LoadingKind, type MessageLike } from '../../electron/renderer/previewLoadingFlow.js'
 import { SCENE_MS_KEY_PREFIX, SCENE_STALL_AFTER_MS, sceneReadyFrom } from '../../electron/renderer/previewLoading.js'
 
 const PROJECT = 'D:/jogos/demo'
@@ -66,6 +66,31 @@ describe('PreviewLoadingFlow — duas fases', () => {
     send(state(false))
     expect(last()).toEqual({ kind: 'scene', phase: 'idle' })
     expect(map.get(SCENE_MS_KEY_PREFIX + PROJECT)).toBe('25000')
+  })
+
+  it('loading=false antes do jogo abrir a carga não fecha o aviso se um true vier logo', () => {
+    const { flow, last, load, send } = setup()
+    flow.begin()
+    load()
+    send(state(false)) // a ponte publicou antes do `setLoading(true)` (await i18n no meio)
+    vi.advanceTimersByTime(SETTLE_MS / 2)
+    send(state(true))
+    vi.advanceTimersByTime(SETTLE_MS * 2)
+    expect(last()).toEqual({ kind: 'scene', phase: 'preparing' })
+    send(state(false))
+    expect(last()).toEqual({ kind: 'scene', phase: 'idle' })
+  })
+
+  it('sem nenhum true (jogo sem carga ou engine antigo) fecha depois do prazo de assentamento', () => {
+    const { flow, last, load, send } = setup()
+    flow.begin()
+    load()
+    send(state())
+    vi.advanceTimersByTime(SETTLE_MS - 1)
+    send(state())
+    expect(last()?.phase).toBe('preparing')
+    vi.advanceTimersByTime(1)
+    expect(last()).toEqual({ kind: 'scene', phase: 'idle' })
   })
 
   it('ignora mensagem de outra janela', () => {
