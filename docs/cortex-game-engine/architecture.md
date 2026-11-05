@@ -103,7 +103,7 @@ sozinha no Stop.
 no rig. Genéricos: `this.ctx` (world/input/gamepad/scene/camera), `this.object3d`, `world.query`.
 
 ⚠️ **Módulo público novo** (incl. um System/Component novo do engine): além de exportar no
-`index-runtime.ts` + `docs:engine`, **registre em `VENDOR_TYPE_MODULES`** (`electron/main.ts`),
+`index-runtime.ts` + `docs:engine`, **registre em `VENDOR_TYPE_MODULES`** (`electron/main/vendorTypeModules.ts`),
 senão o **editor do Studio** não resolve o tipo (runtime funciona, IntelliSense não).
 
 ## 3. Cena data-driven (`src/scene/`)
@@ -610,7 +610,7 @@ alvo é **Rapier** (WASM) como motor dinâmico único, estilo Unity.
   regenera da `Roboto-Medium.ttf` e `yarn glyphs:publish` leva pro `dist-engine/`
   como **último passo** do `build:engine` (depois dos vite builds, senão o
   `emptyOutDir` apaga — mesma armadilha do `rapier.js`).
-- **Vendoring** (`electron/main.ts` → `vendorEngine`): copia os 3 bundles + os
+- **Vendoring** (`electron/main/engineVendor.ts` → `vendorEngine`): copia os 3 bundles + os
   `.d.ts` (lista `VENDOR_TYPE_MODULES`) + `index.d.ts` + o plugin de Vite + o
   `ui-font-glyphs.json` pra `<projeto>/vendor/cortex-game-engine/`. Roda ao
   **criar** e ao **re-vendorizar**. No fluxo de dev deste repo, re-vendorizamos à
@@ -842,7 +842,7 @@ level.json (nó)  ──buildScene──▶  Object3D (mesh)  + Entidade ECS (co
   janela perder e recuperar o foco (foi o "input do chat travado até CTRL+R" após
   limpar o histórico). No renderer da IDE use **sempre** a ponte IPC:
   `window.electronAPI.confirmDialog/infoDialog/errorDialog` (handlers `dialog:confirm`/
-  `dialog:info`/`dialog:error` no `electron/main.ts`, via `dialog.showMessageBox`/
+  `dialog:info`/`dialog:error` no `electron/main/prefsDialogsIpc.ts`, via `dialog.showMessageBox`/
   `showErrorBox` nativos, que não têm o bug).
 - **Renomear o Studio move o `userData` e zera o usuário** — o diretório de dados
   (`preferences.json`, `chats/`, `sessions/`) sai do **nome do app**, que no build
