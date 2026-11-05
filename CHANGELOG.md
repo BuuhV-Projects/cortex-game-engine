@@ -1,3 +1,26 @@
+# [0.105.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.104.2...v0.105.0) (2026-11-05)
+
+
+### Bug Fixes
+
+* **sombra:** achados da revisão complementar e recorte alfa sem reler recusa fixa ([9e1618d](https://github.com/BuuhV-Projects/cortex-game-engine/commit/9e1618d57ab7e4776d29687300b82ef49713017d))
+* **sombra:** o relato do passe muda só com o estado da CSM, não com a contagem ([2a7982f](https://github.com/BuuhV-Projects/cortex-game-engine/commit/2a7982f42371b8d36a70dddb50ca7130a3c8375e))
+* **sombra:** seções do perfil da CSM fecham em finally ([bcd0494](https://github.com/BuuhV-Projects/cortex-game-engine/commit/bcd04949260bbd8bd62e28dcb93118c48439d4ad))
+
+
+### Features
+
+* **sombra:** CSM nativa com receptores (SPEC-0690) ([f19b568](https://github.com/BuuhV-Projects/cortex-game-engine/commit/f19b56894dabbf15dd12a4d6ec8d91aab2a0c0c4))
+* **sombra:** geometria e UV do passe de sombra vindos do renderer nativo (ADR-0692) ([96a4faa](https://github.com/BuuhV-Projects/cortex-game-engine/commit/96a4faa6ea0cc1c3af9b5d5b9e3d59197ddd579c))
+
+
+### Performance Improvements
+
+* **sombra:** cronômetro separa o fechamento do encoder do submit ([8fca9ed](https://github.com/BuuhV-Projects/cortex-game-engine/commit/8fca9ed60b8405a5c5a121e483cbebfa3759973f))
+* **sombra:** recorte alfa em rodízio e cronômetro de diagnóstico do passe nativo ([2cfc16d](https://github.com/BuuhV-Projects/cortex-game-engine/commit/2cfc16d62ead52c574a3a47935705ca00b8c6c94))
+* **sombra:** recorte alfa sai sem consultar o provedor quando nada mudou; seções do perfil na CSM nativa ([ec22703](https://github.com/BuuhV-Projects/cortex-game-engine/commit/ec22703ec0f5b48b7fbd767fe28a12649c018924))
+* **sombra:** uniformes da cascata numa escrita só ([ac6b5f9](https://github.com/BuuhV-Projects/cortex-game-engine/commit/ac6b5f963855310f9684075b44a8f41945a40ec0))
+
 ## [0.104.2](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.104.1...v0.104.2) (2026-11-05)
 
 
