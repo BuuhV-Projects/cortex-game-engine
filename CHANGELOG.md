@@ -1,3 +1,10 @@
+## [0.108.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.108.0...v0.108.1) (2026-11-05)
+
+
+### Bug Fixes
+
+* **vite:** cada raiz varre só a si mesma, e o Play retenta sozinho (SPEC-0696) ([#66](https://github.com/BuuhV-Projects/cortex-game-engine/issues/66)) ([8e77e89](https://github.com/BuuhV-Projects/cortex-game-engine/commit/8e77e893a40e1b79a88374220605abe318d436c0))
+
 # [0.108.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.107.0...v0.108.0) (2026-11-05)
 
 
