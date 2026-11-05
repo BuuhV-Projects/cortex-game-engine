@@ -4,6 +4,7 @@
 #include "hermes_embed.h"
 
 #include "crash_handler.h"
+#include "gc_policy.h"
 #include "gc_stats.h"
 
 #include <hermes_napi.h>
@@ -53,11 +54,12 @@ void* cortexHermesCreateRuntime() {
   // (external 553 MB) — teto ampliado para 2 GB, igual em PC/Steam/Xbox.
   // ADR-0663: 3,75 GB, perto do máximo do tipo (gcheapsize_t é de 32 bits). A 2 GB, os 1,8 GB de
   // ArrayBuffers da cidade do DDD 00 punham o coletor em coleta completa contínua (77 em 6,5 s).
-  constexpr unsigned kMaxHeapBytes = 0xF0000000u;
+  // O teto e a ocupação-alvo ficam em gc_policy.h (ADR-0689: a 0,5 padrão, o alvo da coleta velha colava no teto).
   auto config = hermes::vm::RuntimeConfig::Builder()
                     .withMicrotaskQueue(true)
                     .withGCConfig(hermes::vm::GCConfig::Builder()
-                                      .withMaxHeapSize(kMaxHeapBytes)
+                                      .withMaxHeapSize(core::kMaxHeapBytes)
+                                      .withOccupancyTarget(core::kOccupancyTarget)
                                       // Cada coleta alimenta os totais que o
                                       // trace lê (SPEC-0264). Roda na thread
                                       // do coletor: gc_stats é atômico.

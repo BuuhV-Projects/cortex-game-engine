@@ -15,6 +15,7 @@ void testFormatFromString();
 void testWindowSizeParse();
 void testGcGenerationFromName();
 void testGcTotalsSeparateGenerations();
+void testGcOccupancyTargetKeepsMarginBelowCap();
 void testNapiBindGroupSplitsJsAndReplay();
 void testPassTimingIgnoresSlotsBeyondUsed();
 void testPassTimingSkipsInvalidPairs();
@@ -212,6 +213,7 @@ int main() {
   tests::testGeometryRegistry();
   tests::testGcGenerationFromName();
   tests::testGcTotalsSeparateGenerations();
+  tests::testGcOccupancyTargetKeepsMarginBelowCap();
   tests::testNapiBindGroupSplitsJsAndReplay();
   tests::testPassTimingIgnoresSlotsBeyondUsed();
   tests::testPassTimingSkipsInvalidPairs();
