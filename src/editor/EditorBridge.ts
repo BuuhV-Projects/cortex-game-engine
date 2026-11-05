@@ -3,6 +3,7 @@ import type { EditorSelection } from './EditorSelection.js';
 import type { EditorState } from './EditorState.js';
 import type { EditorLevel } from '../core/Game.js';
 import { detectBridgeTransport, type BridgeMessage } from './bridgeTransport.js';
+import { inLoadingScope } from '../core/frameYield.js';
 import {
   describeInspector,
   describeOutliner,
@@ -121,6 +122,9 @@ export function createEditorBridge(options: EditorBridgeOptions): EditorBridge {
       type: 'state',
       editorActive: editorState.active,
       paused: editorState.paused,
+      // Carga do jogo em curso (`setLoading`/`buildScene`, SPEC-0695): o Studio
+      // mantém o aviso "Montando a cena…" sobre o palco até virar `false`.
+      loading: inLoadingScope(),
       outliner,
       inspector: described.model,
       viewport: viewportInfo?.(),
