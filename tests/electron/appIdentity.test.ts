@@ -90,6 +90,7 @@ describe('varredura do nome antigo', () => {
    */
   const uiSurfaces = [
     path.join(repoRoot, 'electron', 'main.ts'),
+    path.join(repoRoot, 'electron', 'main', 'window.ts'),
     path.join(repoRoot, 'electron', 'renderer', 'Launcher.ts'),
     path.join(repoRoot, 'electron', 'renderer', 'Welcome.ts'),
     indexHtmlPath,

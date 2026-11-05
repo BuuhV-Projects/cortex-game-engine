@@ -1,6 +1,6 @@
 /**
  * Os `.d.ts` que o Studio copia para o `vendor/` (e carrega no Monaco) são os do `VENDOR_TYPE_MODULES`
- * (`electron/main.ts`). Um `import`/`export … from` relativo num deles que aponte para um módulo FORA da lista
+ * (`electron/main/vendorTypeModules.ts`). Um `import`/`export … from` relativo num deles que aponte para um módulo FORA da lista
  * vira tipo não resolvido no editor do jogo (SPEC-0688).
  *
  * O teste emite as declarações em memória com a API do TypeScript (sem depender de `dist/`) e confere cada
@@ -18,7 +18,7 @@ const EMIT_TIMEOUT_MS = 120_000;
 
 /**
  * Referências quebradas que JÁ existiam na `main` antes da SPEC-0688. Corrigi-las exige pôr os módulos na lista,
- * que mora no `electron/main.ts` (acima de 500 linhas, ver regra do CLAUDE.md). Fica explícito aqui para nenhuma
+ * que mora em `electron/main/vendorTypeModules.ts`. Fica explícito aqui para nenhuma
  * nova entrar sem aviso; quando uma for corrigida, o teste pede para tirá-la daqui.
  */
 const KNOWN_BROKEN = new Set([
@@ -29,10 +29,10 @@ const KNOWN_BROKEN = new Set([
   'ui/DebugHud -> ../core/FrameProfiler.js',
 ]);
 
-/** Lê o objeto literal `VENDOR_TYPE_MODULES` do `electron/main.ts` e devolve `subdir/Modulo`. */
+/** Lê o objeto literal `VENDOR_TYPE_MODULES` de `electron/main/vendorTypeModules.ts` e devolve `subdir/Modulo`. */
 function vendorTypeModules(): string[] {
-  const main = readFileSync(join(ROOT, 'electron/main.ts'), 'utf8');
-  const start = main.indexOf('const VENDOR_TYPE_MODULES = {');
+  const main = readFileSync(join(ROOT, 'electron/main/vendorTypeModules.ts'), 'utf8');
+  const start = main.indexOf('export const VENDOR_TYPE_MODULES = {');
   expect(start).toBeGreaterThanOrEqual(0);
   const open = main.indexOf('{', start);
   const close = main.indexOf('\n}', open);

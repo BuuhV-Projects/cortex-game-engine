@@ -149,7 +149,7 @@ com TypeDoc — **não edite à mão** os arquivos em `docs/cortex-game-engine/a
 ## IDE: registrar módulo novo em `VENDOR_TYPE_MODULES` (senão o editor não resolve)
 
 Ao adicionar um **módulo público novo** (arquivo em `src/<subdir>/` exportado pelo
-`src/index-runtime.ts`), **adicione-o também em `VENDOR_TYPE_MODULES`** (`electron/main.ts`).
+`src/index-runtime.ts`), **adicione-o também em `VENDOR_TYPE_MODULES`** (`electron/main/vendorTypeModules.ts`).
 Essa lista alimenta DUAS coisas: (1) os `.d.ts` copiados pro `vendor/` de projetos novos e
 (2) os tipos que o **editor do Studio (Monaco)** carrega via `readEngineTypes`. Se faltar,
 o runtime funciona (bundle), mas o **editor mostra o tipo como não-resolvido** (foi o caso do
