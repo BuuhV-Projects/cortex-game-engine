@@ -62,11 +62,11 @@ export class CameraFollowingCSM extends CSMShadowNode {
   shadowCasterMinRatio = DEFAULT_SHADOW_CASTER_MIN_RATIO;
 
   /**
-   * CSM escalonado (SPEC-0675): a cascata 0 redesenha todo quadro e a cascata `i > 0` só quando
-   * `(quadro + i) % farCascadeInterval === 0`. Antes da SPEC-0690 isso só valia no caminho `three` (no export o
-   * passe nativo era dono do `autoUpdate` e redesenhava tudo); agora o passe nativo aplica o mesmo intervalo, e o
-   * receptor nativo lê a matriz do último desenho de cada cascata.
-   * `1` redesenha todas todo quadro. Público: o jogo/Inspector pode mudar em runtime.
+   * CSM escalonado (SPEC-0675): sem o passe nativo (Studio/navegador), a cascata 0 redesenha todo quadro e a
+   * cascata `i > 0` só quando `(quadro + i) % farCascadeInterval === 0`. `1` redesenha todas todo quadro.
+   * Público: o jogo/Inspector pode mudar em runtime.
+   *
+   * No export, o `CsmNativePass.draw` usa o mesmo intervalo (SPEC-0690, §1).
    */
   farCascadeInterval = DEFAULT_FAR_CASCADE_INTERVAL;
 
