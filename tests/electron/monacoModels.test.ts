@@ -97,6 +97,16 @@ describe('preloadProjectFiles (SPEC-0692)', () => {
     expect(registered).not.toContain('file:///_drive_d/jogos/demo/tests/rush.test.ts');
   });
 
+  it('chamada antiga não registra libs depois de um project-open mais novo (corrida)', async () => {
+    const oldPreload = preloadProjectFiles(PROJECT_DIR); // sem await: simula troca rápida
+    stubElectronAPI({ listProjectFiles: vi.fn(async () => ['D:/jogos/outro/game.ts']) });
+    await preloadProjectFiles('D:/jogos/outro');
+    await oldPreload;
+    const registered = addExtraLib.mock.calls.map((call) => call[1]);
+    expect(registered).not.toContain('file:///_drive_d/jogos/demo/main.ts');
+    expect(registered).toContain('file:///_drive_d/jogos/outro/game.ts');
+  });
+
   it('descarta as extra libs do projeto anterior ao abrir outro projeto', async () => {
     await preloadProjectFiles(PROJECT_DIR);
     stubElectronAPI({ listProjectFiles: vi.fn(async () => ['D:/jogos/outro/game.ts']) });

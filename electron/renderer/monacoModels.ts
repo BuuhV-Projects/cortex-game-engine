@@ -59,9 +59,20 @@ function warnIfManyModels(origin: string): void {
  */
 const projectLibs = new Map<string, { dispose(): void }>()
 
+/**
+ * Geração do preload corrente. Dois `project-open` em sequência disparam duas
+ * chamadas concorrentes de `preloadProjectFiles`; sem o token, a antiga podia
+ * terminar DEPOIS da nova e registrar libs do projeto anterior (e as entradas
+ * sobrescritas em `projectLibs` vazavam sem dispose). Cada chamada captura a
+ * sua geração e para de registrar assim que outra começa.
+ */
+let preloadGeneration = 0
+
 export async function preloadProjectFiles(projectDir: string): Promise<void> {
+  const generation = ++preloadGeneration
   try {
     const files = await window.electronAPI.listProjectFiles(projectDir)
+    if (generation !== preloadGeneration) return
     for (const lib of projectLibs.values()) lib.dispose()
     projectLibs.clear()
     await Promise.all(
@@ -71,13 +82,16 @@ export async function preloadProjectFiles(projectDir: string): Promise<void> {
         if (!shouldPreloadProjectFile(path)) return
         try {
           const content = await window.electronAPI.readFile(path)
+          if (generation !== preloadGeneration) return
           const uriString = pathToVirtualUri(path).toString()
+          projectLibs.get(uriString)?.dispose()
           projectLibs.set(uriString, monacoTs.typescriptDefaults.addExtraLib(content, uriString))
         } catch {
           // Arquivo pode ter sumido entre o list e o read — ignora.
         }
       }),
     )
+    if (generation !== preloadGeneration) return
     warnIfManyModels('arquivos do projeto')
   } catch (err) {
     console.error('Erro ao pre-carregar arquivos do projeto:', err)
