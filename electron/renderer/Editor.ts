@@ -5,12 +5,13 @@ import { GlbPreview } from './GlbPreview'
 import { SpritePreview } from './SpritePreview'
 import { icon } from './ui'
 import { MODEL_WARN_THRESHOLD, shouldPreloadProjectFile } from './preloadFilter'
+import { registerMonacoWorkers } from './monacoWorkers'
 
 /**
  * O barrel principal do `monaco-editor` exporta `monaco.languages.typescript`
  * como `{ deprecated: true }` para sinalizar que existem submódulos com APIs
- * mais novas. As APIs continuam disponíveis em runtime (usadas pelo plugin
- * vite-plugin-monaco-editor), só perderam a tipagem aqui. Esse cast acessa
+ * mais novas. As APIs continuam disponíveis em runtime, só perderam a tipagem
+ * aqui. Esse cast acessa
  * `typescriptDefaults`/`javascriptDefaults` e os enums (`ModuleResolutionKind`
  * etc.) sem ter que repetir `as any` em cada chamada.
  */
@@ -43,12 +44,6 @@ const LANGUAGE_BY_EXT: Record<string, string> = {
 function detectLanguage(name: string): string {
   const ext = name.split('.').pop()?.toLowerCase() ?? ''
   return LANGUAGE_BY_EXT[ext] ?? 'plaintext'
-}
-
-function workerUrl(name: string): string {
-  // O vite-plugin-monaco-editor emite os workers em monacoeditorwork/<nome>.bundle.js
-  // tanto em dev (servido pelo dev server) quanto em build.
-  return new URL(`./monacoeditorwork/${name}.bundle.js`, window.location.href).toString()
 }
 
 /**
@@ -166,15 +161,7 @@ export class Editor {
   }
 
   init(): void {
-    self.MonacoEnvironment = {
-      getWorkerUrl: (_moduleId: string, label: string) => {
-        if (label === 'typescript' || label === 'javascript') return workerUrl('ts.worker')
-        if (label === 'json') return workerUrl('json.worker')
-        if (label === 'css' || label === 'scss' || label === 'less') return workerUrl('css.worker')
-        if (label === 'html' || label === 'handlebars' || label === 'razor') return workerUrl('html.worker')
-        return workerUrl('editor.worker')
-      },
-    }
+    registerMonacoWorkers()
 
     // O Node resolver do TS sobe procurando node_modules/ a partir do
     // diretório do arquivo aberto. No Monaco, arquivos abertos têm URI
