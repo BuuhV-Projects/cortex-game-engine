@@ -1,3 +1,10 @@
+# [0.108.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.107.0...v0.108.0) (2026-11-05)
+
+
+### Features
+
+* **studio:** aviso 'Montando a cena' durante a carga do jogo (SPEC-0695) ([#65](https://github.com/BuuhV-Projects/cortex-game-engine/issues/65)) ([380058d](https://github.com/BuuhV-Projects/cortex-game-engine/commit/380058d1a58dcd4649f99eaf00ae30ed17e1474b))
+
 # [0.107.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.106.0...v0.107.0) (2026-11-05)
 
 
