@@ -1,3 +1,10 @@
+## [0.104.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.104.0...v0.104.1) (2026-11-05)
+
+
+### Performance Improvements
+
+* **host:** ocupação-alvo do coletor do Hermes em 0,7 (ADR-0689) ([ec65bd3](https://github.com/BuuhV-Projects/cortex-game-engine/commit/ec65bd384ef47e4e559d142a2e6a509bea58afd6))
+
 # [0.104.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.103.1...v0.104.0) (2026-11-04)
 
 
