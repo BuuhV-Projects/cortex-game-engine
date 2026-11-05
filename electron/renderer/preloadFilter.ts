@@ -2,12 +2,12 @@
  * **Filtro do preload de modelos do Monaco** (SPEC-0166) — puro, sem Monaco nem
  * DOM, pra ser testável.
  *
- * O Studio pré-cria um `monaco.editor.createModel()` por arquivo-fonte do
- * projeto só pra o Ctrl+click alcançar arquivo ainda não aberto. Cada model
- * assina um emitter global de linguagem, e o VS Code alerta ao passar de **200
- * listeners** — com o projeto + os `.d.ts` do engine o Studio vivia na borda.
- * Arquivo de teste é destino raro de "ir para a definição", então fica de fora
- * do preload (abrir o arquivo cria o model normalmente).
+ * O Studio alimenta o TS service com um `addExtraLib` por arquivo-fonte do
+ * projeto só pra o Ctrl+click alcançar arquivo ainda não aberto (desde a
+ * SPEC-0692 sem criar model — cada model assinava um listener no emitter
+ * global de linguagem e o Monaco alerta em **200**). Arquivo de teste é
+ * destino raro de "ir para a definição", então fica de fora do preload e só
+ * economiza memória do worker (abrir o arquivo cobre a navegação).
  */
 
 /** Segmentos de caminho que indicam código de teste. */

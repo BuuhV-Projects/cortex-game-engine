@@ -24,5 +24,7 @@
 
   },
   "include": ["src/**/*.ts", "tests/**/*.ts", "examples/**/*.ts"],
-  "exclude": ["node_modules", "dist"]
+  // monacoModels.test.ts importa código do renderer (electron/), que tem
+  // tsconfig próprio (bundler) e não compila sob o NodeNext deste projeto.
+  "exclude": ["node_modules", "dist", "tests/electron/monacoModels.test.ts"]
 }
