@@ -54,5 +54,13 @@ O setup ficou em `electron/renderer/monacoWorkers.ts`, módulo próprio, fora do
 - Menos uma dependência (`vite-plugin-monaco-editor`) e três workarounds a menos.
 - Os workers agora são chunks do Rollup, versionados com hash pelo Vite, em vez de arquivos de
   nome fixo em `monacoeditorwork/`. Nada no repo referenciava esses nomes fora do `workerUrl`.
-- O `electron:build` empacotado tem que ser validado junto do dev: no `file://` do Electron quem
-  resolve a URL do worker passa a ser o Vite, não a nossa função.
+- No `file://` do Electron quem resolve a URL do worker passa a ser o Vite, não a nossa função —
+  era o ponto de risco da troca. No bundle a referência sai como
+  `new URL("ts.worker-<hash>.js", import.meta.url)`, relativa ao módulo, e os workers ficam na mesma
+  pasta `assets/` do chunk que os cria. Validado rodando o `out/` empacotado de verdade (não só
+  inspecionando o bundle): o renderer `file:///…/out/renderer/index.html` sobe com targets
+  `type: "worker"` ativos no CDP. No renderer servido como página, `editor.worker` (251.984 B) e,
+  ao abrir um `.ts`, `ts.worker` (7.010.326 B) são criados, sem falha de rede nem erro de console.
+- Nenhum `tsconfig` do repo cobre `electron/`, então os sufixos de import do Vite não tinham
+  declaração: `electron/renderer/vite-env.d.ts` referencia `vite/client`, que declara `*?worker`.
+  Sem ele o editor marca o import como TS2307 (o build não falha — ninguém typechecka o renderer).

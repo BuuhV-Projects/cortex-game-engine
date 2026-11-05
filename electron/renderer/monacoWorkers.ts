@@ -9,6 +9,10 @@
  * entrypoint como chunk e devolve um construtor de `Worker` — em dev e no
  * empacotado. Antes isso era feito pelo `vite-plugin-monaco-editor` (ADR-0690).
  */
+// `import type` do barrel: traz o tipo `Environment` e a declaração global de
+// `MonacoEnvironment`, que de outro modo só chegaria aqui por tabela do programa
+// (este módulo importa apenas os workers, não a API do Monaco).
+import type { Environment } from 'monaco-editor'
 import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker'
 import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker'
 import jsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker'
@@ -23,7 +27,7 @@ import htmlWorker from 'monaco-editor/esm/vs/language/html/html.worker?worker'
  * Idempotente: chamar duas vezes só reescreve o mesmo objeto.
  */
 export function registerMonacoWorkers(): void {
-  self.MonacoEnvironment = {
+  const environment: Environment = {
     getWorker(_moduleId: string, label: string): Worker {
       if (label === 'typescript' || label === 'javascript') return new tsWorker()
       if (label === 'json') return new jsonWorker()
@@ -32,4 +36,5 @@ export function registerMonacoWorkers(): void {
       return new editorWorker()
     },
   }
+  self.MonacoEnvironment = environment
 }

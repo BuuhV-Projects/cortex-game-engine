@@ -2,6 +2,10 @@ import * as monaco from 'monaco-editor'
 import { MODEL_WARN_THRESHOLD, shouldPreloadProjectFile } from './preloadFilter'
 import { detectLanguage } from './fileKinds'
 import { monacoTs, pathToVirtualUri } from './monacoWorkspace'
+import { debug } from '../../src/core/debug'
+
+/** Escopo do logger de diagnóstico deste módulo. */
+const SCOPE = 'studio:monaco'
 
 /**
  * Alimentação de models/types no serviço de TypeScript do Monaco: pre-load dos
@@ -28,8 +32,9 @@ function warnIfManyModels(origin: string): void {
   const engineModels = monaco.editor
     .getModels()
     .filter((model) => model.uri.path.includes('node_modules/cortex-game-engine')).length
-  console.warn(
-    `[studio] ${total} models do Monaco vivos após carregar ${origin} ` +
+  debug(
+    SCOPE,
+    `${total} models do Monaco vivos após carregar ${origin} ` +
       `(${engineModels} de types do engine, ${total - engineModels} do projeto) — ` +
       'o editor alerta "listener LEAK" a partir de 200. Ver SPEC-0166.',
   )
