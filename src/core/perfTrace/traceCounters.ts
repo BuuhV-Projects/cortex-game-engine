@@ -12,8 +12,9 @@
 import type { Object3D } from 'three';
 import { sceneNodeIdOf } from './sceneCensus.js';
 import { readAllocatedBytes } from './hostStats.js';
+import { MS_DECIMALS } from './sampleSections.js';
 import type {
-  AllocSample, RenderServerSample, SunShadowSample, TraceCounterFields, UiUploadsSample,
+  AllocSample, RenderServerSample, SunShadowCascadeSample, SunShadowSample, TraceCounterFields, UiUploadsSample,
 } from '../PerfTrace.js';
 
 /** Quantas chaves entram nos top-N dos campos (motivos de recusa, widgets da UI). */
@@ -71,8 +72,14 @@ export interface RenderServerCounters {
   fbEnv: number;
 }
 
-const sun = { drawn: 0, handedBack: 0, reason: undefined as string | undefined, counts: undefined as string | undefined };
+const sun = { drawn: 0, handedBack: 0, reason: undefined as string | undefined, counts: undefined as string | undefined, pending: 0 };
 let sunOffender: Object3D | undefined;
+/** O último desenho de cada cascata da CSM nativa (SPEC-0690), e o que a última amostra publicou. */
+const cascades: SunShadowCascadeSample[] = [];
+let cascadeCount = 0;
+let publishedCascades = '';
+/** Draws nativos que amostraram a CSM na janela (SPEC-0690). */
+let csmReceivers = 0;
 let server: RenderServerCounters | null = null;
 const serverBase: RenderServerCounters = { fallback: 0, refused: 0, fbEnv: 0 };
 const nativeRefusals = new Tally();
@@ -94,6 +101,42 @@ export function traceSunShadowHandedBack(reason: string, counts?: string, offend
   sun.reason = reason;
   sun.counts = counts;
   sunOffender = offender;
+}
+
+/** Geometrias de caster ainda pendentes no registro do passe de sombra neste quadro (ADR-0692): o aquecimento. */
+export function traceShadowGeometryPending(pending: number): void {
+  if (!active) return;
+  sun.pending = pending;
+}
+
+/**
+ * Uma cascata da CSM nativa foi desenhada ou recusada (SPEC-0690). Guarda só o último resultado de cada uma; a
+ * amostra publica a lista quando algum valor mudou desde a anterior. `reason` só entra com `status === 'refused'`.
+ * `ms` (tempo do `drawShadowPass`) é guardado já arredondado, para a comparação com a amostra anterior não ver ruído
+ * abaixo da casa publicada.
+ */
+export function traceSunShadowCascade(
+  index: number, status: string, reason: string | undefined, drawn: number, skipped: number, excluded: number, ms: number,
+): void {
+  if (!active) return;
+  const shown = status === 'refused' ? `refused:${reason ?? ''}` : status;
+  const shownMs = round(ms, MS_DECIMALS);
+  const slot = cascades[index];
+  if (slot === undefined) cascades[index] = { status: shown, drawn, skipped, excluded, ms: shownMs };
+  else {
+    slot.status = shown;
+    slot.drawn = drawn;
+    slot.skipped = skipped;
+    slot.excluded = excluded;
+    slot.ms = shownMs;
+  }
+  if (index >= cascadeCount) cascadeCount = index + 1;
+}
+
+/** `count` draws nativos amostraram a CSM neste quadro (SPEC-0690); a amostra publica a soma da janela. */
+export function traceCsmReceivers(count: number): void {
+  if (!active) return;
+  csmReceivers += count;
 }
 
 /**
@@ -136,12 +179,28 @@ function toKB(bytes: number): number {
   return round(bytes / BYTES_PER_KB, KB_DECIMALS);
 }
 
+/** As cascatas da janela, só quando algum valor mudou desde a última amostra publicada. */
+function drainCascades(): SunShadowCascadeSample[] | undefined {
+  if (cascadeCount === 0) return undefined;
+  const list = cascades.slice(0, cascadeCount).map((c) => ({ ...c }));
+  const key = JSON.stringify(list);
+  if (key === publishedCascades) return undefined;
+  publishedCascades = key;
+  return list;
+}
+
 function drainSunShadow(): SunShadowSample | undefined {
-  if (sun.drawn + sun.handedBack === 0) return undefined;
+  const changed = drainCascades();
+  const receivers = csmReceivers;
+  csmReceivers = 0;
+  if (sun.drawn + sun.handedBack === 0 && changed === undefined && receivers === 0) return undefined;
   const out: SunShadowSample = { drawn: sun.drawn, handedBack: sun.handedBack };
+  if (receivers > 0) out.csmReceivers = receivers;
   if (sun.reason !== undefined) out.reason = sun.reason;
   if (sun.counts) out.counts = sun.counts;
+  if (sun.pending > 0) out.pendingGeometry = sun.pending;
   if (sunOffender) out.offender = { name: sunOffender.name, id: sunOffender.id, node: sceneNodeIdOf(sunOffender) };
+  if (changed !== undefined) out.cascades = changed;
   sun.drawn = 0;
   sun.handedBack = 0;
   sun.reason = undefined;
@@ -211,4 +270,9 @@ export function resetTraceCounters(): void {
   drainTraceCounters();
   server = null;
   lastAllocated = null;
+  cascades.length = 0;
+  cascadeCount = 0;
+  publishedCascades = '';
+  csmReceivers = 0;
+  sun.pending = 0;
 }

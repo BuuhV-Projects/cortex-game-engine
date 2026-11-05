@@ -8,7 +8,7 @@
 
 > **buildSample**(`input`): [`PerfSample`](../interfaces/PerfSample.md)
 
-Defined in: [src/core/PerfTrace.ts:303](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L303)
+Defined in: [src/core/PerfTrace.ts:299](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L299)
 
 Monta a amostra (função pura — é o que os testes exercitam).
 

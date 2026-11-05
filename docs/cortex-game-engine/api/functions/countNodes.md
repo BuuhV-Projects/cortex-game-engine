@@ -8,7 +8,7 @@
 
 > **countNodes**(`scene`): `object`
 
-Defined in: [src/core/PerfTrace.ts:228](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L228)
+Defined in: [src/core/PerfTrace.ts:236](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L236)
 
 Tamanho da árvore de cena (SPEC-0227): todos os nós e os de visibilidade efetiva.
 

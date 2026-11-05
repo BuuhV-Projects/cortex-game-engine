@@ -7,52 +7,25 @@
 #include "instance_buffer_store.h"
 #include "shadow_math.h"
 #include "shadow_pass_shaders.h"
-#include "../webgpu/pass_timing.h"
+#include "shadow_pass_target.h"
+#include "shadow_pass_timing.h"
+#include "shadow_pass_uniforms.h"
 
 #include <webgpu/wgpu.h>
 
 #include <algorithm>
-#include <cstdio>
-#include <cstdlib>
 #include <cstring>
 #include <vector>
 
 namespace render {
 namespace {
 
-/** Alinhamento que o WebGPU exige para offset dinâmico de uniforme. */
-constexpr uint64_t kUniformSlotAlign = 256;
 /** Slots pré-alocados; cresce conforme a cena pedir. */
 constexpr uint32_t kSlotsIniciais = 256;
 /** Passo padrão quando a geometria é densa (3 floats de posição). */
 constexpr uint64_t kVertexStridePadrao = 3 * sizeof(float);
-/** Valor de limpeza da profundidade: 1.0 = plano distante. */
-constexpr float kDepthClearValue = 1.0f;
 /** Uma amostra: o shadow map do `three` não é multiamostrado. */
 constexpr uint32_t kAmostras = 1;
-/** `mat3x3f` no WGSL: 3 colunas de `vec4f` (o 4º float é preenchimento). */
-constexpr uint32_t kUvColumns = 3;
-constexpr uint32_t kUvColumnFloats = 4;
-/** Linhas úteis de cada coluna da `Matrix3` do `three`. */
-constexpr uint32_t kUvRows = 3;
-/** Floats de preenchimento depois de `alphaTest` (o struct fecha em 256 bytes). */
-constexpr uint32_t kUniformPadding = 3;
-
-/**
- * Uniforme por caster: as três matrizes de {@link ShadowCasterMatrices} mais o
- * recorte alfa (SPEC-0642) — `uvTransform` em 3 colunas `vec4f` (o `mat3x3f` do
- * WGSL) e `alphaTest`. Ocupa o slot inteiro; as variantes depth-only só leem as
- * matrizes.
- */
-struct ShadowCasterUniforms {
-  ShadowCasterMatrices matrices;
-  float uvTransform[kUvColumns * kUvColumnFloats];
-  float alphaTest;
-  float padding[kUniformPadding];
-};
-static_assert(sizeof(ShadowCasterUniforms) == kUniformSlotAlign,
-              "o uniforme do caster tem de casar com o struct do WGSL");
-
 /** Colunas da matriz de instância = atributos `vec4f` por instância. */
 constexpr uint32_t kInstanceColumns = 4;
 /** Bytes de uma coluna (`vec4f`). */
@@ -106,6 +79,8 @@ struct Recursos {
   WGPUBuffer uniformes = nullptr;
   uint32_t slots = 0;
   WGPUTextureFormat formatoProfundidade = WGPUTextureFormat_Undefined;
+  /** Uniformes da cascata em montagem, mandados numa escrita só (reaproveitado entre chamadas). */
+  ShadowUniformStaging staging;
 };
 
 /** Tradução do enum puro (testável sem wgpu) para o do WebGPU. */
@@ -309,173 +284,199 @@ WGPURenderPipeline garantirPipeline(HostGpu* gpu, Recursos& r, WGPUTextureFormat
   return pipeline;
 }
 
+/** Um caster que passou na contagem: a geometria do registro e o slot de uniforme. */
+struct Pronto {
+  const GeometryEntry* geometria;
+  const ShadowDrawItem* item;
+  uint32_t slot;
+  WGPURenderPipeline pipeline;
+};
+
+/** Termina sem desenho: relata e devolve `status` com 0 desenhados. */
+ShadowPassResult semDesenho(WGPUTexture alvo, uint32_t total, ShadowPassStatus status) {
+  logShadowPass(alvo, total, 0, static_cast<int>(status));
+  return ShadowPassResult{0, status};
+}
+
+/** Escreve o uniforme do caster no slot dele (matrizes + recorte alfa). */
+/** Monta o uniforme do caster no staging, no slot dele (a escrita na fila é uma só, antes do 1º draw). */
+void montarUniforme(Recursos& r, const Pronto& p, const double viewProjection[16], const double* projection,
+                    const double* view) {
+  composeShadowUniform(r.staging.at(p.slot), viewProjection, projection, view, p.item->model, p.item->alphaClip);
+}
+
+/** Manda os uniformes montados da cascata numa `wgpuQueueWriteBuffer` só (slots 0..n-1 contíguos). */
+void mandarUniformes(HostGpu* gpu, Recursos& r) {
+  if (r.staging.used() == 0) return;
+  wgpuQueueWriteBuffer(gpu->queue, r.uniformes, 0, r.staging.data(), r.staging.bytes());
+  r.staging.reset();
+}
+
+/** Os dois casters caem no mesmo pipeline (passo, cull, instância, recorte e passo do UV)? */
+bool mesmoPipeline(const Pronto& a, const Pronto& b) {
+  const ShadowDrawItem& x = *a.item;
+  const ShadowDrawItem& y = *b.item;
+  const uint32_t uvX = x.alphaClip ? x.alphaClip->uvStride : 0;
+  const uint32_t uvY = y.alphaClip ? y.alphaClip->uvStride : 0;
+  return a.geometria->vertexStride == b.geometria->vertexStride && x.cullMode == y.cullMode &&
+         (x.instanceBuffer != nullptr) == (y.instanceBuffer != nullptr) &&
+         (x.alphaClip != nullptr) == (y.alphaClip != nullptr) && uvX == uvY;
+}
+
+/** Grava o draw de um caster no pass aberto; troca de pipeline só quando muda. */
+void desenharUm(const ShadowDepthPass& aberto, const Recursos& r, const Pronto& p,
+                WGPURenderPipeline& atual) {
+  const ShadowDrawItem& it = *p.item;
+  const bool instanciado = it.instanceBuffer != nullptr;
+  if (p.pipeline != atual) {
+    atual = p.pipeline;
+    wgpuRenderPassEncoderSetPipeline(aberto.pass, atual);
+  }
+  const uint32_t offset = p.slot * static_cast<uint32_t>(kUniformSlotAlign);
+  wgpuRenderPassEncoderSetBindGroup(aberto.pass, 0, r.bindGroup, 1, &offset);
+  wgpuRenderPassEncoderSetVertexBuffer(aberto.pass, 0, p.geometria->vertexBuffer,
+                                       p.geometria->vertexOffset, WGPU_WHOLE_SIZE);
+  if (instanciado) {
+    wgpuRenderPassEncoderSetVertexBuffer(
+        aberto.pass, kInstanceBufferSlot, it.instanceBuffer, 0,
+        static_cast<uint64_t>(it.instanceCount) * kInstanceStrideBytes);
+  }
+  if (it.alphaClip) {
+    wgpuRenderPassEncoderSetBindGroup(aberto.pass, kGrupoRecorte, it.alphaClip->bindGroup, 0,
+                                      nullptr);
+    const uint32_t slotUv = instanciado ? kVertexBuffersInstanciados : kVertexBuffersSimples;
+    wgpuRenderPassEncoderSetVertexBuffer(aberto.pass, slotUv, it.alphaClip->uvBuffer,
+                                         it.alphaClip->uvOffset, WGPU_WHOLE_SIZE);
+  }
+  if (p.geometria->indexBuffer) {
+    const WGPUIndexFormat formatoIndice =
+        p.geometria->indexIs32Bit ? WGPUIndexFormat_Uint32 : WGPUIndexFormat_Uint16;
+    wgpuRenderPassEncoderSetIndexBuffer(aberto.pass, p.geometria->indexBuffer, formatoIndice, 0,
+                                        WGPU_WHOLE_SIZE);
+    wgpuRenderPassEncoderDrawIndexed(aberto.pass, p.geometria->indexCount, it.instanceCount, 0,
+                                     0, 0);
+  } else {
+    wgpuRenderPassEncoderDraw(aberto.pass, p.geometria->vertexCount, it.instanceCount, 0, 0);
+  }
+}
+
 }  // namespace
 
-uint32_t drawShadowCasters(HostGpu* gpu, WGPUTexture alvoProfundidade,
-                           const double viewProjection[16], const ShadowDrawItem* itens,
-                           uint32_t total, const double* projection, const double* view) {
-  if (!gpu || !gpu->device || !gpu->queue || !alvoProfundidade || !viewProjection) return 0;
-  if (total == 0 || !itens) return 0;
+ShadowPassResult drawShadowCasters(HostGpu* gpu, WGPUTexture alvoProfundidade,
+                                   const double viewProjection[16], const ShadowDrawItem* itens,
+                                   uint32_t total, const double* projection, const double* view) {
+  if (!gpu || !gpu->device || !gpu->queue || !alvoProfundidade || !viewProjection ||
+      (total > 0 && !itens)) {
+    return ShadowPassResult{0, ShadowPassStatus::kNotReady};
+  }
+
+  // Primeiro só CONTA (SPEC-0690): o status sai antes de qualquer escrita na
+  // fila, porque `kNotReady` não pode tocar no alvo.
+  const GeometryRegistry& registro = shims::geometryRegistry();
+  uint32_t semGeometria = 0;
+  uint32_t vazios = 0;
+  std::vector<uint32_t> instancias(total);
+  for (uint32_t i = 0; i < total; ++i) {
+    instancias[i] = itens[i].instanceCount;
+    if (!registro.find(itens[i].geometryId)) {
+      ++semGeometria;
+    } else if (itens[i].instanceCount == 0) {
+      ++vazios;  // lote vazio: legítimo, só não desenha
+    }
+  }
+  const ShadowPassStatus status = classifyShadowPass(total, semGeometria, vazios);
+  if (status == ShadowPassStatus::kClearedEmpty) {
+    // Cascata vazia é LIMPA: sem isso a sombra do quadro anterior ficaria no mapa.
+    const bool limpou = clearShadowDepthTarget(gpu, alvoProfundidade);
+    return semDesenho(alvoProfundidade, total,
+                      limpou ? ShadowPassStatus::kClearedEmpty : ShadowPassStatus::kNotReady);
+  }
+  if (status != ShadowPassStatus::kOk) return semDesenho(alvoProfundidade, total, status);
 
   Recursos& r = recursos();
   const WGPUTextureFormat formatoProf = wgpuTextureGetFormat(alvoProfundidade);
-  if (!garantirBindGroupLayout(gpu, r)) return 0;
-  if (!garantirUniformes(gpu, r, total)) return 0;
-
-  const GeometryRegistry& registro = shims::geometryRegistry();
-
-  struct Pronto {
-    const GeometryEntry* geometria;
-    uint32_t slot;
-    ShadowCull cull;
-    WGPUBuffer instancias;
-    uint32_t quantas;
-    const AlphaClipEntry* recorte;
-  };
-  std::vector<Pronto> prontos;
-  prontos.reserve(total);
-
-  ShadowCasterUniforms u = {};
-  for (uint32_t i = 0; i < total; ++i) {
-    const GeometryEntry* geometria = registro.find(itens[i].geometryId);
-    if (!geometria) continue;  // pula: nunca aproxima
-    if (itens[i].instanceCount == 0) continue;  // lote vazio: nada a desenhar
-    shadowCasterMatrices(viewProjection, projection, view, itens[i].model, u.matrices);
-    const AlphaClipEntry* recorte = itens[i].alphaClip;
-    u.alphaTest = recorte ? recorte->alphaTest : 0.0f;
-    for (uint32_t c = 0; c < kUvColumns; ++c) {
-      for (uint32_t l = 0; l < kUvRows; ++l) {
-        u.uvTransform[c * kUvColumnFloats + l] =
-            recorte ? recorte->uvTransform[c * kUvRows + l] : 0.0f;
-      }
-    }
-    const uint32_t slot = static_cast<uint32_t>(prontos.size());
-    wgpuQueueWriteBuffer(gpu->queue, r.uniformes, slot * kUniformSlotAlign, &u, sizeof(u));
-    prontos.push_back({geometria, slot, itens[i].cullMode, itens[i].instanceBuffer,
-                       itens[i].instanceCount, recorte});
+  if (!garantirBindGroupLayout(gpu, r) || !garantirUniformes(gpu, r, total)) {
+    return semDesenho(alvoProfundidade, total, ShadowPassStatus::kNotReady);
   }
-  if (prontos.empty()) return 0;
 
-  // Agrupa por (cull, passo do vértice) — as duas coisas que entram no
-  // pipeline — para trocar de pipeline o mínimo possível. O cull vem primeiro
-  // porque ele tem três valores e o passo tem mais, então a ordem dá lotes
-  // maiores.
-  //
-  // Note que NÃO há ordenação por profundidade: o passe é depth-only e a ordem
-  // não tem efeito visual nenhum — é justamente o trabalho que o `three` paga
-  // à toa (`sortObjects` default, SPEC-0245).
+  // Slots 0..n-1 desta chamada (a mesma função que o harness confere).
+  std::vector<uint32_t> slots;
+  std::vector<Pronto> prontos;
+  prontos.reserve(assignShadowSlots(instancias.data(), total, slots));
+  for (uint32_t i = 0; i < total; ++i) {
+    if (slots[i] == kNoShadowSlot) continue;
+    prontos.push_back({registro.find(itens[i].geometryId), &itens[i], slots[i], nullptr});
+  }
+
+  // Agrupa por (cull, passo do vértice) — o que entra no pipeline — para trocar
+  // de pipeline o mínimo possível (o cull, de três valores, primeiro: lotes
+  // maiores). NÃO há ordenação por profundidade: o passe é depth-only e a ordem
+  // não tem efeito visual — é o que o `three` paga à toa (`sortObjects`, SPEC-0245).
   std::stable_sort(prontos.begin(), prontos.end(), [](const Pronto& a, const Pronto& b) {
-    if (a.cull != b.cull) return a.cull < b.cull;
-    if ((a.instancias != nullptr) != (b.instancias != nullptr)) return a.instancias == nullptr;
-    if ((a.recorte != nullptr) != (b.recorte != nullptr)) return a.recorte == nullptr;
-    if (a.recorte && a.recorte->uvStride != b.recorte->uvStride) {
-      return a.recorte->uvStride < b.recorte->uvStride;
+    const ShadowDrawItem& x = *a.item;
+    const ShadowDrawItem& y = *b.item;
+    if (x.cullMode != y.cullMode) return x.cullMode < y.cullMode;
+    if ((x.instanceBuffer != nullptr) != (y.instanceBuffer != nullptr)) {
+      return x.instanceBuffer == nullptr;
+    }
+    if ((x.alphaClip != nullptr) != (y.alphaClip != nullptr)) return x.alphaClip == nullptr;
+    if (x.alphaClip && x.alphaClip->uvStride != y.alphaClip->uvStride) {
+      return x.alphaClip->uvStride < y.alphaClip->uvStride;
     }
     return a.geometria->vertexStride < b.geometria->vertexStride;
   });
 
-  // View criada e liberada por chamada, de propósito: a textura é recriada
-  // quando o `mapSize` muda, e uma view cacheada apontaria para o recurso
-  // morto. O custo é de microssegundos contra os milissegundos do marco.
-  WGPUTextureView viewProf = wgpuTextureCreateView(alvoProfundidade, nullptr);
-  if (!viewProf) return 0;
+  // Pipelines ANTES do pass (SPEC-0690): um que falhasse no meio deixava um
+  // mapa com parte dos casters, que é sombra faltando. Falhou, nada é submetido.
+  const Pronto* chave = nullptr;
+  for (Pronto& p : prontos) {
+    if (chave && mesmoPipeline(*chave, p)) {
+      p.pipeline = chave->pipeline;
+      continue;
+    }
+    const ShadowDrawItem& it = *p.item;
+    p.pipeline = garantirPipeline(gpu, r, formatoProf, p.geometria->vertexStride, it.cullMode,
+                                  it.instanceBuffer != nullptr, it.alphaClip != nullptr,
+                                  it.alphaClip ? it.alphaClip->uvStride : 0);
+    if (!p.pipeline) return semDesenho(alvoProfundidade, total, ShadowPassStatus::kNotReady);
+    chave = &p;
+  }
 
-  WGPURenderPassDepthStencilAttachment prof =
-      WGPU_RENDER_PASS_DEPTH_STENCIL_ATTACHMENT_INIT;
-  prof.view = viewProf;
-  prof.depthLoadOp = WGPULoadOp_Clear;
-  prof.depthClearValue = kDepthClearValue;
-  prof.depthStoreOp = WGPUStoreOp_Store;
-
-  WGPURenderPassDescriptor rp = WGPU_RENDER_PASS_DESCRIPTOR_INIT;
-  // Depth-only: nenhum attachment de cor.
-  rp.colorAttachmentCount = 0;
-  rp.colorAttachments = nullptr;
-  rp.depthStencilAttachment = &prof;
-  rp.timestampWrites = webgpu::nextPassTimestampWrites(webgpu::PassOrigin::Shadow);
-
-  WGPUCommandEncoderDescriptor ed = WGPU_COMMAND_ENCODER_DESCRIPTOR_INIT;
-  WGPUCommandEncoder encoder = wgpuDeviceCreateCommandEncoder(gpu->device, &ed);
-  WGPURenderPassEncoder pass = wgpuCommandEncoderBeginRenderPass(encoder, &rp);
-
+  // Segue o roteiro puro (`planShadowPass`): a próxima cascata reaproveita os
+  // slots, então nenhuma escrita de uniforme cai depois do submit desta.
+  r.staging.reset();
+  ShadowPassTiming::instance().mark(ShadowPhase::kPrepare);
+  ShadowDepthPass aberto;
+  size_t escritos = 0;
   uint32_t desenhados = 0;
-  uint32_t strideAtual = 0;
-  ShadowCull cullAtual = ShadowCull::kNone;
-  bool instanciadoAtual = false;
-  bool recorteAtual = false;
-  uint32_t uvStrideAtual = 0;
-  // Flag explícita em vez de confiar num par impossível de (passo, cull): o
-  // primeiro item SEMPRE precisa de `setPipeline`, e deduzir isso de valores
-  // iniciais é o tipo de armadilha que dá uma pass sem pipeline — e aí o wgpu
-  // aborta o processo.
-  bool primeiro = true;
-  for (const Pronto& item : prontos) {
-    const bool instanciado = item.instancias != nullptr;
-    const bool comRecorte = item.recorte != nullptr;
-    const uint32_t uvStride = comRecorte ? item.recorte->uvStride : 0;
-    if (primeiro || item.geometria->vertexStride != strideAtual || item.cull != cullAtual ||
-        instanciado != instanciadoAtual || comRecorte != recorteAtual ||
-        uvStride != uvStrideAtual) {
-      primeiro = false;
-      strideAtual = item.geometria->vertexStride;
-      cullAtual = item.cull;
-      instanciadoAtual = instanciado;
-      recorteAtual = comRecorte;
-      uvStrideAtual = uvStride;
-      WGPURenderPipeline pipeline = garantirPipeline(gpu, r, formatoProf, strideAtual, cullAtual,
-                                                     instanciadoAtual, recorteAtual, uvStrideAtual);
-      if (!pipeline) break;
-      wgpuRenderPassEncoderSetPipeline(pass, pipeline);
+  // Começa em `nullptr`, que nenhum `Pronto` tem: o primeiro item SEMPRE faz
+  // `setPipeline` — uma pass sem pipeline faz o wgpu abortar o processo.
+  WGPURenderPipeline atual = nullptr;
+  const auto plano = planShadowPass(ShadowPassStatus::kOk, static_cast<uint32_t>(prontos.size()));
+  for (const ShadowPassStep passo : plano) {
+    switch (passo) {
+      case ShadowPassStep::kOpen:
+        if (!openShadowDepthPass(gpu, alvoProfundidade, aberto)) {
+          return semDesenho(alvoProfundidade, total, ShadowPassStatus::kNotReady);
+        }
+        break;
+      case ShadowPassStep::kWriteUniform:
+        montarUniforme(r, prontos[escritos++], viewProjection, projection, view);
+        break;
+      case ShadowPassStep::kDraw:
+        if (desenhados == 0) mandarUniformes(gpu, r);
+        desenharUm(aberto, r, prontos[desenhados++], atual);
+        break;
+      case ShadowPassStep::kSubmit:
+        ShadowPassTiming::instance().mark(ShadowPhase::kEncode);
+        submitShadowDepthPass(gpu, aberto);
+        ShadowPassTiming::instance().mark(ShadowPhase::kSubmit);
+        break;
     }
-    const uint32_t offset = item.slot * static_cast<uint32_t>(kUniformSlotAlign);
-    wgpuRenderPassEncoderSetBindGroup(pass, 0, r.bindGroup, 1, &offset);
-    wgpuRenderPassEncoderSetVertexBuffer(pass, 0, item.geometria->vertexBuffer,
-                                         item.geometria->vertexOffset, WGPU_WHOLE_SIZE);
-    if (instanciado) {
-      wgpuRenderPassEncoderSetVertexBuffer(pass, kInstanceBufferSlot, item.instancias, 0,
-                                           static_cast<uint64_t>(item.quantas) *
-                                               kInstanceStrideBytes);
-    }
-    if (comRecorte) {
-      wgpuRenderPassEncoderSetBindGroup(pass, kGrupoRecorte, item.recorte->bindGroup, 0, nullptr);
-      const uint32_t slotUv = instanciado ? kVertexBuffersInstanciados : kVertexBuffersSimples;
-      wgpuRenderPassEncoderSetVertexBuffer(pass, slotUv, item.recorte->uvBuffer,
-                                           item.recorte->uvOffset, WGPU_WHOLE_SIZE);
-    }
-    if (item.geometria->indexBuffer) {
-      const WGPUIndexFormat formatoIndice =
-          item.geometria->indexIs32Bit ? WGPUIndexFormat_Uint32 : WGPUIndexFormat_Uint16;
-      wgpuRenderPassEncoderSetIndexBuffer(pass, item.geometria->indexBuffer, formatoIndice, 0,
-                                          WGPU_WHOLE_SIZE);
-      wgpuRenderPassEncoderDrawIndexed(pass, item.geometria->indexCount, item.quantas, 0, 0, 0);
-    } else {
-      wgpuRenderPassEncoderDraw(pass, item.geometria->vertexCount, item.quantas, 0, 0);
-    }
-    ++desenhados;
   }
 
-  wgpuRenderPassEncoderEnd(pass);
-  wgpuRenderPassEncoderRelease(pass);
-
-  WGPUCommandBufferDescriptor cd = WGPU_COMMAND_BUFFER_DESCRIPTOR_INIT;
-  WGPUCommandBuffer cmd = wgpuCommandEncoderFinish(encoder, &cd);
-  wgpuQueueSubmit(gpu->queue, 1, &cmd);
-  wgpuCommandBufferRelease(cmd);
-  wgpuCommandEncoderRelease(encoder);
-  wgpuTextureViewRelease(viewProf);
-
-  static const bool logar = std::getenv("CORTEX_SHADOW_PASS_LOG") != nullptr;
-  static int vezes = 0;
-  constexpr int kMaxVezesLogadas = 8;
-  if (logar && vezes < kMaxVezesLogadas) {
-    ++vezes;
-    std::fprintf(stderr, "[shadow-pass] alvo=%p %ux%u fmt=%d itens=%u desenhados=%u",
-                 (void*)alvoProfundidade, wgpuTextureGetWidth(alvoProfundidade),
-                 wgpuTextureGetHeight(alvoProfundidade), (int)formatoProf, total, desenhados);
-    std::fputc(0x0A, stderr);
-    std::fflush(stderr);
-  }
-  return desenhados;
+  logShadowPass(alvoProfundidade, total, desenhados, static_cast<int>(ShadowPassStatus::kOk));
+  return ShadowPassResult{desenhados, ShadowPassStatus::kOk};
 }
 
 }  // namespace render

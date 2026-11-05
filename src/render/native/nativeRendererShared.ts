@@ -142,6 +142,13 @@ export interface NativeRendererHost {
   toneMapping?: number;
 }
 
+/** The three's uploaded GPU texture, uploading it (and its sampler) through the three's path if needed; `null` = not ready. */
+export function uploadedTexture(host: NativeRendererHost, texture: unknown): unknown {
+  host._textures.updateTexture(texture);
+  host._textures.updateSampler(texture);
+  return host.backend.get(texture)['texture'] ?? null;
+}
+
 export interface AttributeLike {
   array: ArrayBufferView & ArrayLike<number>;
   itemSize: number;
@@ -268,6 +275,8 @@ export interface Inst extends NativeEntry {
   instances: number;
   passes: number;
   transparent: boolean;
+  /** `receiveShadow` variant: samples the sun shadow (counted for `csmReceivers`, SPEC-0690). */
+  receivesShadow: boolean;
 }
 
 /** Refused (object, material, geometry): checked again only when one of them changes. */

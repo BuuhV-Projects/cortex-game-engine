@@ -223,7 +223,7 @@ export function litSurfaceWgsl(variant: readonly string[], diffuseWgsl?: string)
   ${has('doubleSide') ? 'normal = normalGeometry * vec3<f32>((f32(isFront) * 2.0) - 1.0);' : ''}
   ${has('normalMap') ? normalMapWgsl(has('doubleSide')) : ''}
   var sunColor = lights.sunColor;
-  ${has('receiveShadow') ? 'sunColor = sunColor * nativeShadow(in.positionWorld, normalize((vec4<f32>(normal, 0.0) * view.view).xyz));' : ''}
+  ${has('receiveShadow') ? 'sunColor = sunColor * nativeShadow(in.positionWorld, normalize((vec4<f32>(normal, 0.0) * view.view).xyz), in.positionView);' : ''}
   let sunDirection = nativeSunDirection();
 `;
 }

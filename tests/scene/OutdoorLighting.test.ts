@@ -27,7 +27,7 @@ import type { Renderer } from '../../src/core/Renderer.js';
 /** O nó CSM interno, com os campos privados que o teste do E7 precisa ver. */
 type CsmSondado = {
   updateBefore(frame: never): void;
-  _nativoAssumiu: boolean;
+  _nativePass: { assumed: boolean };
   camera: unknown;
 };
 
@@ -147,7 +147,7 @@ describe('setupOutdoorLighting — E7: culling em JS só quando o three desenha'
     const cena = new ThreeScene();
     cena.add(longe);
     // Assumiu no frame anterior: a travessia é trabalho órfão.
-    csm['_nativoAssumiu'] = true;
+    csm['_nativePass'].assumed = true;
 
     csm.updateBefore(frameFalso(cena, camera) as never);
     expect(longe.castShadow).toBe(true); // intocado: ninguém percorreu a cena

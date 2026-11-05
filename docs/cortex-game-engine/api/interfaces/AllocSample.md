@@ -6,7 +6,7 @@
 
 # Interface: AllocSample
 
-Defined in: [src/core/PerfTrace.ts:201](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L201)
+Defined in: [src/core/PerfTrace.ts:209](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L209)
 
 Campo `alloc`: KB da janela e por sistema do ECS.
 
@@ -16,7 +16,7 @@ Campo `alloc`: KB da janela e por sistema do ECS.
 
 > `optional` **sysKB?**: `Record`\<`string`, `number`\>
 
-Defined in: [src/core/PerfTrace.ts:203](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L203)
+Defined in: [src/core/PerfTrace.ts:211](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L211)
 
 ***
 
@@ -24,4 +24,4 @@ Defined in: [src/core/PerfTrace.ts:203](https://github.com/BuuhV-Projects/cortex
 
 > `optional` **windowKB?**: `number`
 
-Defined in: [src/core/PerfTrace.ts:202](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L202)
+Defined in: [src/core/PerfTrace.ts:210](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L210)

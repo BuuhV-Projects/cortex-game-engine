@@ -27,10 +27,12 @@ import { classifyDrawable } from './RendererClassifier.js';
 import { GAME_MATERIAL_PREFIX, gameMaterialModel } from './GameMaterials.js';
 import { shaderTime } from './ShaderClock.js';
 import { NATIVE_MODELS } from './models/index.js';
-import { FRAME_BLOCKS } from './frame/index.js';
+import { FRAME_BLOCKS, countCsmReceiver } from './frame/index.js';
 import type { FrameBlock, FrameBlockFactory } from './frame/FrameBlock.js';
 import { OBJECT_FLOATS, OBJECT_NORMAL_AT, VIEW_FLOATS, VIEW_TIME_AT, type NativeModelDef } from './models/NativeModel.js';
 import { NativeGeometryStore } from './NativeGeometryStore.js';
+import { NativeShadowSource } from './NativeShadowSource.js';
+import { setActiveShadowSource } from '../ShadowGeometrySource.js';
 import { NO_TARGET, RecipeTarget } from './NativeRecipeTarget.js';
 import { NativeMaterialStore } from './NativeMaterialStore.js';
 import { NativePipelineStore, type NativeLayouts } from './NativePipelineStore.js';
@@ -44,15 +46,8 @@ import {
 } from './nativeRendererShared.js';
 
 export {
-  CORE_FEATURES,
-  drawState,
-  nativePrecompileRequested,
-  nativeRendererModels,
-  nativeRendererRequested,
-  setNativeRendererDefault,
-  vertexFormat,
-  type NativeRendererHost,
-  type NativeRendererStats,
+  CORE_FEATURES, drawState, nativePrecompileRequested, nativeRendererModels, nativeRendererRequested, setNativeRendererDefault,
+  vertexFormat, type NativeRendererHost, type NativeRendererStats,
 } from './nativeRendererShared.js';
 
 export class NativeRenderer implements NativeDrawer {
@@ -61,6 +56,8 @@ export class NativeRenderer implements NativeDrawer {
   private readonly _models = new Map<string, NativeModelDef>();
   private readonly _byObject = new WeakMap<Object3D, Inst | Refusal>();
   private readonly _geometries: NativeGeometryStore;
+  /** Geometry/UV source of the shadow pass over this renderer's buffers (ADR-0692). */
+  readonly shadowSource: NativeShadowSource;
   private readonly _materials: NativeMaterialStore;
   private readonly _pipelines: NativePipelineStore;
   private readonly _viewData = new Float32Array(VIEW_FLOATS);
@@ -116,6 +113,7 @@ export class NativeRenderer implements NativeDrawer {
     });
     this._layouts = { view, frame, object, objectSkinned };
     this._geometries = new NativeGeometryStore(d, _host);
+    this.shadowSource = new NativeShadowSource(this._geometries, _host);
     this._materials = new NativeMaterialStore(d, _host, this.stats, queryFlagRequested(TINT_QUERY, false));
     this._pipelines = new NativePipelineStore(d, this._layouts, frameWgsl, this._materials, this.stats);
     this._viewBuffer = d.createBuffer({ label: 'native.view', size: VIEW_FLOATS * FLOAT_BYTES, usage: BUFFER_UNIFORM | BUFFER_COPY_DST });
@@ -173,15 +171,17 @@ export class NativeRenderer implements NativeDrawer {
       cached.version === version && cached.instanceColor === instanceColor
     ) {
       if (!('mat' in cached)) return null;
-      if (this._refreshInstance(cached, worldVersion)) {
-        this.stats.taken++;
-        return cached;
-      }
+      if (this._refreshInstance(cached, worldVersion)) return this._taken(cached);
     }
     if (cached !== undefined && 'mat' in cached) this._dropInstance(cached);
     const inst = this._build(object, material as Material, geometry as GeometryLike);
-    if (inst === null) return null;
+    return inst === null ? null : this._taken(inst);
+  }
+
+  /** A draw handed to the list; a shadow receiver also counts for the CSM trace (SPEC-0690). */
+  private _taken(inst: Inst): Inst {
     this.stats.taken++;
+    if (inst.receivesShadow) countCsmReceiver();
     return inst;
   }
 
@@ -306,6 +306,7 @@ export class NativeRenderer implements NativeDrawer {
       instances: 1,
       passes: state.culls.length,
       transparent: m.transparent === true,
+      receivesShadow: c.features.includes('receiveShadow'),
     };
     this._byObject.set(object, inst);
     object.addEventListener('removed', () => {
@@ -469,11 +470,12 @@ export function createNativeRenderer(renderer: unknown, bridge: DrawBatchBridge 
     return null;
   }
   debug('perf', '[nativeRenderer] instalado');
-  return (active = new NativeRenderer(host as NativeRendererHost, bridge, NATIVE_MODELS, nativeRendererModels()));
+  active = new NativeRenderer(host as NativeRendererHost, bridge, NATIVE_MODELS, nativeRendererModels());
+  setActiveShadowSource(active.shadowSource);
+  return active;
 }
 
 let active: NativeRenderer | null = null;
-
 
 /**
  * Called by `Game` for the warm-up frame (SPEC-0585): runs `draw` and, with `?nativePrecompile=1`,

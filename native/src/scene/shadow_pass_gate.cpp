@@ -14,13 +14,15 @@ bool marcar(ShadowGateResult& r, ShadowGateRefusal reason) {
  * Motivos por caster, na ordem de prioridade do relato.
  *
  * A lista é percorrida inteira por caster (não para no primeiro): um objeto
- * skinado que também tem recorte alfa aparece nas duas contagens, e é isso que
- * permite ler do log se tirar uma condição bastaria para o gate aceitar.
+ * instanciado sem lote que também tem recorte alfa ausente aparece nas duas
+ * contagens, e é isso que permite ler do log se tirar uma condição bastaria
+ * para o gate aceitar. O skinado não entra aqui (SPEC-0690): é excluído antes
+ * de qualquer motivo e só conta em `excludedCasters`.
  */
 const ShadowGateRefusal kPerCasterOrder[] = {
-    ShadowGateRefusal::kSkinnedCaster,  ShadowGateRefusal::kInstancedCaster,
-    ShadowGateRefusal::kMaterialArray,  ShadowGateRefusal::kAlphaClip,
-    ShadowGateRefusal::kPositionNode,   ShadowGateRefusal::kGeometryMissing,
+    ShadowGateRefusal::kInstancedCaster, ShadowGateRefusal::kMaterialArray,
+    ShadowGateRefusal::kAlphaClip,       ShadowGateRefusal::kPositionNode,
+    ShadowGateRefusal::kGeometryMissing, ShadowGateRefusal::kPositionNotFloat32x3,
     ShadowGateRefusal::kUnsupportedSide,
 };
 
@@ -43,24 +45,39 @@ struct Consultas {
   GeometryPresence presence;
   InstancePresence instances;
   AlphaClipPresence alphaClip;
+  PositionFormatRefused positionRefused;
   void* userData;
 };
 
+/** Por que a geometria do caster não serve, ou {@link ShadowGateRefusal::kNone}. */
+ShadowGateRefusal motivoDaGeometria(const SceneMirror& mirror, NodeIndex index,
+                                    const Consultas& c) {
+  // Sem registro para consultar, TODA geometria conta como ausente: é o lado
+  // seguro, e é o estado real antes de o registro preguiçoso (E2) encher.
+  const int32_t geometry = mirror.geometryId(index);
+  if (geometry == kNoGeometry) return ShadowGateRefusal::kGeometryMissing;
+  if (c.presence != nullptr && c.presence(geometry, c.userData)) return ShadowGateRefusal::kNone;
+  // Não registrada: o registro pode tê-la recusado pelo formato (ADR-0692).
+  if (c.positionRefused != nullptr && c.positionRefused(geometry, c.userData)) {
+    return ShadowGateRefusal::kPositionNotFloat32x3;
+  }
+  return ShadowGateRefusal::kGeometryMissing;
+}
+
 bool caiNoMotivo(const SceneMirror& mirror, NodeIndex index, ShadowGateRefusal reason,
                  const Consultas& c) {
-  GeometryPresence presence = c.presence;
   void* userData = c.userData;
+  // O excluído não está na lista do desenho, então não é ofensor de nada.
+  if (excludedFromShadowPass(mirror, index)) return false;
   switch (reason) {
-    case ShadowGateRefusal::kSkinnedCaster: return mirror.hasFlag(index, kNodeSkinned);
     case ShadowGateRefusal::kInstancedCaster:
       return instanciasAusentes(mirror, index, c.instances, userData);
     case ShadowGateRefusal::kMaterialArray: return mirror.hasFlag(index, kNodeMaterialArray);
     case ShadowGateRefusal::kAlphaClip: return recorteAusente(mirror, index, c.alphaClip, userData);
     case ShadowGateRefusal::kPositionNode: return mirror.hasFlag(index, kNodePositionNode);
-    case ShadowGateRefusal::kGeometryMissing: {
-      const int32_t geometry = mirror.geometryId(index);
-      return presence == nullptr || geometry == kNoGeometry || !presence(geometry, userData);
-    }
+    case ShadowGateRefusal::kGeometryMissing:
+    case ShadowGateRefusal::kPositionNotFloat32x3:
+      return motivoDaGeometria(mirror, index, c) == reason;
     case ShadowGateRefusal::kUnsupportedSide:
       return mirror.shadowSide(index) == kShadowSideUnsupported;
     default: return false;  // motivo do frame inteiro: não há caster a apontar
@@ -84,6 +101,10 @@ int32_t primeiroOfensor(const SceneMirror& mirror, const std::vector<NodeIndex>&
 
 }  // namespace
 
+bool excludedFromShadowPass(const SceneMirror& mirror, NodeIndex index) {
+  return mirror.hasFlag(index, kNodeSkinned);
+}
+
 const char* shadowGateRefusalName(ShadowGateRefusal reason) {
   switch (reason) {
     case ShadowGateRefusal::kNone: return "aceito";
@@ -96,6 +117,7 @@ const char* shadowGateRefusalName(ShadowGateRefusal reason) {
     case ShadowGateRefusal::kPositionNode: return "position-node";
     case ShadowGateRefusal::kGeometryMissing: return "geometria-ausente";
     case ShadowGateRefusal::kUnsupportedSide: return "lado-nao-reproduzivel";
+    case ShadowGateRefusal::kPositionNotFloat32x3: return "posicao-nao-float32x3";
   }
   return "desconhecido";
 }
@@ -104,9 +126,16 @@ ShadowGateResult evaluateShadowPassGate(const SceneMirror& mirror,
                                         const std::vector<NodeIndex>& casters,
                                         const ShadowGateFrame& frame, GeometryPresence presence,
                                         void* userData, InstancePresence instances,
-                                        AlphaClipPresence alphaClip) {
+                                        AlphaClipPresence alphaClip,
+                                        std::vector<NodeIndex>* drawList,
+                                        PositionFormatRefused positionRefused) {
+  const Consultas consultas{presence, instances, alphaClip, positionRefused, userData};
   ShadowGateResult r;
   r.totalCasters = static_cast<int32_t>(casters.size());
+  if (drawList) {
+    drawList->clear();
+    drawList->reserve(casters.size());
+  }
 
   // --- Fatos do frame inteiro ---------------------------------------------
   // A divergência vale mesmo sem caster nenhum: o nó que falta no espelho pode
@@ -126,10 +155,15 @@ ShadowGateResult evaluateShadowPassGate(const SceneMirror& mirror,
 
   // --- Um caster de cada vez ----------------------------------------------
   for (const NodeIndex index : casters) {
-    bool refused = false;
-    if (mirror.hasFlag(index, kNodeSkinned)) {
-      refused = marcar(r, ShadowGateRefusal::kSkinnedCaster);
+    // Skinado sai da lista ANTES dos outros motivos (SPEC-0690, ADR-0691): o
+    // player está sempre na cascata 0, e recusar por ele tiraria a CSM nativa
+    // inteira. Ele não é desenhado, então nada mais dele é julgado.
+    if (excludedFromShadowPass(mirror, index)) {
+      r.excludedCasters += 1;
+      continue;
     }
+    if (drawList) drawList->push_back(index);
+    bool refused = false;
     if (instanciasAusentes(mirror, index, instances, userData)) {
       refused = marcar(r, ShadowGateRefusal::kInstancedCaster);
     }
@@ -142,12 +176,8 @@ ShadowGateResult evaluateShadowPassGate(const SceneMirror& mirror,
     if (mirror.hasFlag(index, kNodePositionNode)) {
       refused = marcar(r, ShadowGateRefusal::kPositionNode);
     }
-    // Sem registro para consultar, TODA geometria conta como ausente: é o lado
-    // seguro, e é o estado real antes de o registro preguiçoso (E2) encher.
-    const int32_t geometry = mirror.geometryId(index);
-    const bool registered =
-        presence != nullptr && geometry != kNoGeometry && presence(geometry, userData);
-    if (!registered) refused = marcar(r, ShadowGateRefusal::kGeometryMissing);
+    const ShadowGateRefusal geometria = motivoDaGeometria(mirror, index, consultas);
+    if (geometria != ShadowGateRefusal::kNone) refused = marcar(r, geometria);
     // O lado da face vem resolvido do JS (ver `ShadowSide`). O que o passe
     // nativo sabe desenhar são os três valores da tabela do `three`; qualquer
     // outro recusa, em vez de virar um `cullMode` aproximado.
@@ -173,8 +203,7 @@ ShadowGateResult evaluateShadowPassGate(const SceneMirror& mirror,
   }
   r.accepted = r.reason == ShadowGateRefusal::kNone;
   r.offenders = r.counts[static_cast<size_t>(r.reason)];
-  r.firstOffender =
-      primeiroOfensor(mirror, casters, r.reason, Consultas{presence, instances, alphaClip, userData});
+  r.firstOffender = primeiroOfensor(mirror, casters, r.reason, consultas);
   return r;
 }
 

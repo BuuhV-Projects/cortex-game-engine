@@ -76,6 +76,8 @@ export abstract class MirrorSlots implements MirrorSink, LayersSink {
   protected readonly _instanciados = new Map<NoDaCena, { versao: number; quantas: number }>();
   /** Nós marcados com recorte alfa — quem o `ShadowAlphaClipSync` acompanha (SPEC-0642). */
   protected readonly _recorteAlfa = new Set<Object3D>();
+  /** Quem quer saber que um nó com recorte saiu do espelho: o host apagou o slot dele (ADR-0692). */
+  protected readonly _ouvintesDoRecorte = new Set<(objeto: Object3D) => void>();
   // ── Só o que mudou (SPEC-0322) — tudo dimensionado pela CAPACIDADE ──────
   /** 1 = slot já está em {@link _listaSujos} neste quadro. */
   protected _sujoMarca = new Uint8Array(0);
@@ -113,6 +115,12 @@ export abstract class MirrorSlots implements MirrorSink, LayersSink {
   /** Nós espelhados com recorte alfa (`alphaTest`/`alphaMap`, SPEC-0642). */
   get alphaClipNodes(): ReadonlySet<Object3D> {
     return this._recorteAlfa;
+  }
+
+  /** Avisa quando um nó com recorte alfa sai do espelho (`removeSubtree`); devolve o `off`. */
+  onAlphaClipRemoved(ouvinte: (objeto: Object3D) => void): () => void {
+    this._ouvintesDoRecorte.add(ouvinte);
+    return () => this._ouvintesDoRecorte.delete(ouvinte);
   }
 
   /** Índice do nó no espelho, ou `undefined` se ele não está espelhado. */

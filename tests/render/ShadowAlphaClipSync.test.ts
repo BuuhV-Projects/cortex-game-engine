@@ -113,7 +113,10 @@ describe('ShadowAlphaClipSync (SPEC-0642)', () => {
     const sync = new ShadowAlphaClipSync();
     const espelho = espelhoFalso([malha]);
     sync.sync(espelho, backend);
-    backend.subidos.delete((malha.material as MeshStandardMaterial).map);
+    // Como no three: o `dispose` avisa, e o backend solta o handle.
+    const mapa = (malha.material as MeshStandardMaterial).map!;
+    mapa.dispose();
+    backend.subidos.delete(mapa);
     sync.sync(espelho, backend);
     expect(sets).toHaveLength(1);
     expect(erases).toEqual([1]);

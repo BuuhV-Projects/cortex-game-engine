@@ -13,7 +13,8 @@
 import type { Camera } from 'three';
 import { Frustum, Matrix4, Object3D, Vector3 } from 'three';
 import { debug } from './debug.js';
-import { GATE_OUT_FIRST_OFFENDER, GATE_OUT_FLOATS, GATE_OUT_TOTAL_CASTERS, SHADOW_GATE_REASONS, type ShadowPassOutcome } from './sceneMirror/mirrorBridge.js';
+import { GATE_OUT_FLOATS, type ShadowPassOutcome } from './sceneMirror/mirrorBridge.js';
+import { prepareGateOut, readShadowPassOutcome } from './sceneMirror/shadowPassOutcome.js';
 import { desengancharNo } from './sceneMirror/mirrorHooks.js';
 import {
   APPEND_ERROR_CAPACITY,
@@ -35,7 +36,10 @@ export {
   type MainPassBridge,
   type ShadowGateReason,
   type ShadowPassOutcome,
+  type ShadowPassReason,
+  type ShadowPassStatus,
 } from './sceneMirror/mirrorBridge.js';
+export { shadowPassAccepted } from './sceneMirror/shadowPassOutcome.js';
 export { SWEEP_MIN_NODES, SWEEP_PERIOD_FRAMES } from './sceneMirror/mirrorLayout.js';
 
 /**
@@ -306,7 +310,7 @@ export class NativeSceneMirror extends MirrorSlots {
       if (slot === undefined) return;
       this._indicePorObjeto.delete(objeto);
       this._instanciados.delete(objeto as NoDaCena);
-      this._recorteAlfa.delete(objeto);
+      if (this._recorteAlfa.delete(objeto)) this._ouvintesDoRecorte.forEach((ouvinte) => ouvinte(objeto));
       this._nodes[slot] = undefined;
       this._liveCount--;
       this._pararDeEscutar(objeto);
@@ -408,8 +412,8 @@ export class NativeSceneMirror extends MirrorSlots {
    *   cascata, em `Float64Array`. **Nunca `Float32Array`**: a multiplicação
    *   por `model` acontece em `double` no C++, e degradar antes é o caminho
    *   conhecido para as bandas da SPEC-0234.
-   * @returns `{ drawn }` quando desenhou, `{ refused }` com o motivo quando
-   *   não — e `undefined` no browser/Studio, onde não há host.
+   * @returns `{ drawn, status }` (SPEC-0690; aceito = {@link shadowPassAccepted}), `{ refused }` com o motivo
+   *   quando não — e `undefined` no browser/Studio, onde não há host.
    */
   drawShadowPass(
     shadowCamera: Camera,
@@ -424,6 +428,7 @@ export class NativeSceneMirror extends MirrorSlots {
     if (!api?.drawShadowPass || !this._installed) return undefined;
 
     this._escreverPlanosDaCascata(shadowCamera);
+    prepareGateOut(this._gateOut);
     const resposta = api.drawShadowPass(
       minRatio,
       cameraPosition.x,
@@ -438,20 +443,7 @@ export class NativeSceneMirror extends MirrorSlots {
     );
     if (typeof resposta !== 'number') return undefined;
 
-    const totalCasters = this._gateOut[GATE_OUT_TOTAL_CASTERS] ?? 0;
-    if (resposta < 0) {
-      const reason = SHADOW_GATE_REASONS[-resposta] ?? 'geometria-ausente';
-      // Host antigo não escreve o slot (fica 0, que é a cena): só confia em >0.
-      const ofensor = this._gateOut[GATE_OUT_FIRST_OFFENDER] ?? -1;
-      const offender = ofensor > 0 ? this._nodes[ofensor] : undefined;
-      const partes: string[] = [];
-      for (let i = 1; i < SHADOW_GATE_REASONS.length; i++) {
-        const n = this._gateOut[i] ?? 0;
-        if (n > 0) partes.push(`${SHADOW_GATE_REASONS[i]}=${n}`);
-      }
-      return { drawn: 0, refused: true, reason, totalCasters, offender, counts: partes.join(' ') };
-    }
-    return { drawn: resposta, refused: false, reason: 'aceito', totalCasters };
+    return readShadowPassOutcome(resposta, this._gateOut, this._nodes);
   }
 
   /**

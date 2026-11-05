@@ -6,7 +6,7 @@
 
 # Class: SceneWalk
 
-Defined in: [src/core/PerfTrace.ts:213](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L213)
+Defined in: [src/core/PerfTrace.ts:221](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L221)
 
 **Censo da cena em rodízio** (SPEC-0334): anda `budget` nós por chamada e, ao fechar a volta, publica em
 [SceneWalk.result](#result) o tamanho da árvore, as matrizes paradas e os nós no frustum.
@@ -29,7 +29,7 @@ Defined in: [src/core/PerfTrace.ts:213](https://github.com/BuuhV-Projects/cortex
 
 > **get** **result**(): [`SceneWalkResult`](../interfaces/SceneWalkResult.md) \| `null`
 
-Defined in: [src/core/PerfTrace.ts:217](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L217)
+Defined in: [src/core/PerfTrace.ts:225](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L225)
 
 Última volta completa, ou `null` antes da primeira.
 
@@ -43,7 +43,7 @@ Defined in: [src/core/PerfTrace.ts:217](https://github.com/BuuhV-Projects/cortex
 
 > **step**(`scene`, `camera`, `budget`): `void`
 
-Defined in: [src/core/PerfTrace.ts:222](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L222)
+Defined in: [src/core/PerfTrace.ts:230](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L230)
 
 Avança a volta em até `budget` nós. A câmera precisa estar com `matrixWorldInverse` em dia.
 

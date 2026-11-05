@@ -48,7 +48,12 @@ enum class ShadowGateRefusal : uint8_t {
    * tipo é configurável, então é guarda e não suposição.
    */
   kVsmShadowMap,
-  /** Caster skinado: o bounding sphere mente com o rig e o passe não aplica o esqueleto. */
+  /**
+   * Caster skinado: o bounding sphere mente com o rig e o passe não aplica o
+   * esqueleto. Desde a SPEC-0690 (ADR-0691) ele NÃO recusa mais: sai da lista
+   * do desenho e conta em {@link ShadowGateResult::excludedCasters}. O valor
+   * fica no enum porque o JS indexa os motivos pela posição.
+   */
   kSkinnedCaster,
   /**
    * `InstancedMesh` cujas matrizes de instância o host NÃO tem
@@ -80,6 +85,13 @@ enum class ShadowGateRefusal : uint8_t {
    * seguro (SPEC-0245, premissa 4 da SPEC-0246).
    */
   kUnsupportedSide,
+  /**
+   * A geometria foi registrada com `position` fora de `float32x3` (ADR-0692): o
+   * pipeline do passe de sombra só lê esse formato. Motivo próprio para não se
+   * confundir com {@link kGeometryMissing}, que é "ainda não subiu". Vem no FIM
+   * do enum porque o JS indexa os motivos pela posição.
+   */
+  kPositionNotFloat32x3,
 };
 
 /**
@@ -91,7 +103,7 @@ enum class ShadowGateRefusal : uint8_t {
  * contagem do último motivo cai FORA do array, em cima do campo seguinte, e o
  * gate passa a relatar número inventado.
  */
-constexpr int kShadowGateRefusalCount = 10;
+constexpr int kShadowGateRefusalCount = 11;
 
 /** Fatos do frame inteiro, que só o JS enxerga. */
 struct ShadowGateFrame {
@@ -113,6 +125,14 @@ struct ShadowGateFrame {
  * conta como ausente — recusa, que é o lado seguro.
  */
 using GeometryPresence = bool (*)(int32_t geometryId, void* userData);
+
+/**
+ * A geometria foi recusada pelo registro por formato de `position` (ADR-0692)?
+ * Só é perguntado para geometria NÃO registrada. `nullptr` = não há a quem
+ * perguntar, e toda geometria ausente conta como {@link
+ * ShadowGateRefusal::kGeometryMissing} — o comportamento anterior.
+ */
+using PositionFormatRefused = bool (*)(int32_t geometryId, void* userData);
 
 /**
  * O host tem as matrizes de instância deste nó (SPEC-0289)? `nullptr` = não há
@@ -144,8 +164,13 @@ struct ShadowGateResult {
   int32_t counts[kShadowGateRefusalCount] = {};
   /** Casters distintos recusados (um caster com dois motivos conta uma vez). */
   int32_t refusedCasters = 0;
-  /** Casters avaliados. */
+  /** Casters avaliados, incluindo os excluídos. */
   int32_t totalCasters = 0;
+  /**
+   * Casters skinados tirados da lista do desenho (SPEC-0690): não recusam a
+   * cascata, só não projetam sombra no passe nativo.
+   */
+  int32_t excludedCasters = 0;
   /**
    * Primeiro caster (na ordem do enumerador) que caiu em {@link reason}, ou
    * -1 quando o motivo é do frame inteiro ou o gate aceitou (SPEC-0289).
@@ -157,6 +182,9 @@ struct ShadowGateResult {
   int32_t firstOffender = -1;
 };
 
+/** O caster fica fora do passe nativo, sem recusar (SPEC-0690: skinado)? */
+bool excludedFromShadowPass(const SceneMirror& mirror, NodeIndex index);
+
 /**
  * Decide se o passe nativo pode assumir o frame.
  *
@@ -167,12 +195,17 @@ struct ShadowGateResult {
  * @param userData  repassado a `presence` e `instances` sem ser tocado
  * @param instances consulta às matrizes de instância (ver {@link InstancePresence})
  * @param alphaClip consulta ao recorte alfa do host (ver {@link AlphaClipPresence})
+ * @param drawList  opcional: recebe os casters que seguem para o desenho (sem
+ *                  os excluídos), na ordem do enumerador; é limpa antes
+ * @param positionRefused consulta ao formato recusado (ver {@link PositionFormatRefused})
  */
 ShadowGateResult evaluateShadowPassGate(const SceneMirror& mirror,
                                         const std::vector<NodeIndex>& casters,
                                         const ShadowGateFrame& frame, GeometryPresence presence,
                                         void* userData, InstancePresence instances = nullptr,
-                                        AlphaClipPresence alphaClip = nullptr);
+                                        AlphaClipPresence alphaClip = nullptr,
+                                        std::vector<NodeIndex>* drawList = nullptr,
+                                        PositionFormatRefused positionRefused = nullptr);
 
 /** Nome do motivo, para o relato por log sair legível sem depurador. */
 const char* shadowGateRefusalName(ShadowGateRefusal reason);

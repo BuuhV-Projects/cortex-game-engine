@@ -6,7 +6,7 @@
 
 # Interface: ShadowOffender
 
-Defined in: [src/core/PerfTrace.ts:170](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L170)
+Defined in: [src/core/PerfTrace.ts:162](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L162)
 
 Objeto que barrou a sombra do sol: nome do three, `Object3D.id` e o nó de cena que o contém.
 
@@ -16,7 +16,7 @@ Objeto que barrou a sombra do sol: nome do three, `Object3D.id` e o nó de cena 
 
 > **id**: `number`
 
-Defined in: [src/core/PerfTrace.ts:172](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L172)
+Defined in: [src/core/PerfTrace.ts:164](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L164)
 
 ***
 
@@ -24,7 +24,7 @@ Defined in: [src/core/PerfTrace.ts:172](https://github.com/BuuhV-Projects/cortex
 
 > **name**: `string`
 
-Defined in: [src/core/PerfTrace.ts:171](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L171)
+Defined in: [src/core/PerfTrace.ts:163](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L163)
 
 ***
 
@@ -32,4 +32,4 @@ Defined in: [src/core/PerfTrace.ts:171](https://github.com/BuuhV-Projects/cortex
 
 > **node**: `string`
 
-Defined in: [src/core/PerfTrace.ts:173](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L173)
+Defined in: [src/core/PerfTrace.ts:165](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L165)

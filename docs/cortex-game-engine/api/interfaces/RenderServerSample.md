@@ -6,7 +6,7 @@
 
 # Interface: RenderServerSample
 
-Defined in: [src/core/PerfTrace.ts:186](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L186)
+Defined in: [src/core/PerfTrace.ts:194](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L194)
 
 Campo `renderServer`: deltas da janela e os motivos de recusa mais frequentes do NativeRenderer.
 
@@ -16,7 +16,7 @@ Campo `renderServer`: deltas da janela e os motivos de recusa mais frequentes do
 
 > **fallback**: `number`
 
-Defined in: [src/core/PerfTrace.ts:187](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L187)
+Defined in: [src/core/PerfTrace.ts:195](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L195)
 
 ***
 
@@ -24,7 +24,7 @@ Defined in: [src/core/PerfTrace.ts:187](https://github.com/BuuhV-Projects/cortex
 
 > **fbEnv**: `number`
 
-Defined in: [src/core/PerfTrace.ts:189](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L189)
+Defined in: [src/core/PerfTrace.ts:197](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L197)
 
 ***
 
@@ -32,7 +32,7 @@ Defined in: [src/core/PerfTrace.ts:189](https://github.com/BuuhV-Projects/cortex
 
 > **nativeRefused**: `number`
 
-Defined in: [src/core/PerfTrace.ts:190](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L190)
+Defined in: [src/core/PerfTrace.ts:198](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L198)
 
 ***
 
@@ -40,7 +40,7 @@ Defined in: [src/core/PerfTrace.ts:190](https://github.com/BuuhV-Projects/cortex
 
 > **nativeTop**: `object`[]
 
-Defined in: [src/core/PerfTrace.ts:191](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L191)
+Defined in: [src/core/PerfTrace.ts:199](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L199)
 
 #### count
 
@@ -56,4 +56,4 @@ Defined in: [src/core/PerfTrace.ts:191](https://github.com/BuuhV-Projects/cortex
 
 > **refused**: `number`
 
-Defined in: [src/core/PerfTrace.ts:188](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L188)
+Defined in: [src/core/PerfTrace.ts:196](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L196)

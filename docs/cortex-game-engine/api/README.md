@@ -232,6 +232,7 @@
 - [StreamingCell](interfaces/StreamingCell.md)
 - [SubtreeMergeOptions](interfaces/SubtreeMergeOptions.md)
 - [SubtreeMergeStats](interfaces/SubtreeMergeStats.md)
+- [SunShadowCascadeSample](interfaces/SunShadowCascadeSample.md)
 - [SunShadowSample](interfaces/SunShadowSample.md)
 - [TerrainOptions](interfaces/TerrainOptions.md)
 - [TerrainPaintData](interfaces/TerrainPaintData.md)

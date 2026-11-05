@@ -6,7 +6,7 @@
 
 # Interface: UiUploadsSample
 
-Defined in: [src/core/PerfTrace.ts:195](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L195)
+Defined in: [src/core/PerfTrace.ts:203](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L203)
 
 Campo `uiUploads`: total e os widgets que mais reenviaram (`label#id`, `canvas#id`, `image#id`).
 
@@ -16,7 +16,7 @@ Campo `uiUploads`: total e os widgets que mais reenviaram (`label#id`, `canvas#i
 
 > **top**: `object`[]
 
-Defined in: [src/core/PerfTrace.ts:197](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L197)
+Defined in: [src/core/PerfTrace.ts:205](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L205)
 
 #### count
 
@@ -36,4 +36,4 @@ Defined in: [src/core/PerfTrace.ts:197](https://github.com/BuuhV-Projects/cortex
 
 > **total**: `number`
 
-Defined in: [src/core/PerfTrace.ts:196](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L196)
+Defined in: [src/core/PerfTrace.ts:204](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L204)

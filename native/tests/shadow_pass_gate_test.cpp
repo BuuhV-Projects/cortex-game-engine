@@ -211,8 +211,8 @@ void testShadowGateAceitaCenaLimpa() {
   CHECK(r.offenders == 0);
 }
 
-void testShadowGateRecusaSkinnedEInstanced() {
-  casterComBitRecusa(scene::kNodeSkinned, ShadowGateRefusal::kSkinnedCaster);
+void testShadowGateRecusaInstanced() {
+  // Skinado nao recusa mais: e excluido (SPEC-0690, shadow_pass_exclusion_test.cpp).
   casterComBitRecusa(scene::kNodeInstanced, ShadowGateRefusal::kInstancedCaster);
 }
 
@@ -317,15 +317,16 @@ void testShadowGatePrioridadeEContagemPorMotivo() {
   // proximo ciclo de investigacao.
   std::vector<NodeDesc> nos;
   NodeDesc duplo = casterAceito();
-  duplo.flags = static_cast<uint16_t>(duplo.flags | scene::kNodeSkinned | scene::kNodeAlphaClip);
+  duplo.flags =
+      static_cast<uint16_t>(duplo.flags | scene::kNodeInstanced | scene::kNodeAlphaClip);
   nos.push_back(duplo);
   NodeDesc soAlfa = casterAceito();
   soAlfa.flags = static_cast<uint16_t>(soAlfa.flags | scene::kNodeAlphaClip);
   nos.push_back(soAlfa);
 
   const ShadowGateResult r = avaliar(nos, frameLimpo(nos.size()));
-  CHECK(r.reason == ShadowGateRefusal::kSkinnedCaster);  // prioridade
-  CHECK(r.counts[static_cast<size_t>(ShadowGateRefusal::kSkinnedCaster)] == 1);
+  CHECK(r.reason == ShadowGateRefusal::kInstancedCaster);  // prioridade
+  CHECK(r.counts[static_cast<size_t>(ShadowGateRefusal::kInstancedCaster)] == 1);
   CHECK(r.counts[static_cast<size_t>(ShadowGateRefusal::kAlphaClip)] == 2);
   // Dois casters recusados, tres marcacoes de motivo: o caster duplo conta uma
   // vez em `refusedCasters` e duas nas contagens.

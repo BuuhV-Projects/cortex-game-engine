@@ -29,7 +29,21 @@ WGPUAddressMode paraWgpu(AlphaClipWrap wrap) {
   return WGPUAddressMode_Repeat;
 }
 
+void soltarBindGroup(WGPUBindGroup group) { wgpuBindGroupRelease(group); }
+void soltarView(WGPUTextureView view) { wgpuTextureViewRelease(view); }
+
+/** As operações reais de soltura (wgpu); a tabela é testada com outras. */
+AlphaClipReleaseOps operacoesWgpu() {
+  AlphaClipReleaseOps ops;
+  ops.buffers = wgpuBufferRefOps();
+  ops.releaseBindGroup = soltarBindGroup;
+  ops.releaseView = soltarView;
+  return ops;
+}
+
 }  // namespace
+
+AlphaClipStore::AlphaClipStore() : table_(operacoesWgpu()) {}
 
 bool alphaClipWrapFromThree(double value, AlphaClipWrap* out) {
   if (value == kThreeRepeatWrapping) *out = AlphaClipWrap::kRepeat;
@@ -50,13 +64,6 @@ bool alphaClipFilterableFormat(WGPUTextureFormat format) {
   }
   // Os comprimidos (BC, ETC2, EAC, ASTC) são contíguos no enum e todos filtráveis.
   return format >= WGPUTextureFormat_BC1RGBAUnorm && format <= WGPUTextureFormat_ASTC12x12UnormSrgb;
-}
-
-void AlphaClipStore::release(AlphaClipEntry& entry) {
-  // Contagem de referência do wgpu: o que já foi submetido sobrevive até a GPU terminar.
-  if (entry.bindGroup) wgpuBindGroupRelease(entry.bindGroup);
-  if (entry.view) wgpuTextureViewRelease(entry.view);
-  entry = AlphaClipEntry{};
 }
 
 WGPUBindGroupLayout AlphaClipStore::layout(HostGpu* gpu) {
@@ -124,7 +131,7 @@ bool AlphaClipStore::set(HostGpu* gpu, int32_t node, const AlphaClipSource& sour
   gd.entries = ligacoes;
   entry.bindGroup = wgpuDeviceCreateBindGroup(gpu->device, &gd);
   if (!entry.bindGroup) {
-    release(entry);
+    releaseAlphaClipObjects(operacoesWgpu(), entry);
     return false;
   }
 
@@ -133,25 +140,9 @@ bool AlphaClipStore::set(HostGpu* gpu, int32_t node, const AlphaClipSource& sour
   entry.uvOffset = source.uvOffset;
   entry.alphaTest = source.alphaTest;
   std::memcpy(entry.uvTransform, source.uvTransform, sizeof(entry.uvTransform));
-  entries_[node] = entry;
+  // A tabela faz o AddRef do UV e passa a ser dona da view e do bind group.
+  table_.put(node, entry);
   return true;
-}
-
-const AlphaClipEntry* AlphaClipStore::find(int32_t node) const {
-  const auto it = entries_.find(node);
-  return it == entries_.end() ? nullptr : &it->second;
-}
-
-void AlphaClipStore::erase(int32_t node) {
-  const auto it = entries_.find(node);
-  if (it == entries_.end()) return;
-  release(it->second);
-  entries_.erase(it);
-}
-
-void AlphaClipStore::clear() {
-  for (auto& [node, entry] : entries_) release(entry);
-  entries_.clear();
 }
 
 AlphaClipStore& alphaClipStore() {
