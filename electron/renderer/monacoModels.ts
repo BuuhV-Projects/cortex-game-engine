@@ -1,6 +1,5 @@
 import * as monaco from 'monaco-editor'
 import { MODEL_WARN_THRESHOLD, shouldPreloadProjectFile } from './preloadFilter'
-import { detectLanguage } from './fileKinds'
 import { monacoTs, pathToVirtualUri } from './monacoWorkspace'
 import { debug } from '../../src/core/debug'
 
@@ -8,8 +7,10 @@ import { debug } from '../../src/core/debug'
 const SCOPE = 'studio:monaco'
 
 /**
- * Alimentação de models/types no serviço de TypeScript do Monaco: pre-load dos
- * fontes do projeto, types do engine e o aviso de excesso de models (SPEC-0166).
+ * Alimentação de types no serviço de TypeScript do Monaco: fontes do projeto e
+ * types do engine via `addExtraLib`, SEM pré-criar models (SPEC-0692) — cada
+ * model assina o emitter global de linguagem e o Monaco alerta "listener LEAK"
+ * em 200. O model nasce só quando o arquivo é aberto de fato (aba/Ctrl+click).
  * Extraído do `Editor.ts`.
  */
 
@@ -41,34 +42,34 @@ function warnIfManyModels(origin: string): void {
 }
 
 /**
- * Para cada arquivo-fonte do projeto, cria silenciosamente um model no
- * Monaco (sem abrir aba). Isso alimenta o TypeScript service: imports
- * relativos (`./foo`) passam a ser resolvíveis e Ctrl+click consegue
- * navegar pra arquivos que o usuário ainda não abriu manualmente.
+ * Para cada arquivo-fonte do projeto, alimenta o TypeScript service via
+ * `addExtraLib` (SPEC-0692): imports relativos (`./foo`) passam a ser
+ * resolvíveis e o go-to-definition encontra o destino — SEM criar model
+ * (model = 1 listener no emitter global; projeto grande estourava os 200).
+ * Na navegação, o `registerEditorOpener` do Editor lê o arquivo do disco e
+ * cria o model naquele instante; dali em diante o worker do Monaco prefere o
+ * model sobre a extra lib, então edição ao vivo não fica stale.
  *
- * Idempotente: pula arquivos que já têm model. Arquivos que falhem ao
- * ler são silenciados — perder navegação pra 1 arquivo problemático é
- * melhor que abortar todo o pre-load. Leituras em paralelo.
- *
- * Trade-off: gasta RAM proporcional ao tamanho do projeto. Pra projetos
- * típicos (< 100 arquivos × poucos KB cada) é desprezível.
+ * Idempotente: pula arquivos já registrados. Arquivos que falhem ao ler são
+ * silenciados — perder navegação pra 1 arquivo problemático é melhor que
+ * abortar todo o pre-load. Leituras em paralelo.
  */
+const preloadedPaths = new Set<string>()
+
 export async function preloadProjectFiles(projectDir: string): Promise<void> {
   try {
     const files = await window.electronAPI.listProjectFiles(projectDir)
     await Promise.all(
       files.map(async (path) => {
         // Arquivo de teste fica fora do preload (SPEC-0166): é destino raro de
-        // "ir para a definição" e cada model custa um listener no emitter
-        // global do Monaco. Abrir o arquivo cria o model normalmente.
+        // "ir para a definição" e abrir o arquivo cobre a navegação.
         if (!shouldPreloadProjectFile(path)) return
-        const uri = pathToVirtualUri(path)
-        if (monaco.editor.getModel(uri)) return
+        const uriString = pathToVirtualUri(path).toString()
+        if (preloadedPaths.has(uriString)) return
         try {
           const content = await window.electronAPI.readFile(path)
-          const name = path.split(/[\\/]/).pop() ?? ''
-          const language = detectLanguage(name)
-          monaco.editor.createModel(content, language, uri)
+          monacoTs.typescriptDefaults.addExtraLib(content, uriString)
+          preloadedPaths.add(uriString)
         } catch {
           // Arquivo pode ter sumido entre o list e o read — ignora.
         }
@@ -80,6 +81,26 @@ export async function preloadProjectFiles(projectDir: string): Promise<void> {
   }
 }
 
+/**
+ * Conteúdo dos `.d.ts` navegáveis do engine, por URI (`file:///node_modules/
+ * cortex-game-engine/...`). Eles não existem no filesystem do projeto, então o
+ * fallback de disco do opener não os cobre — o model é criado sob demanda a
+ * partir deste mapa na primeira navegação (SPEC-0692).
+ */
+const engineTypeContents = new Map<string, string>()
+
+/**
+ * Cria (ou devolve) o model de um type navegável do engine, sob demanda.
+ * Retorna `null` se a URI não é um type conhecido do engine.
+ */
+export function getOrCreateEngineTypeModel(resource: monaco.Uri): monaco.editor.ITextModel | null {
+  const existing = monaco.editor.getModel(resource)
+  if (existing) return existing
+  const content = engineTypeContents.get(resource.toString())
+  if (content === undefined) return null
+  return monaco.editor.createModel(content, 'typescript', resource)
+}
+
 /** Alimenta os types do engine no servidor TS do Monaco. */
 export async function loadEngineTypes(): Promise<void> {
   try {
@@ -88,14 +109,11 @@ export async function loadEngineTypes(): Promise<void> {
       // addExtraLib é essencial para que o TS service resolva `import 'X'`
       // — sem isso o módulo nem é encontrado.
       monacoTs.typescriptDefaults.addExtraLib(content, path)
-      // createModel adicional só para os arquivos do engine (poucos) —
-      // viabiliza Ctrl+click. Para @types/three (~946 arquivos) cair aqui
-      // estoura o limite de 200 listeners do Monaco.
+      // Navegável = Ctrl+click deve abrir o arquivo. O model NÃO é criado
+      // aqui (eram ~114 listeners no emitter global, SPEC-0692) — só o
+      // conteúdo fica guardado pra criar o model na primeira navegação.
       if (navigable) {
-        const uri = monaco.Uri.parse(path)
-        if (!monaco.editor.getModel(uri)) {
-          monaco.editor.createModel(content, 'typescript', uri)
-        }
+        engineTypeContents.set(monaco.Uri.parse(path).toString(), content)
       }
     }
     warnIfManyModels('os types do engine')

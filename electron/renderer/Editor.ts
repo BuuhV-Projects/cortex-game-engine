@@ -8,7 +8,7 @@ import {
   pathToVirtualUri,
   virtualUriToPath,
 } from './monacoWorkspace'
-import { loadEngineTypes, preloadProjectFiles } from './monacoModels'
+import { getOrCreateEngineTypeModel, loadEngineTypes, preloadProjectFiles } from './monacoModels'
 import { renderEditorTabs } from './editorTabsView'
 import { registerMonacoWorkers } from './monacoWorkers'
 
@@ -140,10 +140,10 @@ export class Editor {
       }
     })
 
-    // Pre-carrega models pra todos os fontes do projeto. Sem isso, o
-    // TypeScript service do Monaco não sabe que arquivos como
-    // `./scenes/RaceScene` existem e o Ctrl+click no import nem chega
-    // a chamar registerEditorOpener — não tem destino pra navegar.
+    // Alimenta o TS service com os fontes do projeto (via addExtraLib, sem
+    // criar models — SPEC-0692). Sem isso, o TypeScript service do Monaco não
+    // sabe que arquivos como `./scenes/RaceScene` existem e o Ctrl+click no
+    // import nem chega a chamar registerEditorOpener — não tem destino.
     document.addEventListener('project-open', (e) => {
       const { path } = (e as CustomEvent<{ path: string }>).detail
       void preloadProjectFiles(path)
@@ -167,7 +167,16 @@ export class Editor {
           return true
         }
         const realPath = virtualUriToPath(resource)
-        if (!realPath) return false
+        if (!realPath) {
+          // Type navegável do engine (sem fs real): o model nasce aqui, na
+          // primeira navegação, a partir do conteúdo guardado (SPEC-0692).
+          const engineModel = getOrCreateEngineTypeModel(resource)
+          if (engineModel) {
+            this.openModel(engineModel, selectionOrPosition)
+            return true
+          }
+          return false
+        }
         const name = resource.path.split('/').pop() ?? '(sem nome)'
         // Async — o Monaco aceita true como "vou cuidar disso" e a aba
         // aparece logo que readFile responde.
