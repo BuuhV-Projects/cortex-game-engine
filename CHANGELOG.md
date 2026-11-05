@@ -1,3 +1,10 @@
+## [0.104.2](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.104.1...v0.104.2) (2026-11-05)
+
+
+### Bug Fixes
+
+* **studio:** tipa os imports ?worker e registra a divisao do Editor ([92abe8f](https://github.com/BuuhV-Projects/cortex-game-engine/commit/92abe8f420d7a678b2c015718d1f9393e9283de4))
+
 ## [0.104.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.104.0...v0.104.1) (2026-11-05)
 
 
