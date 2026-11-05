@@ -45,4 +45,11 @@ describe('registerScripts', () => {
     expect(names).toEqual(['CoinScript']);
     expect(listScripts()).toEqual(['CoinScript']);
   });
+
+  it('export default + named da MESMA classe → class.name (nome persistido), uma vez', () => {
+    class Spinner extends ScriptBehavior {}
+    expect(registerScripts({ './scripts/spin.ts': { Spinner, default: Spinner } })).toEqual(['Spinner']);
+    expect(getScript('Spinner')).toBe(Spinner);
+    expect(getScript('spin')).toBeUndefined();
+  });
 });

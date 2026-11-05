@@ -4,6 +4,9 @@ import { cpSync, existsSync } from 'node:fs'
 // Plugin (dev) que grava as edições do editor (F2) em assets/scene-data.json.
 // Vendorizado pelo IDE; pareia com o write-back do editor. Ver ADR.
 import { createSceneSavePlugin, createAssetListPlugin } from './vendor/cortex-game-engine/vite/sceneSavePlugin.js'
+// Plugin (dev) de hot reload (ADR-0698): salvar um script em scripts/ ou um .glb
+// troca ao vivo, sem recarregar a página. Ver scripts/README.md.
+import { createHotReloadPlugin } from './vendor/cortex-game-engine/vite/hotReloadPlugin.js'
 
 /**
  * Plugin inline que copia `./assets/` recursivamente pra `dist/assets/`
@@ -55,7 +58,7 @@ function isToolPath(path: string): boolean {
 export default defineConfig(({ mode }) => ({
   root: '.',
   clearScreen: false,
-  plugins: [copyAssets(), createSceneSavePlugin(), createAssetListPlugin()],
+  plugins: [copyAssets(), createSceneSavePlugin(), createAssetListPlugin(), createHotReloadPlugin()],
   resolve: {
     alias: {
       // O IDE vendoriza o engine em ./vendor/cortex-game-engine ao criar o projeto.

@@ -59,7 +59,7 @@ se necessário antes de limpar (ou usar [disposeCache](#disposecache)).
 
 > **disposeCache**(): `void`
 
-Defined in: [src/core/AssetLoader.ts:307](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetLoader.ts#L307)
+Defined in: [src/core/AssetLoader.ts:317](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetLoader.ts#L317)
 
 **Despeja** o cache liberando os recursos de cada asset (SPEC-0152):
 texturas → `dispose()`; GLTF/FBX → [disposeObjectResources](../functions/disposeObjectResources.md)
@@ -67,6 +67,29 @@ texturas → `dispose()`; GLTF/FBX → [disposeObjectResources](../functions/dis
 wrapper de `AudioBuffer` do host nativo, que solta o PCM decodificado do
 lado C++ — ADR-0153; no browser é no-op). Depois disto, cada URL volta a
 custar uma carga completa na próxima requisição.
+
+#### Returns
+
+`void`
+
+***
+
+### evict()
+
+> **evict**(`url`): `void`
+
+Defined in: [src/core/AssetLoader.ts:305](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetLoader.ts#L305)
+
+Tira **uma** URL do cache, sem dispor o asset (o hot reload de GLB, SPEC-0697,
+decide o dispose depois de trocar os clones). A próxima carga da URL vai à rede.
+
+#### Parameters
+
+##### url
+
+`string`
+
+A mesma chave usada na carga.
 
 #### Returns
 

@@ -116,6 +116,45 @@ game.world.addSystem(new ScriptHostSystem(
 Dentro do script: `this.object3d` (o nó), `this.entity` (ECS), `this.ctx` (`world/input/gamepad/scene/camera`).
 Persistência: o Inspector grava em `overlay.data.scripts[id]`; o `buildScene` reanexa no reload (overlay vence).
 
+### Hot reload em dev (script e .glb) — ADR-0698 / SPEC-0697
+
+`createHotReloadPlugin` (plugin de Vite), `hotReplaceScripts`, `ScriptBehavior.onHotReload`,
+`enableModelHotReload`, `hotReloadModel`, `onModelHotReload`, `ModelHotReloadEvent`,
+`ModelHotReloadResult`.
+
+Salvar um script de `scripts/` ou um `.glb` troca **ao vivo**, sem recarregar a página. O
+template já vem ligado; em jogo antigo, ponha o plugin no `vite.config.ts`:
+
+```ts
+import { createHotReloadPlugin } from './vendor/cortex-game-engine/vite/hotReloadPlugin.js'
+export default defineConfig({
+  plugins: [/* ... */, createHotReloadPlugin()], // opções: { scriptsDir: 'scripts' }
+  // isToolPath (SPEC-0696): as pastas de ferramenta DESTA raiz por caminho absoluto (ver o
+  // vite.config.ts do template). O glob '**/.claude/**' cegaria o vite de um jogo numa worktree.
+  server: { watch: { ignored: ['**/src-tauri/**', isToolPath] } },
+})
+```
+
+- **Script**: a instância viva troca de classe e **mantém o estado**; `onStart` não roda de
+  novo. O arquivo só pode exportar subclasses de `ScriptBehavior` (outro export → reload
+  completo) e o topo do módulo não pode ter efeito (roda de novo a cada save). Arquivo com
+  `#privado` nativo ou que é base de script de outro arquivo recarrega a página.
+- **`.glb`**: a raiz de `instance(await loadGLB(url))` fica (componentes, scripts, `byId`) e
+  só os filhos vindos do GLB trocam (o que o jogo prendeu na raiz fica);
+  matte/material/sombra/fog são reaplicados. Raiz animada ou com física
+  é pulada com aviso (Reiniciar resolve).
+
+```ts
+export class Porta extends ScriptBehavior {
+  aberta = false
+  // Opcional: reagir à troca (aqui, recomeçar do zero a cada save).
+  override onHotReload() { this.onDestroy?.(); this.onStart?.() }
+}
+
+// main.ts: religar referências a FILHOS de um modelo trocado (rodas, sockets).
+onModelHotReload(({ root }) => { if (root === carro) rodas = acharRodas(carro) })
+```
+
 ### Câmera top-down (vista de cima) — jogos de fazenda/RPG 2D
 
 `TopDownCameraSystem` segue a entity-alvo (`FollowCameraTargetComponent`) no **chão

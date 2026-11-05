@@ -62,8 +62,9 @@ game.start()
 // compila na primeira vez que aparece — travadas de 50 a 175 ms num quadro,
 // medidas no kart-racer. `setLoading` faz o Game desenhar só a UI por cima de
 // uma cena vazia; a tela de carregamento é opaca e esconde o quadro de
-// aquecimento. No editor (F2) ela não aparece: editar um script recarrega a
-// página, e um overlay a cada reload só atrapalha.
+// aquecimento. No editor (F2) ela não aparece: editar o main.ts ou um sistema
+// ainda recarrega a página, e um overlay a cada reload só atrapalha. Script de
+// scripts/ e .glb trocam ao vivo, sem reload (ADR-0698, scripts/README.md).
 game.setLoading(true)
 const loading = createLoadingScreen(game.ui, { message: 'Carregando…' })
 if (!game.editorActive) loading.show()

@@ -28,8 +28,17 @@ export class Object3DComponent extends Component {
 
   constructor(public object: THREE.Object3D) {
     super();
+    ecsBoundObjects.add(object);
   }
 }
+
+/**
+ * Objetos que já foram ligados a uma entidade por um {@link Object3DComponent}
+ * (Character, Collider2D, Rapier…). O hot reload de GLB (SPEC-0697) pula essas raízes:
+ * bbox, corpo e collider derivam da geometria. Não sai ao destruir a entidade.
+ * @internal
+ */
+export const ecsBoundObjects = new WeakSet<THREE.Object3D>();
 
 /**
  * **Entidade pelo NOME do objeto de cena.** O `buildScene` nomeia cada `Object3D`

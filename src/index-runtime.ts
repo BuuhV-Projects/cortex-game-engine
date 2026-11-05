@@ -71,6 +71,8 @@ export * from './components/ScriptComponent.js';
 // ─── Scripts anexáveis (estilo MonoBehaviour — ADR-0085) ──────────────────────
 export * from './scripts/ScriptBehavior.js';
 export * from './scripts/ScriptRegistry.js';
+// Hot reload de script em dev (ADR-0698 / SPEC-0697): troca a classe das instâncias vivas.
+export * from './scripts/ScriptHotReload.js';
 
 // ─── Física dinâmica (Rapier — WASM; TDR-0002, fase 2/spike) ───────────────────
 export * from './physics/RapierPhysics.js';
@@ -139,6 +141,9 @@ export * from './scene/VehicleSetup.js';
 export * from './scene/VehicleDriver.js';
 export * from './scene/TopDown.js';
 export * from './scene/SceneAssets.js';
+// Hot reload de GLB em dev (SPEC-0697 §3): registro desligado por padrão + troca dos filhos.
+export * from './scene/modelHotRegistry.js';
+export * from './scene/ModelHotReload.js';
 export * from './scene/Materials.js';
 export * from './scene/OutdoorLighting.js';
 export * from './scene/Water.js';

@@ -101,6 +101,8 @@ export const VENDOR_TYPE_MODULES = {
     'FirstPerson',
     'TopDown',
     'SceneAssets',
+    'modelHotRegistry',
+    'ModelHotReload',
     'Materials',
     'OutdoorLighting',
     'OutlineCulling',
@@ -128,7 +130,7 @@ export const VENDOR_TYPE_MODULES = {
   io: ['SceneFileWriter', 'HttpSceneFileWriter', 'TauriSceneFileWriter', 'autoDetectSceneFileWriter', 'signedSave'],
   i18n: ['I18n', 'GameConfig'],
   physics: ['RapierPhysics', 'GroundAdhesion'],
-  scripts: ['ScriptBehavior', 'ScriptRegistry'],
+  scripts: ['ScriptBehavior', 'ScriptRegistry', 'ScriptHotReload'],
   ui: ['Speedometer', 'DebugHud'],
   'ui/runtime': [
     'layout',
