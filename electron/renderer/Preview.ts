@@ -465,6 +465,8 @@ export class Preview {
   private async restartServer(): Promise<void> {
     if (this.running) await window.electronAPI.stopProject()
     this.running = false
+    // O Stop da retentativa já chegou: daqui em diante um Stop é do usuário (SPEC-0696).
+    this.loading.restartStopDone()
     await this.toggle()
   }
 

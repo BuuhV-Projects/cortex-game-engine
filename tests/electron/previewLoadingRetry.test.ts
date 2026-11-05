@@ -15,9 +15,13 @@ function setup(withRestart = true) {
   vi.useFakeTimers()
   const rendered: Frame[] = []
   let onLoad: () => void = () => {}
-  const restart = vi.fn()
+  /** Como o `restartServer` do Preview: o Stop chega (cancel) e então avisa que terminou. */
+  const restart = vi.fn(() => {
+    flow.cancel()
+    flow.restartStopDone()
+  })
   const map = new Map<string, string>()
-  const flow = new PreviewLoadingFlow({
+  const flow: PreviewLoadingFlow = new PreviewLoadingFlow({
     render: (s, kind, attempt) => rendered.push({ kind, phase: s.phase, attempt }),
     ...(withRestart ? { restart } : {}),
     projectDir: () => 'D:/jogos/demo',
@@ -26,12 +30,8 @@ function setup(withRestart = true) {
   })
   const newFrame = (): void => flow.track({ contentWindow: {}, addEventListener: (_t, fn) => { onLoad = fn } })
   newFrame()
-  /**
-   * O que o Preview faz depois do restart: o Stop chega (cancel) e o vite novo imprime a
-   * URL — o `showIframe` cria um iframe novo (track) e põe a URL nele (begin).
-   */
+  /** O vite novo imprimiu a URL: o `showIframe` cria um iframe novo (track) e põe a URL nele (begin). */
   const serverCameBack = (): void => {
-    flow.cancel()
     newFrame()
     flow.begin()
   }
@@ -58,16 +58,24 @@ describe('PreviewLoadingFlow — retentativa automática do vite', () => {
   })
 
   it('o Stop da retentativa não apaga o aviso; o do usuário apaga', () => {
-    const { flow, last } = setup()
+    const { flow, last, restart } = setup()
     flow.begin()
     vi.advanceTimersByTime(STALL_AFTER_MS)
-    expect(flow.restarting).toBe(true)
-    flow.cancel() // Stop vindo do restart automático
+    expect(restart).toHaveBeenCalledTimes(1) // o Stop da retentativa já passou pelo cancel
     expect(last()?.phase).toBe('preparing')
-    flow.begin() // vite novo com URL
     expect(flow.restarting).toBe(false)
     flow.cancel() // Stop do usuário
     expect(last()?.phase).toBe('idle')
+  })
+
+  it('Stop do usuário vale mesmo se o vite nunca voltou depois da retentativa', () => {
+    const { flow, last, restart } = setup()
+    flow.begin()
+    vi.advanceTimersByTime(STALL_AFTER_MS) // retentativa 1, e o vite não imprime a URL
+    flow.cancel() // usuário desiste
+    expect(last()?.phase).toBe('idle')
+    vi.advanceTimersByTime(STALL_AFTER_MS * 3)
+    expect(restart).toHaveBeenCalledTimes(1) // nenhum prazo ficou armado
   })
 
   it('vite que nem volta a imprimir a URL também é retentado pelo prazo', () => {

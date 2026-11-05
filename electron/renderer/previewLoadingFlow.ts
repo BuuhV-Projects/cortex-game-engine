@@ -91,6 +91,15 @@ export class PreviewLoadingFlow {
     return this.autoRestarting
   }
 
+  /**
+   * O Stop da retentativa automática terminou (o `restartServer` chama logo depois do
+   * `stopProject`). A partir daqui um Stop é do usuário e volta a valer: some com o
+   * aviso, desarma os prazos e zera as tentativas — mesmo que o vite nunca volte.
+   */
+  restartStopDone(): void {
+    this.autoRestarting = false
+  }
+
   /** URL nova no iframe (Play, reiniciar, trocar de fase): volta à fase 1. */
   begin(): void {
     this.autoRestarting = false
@@ -113,8 +122,9 @@ export class PreviewLoadingFlow {
     this.frame = null
     this.clearContact()
     this.clearSettle()
-    // Stop da retentativa automática: o aviso "tentando de novo" e o prazo do servidor
-    // continuam armados — se o vite novo também não subir, o prazo dispara outra vez.
+    // Stop da PRÓPRIA retentativa automática (antes do `restartStopDone`): o aviso
+    // "tentando de novo" e o prazo do servidor continuam armados — se o vite novo
+    // também não subir, o prazo dispara outra vez.
     if (this.autoRestarting) return
     this.retries = 0
     this.server.cancel()

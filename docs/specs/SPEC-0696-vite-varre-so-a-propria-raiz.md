@@ -49,8 +49,11 @@ Medido com cache frio, numa porta e num cache separados do Studio:
    (`MAX_AUTO_RETRIES`), com o aviso "Reiniciando sozinho (tentativa N de 2)…". Só se as
    duas falharem aparece o aviso de travado, com o botão Reiniciar. O Stop da
    retentativa não troca o palco por "Projeto parado.", e o prazo de 60 s segue armado,
-   então um vite que nem volta a imprimir a URL também é retentado. O contador zera
-   quando o servidor responde (`load`) ou quando o usuário dá Stop.
+   então um vite que nem volta a imprimir a URL também é retentado. Essa exceção vale
+   só para o Stop da própria retentativa: o `restartServer` chama `restartStopDone()`
+   logo depois do `stopProject`, e qualquer Stop seguinte é do usuário — some com o
+   aviso, desarma os prazos e zera o contador, mesmo que o vite nunca tenha voltado. O
+   contador também zera quando o servidor responde (`load`).
 
 3. **Projetos existentes** não herdam o template: cada `vite.config.ts` precisa das
    mesmas duas mudanças no próprio repositório. O DDD 00 é o primeiro.
