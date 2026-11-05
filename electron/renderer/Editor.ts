@@ -1,94 +1,19 @@
 import * as monaco from 'monaco-editor'
 import { getThemeName } from './theme'
-import { renderMarkdown } from './markdown'
 import { GlbPreview } from './GlbPreview'
-import { SpritePreview } from './SpritePreview'
-import { icon } from './ui'
-import { MODEL_WARN_THRESHOLD, shouldPreloadProjectFile } from './preloadFilter'
+import { PreviewOverlay } from './PreviewOverlay'
+import { detectLanguage, isImageFile, isMarkdownFile } from './fileKinds'
+import {
+  configureTypeScriptDefaults,
+  pathToVirtualUri,
+  virtualUriToPath,
+} from './monacoWorkspace'
+import { loadEngineTypes, preloadProjectFiles } from './monacoModels'
+import { renderEditorTabs } from './editorTabsView'
+import { registerMonacoWorkers } from './monacoWorkers'
 
-/**
- * O barrel principal do `monaco-editor` exporta `monaco.languages.typescript`
- * como `{ deprecated: true }` para sinalizar que existem submódulos com APIs
- * mais novas. As APIs continuam disponíveis em runtime (usadas pelo plugin
- * vite-plugin-monaco-editor), só perderam a tipagem aqui. Esse cast acessa
- * `typescriptDefaults`/`javascriptDefaults` e os enums (`ModuleResolutionKind`
- * etc.) sem ter que repetir `as any` em cada chamada.
- */
-type MonacoTypeScript = {
-  typescriptDefaults: {
-    getCompilerOptions(): Record<string, unknown>
-    setCompilerOptions(opts: Record<string, unknown>): void
-    setDiagnosticsOptions(opts: { noSemanticValidation?: boolean; noSyntaxValidation?: boolean }): void
-    addExtraLib(content: string, path: string): void
-  }
-  javascriptDefaults: {
-    setDiagnosticsOptions(opts: { noSemanticValidation?: boolean; noSyntaxValidation?: boolean }): void
-  }
-  ModuleResolutionKind: { NodeJs: number; Classic: number }
-}
-const monacoTs = monaco.languages.typescript as unknown as MonacoTypeScript
-
-// Mapeia extensão de arquivo para a linguagem reconhecida pelo Monaco
-const LANGUAGE_BY_EXT: Record<string, string> = {
-  ts: 'typescript',
-  tsx: 'typescript',
-  js: 'javascript',
-  jsx: 'javascript',
-  json: 'json',
-  html: 'html',
-  css: 'css',
-  md: 'markdown',
-}
-
-function detectLanguage(name: string): string {
-  const ext = name.split('.').pop()?.toLowerCase() ?? ''
-  return LANGUAGE_BY_EXT[ext] ?? 'plaintext'
-}
-
-function workerUrl(name: string): string {
-  // O vite-plugin-monaco-editor emite os workers em monacoeditorwork/<nome>.bundle.js
-  // tanto em dev (servido pelo dev server) quanto em build.
-  return new URL(`./monacoeditorwork/${name}.bundle.js`, window.location.href).toString()
-}
-
-/**
- * Converte um path absoluto do SO em URI sintética para o Monaco que NÃO inclui
- * o drive letter como segmento `D:`. Isso permite que o Node resolver do TS
- * suba a partir do arquivo aberto até a raiz `/` e encontre os types virtuais
- * registrados em `/node_modules/...`. Sem essa transformação, o path do model
- * fica `/D:/foo/main.ts` e o resolver para no drive.
- */
-function pathToVirtualUri(realPath: string): monaco.Uri {
-  const posix = realPath
-    .replace(/\\/g, '/')
-    .replace(/^([a-z]):/i, (_m, letter: string) => `/_drive_${letter.toLowerCase()}`)
-  return monaco.Uri.parse(`file://${posix}`)
-}
-
-/**
- * Inverso de `pathToVirtualUri`. Recebe uma URI sintética do Monaco e devolve
- * o path real do sistema de arquivos — ou `null` se a URI não representa um
- * arquivo do projeto (ex.: types virtuais em `/node_modules/...`, que vivem
- * só na memória do TS service e não têm fs real).
- *
- * Usado no `registerEditorOpener` para resolver Ctrl+click em imports relativos
- * (`./foo`) que apontam para arquivos que o usuário ainda não abriu no editor.
- */
-function virtualUriToPath(uri: monaco.Uri): string | null {
-  const p = uri.path
-  if (p.startsWith('/node_modules/')) return null
-
-  // Windows: /_drive_d/projeto/foo.ts → D:\projeto\foo.ts
-  const winMatch = /^\/_drive_([a-z])\/(.*)$/i.exec(p)
-  if (winMatch) {
-    return `${winMatch[1].toUpperCase()}:\\${winMatch[2].replace(/\//g, '\\')}`
-  }
-
-  // Unix absoluto: /foo/bar.ts → /foo/bar.ts
-  if (p.startsWith('/')) return p
-
-  return null
-}
+/** Tamanho da fonte do editor de código, em px. */
+const EDITOR_FONT_SIZE = 13
 
 interface Tab {
   /** Path real do filesystem (arquivos do projeto) ou URI virtual (engine .d.ts). */
@@ -102,50 +27,12 @@ interface Tab {
   changeListener: monaco.IDisposable
 }
 
-const IMAGE_MIME: Record<string, string> = {
-  png: 'image/png',
-  jpg: 'image/jpeg',
-  jpeg: 'image/jpeg',
-  gif: 'image/gif',
-  webp: 'image/webp',
-  svg: 'image/svg+xml',
-  bmp: 'image/bmp',
-  ico: 'image/x-icon',
-  avif: 'image/avif',
-}
-
-function extOf(name: string): string {
-  const i = name.lastIndexOf('.')
-  return i >= 0 ? name.slice(i + 1).toLowerCase() : ''
-}
-
-/** `true` se o arquivo é uma imagem (abre como preview, não no editor de código). */
-function isImageFile(name: string): boolean {
-  return extOf(name) in IMAGE_MIME
-}
-
-/** `true` se o arquivo é markdown (abre renderizado como preview). */
-function isMarkdownFile(name: string): boolean {
-  const e = extOf(name)
-  return e === 'md' || e === 'markdown'
-}
-
-function mimeForImage(name: string): string {
-  return IMAGE_MIME[extOf(name)] ?? 'application/octet-stream'
-}
-
 export class Editor {
   private container: HTMLElement
   private tabsBar: HTMLElement | null = null
   private editorArea: HTMLElement | null = null
-  private previewEl: HTMLElement | null = null
+  private preview: PreviewOverlay | null = null
   private glbPreview: GlbPreview | null = null
-  private spritePreview: SpritePreview | null = null
-  /** Path/nome da imagem atualmente em preview (pro botão "Spritesheet"). */
-  private previewImagePath: string | null = null
-  private previewImageName = ''
-  /** Path do doc em preview (imagem OU markdown) — pro doc-close só fechar o próprio. */
-  private previewDocPath: string | null = null
   private instance: monaco.editor.IStandaloneCodeEditor | null = null
   // Ordem das abas (insertion order do Map é estável)
   private tabs: Map<string, Tab> = new Map()
@@ -156,8 +43,6 @@ export class Editor {
    * linguagem do Monaco, que alerta em 200 listeners).
    */
   private emptyModel: monaco.editor.ITextModel | null = null
-  /** Já avisamos sobre a quantidade de models? (aviso é uma vez por sessão). */
-  private modelWarned = false
   /** Último estado "vazio" notificado — evita disparar o evento à toa. */
   private lastEmpty: boolean | null = null
 
@@ -166,57 +51,18 @@ export class Editor {
   }
 
   init(): void {
-    self.MonacoEnvironment = {
-      getWorkerUrl: (_moduleId: string, label: string) => {
-        if (label === 'typescript' || label === 'javascript') return workerUrl('ts.worker')
-        if (label === 'json') return workerUrl('json.worker')
-        if (label === 'css' || label === 'scss' || label === 'less') return workerUrl('css.worker')
-        if (label === 'html' || label === 'handlebars' || label === 'razor') return workerUrl('html.worker')
-        return workerUrl('editor.worker')
-      },
-    }
-
-    // O Node resolver do TS sobe procurando node_modules/ a partir do
-    // diretório do arquivo aberto. No Monaco, arquivos abertos têm URI
-    // como /D:/projeto/main.ts e os types virtuais estão em /node_modules/.
-    // O resolver pode parar no drive (/D:/) e não subir até /, falhando.
-    // Mapeamos explicitamente via paths + baseUrl para forçar a resolução.
-    monacoTs.typescriptDefaults.setCompilerOptions({
-      ...monacoTs.typescriptDefaults.getCompilerOptions(),
-      moduleResolution: monacoTs.ModuleResolutionKind.NodeJs,
-      baseUrl: '/',
-      paths: {
-        'cortex-game-engine': ['/node_modules/cortex-game-engine/index.d.ts'],
-        'cortex-game-engine/*': ['/node_modules/cortex-game-engine/*'],
-        three: ['/node_modules/three/index.d.ts'],
-        'three/*': ['/node_modules/three/*'],
-      },
-      allowSyntheticDefaultImports: true,
-      esModuleInterop: true,
-    })
-
-    // Diagnostics semânticos ficam desligados — o servidor TS do Monaco não
-    // tem acesso ao node_modules do projeto aberto, então imports
-    // não-vendoriados gerariam ruído. Autocomplete via Ctrl+Space continua
-    // funcionando para os tipos alimentados via addExtraLib.
-    monacoTs.typescriptDefaults.setDiagnosticsOptions({
-      noSemanticValidation: true,
-      noSyntaxValidation: false,
-    })
-    monacoTs.javascriptDefaults.setDiagnosticsOptions({
-      noSemanticValidation: true,
-      noSyntaxValidation: false,
-    })
+    registerMonacoWorkers()
+    configureTypeScriptDefaults()
 
     // Alimenta os types do engine no servidor TS do Monaco
-    void this.loadEngineTypes()
+    void loadEngineTypes()
 
     this.buildShell()
 
     this.instance = monaco.editor.create(this.editorArea as HTMLElement, {
       theme: getThemeName(),
       automaticLayout: true,
-      fontSize: 13,
+      fontSize: EDITOR_FONT_SIZE,
       minimap: { enabled: false },
       value: '',
       language: 'plaintext',
@@ -233,23 +79,23 @@ export class Editor {
       const { path, name } = (e as CustomEvent<{ path: string; name: string }>).detail
       if (GlbPreview.handles(name)) {
         // Modelo 3D abre como PREVIEW (viewport + lista de animações).
-        this.hideImagePreview()
+        this.preview?.hide()
         void this.glbPreview?.open(path, name)
         this.notifyEmptyState()
         this.notifyDoc('glb')
       } else if (isImageFile(name)) {
         // Imagem abre como PREVIEW, não no editor de código.
         this.glbPreview?.close()
-        void this.openImagePreview(path, name)
+        void this.preview?.openImage(path, name)
         this.notifyDoc('preview')
       } else if (isMarkdownFile(name)) {
         // Markdown abre renderizado como PREVIEW.
         this.glbPreview?.close()
-        void this.openMarkdownPreview(path, name)
+        void this.preview?.openMarkdown(path, name)
         this.notifyDoc('preview')
       } else {
         this.glbPreview?.close()
-        this.hideImagePreview()
+        this.preview?.hide()
         void this.openFile(path, name)
         this.notifyDoc('code')
       }
@@ -259,21 +105,21 @@ export class Editor {
     document.addEventListener('doc-show', (e) => {
       const { path, name } = (e as CustomEvent<{ path: string; name: string }>).detail
       if (GlbPreview.handles(name)) {
-        this.hideImagePreview()
+        this.preview?.hide()
         void this.glbPreview?.open(path, name)
         this.notifyEmptyState()
         this.notifyDoc('glb')
       } else if (isImageFile(name)) {
         this.glbPreview?.close()
-        void this.openImagePreview(path, name)
+        void this.preview?.openImage(path, name)
         this.notifyDoc('preview')
       } else if (isMarkdownFile(name)) {
         this.glbPreview?.close()
-        void this.openMarkdownPreview(path, name)
+        void this.preview?.openMarkdown(path, name)
         this.notifyDoc('preview')
       } else {
         this.glbPreview?.close()
-        this.hideImagePreview()
+        this.preview?.hide()
         if (this.tabs.has(path)) this.activateTab(path)
         else void this.openFile(path, name)
         this.notifyDoc('code')
@@ -288,7 +134,7 @@ export class Editor {
       if (GlbPreview.handles(name)) {
         if (this.glbPreview?.currentPath === path) this.glbPreview.close()
       } else if (isImageFile(name) || isMarkdownFile(name)) {
-        if (this.previewDocPath === path) this.hideImagePreview()
+        if (this.preview?.currentPath === path) this.preview.hide()
       } else {
         void this.closeTab(path)
       }
@@ -300,7 +146,7 @@ export class Editor {
     // a chamar registerEditorOpener — não tem destino pra navegar.
     document.addEventListener('project-open', (e) => {
       const { path } = (e as CustomEvent<{ path: string }>).detail
-      void this.preloadProjectFiles(path)
+      void preloadProjectFiles(path)
     })
 
     // Intercepta "abrir arquivo" do Monaco (clique no peek/breadcrumb,
@@ -390,155 +236,15 @@ export class Editor {
     this.tabsBar = tabsBar
     this.editorArea = editorArea
 
-    // Overlay de preview de imagem (cobre o Monaco quando uma imagem é aberta).
+    // Overlay de preview de imagem/markdown (cobre o Monaco quando aberto).
     editorArea.style.position = 'relative'
-    const preview = document.createElement('div')
-    preview.className = 'editor-image-preview'
-    preview.style.cssText = [
-      'position:absolute',
-      'inset:0',
-      'display:none',
-      'flex-direction:column',
-      'align-items:center',
-      'justify-content:center',
-      'gap:10px',
-      'padding:16px',
-      'background:#1e1e1e',
-      'overflow:auto',
-      'z-index:5',
-    ].join(';')
-    const img = document.createElement('img')
-    img.style.cssText = 'max-width:100%;max-height:calc(100% - 28px);object-fit:contain;image-rendering:auto'
-    const md = document.createElement('div')
-    md.className = 'editor-preview-md'
-    md.style.cssText =
-      'display:none;width:100%;max-width:860px;margin:0 auto;padding:8px 16px 40px;overflow:auto;color:#d4d4d4;line-height:1.6;font:14px "Segoe UI",Roboto,Arial,sans-serif'
-    const caption = document.createElement('div')
-    caption.className = 'editor-preview-caption'
-    caption.style.cssText = 'color:#9aa0ad;font:12px "Segoe UI",Roboto,Arial,sans-serif'
-    // Botão de fechar (volta pro editor de código), no canto superior direito.
-    const closeBtn = document.createElement('button')
-    closeBtn.textContent = '✕'
-    closeBtn.title = 'Fechar preview'
-    closeBtn.style.cssText = [
-      'position:absolute',
-      'top:8px',
-      'right:12px',
-      'width:28px',
-      'height:28px',
-      'border:1px solid #3a3f4a',
-      'border-radius:5px',
-      'background:rgba(42,47,58,0.9)',
-      'color:#e6e6e6',
-      'cursor:pointer',
-      'font:14px "Segoe UI",Roboto,Arial,sans-serif',
-      'z-index:6',
-    ].join(';')
-    closeBtn.addEventListener('click', () => this.hideImagePreview())
-
-    // Botão "Spritesheet": abre a imagem atual como player de animação 2D
-    // (rota A — grade de frames editável). Só faz sentido pra imagens raster.
-    const spriteBtn = document.createElement('button')
-    spriteBtn.className = 'sprite-toggle-btn'
-    spriteBtn.title = 'Ver como spritesheet (animação 2D)'
-    spriteBtn.append(icon('grid', { size: 13 }), document.createTextNode('Spritesheet'))
-    spriteBtn.style.cssText = [
-      'position:absolute',
-      'top:8px',
-      'right:48px',
-      'height:28px',
-      'display:flex',
-      'align-items:center',
-      'gap:6px',
-      'padding:0 10px',
-      'border:1px solid #3a3f4a',
-      'border-radius:5px',
-      'background:rgba(42,47,58,0.9)',
-      'color:#e6e6e6',
-      'cursor:pointer',
-      'font:12px "Segoe UI",Roboto,Arial,sans-serif',
-      'z-index:6',
-    ].join(';')
-    spriteBtn.addEventListener('click', () => {
-      if (this.previewImagePath) void this.spritePreview?.open(this.previewImagePath, this.previewImageName)
-    })
-
-    preview.append(img, md, caption, spriteBtn, closeBtn)
-    editorArea.appendChild(preview)
-    this.previewEl = preview
+    this.preview = new PreviewOverlay(editorArea, () => this.notifyEmptyState())
 
     // Preview 3D de .glb/.gltf (overlay próprio, acima do Monaco e do preview de imagem).
     this.glbPreview = new GlbPreview(editorArea, () => {
       this.notifyEmptyState()
       this.notifyDoc(this.tabs.size ? 'code' : 'scene')
     })
-    // Player de spritesheet 2D (overlay acima do preview de imagem).
-    this.spritePreview = new SpritePreview(editorArea)
-  }
-
-  private get previewImg(): HTMLImageElement | null {
-    return this.previewEl?.querySelector('img') ?? null
-  }
-  private get previewMd(): HTMLElement | null {
-    return this.previewEl?.querySelector('.editor-preview-md') ?? null
-  }
-  private get previewCaption(): HTMLElement | null {
-    return this.previewEl?.querySelector('.editor-preview-caption') ?? null
-  }
-  private get spriteBtn(): HTMLElement | null {
-    return this.previewEl?.querySelector('.sprite-toggle-btn') ?? null
-  }
-
-  /** Mostra a imagem como preview (cobre o editor de código). */
-  private async openImagePreview(path: string, name: string): Promise<void> {
-    if (!this.previewEl) return
-    this.spritePreview?.close()
-    this.previewDocPath = path
-    this.previewImagePath = path
-    this.previewImageName = name
-    if (this.spriteBtn) this.spriteBtn.style.display = SpritePreview.handles(name) ? 'flex' : 'none'
-    if (this.previewMd) this.previewMd.style.display = 'none'
-    if (this.previewImg) this.previewImg.style.display = ''
-    this.previewEl.style.justifyContent = 'center'
-    if (this.previewCaption) this.previewCaption.textContent = name
-    this.previewEl.style.display = 'flex'
-    this.notifyEmptyState()
-    try {
-      const b64 = await window.electronAPI.readFileBase64(path)
-      if (this.previewImg) this.previewImg.src = `data:${mimeForImage(name)};base64,${b64}`
-    } catch {
-      if (this.previewCaption) this.previewCaption.textContent = `Falha ao abrir ${name}`
-      this.previewImg?.removeAttribute('src')
-    }
-  }
-
-  /** Renderiza o markdown como preview (cobre o editor de código). */
-  private async openMarkdownPreview(path: string, name: string): Promise<void> {
-    if (!this.previewEl) return
-    this.spritePreview?.close()
-    this.previewDocPath = path
-    if (this.spriteBtn) this.spriteBtn.style.display = 'none'
-    if (this.previewImg) this.previewImg.style.display = 'none'
-    const md = this.previewMd
-    if (md) md.style.display = 'block'
-    this.previewEl.style.justifyContent = 'flex-start'
-    if (this.previewCaption) this.previewCaption.textContent = name
-    this.previewEl.style.display = 'flex'
-    this.notifyEmptyState()
-    try {
-      const text = await window.electronAPI.readFile(path)
-      if (md) md.innerHTML = renderMarkdown(text)
-    } catch {
-      if (md) md.textContent = `Falha ao abrir ${name}`
-    }
-  }
-
-  /** Esconde o preview (volta a mostrar o editor de código). */
-  private hideImagePreview(): void {
-    this.previewDocPath = null
-    this.spritePreview?.close()
-    if (this.previewEl) this.previewEl.style.display = 'none'
-    this.notifyEmptyState()
   }
 
   /**
@@ -548,7 +254,7 @@ export class Editor {
    * quando não há nada aberto. Só dispara quando o estado realmente muda.
    */
   private notifyEmptyState(): void {
-    const previewVisible = !!this.previewEl && this.previewEl.style.display !== 'none'
+    const previewVisible = this.preview?.isVisible() ?? false
     const glbVisible = this.glbPreview?.isOpen() ?? false
     const empty = this.tabs.size === 0 && !previewVisible && !glbVisible
     if (empty === this.lastEmpty) return
@@ -565,47 +271,10 @@ export class Editor {
 
   private renderTabs(): void {
     if (!this.tabsBar) return
-    this.tabsBar.innerHTML = ''
-    for (const tab of this.tabs.values()) {
-      const el = document.createElement('div')
-      el.className = 'editor-tab'
-      if (tab.path === this.activePath) el.classList.add('active')
-      if (tab.dirty) el.classList.add('dirty')
-      el.addEventListener('click', () => this.activateTab(tab.path))
-      // Middle-click (botão do scroll) fecha a aba — convenção de browsers
-      // e VS Code. `mousedown` é mais previsível que `auxclick` em Electron.
-      // preventDefault evita o cursor de auto-scroll do middle-click.
-      el.addEventListener('mousedown', (e) => {
-        if (e.button === 1) {
-          e.preventDefault()
-          void this.closeTab(tab.path)
-        }
-      })
-
-      const label = document.createElement('span')
-      label.className = 'editor-tab-label'
-      label.textContent = tab.name
-
-      // Indicador de "modificado, não salvo". Visível só quando dirty;
-      // some no hover para dar lugar ao botão de fechar.
-      const dot = document.createElement('span')
-      dot.className = 'editor-tab-dot'
-      dot.textContent = '●'
-
-      const close = document.createElement('button')
-      close.className = 'editor-tab-close'
-      close.textContent = '×'
-      close.title = 'Fechar'
-      close.addEventListener('click', (e) => {
-        e.stopPropagation()
-        void this.closeTab(tab.path)
-      })
-
-      el.appendChild(label)
-      el.appendChild(dot)
-      el.appendChild(close)
-      this.tabsBar.appendChild(el)
-    }
+    renderEditorTabs(this.tabsBar, this.tabs.values(), this.activePath, {
+      onActivate: (path) => this.activateTab(path),
+      onClose: (path) => void this.closeTab(path),
+    })
     this.notifyEmptyState()
   }
 
@@ -614,7 +283,7 @@ export class Editor {
     if (!tab || !this.instance) return
     // Ativar uma aba de código sai de qualquer preview (3D/imagem) por cima.
     this.glbPreview?.close()
-    this.hideImagePreview()
+    this.preview?.hide()
     this.instance.setModel(tab.model)
     this.instance.updateOptions({ readOnly: tab.readOnly })
     this.activePath = path
@@ -655,92 +324,6 @@ export class Editor {
       }
     }
     this.renderTabs()
-  }
-
-  /**
-   * Para cada arquivo-fonte do projeto, cria silenciosamente um model no
-   * Monaco (sem abrir aba). Isso alimenta o TypeScript service: imports
-   * relativos (`./foo`) passam a ser resolvíveis e Ctrl+click consegue
-   * navegar pra arquivos que o usuário ainda não abriu manualmente.
-   *
-   * Idempotente: pula arquivos que já têm model. Arquivos que falhem ao
-   * ler são silenciados — perder navegação pra 1 arquivo problemático é
-   * melhor que abortar todo o pre-load. Leituras em paralelo.
-   *
-   * Trade-off: gasta RAM proporcional ao tamanho do projeto. Pra projetos
-   * típicos (< 100 arquivos × poucos KB cada) é desprezível.
-   */
-  private async preloadProjectFiles(projectDir: string): Promise<void> {
-    try {
-      const files = await window.electronAPI.listProjectFiles(projectDir)
-      await Promise.all(
-        files.map(async (path) => {
-          // Arquivo de teste fica fora do preload (SPEC-0166): é destino raro de
-          // "ir para a definição" e cada model custa um listener no emitter
-          // global do Monaco. Abrir o arquivo cria o model normalmente.
-          if (!shouldPreloadProjectFile(path)) return
-          const uri = pathToVirtualUri(path)
-          if (monaco.editor.getModel(uri)) return
-          try {
-            const content = await window.electronAPI.readFile(path)
-            const name = path.split(/[\\/]/).pop() ?? ''
-            const language = detectLanguage(name)
-            monaco.editor.createModel(content, language, uri)
-          } catch {
-            // Arquivo pode ter sumido entre o list e o read — ignora.
-          }
-        }),
-      )
-      this.warnIfManyModels('arquivos do projeto')
-    } catch (err) {
-      console.error('Erro ao pre-carregar arquivos do projeto:', err)
-    }
-  }
-
-  /**
-   * Avisa UMA vez quando a quantidade de models vivos se aproxima do limite do
-   * Monaco (SPEC-0166). Sem isto, o próximo projeto grande volta a disparar o
-   * "potential listener LEAK detected" sem pista da causa — cada model assina o
-   * emitter global de linguagem, e o alerta do editor sai em 200 listeners.
-   */
-  private warnIfManyModels(origin: string): void {
-    if (this.modelWarned) return
-    const total = monaco.editor.getModels().length
-    if (total < MODEL_WARN_THRESHOLD) return
-    this.modelWarned = true
-    // A quebra por origem é o que faltava da última vez: sem ela o alerta do
-    // Monaco não diz se o excesso veio do projeto ou dos types do engine.
-    const engineModels = monaco.editor
-      .getModels()
-      .filter((model) => model.uri.path.includes('node_modules/cortex-game-engine')).length
-    console.warn(
-      `[studio] ${total} models do Monaco vivos após carregar ${origin} ` +
-        `(${engineModels} de types do engine, ${total - engineModels} do projeto) — ` +
-        'o editor alerta "listener LEAK" a partir de 200. Ver SPEC-0166.',
-    )
-  }
-
-  private async loadEngineTypes(): Promise<void> {
-    try {
-      const files = await window.electronAPI.readEngineTypes()
-      for (const { path, content, navigable } of files) {
-        // addExtraLib é essencial para que o TS service resolva `import 'X'`
-        // — sem isso o módulo nem é encontrado.
-        monacoTs.typescriptDefaults.addExtraLib(content, path)
-        // createModel adicional só para os arquivos do engine (poucos) —
-        // viabiliza Ctrl+click. Para @types/three (~946 arquivos) cair aqui
-        // estoura o limite de 200 listeners do Monaco.
-        if (navigable) {
-          const uri = monaco.Uri.parse(path)
-          if (!monaco.editor.getModel(uri)) {
-            monaco.editor.createModel(content, 'typescript', uri)
-          }
-        }
-      }
-      this.warnIfManyModels('os types do engine')
-    } catch (err) {
-      console.error('Erro ao carregar types do engine:', err)
-    }
   }
 
   private async openFile(
