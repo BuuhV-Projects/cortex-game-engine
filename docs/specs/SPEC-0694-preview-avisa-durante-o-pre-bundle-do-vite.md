@@ -42,12 +42,23 @@ que um Stop + Play (processo novo) resolve na prática.
    preso mora no processo do vite, então recarregar o iframe contra o mesmo processo
    (o `request-canvas-reload`) não resolveria. Stop limpa o aviso.
 
-2. **O estado fica num módulo puro**, `electron/renderer/previewLoading.ts`
-   (`createLoadingState`): fases `idle` → `preparing` → `stalled`, timer injetável,
-   sem DOM. O `Preview` só desenha a fase. Assim o timeout é testável em
+2. **Barra de progresso com porcentagem estimada.** O vite não emite progresso do
+   pré-bundle (nem no stdout, nem por HTTP), então a porcentagem é **estimada por
+   tempo**, não medida: sobe linear até 90% no tempo esperado e depois rasteja até
+   99%, sem nunca chegar a 100% antes do `load` real. O tempo esperado é a duração
+   medida do último carregamento **daquele projeto** (guardada no `localStorage`,
+   chave `preview_loadMs:<dir>`); sem medida, 15 s. Assim, a partir do segundo Play
+   a barra acompanha o projeto de verdade. Em `stalled` a porcentagem congela onde
+   estava e a barra fica cinza.
+
+3. **O estado fica num módulo puro**, `electron/renderer/previewLoading.ts`
+   (`createLoadingState`, `estimateProgress`, `readExpectedLoadMs`/`saveLoadMs`):
+   fases `idle` → `preparing` → `stalled` com a porcentagem, timers e relógio
+   injetáveis, sem DOM. O overlay é desenhado por `previewLoadingView.ts`, e o
+   `Preview` só liga os dois. Tudo é testável em
    `tests/electron/previewLoading.test.ts` sem Electron nem jsdom.
 
-3. **Nada muda no vite nem no `vite.config` gerado.** Sem causa provada, mexer no
+4. **Nada muda no vite nem no `vite.config` gerado.** Sem causa provada, mexer no
    otimizador (`optimizeDeps.include`, `noDiscovery`) seria chute; o botão de
    reiniciar entrega o que resolve de fato (processo novo).
 
@@ -55,6 +66,10 @@ que um Stop + Play (processo novo) resolve na prática.
 
 - O usuário vê feedback nos 13–17 s do primeiro Play e tem saída quando o vite
   trava, em vez de um palco preto mudo.
+- A porcentagem é estimativa, não medida. Depois de um Play com cache quente
+  (~2 s), um Play com cache frio sobe rápido a 90% e rasteja o resto; a medida
+  seguinte recalibra. Medir de verdade exigiria o vite expor o progresso do
+  esbuild, o que ele não faz.
 - O `load` do iframe dispara também para uma página de erro do vite; o aviso some
   e o erro aparece no palco, como antes.
 - Fica em aberto a causa do travamento do otimizador. Se voltar a acontecer, o

@@ -483,6 +483,25 @@ body.app-preview-fullscreen #preview-container {
   gap: 10px;
   background: var(--od-bg-deep);
 }
+.preview-loading-bar {
+  width: min(320px, 70%);
+  height: 6px;
+  border-radius: 3px;
+  overflow: hidden;
+  background: var(--od-bg-hover, rgba(255, 255, 255, 0.08));
+}
+.preview-loading-bar .fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.25s linear;
+}
+.preview-loading.stalled .fill {
+  background: var(--od-fg-dim);
+}
+.preview-loading-percent {
+  color: var(--od-fg-dim);
+  font-size: 12px;
+}
 
 .preview-iframe {
   width: 100%;
