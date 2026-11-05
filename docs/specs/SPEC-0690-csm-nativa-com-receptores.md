@@ -1,7 +1,7 @@
 # SPEC-0690 — CSM nativa com receptores (sombra do sol em cascatas no renderer próprio)
 
 **Data:** 2026-11-05
-**Status:** implementado
+**Status:** implementado (aceite de desempenho revisto pelo usuário em 2026-11-05)
 **Base:** SPEC-0245 (passe de sombra nativo), SPEC-0545 (sombra do sol no renderer nativo), SPEC-0675 (escalonamento
 da cascata distante), SPEC-0688 (`sunShadow` no perf-trace). Decisões em ADR-0691 e ADR-0692.
 
@@ -148,7 +148,13 @@ A primeira versão funcionando custava ~3,5 ms de CPU por quadro no `render`. Do
   cascata, contíguos, são montados num staging reaproveitado (`shadow_pass_uniforms.h`) e vão numa escrita só, antes
   do primeiro draw.
 
-Depois das duas mudanças, o bloco da sombra custa ~1,4 ms de mediana (0,6 do recorte, 0,6 do desenho).
+Depois das duas mudanças, o bloco da sombra custava ~1,4 ms de mediana (0,6 do recorte, 0,6 do desenho). O recorte
+  passou a varrer todos os nós só quando algo global muda (época, geração do espelho, nó que entrou ou saiu): os
+  pendentes tentam todo quadro e os resolvidos são conferidos em rodízio (`ALPHA_CLIP_SWEEP_FRAMES` = 16), e caiu para
+  0,1 ms. O bloco fica em ~0,9 ms.
+- **O que resta (medido com `CORTEX_SHADOW_PASS_TIMING=1`, µs por cascata):** enumerar 24, gate 18, itens 3, preparar
+  10, gravar 80, fechar o pass e o encoder 190 (validação do wgpu, proporcional aos draws), `wgpuQueueSubmit` 70.
+  Juntar o submit das cascatas ao do quadro economizaria ~0,1 ms e não foi feito.
 
 O perf-trace ganha as seções de CPU `shadowBlock`, `csmNative`, `shadowRegistry`, `shadowAlphaClip` e `shadowDraw`
 (`RenderSections`, SPEC-0585), aninhadas no `render`.
@@ -158,9 +164,22 @@ O perf-trace ganha as seções de CPU `shadowBlock`, `csmNative`, `shadowRegistr
 1. Uma captura do export do DDD 00 mostra sombra de prédios e carros no chão, nas duas cascatas, e sem emenda
    visível na troca (fade).
 2. **Desempenho:** a volta pelo mapa (`tour.sh`, perfil `none`), com o mesmo jogo, comparada a uma volta com a
-   engine da `main` rodada logo antes (a `tour-gc07` de 2026-11-04 é de um jogo sem os bandidos da SPEC-0135):
-   - mediana no máximo +0,5 ms por área;
-   - p95 não piora em nenhuma área.
+   engine da `main` rodada antes (a `tour-gc07` de 2026-11-04 é de um jogo sem os bandidos da SPEC-0135). O critério
+   proposto era no máximo +0,5 ms de mediana por área e p95 sem piorar. **Revisto pelo usuário em 2026-11-05:** a
+   sombra entra com o custo medido abaixo (o que resta é a validação do wgpu por draw, ~0,6 ms, ver §8).
+
+   | área | mediana main → CSM (ms) | p95 main → CSM (ms) |
+   |---|---|---|
+   | total | 15,9 → 17,2 | 29,0 → 30,5 |
+   | Port Hollow | 19,3 → 20,5 | 30,3 → 30,9 |
+   | serra | 17,4 → 18,2 | 29,7 → 30,0 |
+   | vila | 14,6 → 18,7 | 24,8 → 56,3 |
+   | rural | 13,9 → 15,2 | 26,3 → 28,4 |
+   | cidadezinha | 12,6 → 12,5 | 17,2 → 20,7 |
+   | South Landing | 18,0 → 18,7 | 31,8 → 32,2 |
+   | aeroporto | 15,2 → 14,3 | 25,5 → 26,3 |
+   | pedreira | 13,5 → 14,6 | 24,3 → 24,8 |
+
 3. O WGSL compila no export: o pipeline lambert com `receiveShadow` nasce sem erro de shader (naga) e o
    `[nativeShadow]` relata `amostrando`.
 4. Depois do aquecimento, as cascatas são aceitas (`ok`/`cleared-empty`) na grande maioria das amostras da volta, e
