@@ -43,9 +43,14 @@ export interface MessageLike {
   data: unknown
 }
 
+/** Quantas vezes o Studio reinicia o vite sozinho antes de pedir ajuda (SPEC-0696). */
+export const MAX_AUTO_RETRIES = 2
+
 export interface PreviewLoadingFlowOptions {
-  /** Desenha (ou remove, em `idle`) o overlay. */
-  render: (snapshot: LoadingSnapshot, kind: LoadingKind) => void
+  /** Desenha (ou remove, em `idle`) o overlay. `attempt` = retentativas automáticas já feitas. */
+  render: (snapshot: LoadingSnapshot, kind: LoadingKind, attempt: number) => void
+  /** Stop + Play do servidor — usado na retentativa automática. */
+  restart?: () => void
   projectDir: () => string | null
   store: Store
   /** Liga a escuta de mensagens da janela do Studio. */
@@ -65,6 +70,10 @@ export class PreviewLoadingFlow {
   private settleHandle: unknown = null
   /** A ponte já disse `loading: true` nesta carga? Então um `false` fecha na hora. */
   private sawLoading = false
+  /** Retentativas automáticas desta subida do servidor (zera num `load` ou num Stop do usuário). */
+  private retries = 0
+  /** Reiniciando sozinho: o Stop que vem a seguir não apaga o aviso nem zera o contador. */
+  private autoRestarting = false
   private readonly timers: LoadingTimers
   private readonly server
   private readonly scene
@@ -72,13 +81,19 @@ export class PreviewLoadingFlow {
   constructor(private readonly opts: PreviewLoadingFlowOptions) {
     this.timers = opts.timers ?? realTimers
     const now = opts.now ?? (() => Date.now())
-    this.server = createLoadingState((s) => opts.render(s, 'server'), this.timers, undefined, now)
-    this.scene = createLoadingState((s) => opts.render(s, 'scene'), this.timers, SCENE_STALL_AFTER_MS, now)
+    this.server = createLoadingState((s) => this.onServerSnapshot(s), this.timers, undefined, now)
+    this.scene = createLoadingState((s) => opts.render(s, 'scene', this.retries), this.timers, SCENE_STALL_AFTER_MS, now)
     opts.listen((ev) => this.onMessage(ev))
+  }
+
+  /** O Stop que está chegando é da retentativa automática? (o Preview não troca o palco). */
+  get restarting(): boolean {
+    return this.autoRestarting
   }
 
   /** URL nova no iframe (Play, reiniciar, trocar de fase): volta à fase 1. */
   begin(): void {
+    this.autoRestarting = false
     this.clearContact()
     this.clearSettle()
     this.scene.cancel()
@@ -98,8 +113,27 @@ export class PreviewLoadingFlow {
     this.frame = null
     this.clearContact()
     this.clearSettle()
+    // Stop da retentativa automática: o aviso "tentando de novo" e o prazo do servidor
+    // continuam armados — se o vite novo também não subir, o prazo dispara outra vez.
+    if (this.autoRestarting) return
+    this.retries = 0
     this.server.cancel()
     this.scene.cancel()
+  }
+
+  /**
+   * Servidor travado (SPEC-0696): reinicia sozinho até {@link MAX_AUTO_RETRIES} vezes
+   * antes de mostrar o aviso de travado. Cada tentativa rearma o prazo do servidor.
+   */
+  private onServerSnapshot(s: LoadingSnapshot): void {
+    if (s.phase === 'stalled' && this.opts.restart && this.retries < MAX_AUTO_RETRIES) {
+      this.retries++
+      this.autoRestarting = true
+      this.server.begin(readExpectedLoadMs(this.opts.store, this.opts.projectDir()))
+      this.opts.restart()
+      return
+    }
+    this.opts.render(s, 'server', this.retries)
   }
 
   /**
@@ -107,6 +141,7 @@ export class PreviewLoadingFlow {
    * editar código recarrega o iframe e o jogo monta a cena de novo — o aviso volta.
    */
   private onFrameLoad(): void {
+    this.retries = 0 // o servidor respondeu: a próxima trava tem as tentativas de novo
     this.clearContact() // o prazo de um `load` anterior não pode derrubar este
     this.clearSettle()
     this.sawLoading = false
