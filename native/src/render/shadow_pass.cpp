@@ -8,6 +8,7 @@
 #include "shadow_math.h"
 #include "shadow_pass_shaders.h"
 #include "shadow_pass_target.h"
+#include "shadow_pass_timing.h"
 #include "shadow_pass_uniforms.h"
 
 #include <webgpu/wgpu.h>
@@ -444,6 +445,7 @@ ShadowPassResult drawShadowCasters(HostGpu* gpu, WGPUTexture alvoProfundidade,
   // Segue o roteiro puro (`planShadowPass`): a próxima cascata reaproveita os
   // slots, então nenhuma escrita de uniforme cai depois do submit desta.
   r.staging.reset();
+  ShadowPassTiming::instance().mark(ShadowPhase::kPrepare);
   ShadowDepthPass aberto;
   size_t escritos = 0;
   uint32_t desenhados = 0;
@@ -466,7 +468,9 @@ ShadowPassResult drawShadowCasters(HostGpu* gpu, WGPUTexture alvoProfundidade,
         desenharUm(aberto, r, prontos[desenhados++], atual);
         break;
       case ShadowPassStep::kSubmit:
+        ShadowPassTiming::instance().mark(ShadowPhase::kEncode);
         submitShadowDepthPass(gpu, aberto);
+        ShadowPassTiming::instance().mark(ShadowPhase::kSubmit);
         break;
     }
   }

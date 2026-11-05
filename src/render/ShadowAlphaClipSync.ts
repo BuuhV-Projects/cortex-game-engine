@@ -213,6 +213,14 @@ function ponte(): PonteDoRecorte | null {
 }
 
 /** Mantém o recorte alfa do host em dia com os nós do espelho (SPEC-0642). */
+/**
+ * Quadros de um rodízio completo pelos nós já resolvidos (mandados, ou recusados por motivo fixo). Com milhares de
+ * nós de vegetação, conferir todos todo quadro custava ~0,6 ms no Hermes (SPEC-0690 §8). O que pode deixar um
+ * handle morto no host (o `dispose` do mapa ou da geometria, a troca de buffer no provedor) sobe a época e força a
+ * varredura completa; o rodízio só atrasa até este número de quadros uma troca de material sem `dispose`.
+ */
+export const ALPHA_CLIP_SWEEP_FRAMES = 16;
+
 export class ShadowAlphaClipSync {
   private readonly _enviados = new WeakMap<Object3D, Enviado>();
   private readonly _fonte = novaFonte();
@@ -234,6 +242,21 @@ export class ShadowAlphaClipSync {
   /** O host apagou o slot do nó que saiu: quem voltar manda o `set` de novo, mesmo no mesmo slot. */
   private readonly _aoSairDoEspelho = (objeto: Object3D): void => {
     this._enviados.delete(objeto);
+    this._pendentes.delete(objeto);
+    this._completa = true;
+  };
+  /** Os nós com recorte na ordem do rodízio (refeita na varredura completa). */
+  private readonly _nos: Object3D[] = [];
+  private _cursor = 0;
+  /** Nós ainda sem desfecho (textura ou UV sem GPU): tentam todo quadro, senão a cascata seguiria recusada. */
+  private readonly _pendentes = new Set<Object3D>();
+  /** O que a última varredura completa viu: mudou algum, a próxima é completa. */
+  private _completa = true;
+  private _tamanhoVisto = -1;
+  private _geracaoVista = -1;
+  private _epocaVista = -1;
+  private readonly _guardarNo = (objeto: Object3D): void => {
+    this._nos.push(objeto);
   };
 
   /**
@@ -250,8 +273,31 @@ export class ShadowAlphaClipSync {
     this._api = api;
     this._fonteDoQuadro = fonte;
     this._espelho = espelho;
-    // `forEach` com callback fixo: o `for…of` cria iterador por quadro no Hermes.
-    espelho.alphaClipNodes.forEach(this._sincronizarNo);
+    const nos = espelho.alphaClipNodes;
+    const completa = this._completa || nos.size !== this._tamanhoVisto || espelho.generation !== this._geracaoVista ||
+      this._epoca !== this._epocaVista;
+    if (completa) {
+      // `forEach` com callback fixo: o `for…of` cria iterador por quadro no Hermes.
+      this._nos.length = 0;
+      nos.forEach(this._guardarNo);
+      this._pendentes.clear();
+      for (let i = 0; i < this._nos.length; i++) this._sincronizarNo(this._nos[i]!);
+      this._completa = false;
+      this._tamanhoVisto = nos.size;
+      this._geracaoVista = espelho.generation;
+      this._epocaVista = this._epoca;
+      this._cursor = 0;
+    } else {
+      this._pendentes.forEach(this._sincronizarNo);
+      const n = this._nos.length;
+      const passo = Math.ceil(n / ALPHA_CLIP_SWEEP_FRAMES);
+      for (let k = 0; k < passo; k++) {
+        // Os pendentes já foram tentados acima, neste mesmo quadro.
+        const objeto = this._nos[this._cursor]!;
+        if (!this._pendentes.has(objeto)) this._sincronizarNo(objeto);
+        this._cursor = (this._cursor + 1) % n;
+      }
+    }
     this._api = null;
     this._fonteDoQuadro = null;
     this._espelho = null;
@@ -283,7 +329,15 @@ export class ShadowAlphaClipSync {
     this._desouvir = espelho.onAlphaClipRemoved?.(this._aoSairDoEspelho) ?? null;
   }
 
+  /** Sincroniza um nó e o põe (ou tira) dos pendentes conforme o desfecho. */
   private readonly _sincronizarNo = (objeto: Object3D): void => {
+    this._sincronizar(objeto);
+    const enviado = this._enviados.get(objeto);
+    if (enviado && !enviado.mandado && !enviado.recusaFixa) this._pendentes.add(objeto);
+    else this._pendentes.delete(objeto);
+  };
+
+  private _sincronizar(objeto: Object3D): void {
     const espelho = this._espelho!;
     const api = this._api!;
     const indice = espelho.nodeIndex(objeto);
@@ -332,7 +386,7 @@ export class ShadowAlphaClipSync {
     enviado.recusaFixa = false;
     this._guardar(objeto as ObjetoDoRecorte, enviado);
     this._relatar(objeto, enviado, ok ? 'registrado' : 'host-recusou');
-  };
+  }
 
   /** Guarda a chave do que foi mandado e passa a ouvir o `dispose` do mapa e da geometria (sobe a época). */
   private _guardar(objeto: ObjetoDoRecorte, enviado: Enviado): void {

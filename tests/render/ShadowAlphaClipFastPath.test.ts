@@ -5,7 +5,7 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Mesh, MeshStandardMaterial, Object3D, PlaneGeometry, RepeatWrapping, Texture } from 'three';
-import { ShadowAlphaClipSync, type FonteDeUvETextura } from '../../src/render/ShadowAlphaClipSync.js';
+import { ALPHA_CLIP_SWEEP_FRAMES, ShadowAlphaClipSync, type FonteDeUvETextura } from '../../src/render/ShadowAlphaClipSync.js';
 import type { ShadowUvSlot } from '../../src/render/ShadowGeometrySource.js';
 
 const ALPHA_TEST = 0.5;
@@ -165,5 +165,34 @@ describe('ShadowAlphaClipSync: caminho rápido em regime', () => {
     fonte.texture.mockImplementation((mapa: unknown) => ({ gpu: mapa }));
     sync.sync(e, backend, fonte as unknown as FonteDeUvETextura);
     expect(sets).toHaveLength(1);
+  });
+
+  it('rodízio: com muitos nós, a troca num nó longe do cursor só é vista dentro de ALPHA_CLIP_SWEEP_FRAMES quadros', () => {
+    const { sets } = instalarPonte();
+    const fonte = fonteFalsa();
+    const nos = Array.from({ length: ALPHA_CLIP_SWEEP_FRAMES * 2 }, () => folha());
+    const e = espelho(nos);
+    const sync = new ShadowAlphaClipSync();
+    const rodar = () => sync.sync(e, backend, fonte as unknown as FonteDeUvETextura);
+    rodar();
+    expect(sets).toHaveLength(nos.length);
+    (nos[nos.length - 1]!.material as MeshStandardMaterial).map!.offset.x = ATLAS_OFFSET;
+    rodar();
+    expect(sets).toHaveLength(nos.length);
+    for (let i = 1; i < ALPHA_CLIP_SWEEP_FRAMES; i++) rodar();
+    expect(sets).toHaveLength(nos.length + 1);
+  });
+
+  it('rodízio: a troca de buffer no provedor força a varredura completa no quadro seguinte', () => {
+    instalarPonte();
+    const fonte = fonteFalsa();
+    const nos = Array.from({ length: ALPHA_CLIP_SWEEP_FRAMES * 2 }, () => folha());
+    const e = espelho(nos);
+    const sync = new ShadowAlphaClipSync();
+    sync.sync(e, backend, fonte as unknown as FonteDeUvETextura);
+    fonte.uv.mockClear();
+    fonte.trocar();
+    sync.sync(e, backend, fonte as unknown as FonteDeUvETextura);
+    expect(fonte.uv).toHaveBeenCalledTimes(nos.length);
   });
 });

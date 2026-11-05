@@ -11,6 +11,7 @@
 #include "../render/alpha_clip_store.h"
 #include "../render/geometry_registry.h"
 #include "../render/shadow_pass_status.h"
+#include "../render/shadow_pass_timing.h"
 #include "../scene/shadow_pass_gate.h"
 #include "geometry_registry_shim.h"
 #include "scene_mirror_state.h"
@@ -235,10 +236,14 @@ napi_value jsDrawShadowPass(napi_env env, napi_callback_info info) {
     return njs::undefined(env);
   }
 
+  render::ShadowPassTiming& cronometro = render::ShadowPassTiming::instance();
+  cronometro.begin();
   s.shadowCasters.enumerate(s.mirror, params, static_cast<const float*>(planeData));
+  cronometro.mark(render::ShadowPhase::kEnumerate);
   const scene::ShadowGateResult veredito = scene::evaluateShadowPassGate(
       s.mirror, s.shadowCasters.casters(), frame, geometriaRegistrada, nullptr,
       instanciasPresentes, recortePresente, &s.shadowDrawList, posicaoRecusada);
+  cronometro.mark(render::ShadowPhase::kGate);
 
   auto* out = static_cast<double*>(outData);
   for (int i = 0; i < kGateOutReasonSlots; i++) out[i] = veredito.counts[i];
@@ -268,6 +273,7 @@ napi_value jsDrawShadowPass(napi_env env, napi_callback_info info) {
   }
 
   const uint32_t descartados = montarItens(s);
+  cronometro.mark(render::ShadowPhase::kItems);
   if (descartados > 0) {
     // Desenhar o resto daria um mapa sem parte dos casters: nada é desenhado
     // nem limpo, e o JS recusa a cascata (`descartado`).
@@ -281,6 +287,7 @@ napi_value jsDrawShadowPass(napi_env env, napi_callback_info info) {
       mirrorGpu(), alvo, viewProjection, s.shadowItems.data(),
       static_cast<uint32_t>(s.shadowItems.size()), projection, view);
   escreverResultado(out, outLength, 0, veredito.excludedCasters, resultado.status);
+  cronometro.end();
   napi_create_double(env, static_cast<double>(resultado.drawn), &saida);
   return saida;
 }
