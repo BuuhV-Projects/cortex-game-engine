@@ -310,7 +310,7 @@ export class NativeSceneMirror extends MirrorSlots {
       if (slot === undefined) return;
       this._indicePorObjeto.delete(objeto);
       this._instanciados.delete(objeto as NoDaCena);
-      this._recorteAlfa.delete(objeto);
+      if (this._recorteAlfa.delete(objeto)) this._ouvintesDoRecorte.forEach((ouvinte) => ouvinte(objeto));
       this._nodes[slot] = undefined;
       this._liveCount--;
       this._pararDeEscutar(objeto);

@@ -62,3 +62,18 @@ Há ainda dois defeitos que a correção expõe:
   (`posicao-nao-float32x3`) para não se confundir com `geometria-ausente`.
 - O custo que de fato aparece é o desenho das cascatas, que antes não rodava. Esse é o custo de a sombra aparecer, e a
   SPEC-0690 o mede.
+
+## Notas de implementação
+
+- **Motivo novo sem deslocar o vetor de saída.** `kPositionNotFloat32x3` vem no fim do enum (código 10, devolvido
+  como `-10`), mas a contagem dele NÃO ocupa o slot 10. Os 10 motivos de antes têm slot no início do vetor, e esse
+  layout fica congelado (`kGateOutReasonSlots` no shim, `GATE_OUT_REASON_SLOTS` no `mirrorBridge.ts`). A contagem
+  nova vai depois do status (`kGateOutPositionFormat`, 17 floats ao todo). O host continua aceitando os vetores de
+  13 e 16 floats, e host ou JS antigos leem `refused`, `total`, `skipped`, `excluded` e `status` no lugar certo.
+- **Marca da recusa por formato.** O `register` do `__cortexGeometryRegistry` ganhou um 9º argumento opcional,
+  `positionIsFloat32x3` (ausente = `true`). Com `false`, o registro solta o que havia para o id e o marca, e o gate
+  relata `posicao-nao-float32x3` em vez de `geometria-ausente`.
+- **Posse.** O registro e a tabela do recorte alfa fazem `wgpuBufferAddRef` do que guardam e `Release` ao
+  sobrescrever, apagar ou limpar. Os buffers do `NativeGeometryStore` não levam `destroy()` (o GC solta). Os do
+  three levam o `destroy` adiado do ADR-0153 no `dispose` da geometria, e o `CasterGeometryRegistry` desregistra
+  nesse mesmo evento.

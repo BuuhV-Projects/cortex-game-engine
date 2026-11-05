@@ -25,19 +25,31 @@ namespace {
  * de devolver um objeto novo: criar um `napi_value` por frame para relatar um
  * veredito seria gastar em alocação o que o marco quer ganhar em submissão.
  */
-constexpr int kGateOutRefusedCasters = scene::kShadowGateRefusalCount;
-constexpr int kGateOutTotalCasters = scene::kShadowGateRefusalCount + 1;
+/**
+ * Motivos com slot de contagem no INÍCIO do vetor: os de antes do ADR-0692. O
+ * layout fica congelado (`GATE_OUT_REASON_SLOTS` no JS); motivo novo ganha slot
+ * depois do status, e host e JS antigos continuam se entendendo.
+ */
+constexpr int kGateOutReasonSlots = static_cast<int>(scene::ShadowGateRefusal::kPositionNotFloat32x3);
+constexpr int kGateOutRefusedCasters = kGateOutReasonSlots;
+constexpr int kGateOutTotalCasters = kGateOutReasonSlots + 1;
 /** Índice do primeiro nó ofensor, ou -1 (SPEC-0289). */
-constexpr int kGateOutFirstOffender = scene::kShadowGateRefusalCount + 2;
+constexpr int kGateOutFirstOffender = kGateOutReasonSlots + 2;
 /** Tamanho do formato antigo, que o host ainda aceita (sem as posições da SPEC-0690). */
-constexpr int kGateOutLegacyFloats = scene::kShadowGateRefusalCount + 3;
+constexpr int kGateOutLegacyFloats = kGateOutReasonSlots + 3;
 /** Casters que o shim descartou depois do gate (SPEC-0690). */
-constexpr int kGateOutSkipped = scene::kShadowGateRefusalCount + 3;
+constexpr int kGateOutSkipped = kGateOutReasonSlots + 3;
 /** Casters skinados tirados da lista (SPEC-0690). */
-constexpr int kGateOutExcluded = scene::kShadowGateRefusalCount + 4;
+constexpr int kGateOutExcluded = kGateOutReasonSlots + 4;
 /** {@link render::ShadowPassStatus} da cascata (SPEC-0690). */
-constexpr int kGateOutStatus = scene::kShadowGateRefusalCount + 5;
-constexpr int kGateOutFloats = scene::kShadowGateRefusalCount + 6;
+constexpr int kGateOutStatus = kGateOutReasonSlots + 5;
+/** Tamanho do formato da SPEC-0690 (sem o slot do ADR-0692). */
+constexpr int kGateOutSpec0690Floats = kGateOutReasonSlots + 6;
+/** Contagem de `posicao-nao-float32x3` (ADR-0692). */
+constexpr int kGateOutPositionFormat = kGateOutReasonSlots + 6;
+constexpr int kGateOutFloats = kGateOutReasonSlots + 7;
+static_assert(kGateOutReasonSlots + 1 == scene::kShadowGateRefusalCount,
+              "motivo novo do gate precisa de slot proprio depois de kGateOutPositionFormat");
 /** Argumentos de `drawShadowPass` (ver {@link jsDrawShadowPass}). */
 constexpr size_t kArgsDrawShadowPass = 10;
 /** Elementos de uma matriz 4x4. */
@@ -54,6 +66,12 @@ constexpr size_t kSplitMatrixElements = 3 * kMatrixElements;
 bool geometriaRegistrada(int32_t geometryId, void*) {
   if (geometryId < 0) return false;
   return geometryRegistry().find(static_cast<uint32_t>(geometryId)) != nullptr;
+}
+
+/** O registro recusou a geometria pelo formato da `position` (ADR-0692)? */
+bool posicaoRecusada(int32_t geometryId, void*) {
+  if (geometryId < 0) return false;
+  return geometryRegistry().positionRefused(static_cast<uint32_t>(geometryId));
 }
 
 /** O host tem as matrizes deste `InstancedMesh`? (a forma que o gate puro aceita) */
@@ -119,7 +137,7 @@ uint32_t montarItens(MirrorState& s) {
 /** Escreve as posições da SPEC-0690, só quando o JS deu um vetor do formato novo. */
 void escreverResultado(double* out, size_t outLength, uint32_t descartados, int32_t excluidos,
                        render::ShadowPassStatus status) {
-  if (outLength < static_cast<size_t>(kGateOutFloats)) return;
+  if (outLength < static_cast<size_t>(kGateOutSpec0690Floats)) return;
   out[kGateOutSkipped] = descartados;
   out[kGateOutExcluded] = excluidos;
   out[kGateOutStatus] = render::shadowStatusSlot(status);
@@ -145,7 +163,8 @@ void escreverResultado(double* out, size_t outLength, uint32_t descartados, int3
  * o caminho conhecido para as bandas da SPEC-0234.
  *
  * `saida` aceita o formato antigo (`kGateOutLegacyFloats`) e o da SPEC-0690
- * (`kGateOutFloats`), que acrescenta `skipped`, `excluded` e `status`; o JS
+ * (`kGateOutSpec0690Floats`), que acrescenta `skipped`, `excluded` e `status`, e o do
+ * ADR-0692 (`kGateOutFloats`), com a contagem de `posicao-nao-float32x3`; o JS
  * pré-preenche o status com -1 para reconhecer um host antigo.
  *
  * @return `>= 0` — casters desenhados (0 com status `cleared-empty`,
@@ -219,10 +238,13 @@ napi_value jsDrawShadowPass(napi_env env, napi_callback_info info) {
   s.shadowCasters.enumerate(s.mirror, params, static_cast<const float*>(planeData));
   const scene::ShadowGateResult veredito = scene::evaluateShadowPassGate(
       s.mirror, s.shadowCasters.casters(), frame, geometriaRegistrada, nullptr,
-      instanciasPresentes, recortePresente, &s.shadowDrawList);
+      instanciasPresentes, recortePresente, &s.shadowDrawList, posicaoRecusada);
 
   auto* out = static_cast<double*>(outData);
-  for (int i = 0; i < scene::kShadowGateRefusalCount; i++) out[i] = veredito.counts[i];
+  for (int i = 0; i < kGateOutReasonSlots; i++) out[i] = veredito.counts[i];
+  if (outLength >= static_cast<size_t>(kGateOutFloats)) {
+    out[kGateOutPositionFormat] = veredito.counts[kGateOutReasonSlots];
+  }
   out[kGateOutRefusedCasters] = veredito.refusedCasters;
   out[kGateOutTotalCasters] = veredito.totalCasters;
   out[kGateOutFirstOffender] = veredito.firstOffender;

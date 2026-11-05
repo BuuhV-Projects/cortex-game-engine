@@ -16,6 +16,7 @@ import {
   STAGE_VERTEX,
   TINT_DELTA,
   UNFILTERABLE,
+  uploadedTexture,
   type Gpu,
   type MatState,
   type NativeRendererHost,
@@ -99,9 +100,7 @@ export class NativeMaterialStore {
 
   /** The three's uploaded GPU texture (uploading it if needed); `null` = not ready. */
   private _gpuTexture(texture: unknown): unknown {
-    this._host._textures.updateTexture(texture);
-    this._host._textures.updateSampler(texture);
-    return this._host.backend.get(texture)['texture'] ?? null;
+    return uploadedTexture(this._host, texture);
   }
 
   private _bindMaterial(mat: MatState): boolean {

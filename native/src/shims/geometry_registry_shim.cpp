@@ -1,8 +1,9 @@
 // Ponte do registro de geometria (SPEC-0241, passo 2).
 //
-// O JS manda os handles de buffer que o `three` JA criou; o C++ so os guarda
-// numa tabela por id, para conseguir gravar setVertexBuffer/setIndexBuffer sem
-// atravessar a ponte por frame. Nada aqui e dono de buffer nenhum.
+// O JS manda os handles de buffer que o `three` ou o `NativeGeometryStore` JA
+// criaram; o C++ os guarda numa tabela por id, para conseguir gravar
+// setVertexBuffer/setIndexBuffer sem atravessar a ponte por frame. O registro
+// segura uma referencia de cada buffer guardado (ADR-0692, `buffer_ref.h`).
 #include "geometry_registry_shim.h"
 
 #include "../napi/napi_util.h"
@@ -13,6 +14,13 @@ namespace {
 
 /** Args: id, vertice, indice, indices, vertices, indice32bits, passo, deslocamento. */
 constexpr size_t kArgsRegister = 8;
+/**
+ * 9o argumento, OPCIONAL (ADR-0692): `positionIsFloat32x3`. `false` = a `position`
+ * nao e `float32x3`; o id fica marcado e o gate recusa com `posicao-nao-float32x3`.
+ * Ausente = `true`, o contrato antigo.
+ */
+constexpr size_t kArgPositionFormat = 8;
+constexpr size_t kArgsRegisterMax = kArgPositionFormat + 1;
 
 WGPUBuffer bufferDoArgumento(napi_env env, napi_value valor) {
   napi_valuetype tipo = napi_undefined;
@@ -28,10 +36,13 @@ uint32_t inteiroDoArgumento(napi_env env, napi_value valor) {
   return bruto > 0.0 ? static_cast<uint32_t>(bruto) : 0u;
 }
 
-/** `register(id, vertexBuffer, indexBuffer, indexCount, vertexCount, indexIs32Bit)` */
+/**
+ * `register(id, vertexBuffer, indexBuffer, indexCount, vertexCount, indexIs32Bit, stride,
+ * offset, positionIsFloat32x3?)`
+ */
 napi_value jsRegister(napi_env env, napi_callback_info info) {
-  size_t argc = kArgsRegister;
-  napi_value args[kArgsRegister];
+  size_t argc = kArgsRegisterMax;
+  napi_value args[kArgsRegisterMax];
   napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
   if (argc < kArgsRegister) {
     njs::throwError(env, "register: faltam argumentos");
@@ -48,6 +59,11 @@ napi_value jsRegister(napi_env env, napi_callback_info info) {
   entrada.indexIs32Bit = indice32;
   entrada.vertexStride = inteiroDoArgumento(env, args[6]);
   entrada.vertexOffset = inteiroDoArgumento(env, args[7]);
+  if (argc > kArgPositionFormat) {
+    bool float32x3 = true;
+    napi_get_value_bool(env, args[kArgPositionFormat], &float32x3);
+    entrada.positionIsFloat32x3 = float32x3;
+  }
 
   const bool ok = geometryRegistry().set(inteiroDoArgumento(env, args[0]), entrada);
   napi_value saida = nullptr;
@@ -55,7 +71,7 @@ napi_value jsRegister(napi_env env, napi_callback_info info) {
   return saida;
 }
 
-/** `unregister(id)` — esquece a geometria, sem liberar nada. */
+/** `unregister(id)` — esquece a geometria e solta a referencia dos buffers dela. */
 napi_value jsUnregister(napi_env env, napi_callback_info info) {
   size_t argc = 1;
   napi_value args[1];
@@ -82,7 +98,7 @@ napi_value jsClear(napi_env env, napi_callback_info) {
 render::GeometryRegistry& geometryRegistry() {
   // Estado do processo, como o espelho de cena: o host tem um runtime so, e
   // quem desenha precisa consultar esta tabela fora do escopo do callback.
-  static render::GeometryRegistry instancia;
+  static render::GeometryRegistry instancia(render::wgpuBufferRefOps());
   return instancia;
 }
 

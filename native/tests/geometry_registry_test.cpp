@@ -23,7 +23,8 @@ render::GeometryEntry indexada(uintptr_t vertice, uintptr_t indice, uint32_t ind
 }  // namespace
 
 void testGeometryRegistry() {
-  render::GeometryRegistry reg;
+  // Sem AddRef/Release: aqui so a politica de tabela (a posse tem teste proprio).
+  render::GeometryRegistry reg{render::BufferRefOps{}};
   CHECK(reg.size() == 0);
   CHECK(reg.find(1) == nullptr);
 

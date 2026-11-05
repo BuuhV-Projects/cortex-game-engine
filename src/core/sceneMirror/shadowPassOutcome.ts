@@ -14,10 +14,12 @@ import type { Object3D } from 'three';
 import {
   GATE_OUT_EXCLUDED,
   GATE_OUT_FIRST_OFFENDER,
+  GATE_OUT_POSITION_FORMAT,
   GATE_OUT_SKIPPED,
   GATE_OUT_STATUS,
   GATE_OUT_TOTAL_CASTERS,
   SHADOW_GATE_REASONS,
+  gateOutCountSlot,
   type ShadowPassOutcome,
   type ShadowPassReason,
   type ShadowPassStatus,
@@ -43,6 +45,8 @@ export function prepareGateOut(out: Float64Array): void {
   out[GATE_OUT_SKIPPED] = 0;
   out[GATE_OUT_EXCLUDED] = 0;
   out[GATE_OUT_STATUS] = GATE_STATUS_UNWRITTEN;
+  // Host anterior ao ADR-0692 não escreve este slot: sem zerar, valeria a contagem da chamada anterior.
+  out[GATE_OUT_POSITION_FORMAT] = 0;
 }
 
 /**
@@ -69,7 +73,7 @@ export function readShadowPassOutcome(
     const offender = ofensor > 0 ? nodes[ofensor] : undefined;
     const partes: string[] = [];
     for (let i = 1; i < SHADOW_GATE_REASONS.length; i++) {
-      const n = out[i] ?? 0;
+      const n = out[gateOutCountSlot(i)] ?? 0;
       if (n > 0) partes.push(`${SHADOW_GATE_REASONS[i]}=${n}`);
     }
     return { drawn: 0, refused: true, reason, totalCasters, offender, counts: partes.join(' '), ...drawFields };

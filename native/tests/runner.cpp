@@ -122,6 +122,12 @@ void testPipelineCacheSeparaChavesDiferentes();
 void testPipelineCacheNaoCriaNadaEmRegime();
 void testPipelineCacheClearEsqueceTudo();
 void testGeometryRegistry();
+void testGeometryRegistrySeguraESoltaAoSobrescrever();
+void testGeometryRegistryEraseEClearSoltam();
+void testGeometryRegistryMarcaPosicaoForaDeFloat32x3();
+void testAlphaClipTableSeguraOUvESoltaTudo();
+void testShadowGateRecusaPosicaoForaDeFloat32x3();
+void testShadowGatePosicaoSemConsultaContaComoAusente();
 void testInflate();
 }  // namespace tests
 
@@ -231,6 +237,12 @@ int main() {
   tests::testPipelineCacheNaoCriaNadaEmRegime();
   tests::testPipelineCacheClearEsqueceTudo();
   tests::testGeometryRegistry();
+  tests::testGeometryRegistrySeguraESoltaAoSobrescrever();
+  tests::testGeometryRegistryEraseEClearSoltam();
+  tests::testGeometryRegistryMarcaPosicaoForaDeFloat32x3();
+  tests::testAlphaClipTableSeguraOUvESoltaTudo();
+  tests::testShadowGateRecusaPosicaoForaDeFloat32x3();
+  tests::testShadowGatePosicaoSemConsultaContaComoAusente();
   tests::testGcGenerationFromName();
   tests::testGcTotalsSeparateGenerations();
   tests::testGcOccupancyTargetKeepsMarginBelowCap();

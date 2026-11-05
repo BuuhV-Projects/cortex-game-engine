@@ -52,21 +52,37 @@ export const SHADOW_GATE_REASONS = [
   'position-node',
   'geometria-ausente',
   'lado-nao-reproduzivel',
+  // ADR-0692: `position` fora de `float32x3`; no FIM, porque o JS indexa a saída do gate pela posição.
+  'posicao-nao-float32x3',
 ] as const;
 
 export type ShadowGateReason = (typeof SHADOW_GATE_REASONS)[number];
 
-/** Posições do vetor de saída do gate (ver `kGateOut*` em `scene_mirror_shim.cpp`). */
-export const GATE_OUT_TOTAL_CASTERS = SHADOW_GATE_REASONS.length + 1;
+/**
+ * Motivos com slot de contagem no INÍCIO do vetor de saída: os de antes do ADR-0692. O layout fica congelado
+ * (`kGateOutReasonSlots` no C++); motivo novo ganha slot depois do status, e host e JS antigos seguem lendo certo.
+ */
+export const GATE_OUT_REASON_SLOTS = SHADOW_GATE_REASONS.indexOf('posicao-nao-float32x3');
+
+/** Posições do vetor de saída do gate (ver `kGateOut*` em `scene_mirror_shadow_shim.cpp`). */
+export const GATE_OUT_REFUSED_CASTERS = GATE_OUT_REASON_SLOTS;
+export const GATE_OUT_TOTAL_CASTERS = GATE_OUT_REASON_SLOTS + 1;
 /** Índice do primeiro nó ofensor, ou -1 (SPEC-0289). */
-export const GATE_OUT_FIRST_OFFENDER = SHADOW_GATE_REASONS.length + 2;
+export const GATE_OUT_FIRST_OFFENDER = GATE_OUT_REASON_SLOTS + 2;
 /** Casters que o shim descartou depois do gate: geometria, lote instanciado ou recorte alfa ausente (SPEC-0690). */
-export const GATE_OUT_SKIPPED = SHADOW_GATE_REASONS.length + 3;
+export const GATE_OUT_SKIPPED = GATE_OUT_REASON_SLOTS + 3;
 /** Casters skinned tirados da lista: não recusam mais a cascata (SPEC-0690, ADR-0691). */
-export const GATE_OUT_EXCLUDED = SHADOW_GATE_REASONS.length + 4;
+export const GATE_OUT_EXCLUDED = GATE_OUT_REASON_SLOTS + 4;
 /** Status do desenho (`kGateOutStatus`, SPEC-0690); o host escreve código + 1, e o 0 que o JS escreve antes = host antigo. */
-export const GATE_OUT_STATUS = SHADOW_GATE_REASONS.length + 5;
-export const GATE_OUT_FLOATS = SHADOW_GATE_REASONS.length + 6;
+export const GATE_OUT_STATUS = GATE_OUT_REASON_SLOTS + 5;
+/** Contagem de `posicao-nao-float32x3` (ADR-0692): o primeiro motivo fora dos slots do início. */
+export const GATE_OUT_POSITION_FORMAT = GATE_OUT_REASON_SLOTS + 6;
+export const GATE_OUT_FLOATS = GATE_OUT_REASON_SLOTS + 7;
+
+/** Slot da contagem do motivo de código `code` no vetor de saída do gate. */
+export function gateOutCountSlot(code: number): number {
+  return code < GATE_OUT_REASON_SLOTS ? code : GATE_OUT_POSITION_FORMAT + (code - GATE_OUT_REASON_SLOTS);
+}
 
 /**
  * Status do desenho de uma cascata (SPEC-0690). `cleared-empty` = nenhum caster, o alvo foi limpo (aceito);

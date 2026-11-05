@@ -72,7 +72,7 @@ export interface RenderServerCounters {
   fbEnv: number;
 }
 
-const sun = { drawn: 0, handedBack: 0, reason: undefined as string | undefined, counts: undefined as string | undefined };
+const sun = { drawn: 0, handedBack: 0, reason: undefined as string | undefined, counts: undefined as string | undefined, pending: 0 };
 let sunOffender: Object3D | undefined;
 /** O último desenho de cada cascata da CSM nativa (SPEC-0690), e o que a última amostra publicou. */
 const cascades: SunShadowCascadeSample[] = [];
@@ -101,6 +101,12 @@ export function traceSunShadowHandedBack(reason: string, counts?: string, offend
   sun.reason = reason;
   sun.counts = counts;
   sunOffender = offender;
+}
+
+/** Geometrias de caster ainda pendentes no registro do passe de sombra neste quadro (ADR-0692): o aquecimento. */
+export function traceShadowGeometryPending(pending: number): void {
+  if (!active) return;
+  sun.pending = pending;
 }
 
 /**
@@ -192,6 +198,7 @@ function drainSunShadow(): SunShadowSample | undefined {
   if (receivers > 0) out.csmReceivers = receivers;
   if (sun.reason !== undefined) out.reason = sun.reason;
   if (sun.counts) out.counts = sun.counts;
+  if (sun.pending > 0) out.pendingGeometry = sun.pending;
   if (sunOffender) out.offender = { name: sunOffender.name, id: sunOffender.id, node: sceneNodeIdOf(sunOffender) };
   if (changed !== undefined) out.cascades = changed;
   sun.drawn = 0;
@@ -267,4 +274,5 @@ export function resetTraceCounters(): void {
   cascadeCount = 0;
   publishedCascades = '';
   csmReceivers = 0;
+  sun.pending = 0;
 }

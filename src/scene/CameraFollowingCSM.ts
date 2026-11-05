@@ -141,6 +141,15 @@ export class CameraFollowingCSM extends CSMShadowNode {
     this._lastUpdateByNative = true;
   }
 
+  /**
+   * Descarta o nó (teardown da cena em `Scene.ts`, rebuild da iluminação): o passe nativo solta o ouvinte de troca
+   * de buffer do provedor, que vive tanto quanto o NativeRenderer e prenderia a cena velha (ADR-0692).
+   */
+  override dispose(): void {
+    this._nativePass.dispose();
+    super.dispose();
+  }
+
   /** O que o receptor nativo lê das cascatas neste quadro (`ShadowBlock`, SPEC-0690). */
   nativeReceiverState(): CsmReceiverState {
     const self = this as unknown as CsmInterno;

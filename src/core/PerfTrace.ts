@@ -176,6 +176,8 @@ export interface SunShadowSample {
   cascades?: SunShadowCascadeSample[];
   /** Draws nativos que amostraram a CSM na janela (SPEC-0690); ausente com zero. */
   csmReceivers?: number;
+  /** Geometrias de caster ainda sem buffer no registro do passe, no último quadro (ADR-0692); ausente com zero. */
+  pendingGeometry?: number;
 }
 
 /** Uma cascata em `sunShadow.cascades`: `status` é `ok`, `cleared-empty`, `not-ready`, `skipped`, `refused:<motivo>`. */

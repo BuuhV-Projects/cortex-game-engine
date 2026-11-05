@@ -20,6 +20,7 @@ import { debug } from '../core/debug.js';
 import { buildRenderIdPlan } from './RenderIdRefresh.js';
 import { mainPassArm } from './MainPassArm.js';
 import { createNativeRenderer, nativeRendererRequested } from './native/NativeRenderer.js';
+import { setActiveShadowSource } from './ShadowGeometrySource.js';
 import {
   DrawBatch,
   batchBackendSupported,
@@ -437,6 +438,8 @@ export function installCleanDrawFastPath(
     uninstall(): void {
       desinstalarServidor?.();
       setActiveRenderServer(null);
+      // O provedor do passe de sombra volta a ser só o `three` (ADR-0692).
+      setActiveShadowSource(null);
       lote?.flush();
       Reflect.deleteProperty(renderer, '_renderObjectDirect');
       backend.draw = drawOriginal;

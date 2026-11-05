@@ -90,6 +90,8 @@ add_executable(cortex_host
   src/render/shadow_pass_target.cpp
   src/render/instance_buffer_store.cpp
   src/render/alpha_clip_store.cpp
+  src/render/alpha_clip_table.cpp
+  src/render/buffer_ref.cpp
   src/scene/scene_mirror.cpp
   src/scene/shadow_caster_enumerator.cpp
   src/scene/main_pass_culler.cpp
@@ -336,6 +338,8 @@ add_executable(cortex_host_tests
   tests/shadow_math_test.cpp
   tests/pipeline_cache_test.cpp
   tests/geometry_registry_test.cpp
+  tests/buffer_ownership_test.cpp
+  tests/shadow_pass_position_format_test.cpp
   tests/gc_stats_test.cpp
   tests/napi_frame_stats_test.cpp
   tests/pass_timing_stats_test.cpp
@@ -363,6 +367,7 @@ add_executable(cortex_host_tests
   src/scene/shadow_pass_gate.cpp
   src/render/shadow_pass_status.cpp
   src/render/geometry_registry.cpp
+  src/render/alpha_clip_table.cpp
   src/canvas2d/blit.cpp
 )
 target_include_directories(cortex_host_tests PRIVATE

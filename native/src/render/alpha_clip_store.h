@@ -5,23 +5,23 @@
 // `a <= alphaTest`. Para o passe nativo fazer o mesmo, o host precisa da textura,
 // do buffer de UV e desses dois números — é o que este store guarda.
 //
-// Textura e buffer de UV são EMPRESTADOS do `three` (como no `GeometryRegistry`):
-// quem os cria e destrói é ele, e o JS apaga a entrada no quadro em que o handle
-// some (o `destroy` do host é adiado em 10 quadros, ADR-0153). O store é dono só do
-// que cria: a `TextureView`, os samplers e o bind group do grupo 1 do pipeline.
+// Textura e buffer de UV são EMPRESTADOS (do `three` ou do `NativeGeometryStore`,
+// ADR-0692): quem os cria é quem os destrói, e o JS apaga a entrada no quadro em
+// que o handle some (o `destroy` do host é adiado em 10 quadros, ADR-0153). Como
+// no `GeometryRegistry`, o store segura uma referência do buffer de UV enquanto o
+// guarda (a posse mora na `AlphaClipTable`). É dono do que cria: a `TextureView`,
+// os samplers e o bind group do grupo 1 do pipeline.
 #pragma once
 
 #include <cstdint>
-#include <unordered_map>
 
 #include <webgpu/webgpu.h>
+
+#include "alpha_clip_table.h"
 
 struct HostGpu;
 
 namespace render {
-
-/** Floats da `map.matrix` do `three` (`Matrix3`, coluna-maior). */
-constexpr uint32_t kUvTransformFloats = 9;
 
 /** Modo de repetição do sampler, na ordem do índice da tabela de samplers. */
 enum class AlphaClipWrap : uint8_t { kRepeat = 0, kClamp = 1, kMirror = 2 };
@@ -52,21 +52,11 @@ struct AlphaClipSource {
   float uvTransform[kUvTransformFloats] = {};
 };
 
-/** O recorte de um nó, pronto para o passe. */
-struct AlphaClipEntry {
-  WGPUBuffer uvBuffer = nullptr;
-  uint32_t uvStride = 0;
-  uint64_t uvOffset = 0;
-  float alphaTest = 0.0f;
-  float uvTransform[kUvTransformFloats] = {};
-  /** Grupo 1 do pipeline com recorte: textura + sampler. Dono: o store. */
-  WGPUBindGroup bindGroup = nullptr;
-  WGPUTextureView view = nullptr;
-};
-
 /** Nó do espelho → recorte alfa. */
 class AlphaClipStore {
  public:
+  AlphaClipStore();
+
   /**
    * Guarda (ou troca) o recorte do nó. Devolve `false` quando a fonte não serve
    * (textura que não é 2D simples, formato não filtrável, sem UV) ou a GPU recusa
@@ -75,34 +65,26 @@ class AlphaClipStore {
   bool set(HostGpu* gpu, int32_t node, const AlphaClipSource& source);
 
   /** O recorte do nó, ou `nullptr` se o host não o tem. */
-  const AlphaClipEntry* find(int32_t node) const;
+  const AlphaClipEntry* find(int32_t node) const { return table_.find(node); }
 
-  void erase(int32_t node);
+  void erase(int32_t node) { table_.erase(node); }
 
   /** Libera os nós para os quais `removed(node)` é verdadeiro (slot virou lápide). */
   template <typename Removed>
   void eraseIf(Removed removed) {
-    for (auto it = entries_.begin(); it != entries_.end();) {
-      if (removed(it->first)) {
-        release(it->second);
-        it = entries_.erase(it);
-      } else {
-        ++it;
-      }
-    }
+    table_.eraseIf(removed);
   }
 
   /** Esquece tudo (espelho reconstruído). */
-  void clear();
+  void clear() { table_.clear(); }
 
   /** Layout do grupo 1 (textura + sampler, visível no fragmento); criado na 1ª vez. */
   WGPUBindGroupLayout layout(HostGpu* gpu);
 
  private:
-  static void release(AlphaClipEntry& entry);
   WGPUSampler sampler(HostGpu* gpu, AlphaClipWrap wrapS, AlphaClipWrap wrapT);
 
-  std::unordered_map<int32_t, AlphaClipEntry> entries_;
+  AlphaClipTable table_;
   WGPUBindGroupLayout layout_ = nullptr;
   WGPUSampler samplers_[kAlphaClipWrapCount][kAlphaClipWrapCount] = {};
 };

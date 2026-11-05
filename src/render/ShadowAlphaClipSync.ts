@@ -8,8 +8,15 @@
  * deslocamento do UV, o `alphaTest`, o wrap e a matriz — para cada nó do espelho
  * marcado com recorte.
  *
+ * O UV e a textura vêm do provedor do passe de sombra (ADR-0692): com o
+ * NativeRenderer, o slot do store nativo que carrega o `uv` (passo e
+ * deslocamento dele) e a textura subida pelo mesmo caminho do material nativo;
+ * sem ele, os handles do backend do `three`, como antes.
+ *
  * Só atravessa a ponte quando algo mudou: no regime normal o trabalho por quadro
- * é comparar meia dúzia de campos por nó com recorte, sem alocar.
+ * é comparar meia dúzia de campos por nó com recorte, sem alocar. O nó que sai do
+ * espelho (`removeSubtree`) é esquecido aqui: o host apagou o slot dele, e quem
+ * volta ao MESMO slot precisa mandar o `set` de novo.
  *
  * O que o host não sabe reproduzir (`alphaMap`, `colorNode`, máscaras, UV em outro
  * canal ou quantizado) NÃO é registrado — o gate segue recusando o quadro, e o
@@ -17,6 +24,7 @@
  */
 import type { Object3D } from 'three';
 import { debug } from '../core/debug.js';
+import { shadowSourceFor, type ShadowGeometrySource, type ShadowUvSlot } from './ShadowGeometrySource.js';
 
 /** A ponte `__cortexShadowAlphaClip` do host (`shadow_alpha_clip_shim.cpp`). */
 interface PonteDoRecorte {
@@ -44,15 +52,22 @@ export interface EspelhoDoRecorte {
   readonly alphaClipNodes: ReadonlySet<Object3D>;
   nodeIndex(objeto: Object3D): number | undefined;
   readonly generation: number;
+  /** Avisa quando um nó com recorte sai do espelho; devolve o `off`. */
+  onAlphaClipRemoved?(ouvinte: (objeto: Object3D) => void): () => void;
 }
+
+/** A parte do provedor do passe de sombra que o recorte usa. */
+export type FonteDeUvETextura = Pick<ShadowGeometrySource, 'uv' | 'texture'>;
 
 /** Floats da `Matrix3` do `three`. */
 const FLOATS_DA_MATRIZ_UV = 9;
 /** Componentes de um UV e bytes por float. */
 const COMPONENTES_DO_UV = 2;
-const BYTES_POR_FLOAT = 4;
 /** Único canal de UV que o host lê (`uv`, não `uv1`…). */
 const CANAL_DO_UV = 0;
+
+/** Destino reaproveitado do slot do UV que o provedor preenche (sem alocar por nó e por quadro). */
+const SLOT_DO_UV: ShadowUvSlot = { buffer: null, stride: 0, offset: 0 };
 
 /** O que o `three` usaria no recorte de um nó, lido sem alocar. */
 interface FonteDoRecorte {
@@ -113,8 +128,7 @@ type AtributoUv = {
   normalized?: boolean;
   array?: unknown;
   isInterleavedBufferAttribute?: boolean;
-  offset?: number;
-  data?: { stride?: number; array?: unknown };
+  data?: { array?: unknown };
 };
 
 /**
@@ -125,12 +139,12 @@ type AtributoUv = {
  */
 export function lerFonteDoRecorte(
   objeto: Object3D,
-  backend: BackendDoRecorte,
+  fonte: FonteDeUvETextura,
   destino: FonteDoRecorte,
 ): string | null {
   const malha = objeto as Object3D & {
     material?: MaterialDoRecorte | MaterialDoRecorte[];
-    geometry?: { getAttribute?(nome: string): unknown };
+    geometry?: Parameters<ShadowGeometrySource['uv']>[0];
   };
   const material = malha.material;
   if (!material || Array.isArray(material)) return 'material-em-array';
@@ -143,16 +157,15 @@ export function lerFonteDoRecorte(
   if (!mapa) return 'sem-map';
   if ((mapa.channel ?? CANAL_DO_UV) !== CANAL_DO_UV) return 'canal-de-uv';
 
-  const uv = malha.geometry?.getAttribute?.('uv') as AtributoUv | undefined;
+  const uv = (malha.geometry as { getAttribute?(nome: string): unknown } | undefined)?.getAttribute?.('uv') as AtributoUv | undefined;
   if (!uv || uv.itemSize !== COMPONENTES_DO_UV || uv.normalized) return 'uv-ausente';
   const intercalado = uv.isInterleavedBufferAttribute === true;
   const dono = intercalado ? uv.data : uv;
   if (!dono || !(dono.array instanceof Float32Array)) return 'uv-nao-float32';
 
-  const textura = backend.get(mapa)?.texture;
+  const textura = fonte.texture(mapa);
   if (!textura) return 'textura-sem-gpu';
-  const bufferUv = backend.get(dono)?.buffer;
-  if (!bufferUv) return 'uv-sem-gpu';
+  if (!fonte.uv(malha.geometry!, SLOT_DO_UV)) return 'uv-sem-gpu';
 
   // O `TextureNode` do `three` atualiza a matriz por objeto desenhado; aqui é a
   // mesma conta (`setUvTransform`), barata e sem alocar.
@@ -160,11 +173,9 @@ export function lerFonteDoRecorte(
   const elementos = mapa.matrix.elements;
   for (let i = 0; i < FLOATS_DA_MATRIZ_UV; i++) destino.matriz[i] = elementos[i]!;
   destino.textura = textura;
-  destino.bufferUv = bufferUv;
-  destino.passo = intercalado
-    ? (uv.data?.stride ?? COMPONENTES_DO_UV) * BYTES_POR_FLOAT
-    : COMPONENTES_DO_UV * BYTES_POR_FLOAT;
-  destino.deslocamento = intercalado ? (uv.offset ?? 0) * BYTES_POR_FLOAT : 0;
+  destino.bufferUv = SLOT_DO_UV.buffer;
+  destino.passo = SLOT_DO_UV.stride;
+  destino.deslocamento = SLOT_DO_UV.offset;
   destino.alphaTest = material.alphaTest!;
   destino.wrapS = mapa.wrapS;
   destino.wrapT = mapa.wrapT;
@@ -207,21 +218,48 @@ export class ShadowAlphaClipSync {
   private readonly _enviados = new WeakMap<Object3D, Enviado>();
   private readonly _fonte = novaFonte();
   private _api: PonteDoRecorte | null = null;
-  private _backend: BackendDoRecorte | null = null;
+  private _fonteDoQuadro: FonteDeUvETextura | null = null;
   private _espelho: EspelhoDoRecorte | null = null;
+  /** O espelho cujas saídas de nó este sync ouve, e o `off` do ouvinte. */
+  private _espelhoOuvido: EspelhoDoRecorte | null = null;
+  private _desouvir: (() => void) | null = null;
+  /** O host apagou o slot do nó que saiu: quem voltar manda o `set` de novo, mesmo no mesmo slot. */
+  private readonly _aoSairDoEspelho = (objeto: Object3D): void => {
+    this._enviados.delete(objeto);
+  };
 
-  /** Roda antes de todo passe nativo — o handle que sumiu tem de sair ANTES do desenho. */
-  sync(espelho: EspelhoDoRecorte, backend: BackendDoRecorte): void {
+  /**
+   * Roda antes de todo passe nativo — o handle que sumiu tem de sair ANTES do desenho.
+   *
+   * @param fonte - De onde vêm o UV e a textura (ADR-0692); o padrão é o provedor do quadro.
+   */
+  sync(espelho: EspelhoDoRecorte, backend: BackendDoRecorte, fonte: FonteDeUvETextura = shadowSourceFor(backend)): void {
     const api = ponte();
-    if (!api || espelho.alphaClipNodes.size === 0) return;
+    if (!api) return;
+    this._ouvir(espelho);
+    if (espelho.alphaClipNodes.size === 0) return;
     this._api = api;
-    this._backend = backend;
+    this._fonteDoQuadro = fonte;
     this._espelho = espelho;
     // `forEach` com callback fixo: o `for…of` cria iterador por quadro no Hermes.
     espelho.alphaClipNodes.forEach(this._sincronizarNo);
     this._api = null;
-    this._backend = null;
+    this._fonteDoQuadro = null;
     this._espelho = null;
+  }
+
+  /** Fim do passe: solta o ouvinte de saída de nó do espelho. */
+  dispose(): void {
+    this._desouvir?.();
+    this._desouvir = null;
+    this._espelhoOuvido = null;
+  }
+
+  private _ouvir(espelho: EspelhoDoRecorte): void {
+    if (espelho === this._espelhoOuvido) return;
+    this._desouvir?.();
+    this._espelhoOuvido = espelho;
+    this._desouvir = espelho.onAlphaClipRemoved?.(this._aoSairDoEspelho) ?? null;
   }
 
   private readonly _sincronizarNo = (objeto: Object3D): void => {
@@ -242,7 +280,7 @@ export class ShadowAlphaClipSync {
       enviado.registrado = false;
     }
 
-    const motivo = lerFonteDoRecorte(objeto, this._backend!, this._fonte);
+    const motivo = lerFonteDoRecorte(objeto, this._fonteDoQuadro!, this._fonte);
     if (motivo !== null) {
       // Só apaga o que é DESTE nó: o slot antigo pode já ser de outro.
       if (enviado.registrado && mesmoSlot) api.erase(indice);

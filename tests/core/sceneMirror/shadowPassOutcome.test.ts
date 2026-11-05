@@ -9,6 +9,8 @@ import {
   GATE_OUT_EXCLUDED,
   GATE_OUT_FIRST_OFFENDER,
   GATE_OUT_FLOATS,
+  GATE_OUT_POSITION_FORMAT,
+  GATE_OUT_REASON_SLOTS,
   GATE_OUT_SKIPPED,
   GATE_OUT_STATUS,
   GATE_OUT_TOTAL_CASTERS,
@@ -21,8 +23,10 @@ import {
   shadowPassAccepted,
 } from '../../../src/core/sceneMirror/shadowPassOutcome.js';
 
-/** `kShadowGateRefusalCount` do C++. */
-const N = SHADOW_GATE_REASONS.length;
+/** `kGateOutReasonSlots` do C++: os motivos com slot no início do vetor (layout congelado, ADR-0692). */
+const N = GATE_OUT_REASON_SLOTS;
+/** Código do motivo do ADR-0692, o primeiro sem slot no início. */
+const POSICAO = SHADOW_GATE_REASONS.indexOf('posicao-nao-float32x3');
 /** `kGateOutStatus` do host (SPEC-0690). */
 /** O que o host escreve no slot: o código de `ShadowPassStatus` + 1 (o 0 é "nada escrito"). */
 const STATUS = { ok: 1, clearedEmpty: 2, notReady: 3, refused: 4, skipped: 5 } as const;
@@ -44,7 +48,11 @@ describe('vetor de saída do gate (SPEC-0690)', () => {
     expect(GATE_OUT_SKIPPED).toBe(N + 3);
     expect(GATE_OUT_EXCLUDED).toBe(N + 4);
     expect(GATE_OUT_STATUS).toBe(N + 5);
-    expect(GATE_OUT_FLOATS).toBe(N + 6);
+    expect(GATE_OUT_POSITION_FORMAT).toBe(N + 6);
+    expect(GATE_OUT_FLOATS).toBe(N + 7);
+    // Os 10 motivos de antes seguem no início; o do ADR-0692 é o 11º código, com slot depois do status.
+    expect(N).toBe(10);
+    expect(POSICAO).toBe(SHADOW_GATE_REASONS.length - 1);
     // O JS indexa os motivos pelo código do C++: 'skinned' continua no lugar, só não é mais produzido.
     expect(SKINNED).toBe(3);
   });
@@ -118,6 +126,18 @@ describe('readShadowPassOutcome (SPEC-0690)', () => {
     expect(shadowPassAccepted(r)).toBe(false);
   });
 
+  it('recusa por posicao-nao-float32x3: código 10, contagem lida do slot depois do status (ADR-0692)', () => {
+    const r = readShadowPassOutcome(-POSICAO, saida((o) => {
+      o[GATE_OUT_POSITION_FORMAT] = 3;
+      o[INSTANCED] = 1;
+      o[GATE_OUT_STATUS] = STATUS.refused;
+    }), []);
+    expect(r).toMatchObject({ refused: true, reason: 'posicao-nao-float32x3', counts: 'instanced=1 posicao-nao-float32x3=3' });
+    // O slot do código 10 no início é `refused` (recusados): não pode virar contagem do motivo.
+    const so = saida((o) => (o[N] = 5));
+    expect(readShadowPassOutcome(-POSICAO, so, []).counts).toBe('');
+  });
+
   it('host antigo (status 0): sem os campos novos, e vale a regra de antes', () => {
     const desenhou = readShadowPassOutcome(5, saida(), []);
     expect(desenhou).toEqual({ drawn: 5, refused: false, reason: 'aceito', totalCasters: 0 });
@@ -176,7 +196,7 @@ describe('NativeSceneMirror.drawShadowPass e o contrato (SPEC-0690)', () => {
     const r = espelho.drawShadowPass(
       new OrthographicCamera(), new Vector3(), 0, new Float64Array(FLOATS_PER_NODE), {}, -1, false,
     );
-    expect(visto.tamanho).toBe(N + 6);
+    expect(visto.tamanho).toBe(N + 7);
     expect(visto.status).toBe(GATE_STATUS_UNWRITTEN);
     expect(r?.status).toBeUndefined();
     expect(r && shadowPassAccepted(r)).toBe(true);

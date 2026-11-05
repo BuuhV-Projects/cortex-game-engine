@@ -24,8 +24,11 @@ import { debug, isDebug } from '../../core/debug.js';
 import type { NativeSceneMirror } from '../../core/NativeSceneMirror.js';
 import type { ShadowPassOutcome } from '../../core/sceneMirror/mirrorBridge.js';
 import { shadowPassAccepted } from '../../core/sceneMirror/shadowPassOutcome.js';
-import { traceSunShadowCascade, traceSunShadowDrawn, traceSunShadowHandedBack } from '../../core/perfTrace/traceCounters.js';
+import {
+  traceShadowGeometryPending, traceSunShadowCascade, traceSunShadowDrawn, traceSunShadowHandedBack,
+} from '../../core/perfTrace/traceCounters.js';
 import { CasterGeometryRegistry } from '../../render/CasterGeometryRegistry.js';
+import { shadowSourceFor } from '../../render/ShadowGeometrySource.js';
 import { ShadowAlphaClipSync } from '../../render/ShadowAlphaClipSync.js';
 import type { CsmCascadeReceiver, CsmReceiverState } from '../../render/native/frame/shadowCsm.js';
 import { SHADOW_DEPTH_TEXTURE_LABEL, ensureCascadeMap, type CascadeMapRenderer, type CascadeMapShadow } from './cascadeMaps.js';
@@ -39,6 +42,8 @@ const ELEMENTOS_DA_MATRIZ = 16;
  * por divergência fica do lado C++, coberta por teste.
  */
 const NOS_DA_CENA_NAO_MEDIDOS = -1;
+/** Motivo do gate para caster sem geometria registrada (`SHADOW_GATE_REASONS`). */
+const GEOMETRIA_AUSENTE = 'geometria-ausente';
 
 /** A cascata como o CSM a guarda em `lights[]` (uma `LwLight` com `shadow`). */
 export interface CascataDoCsm {
@@ -124,14 +129,22 @@ export class CsmNativePass {
     }
   }
 
+  /** Fim do passe (o nó CSM foi descartado): solta os ouvintes do provedor e do espelho e esquece o registro. */
+  dispose(): void {
+    this._registry.dispose();
+    this._alphaClip.dispose();
+  }
+
   /** Desenha as cascatas devidas neste quadro e decide, por cascata, quem é dono do mapa. */
   draw(frame: CsmNativeFrame, cascatas: readonly CascataDoCsm[]): void {
     const backend = frame.renderer.backend!;
-    // E2 — registro preguiçoso: quem ainda não subiu é tentado no próximo frame. As geometrias que o streaming
-    // trouxe desde o frame passado entram na fila aqui (SPEC-0289).
-    this._registry.atualizar(frame.scene, backend, frame.mirror.drainNewGeometries());
+    // ADR-0692: os buffers vêm do NativeRenderer anexado (store nativo → three → upload); sem ele, só do `three`.
+    const fonte = shadowSourceFor(backend);
+    // E2 — registro com orçamento de upload por quadro; as geometrias que o streaming trouxe desde o frame passado
+    // sobem neste mesmo quadro (SPEC-0289, ADR-0692).
+    traceShadowGeometryPending(this._registry.atualizar(frame.scene, backend, frame.mirror.drainNewGeometries(), fonte).pendentes);
     // SPEC-0642: textura + UV de quem tem `alphaTest`, antes da 1ª cascata.
-    this._alphaClip.sync(frame.mirror, backend);
+    this._alphaClip.sync(frame.mirror, backend, fonte);
     this._ensureReceivers(cascatas.length);
     const vsm = frame.renderer.shadowMap?.type === VSMShadowMap;
     const intervalo = Math.max(1, Math.floor(frame.farCascadeInterval));
@@ -306,6 +319,8 @@ export class CsmNativePass {
     let motivo = recusa.reason;
     if (r?.offender) motivo += ` ${this._descreverOfensor(r.offender)}`;
     if (r?.counts) motivo += ` [${r.counts} casters=${r.totalCasters}]`;
+    // Geometria ausente: o estado do registro diz se é aquecimento (pendentes) ou formato recusado (ADR-0692).
+    if (recusa.reason === GEOMETRIA_AUSENTE) motivo += ` registro=[${this._registry.resumo}]`;
     return motivo;
   }
 

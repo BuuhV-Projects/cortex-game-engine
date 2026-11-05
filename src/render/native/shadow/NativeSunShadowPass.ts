@@ -26,6 +26,7 @@ import { Matrix4, Vector3, type Camera, type Object3D } from 'three';
 import { debug } from '../../../core/debug.js';
 import { activeSceneMirror } from '../../../core/NativeSceneMirror.js';
 import { CasterGeometryRegistry } from '../../CasterGeometryRegistry.js';
+import { shadowSourceFor } from '../../ShadowGeometrySource.js';
 import { ShadowAlphaClipSync } from '../../ShadowAlphaClipSync.js';
 import { parityFreezeSeconds } from '../../MainPassArm.js';
 import { queryFlagRequested } from '../../TransformOnlyRefresh.js';
@@ -52,6 +53,8 @@ const NO_MIN_RATIO = 0;
 /** Scene node count not measured: the gate skips the node-divergence check. */
 const NODES_NOT_MEASURED = -1;
 const NO_CAMERA = new Vector3();
+/** Gate reason of a caster without registered geometry (`SHADOW_GATE_REASONS`). */
+const MISSING_GEOMETRY = 'geometria-ausente';
 
 /** The DirectionalLight fields used by the shadow block and this pass. */
 export interface SunLight {
@@ -103,6 +106,12 @@ export class NativeSunShadowPass {
     private readonly _parity = parityFreezeSeconds() > 0,
   ) {}
 
+  /** End of the pass: drops the source's and the mirror's listeners and forgets the registry. */
+  dispose(): void {
+    this._registry.dispose();
+    this._alphaClip.dispose();
+  }
+
   /**
    * Once per frame, before the three's `ShadowNode.updateBefore`. With a CSM on the sun it does nothing: the
    * cascades are drawn by the CSM node (SPEC-0690), and the sun's `autoUpdate`/`needsUpdate` are not touched.
@@ -142,8 +151,10 @@ export class NativeSunShadowPass {
     const target = backend.get(depth)['texture'];
     // The three creates the GPU texture on its first render into the map.
     if (!target) return this._refuse('alvo-sem-gpu');
-    this._registry.atualizar(scene, backend, mirror.drainNewGeometries());
-    this._alphaClip.sync(mirror, backend);
+    // ADR-0692: buffers from the attached NativeRenderer (native store → three → upload); without it, only the `three`'s.
+    const source = shadowSourceFor(backend);
+    this._registry.atualizar(scene, backend, mirror.drainNewGeometries(), source);
+    this._alphaClip.sync(mirror, backend, source);
     shadow.updateMatrices(light);
     const cam = shadow.camera;
     this._viewProj.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
@@ -171,7 +182,9 @@ export class NativeSunShadowPass {
   /** Guarda as partes da recusa e devolve a linha de sempre (`motivo [counts]`). */
   private _refuse(reason: string, counts?: string, offender?: Object3D): string {
     this._refusal = { reason, counts, offender };
-    return `${reason}${counts ? ` [${counts}]` : ''}`;
+    // Missing geometry: the registry's state tells warm-up (pending) from a refused format (ADR-0692).
+    const registry = reason === MISSING_GEOMETRY ? ` registro=[${this._registry.resumo}]` : '';
+    return `${reason}${counts ? ` [${counts}]` : ''}${registry}`;
   }
 
   /** Parity mode only: after every render the map is due again, so the three arm redraws it. */
