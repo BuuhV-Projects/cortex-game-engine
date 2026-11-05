@@ -1,3 +1,15 @@
+# [0.106.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.105.2...v0.106.0) (2026-11-05)
+
+
+### Bug Fixes
+
+* **studio:** Reiniciar do aviso de pré-bundle faz Stop + Play (review do PR 63) ([9773335](https://github.com/BuuhV-Projects/cortex-game-engine/commit/9773335da9d9ea99171728497b8e1ed419dbf251))
+
+
+### Features
+
+* **studio:** Preview avisa durante o pré-bundle do vite e oferece reiniciar (SPEC-0694) ([bb57e47](https://github.com/BuuhV-Projects/cortex-game-engine/commit/bb57e4750a01242181a56516297803d18a619193))
+
 ## [0.105.2](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.105.1...v0.105.2) (2026-11-05)
 
 
