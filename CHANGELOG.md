@@ -1,3 +1,12 @@
+## [0.105.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.105.0...v0.105.1) (2026-11-05)
+
+
+### Bug Fixes
+
+* **studio:** extra libs do projeto são descartadas na troca de projeto (review do PR 61) ([bc3048e](https://github.com/BuuhV-Projects/cortex-game-engine/commit/bc3048e1038c1191cae3eb3bad43a0b8a9b49c19))
+* **studio:** monaco sem models pré-criados — cura do listener LEAK na abertura (SPEC-0692) ([082d436](https://github.com/BuuhV-Projects/cortex-game-engine/commit/082d436287091de6317acd3384f5072acc6a1bbf))
+* **studio:** token de geração elimina a corrida entre project-open concorrentes (review do PR 61) ([747db24](https://github.com/BuuhV-Projects/cortex-game-engine/commit/747db24a39fd6ab5bf29d5da8e14e2225fcb376f))
+
 # [0.105.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.104.2...v0.105.0) (2026-11-05)
 
 
