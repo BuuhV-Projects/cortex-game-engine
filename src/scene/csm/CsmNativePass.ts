@@ -152,7 +152,6 @@ export class CsmNativePass {
     this._refusal = null;
     let todas = true;
     let desenhadas = 0;
-    let desenhados = 0;
     for (let i = 0; i < cascatas.length; i++) {
       const receiver = this.receivers[i]!;
       const cascata = cascatas[i]!;
@@ -172,7 +171,6 @@ export class CsmNativePass {
         continue;
       }
       desenhadas++;
-      desenhados += drawn;
     }
     this.assumed = todas;
     // `_refuse` preenche a recusa dentro do laço; o TS não enxerga a escrita por método.
@@ -181,7 +179,7 @@ export class CsmNativePass {
       const outcome = recusa.outcome;
       traceSunShadowHandedBack(recusa.reason, outcome?.counts, outcome?.offender);
     } else if (desenhadas > 0) traceSunShadowDrawn();
-    this._report(todas, desenhados, cascatas.length);
+    this._report(todas, cascatas.length);
   }
 
   /**
@@ -294,10 +292,10 @@ export class CsmNativePass {
 
   /**
    * Quantos frames seguidos ficaram com o `three` antes de o nativo reassumir (SPEC-0289): é o custo real de cada
-   * geometria nova do streaming. O relato só é montado com o `debug('perf')` ligado: o `desenhados` muda quase todo
-   * quadro, e a linha era uma string nova por quadro no Hermes mesmo com o log desligado (SPEC-0675).
+   * geometria nova do streaming. O relato só é montado com o `debug('perf')` ligado, e só muda com o ESTADO (assumiu
+   * ou devolveu): a contagem por cascata muda todo quadro e vai no perf-trace (`sunShadow.cascades`), não no log.
    */
-  private _report(assumiu: boolean, desenhados: number, cascatas: number): void {
+  private _report(assumiu: boolean, cascatas: number): void {
     const relatar = isDebug('perf');
     let devolvidos = '';
     if (!assumiu) this._handedBackFrames++;
@@ -307,7 +305,7 @@ export class CsmNativePass {
     }
     if (!relatar) return;
     const linha = assumiu || this._refusal === null
-      ? `ASSUMIU desenhados=${desenhados} cascatas=${cascatas}${devolvidos}`
+      ? `ASSUMIU cascatas=${cascatas}${devolvidos}`
       : `DEVOLVEU ao three cascata=${this._refusal.cascade} motivo=${this._descreverRecusa(this._refusal)}`;
     if (linha === this._lastReport) return;
     this._lastReport = linha;
