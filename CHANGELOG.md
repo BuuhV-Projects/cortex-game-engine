@@ -1,3 +1,10 @@
+## [0.105.2](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.105.1...v0.105.2) (2026-11-05)
+
+
+### Bug Fixes
+
+* **studio:** Play ignora o fechamento de um vite anterior (SPEC-0693) ([#62](https://github.com/BuuhV-Projects/cortex-game-engine/issues/62)) ([c97a8dd](https://github.com/BuuhV-Projects/cortex-game-engine/commit/c97a8dd5df7e4811404c20b02a102de06cee8d61))
+
 ## [0.105.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.105.0...v0.105.1) (2026-11-05)
 
 
