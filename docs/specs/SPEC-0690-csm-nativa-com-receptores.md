@@ -3,7 +3,7 @@
 **Data:** 2026-11-05
 **Status:** implementado
 **Base:** SPEC-0245 (passe de sombra nativo), SPEC-0545 (sombra do sol no renderer nativo), SPEC-0675 (escalonamento
-da cascata distante), SPEC-0688 (`sunShadow` no perf-trace). Decisões em ADR-0691.
+da cascata distante), SPEC-0688 (`sunShadow` no perf-trace). Decisões em ADR-0691 e ADR-0692.
 
 ## Contexto
 
@@ -115,6 +115,26 @@ O `sunShadow` da SPEC-0688 ganha:
 
 Nada novo fora do trace.
 
+### 7. Geometria e UV dos casters com o NativeRenderer (ADR-0692)
+
+Medido na primeira volta com esta SPEC: o gate recusou as duas cascatas em todas as amostras (`geometria-ausente` em
+`static-merged-*`, `city-decor-*` e carros; `recorte-alfa` na vegetação). O registro de geometria do passe e a
+store de recorte só liam os buffers do three, e o three não sobe os buffers dos objetos que o NativeRenderer desenha.
+
+- **Provedor** (`ShadowGeometrySource`): buffer do `NativeGeometryStore` → buffer do backend do three → upload pelo
+  store nativo (só `position` `float32x3` e o índice). O `CsmNativePass` e o `NativeSunShadowPass` pegam o provedor
+  do NativeRenderer anexado; sem ele, o provedor é só o three.
+- **Cache por fonte** no `NativeGeometryStore` (atributo, `InterleavedBuffer` ou índice): variantes de semantics da
+  mesma geometria reaproveitam o buffer. Troca de array refaz o buffer e avisa o registro, que registra de novo.
+- **Orçamento:** a varredura sobe até `SHADOW_UPLOAD_BYTES_PER_FRAME` por quadro. Geometria drenada do espelho sobe no
+  mesmo quadro.
+- **Recorte alfa:** o UV vem do provedor (slot do store com stride e offset); a textura que falta sobe pelo caminho do
+  material nativo. O `ShadowAlphaClipSync` reenvia o `set` de quem volta ao mesmo slot depois de um `removeSubtree`.
+- **C++:** `GeometryRegistry` e `AlphaClipStore` fazem `AddRef` do buffer que guardam e `Release` ao sobrescrever,
+  apagar e limpar.
+- **Gate:** `position` fora de `float32x3` ganha o motivo `posicao-nao-float32x3`, no fim do enum (o JS indexa por
+  ele).
+
 ## Aceite
 
 1. Uma captura do export do DDD 00 mostra sombra de prédios e carros no chão, nas duas cascatas, e sem emenda
@@ -125,8 +145,10 @@ Nada novo fora do trace.
    - p95 não piora em nenhuma área.
 3. O WGSL compila no export: o pipeline lambert com `receiveShadow` nasce sem erro de shader (naga) e o
    `[nativeShadow]` relata `amostrando`.
-4. No perf-trace, `not-ready` e `refused:*` aparecem só nos quadros de streaming. Nenhuma área tem recusa contínua.
-5. `?semPasseDeSombraNativo=1` volta ao estado de hoje sem erro.
+4. Depois do aquecimento, as cascatas são aceitas (`ok`/`cleared-empty`) na grande maioria das amostras da volta, e
+   `geometria-ausente`/`recorte-alfa` não aparecem fora do aquecimento.
+5. No perf-trace, `not-ready` e `refused:*` aparecem só nos quadros de streaming. Nenhuma área tem recusa contínua.
+6. `?semPasseDeSombraNativo=1` volta ao estado de hoje sem erro.
 
 ## Testes
 
