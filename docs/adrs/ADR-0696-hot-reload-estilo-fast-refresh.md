@@ -129,7 +129,8 @@ callback `onModelHotReload(cb)`.
 
 - **Script**: salvar troca o comportamento no próximo quadro, no Play ou fora dele, sem
   reload. O estado da instância é preservado; um campo novo nasce com o valor do
-  inicializador e, se estiver no schema, com o valor da cena ou do Inspector. Mudança de
+  inicializador e, se estiver no schema, com o valor da cena ou do Inspector, senão com
+  o `default` do schema. Mudança de
   forma de estado incompatível fica a cargo do `onHotReload()`, que pode, por exemplo,
   chamar `onDestroy()` e `onStart()`.
 - **Módulo de script que exporta outra coisa** (função, const) cai em `invalidate()`, e
@@ -149,7 +150,9 @@ callback `onModelHotReload(cb)`.
   que funciona no iframe do Studio e no navegador puro, sem mudar a ponte do editor.
 - **O watcher do vite observava as worktrees aninhadas** (`.claude/worktrees/**`, ~70 mil
   arquivos no DDD 00): o 1º evento atrasava, e uma edição em **outra** worktree recarregava
-  o jogo. O template passa a ignorar `**/.claude/**`, e o plugin descarta caminhos de lá.
+  o jogo. O template passa a ignorar a `.claude/` da própria raiz (caminho absoluto: o
+  glob `**/.claude/**` faria o vite de uma worktree ignorar os próprios arquivos), e o
+  plugin descarta caminhos de lá.
 - Jogos existentes precisam re-vendorizar e acrescentar `createHotReloadPlugin()` no
   `plugins` do `vite.config.ts`. Sem o plugin, tudo segue como antes.
 - Implementação da fatia 1: SPEC-0697.

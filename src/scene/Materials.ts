@@ -19,6 +19,7 @@
   type Side,
   MeshStandardMaterial,
 } from 'three';
+import { forgetModelLook, isModelHotReloadEnabled, recordModelLook } from './modelHotRegistry.js';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
 import { modelWorldMatrix, normalLocal, positionLocal, vec4 } from 'three/tsl';
 
@@ -301,6 +302,7 @@ export function applyMaterial(object: Object3D, config: MaterialConfig): void {
     clearMaterial(object);
     return;
   }
+  if (isModelHotReloadEnabled()) recordModelLook(object, 'material', [{ ...config }]); // SPEC-0697
 
   clearOutline(object);
 
@@ -338,6 +340,7 @@ export function clearMaterial(object: Object3D): void {
   });
   object.userData[FLAG] = 'standard';
   object.userData.cortexMaterialConfig = { type: 'standard' };
+  forgetModelLook(object, 'material');
 }
 
 /** Preset de material ativo no objeto (`'standard'` se nenhum). Pro inspector. */

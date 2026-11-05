@@ -7,6 +7,15 @@ import { loadKtx2 } from '../core/loadKtx2.js';
 import { Scene } from '../core/Scene.js';
 import { clearMaterialPresetCache } from './Materials.js';
 import { clearTerrainLayerTextures } from './terrainLayerTextures.js';
+import {
+  forgetModelLook,
+  isModelHotReloadEnabled,
+  normalizeModelUrl,
+  recordModelLook,
+  registerModelRoot,
+  rememberGltfUrl,
+  type ModelLookEntry,
+} from './modelHotRegistry.js';
 
 /**
  * Helpers pra montar cena com modelos `.glb`: carregar (com cache), instanciar
@@ -67,6 +76,12 @@ export interface PlaceOptions {
 const _loader = new AssetLoader();
 const _cache = new Map<string, GLTF>();
 const _texCache = new Map<string, Texture>();
+/**
+ * GLTFs despejados pelo hot reload (SPEC-0697): podem seguir em uso fora do registro de
+ * raízes (vegetação, personagem modular, `gltf.scene` direto) — liberados só aqui, no
+ * {@link clearSceneAssetCaches}.
+ */
+const _hotOrphans: GLTF[] = [];
 
 /**
  * **Despeja todos os caches de asset** do módulo (SPEC-0152): dispõe geometrias
@@ -83,7 +98,7 @@ const _texCache = new Map<string, Texture>();
 export function clearSceneAssetCaches(): void {
   // Presets de material derivam dos materiais destes GLTFs (SPEC-0196) — saem junto.
   clearMaterialPresetCache();
-  for (const gltf of _cache.values()) disposeObjectResources(gltf.scene);
+  for (const gltf of [..._cache.values(), ..._hotOrphans.splice(0)]) disposeObjectResources(gltf.scene);
   _cache.clear();
   for (const tex of _texCache.values()) tex.dispose();
   _texCache.clear();
@@ -104,8 +119,26 @@ export async function loadGLB(url: string): Promise<GLTF> {
     gltf = await _loader.loadGLTF(url);
     markCachedResources(gltf.scene);
     _cache.set(url, gltf);
+    rememberGltfUrl(gltf, url); // hot reload (SPEC-0697); no-op desligado
   }
   return gltf;
+}
+
+/**
+ * @internal Hot reload (SPEC-0697): tira dos caches (este e o do loader interno) toda
+ * entrada cuja URL normalizada é `url` (já normalizada), **sem** dispor — o GLTF vai
+ * para os órfãos do {@link clearSceneAssetCaches}. Devolve as chaves cruas, para recarregar.
+ */
+export function evictGLB(url: string): string[] {
+  const keys: string[] = [];
+  for (const [key, gltf] of _cache) {
+    if (normalizeModelUrl(key) !== url) continue;
+    _cache.delete(key);
+    _loader.evict(key);
+    _hotOrphans.push(gltf);
+    keys.push(key);
+  }
+  return keys;
 }
 
 /**
@@ -174,6 +207,16 @@ export function setShadows(object: Object3D, options: ShadowOptions): void {
     if (options.castShadow !== undefined) mesh.castShadow = options.castShadow;
     if (options.receiveShadow !== undefined) mesh.receiveShadow = options.receiveShadow;
   });
+  if (isModelHotReloadEnabled()) {
+    // Merge com a entrada anterior: o editor passa um campo só (Projeta OU Recebe).
+    const look = object.userData['cortexLook'] as ModelLookEntry[] | undefined;
+    const prev = look?.find((e) => e.kind === 'shadows')?.args[0] as ShadowOptions | undefined;
+    const merged: ShadowOptions = {
+      castShadow: options.castShadow ?? prev?.castShadow,
+      receiveShadow: options.receiveShadow ?? prev?.receiveShadow,
+    };
+    recordModelLook(object, 'shadows', [merged]);
+  }
 }
 
 /**
@@ -197,6 +240,7 @@ export function setFog(object: Object3D, enabled: boolean): void {
     mat.fog = enabled;
     mat.needsUpdate = true; // a névoa entra no shader: precisa recompilar
   });
+  if (isModelHotReloadEnabled()) recordModelLook(object, 'fog', [enabled]);
 }
 
 /** Opções de {@link setMatte}. */
@@ -260,6 +304,7 @@ export function setMatte(object: Object3D, options: MatteOptions = {}): void {
     mat.needsUpdate = true;
   });
   object.userData[MATTE_FLAG] = true;
+  if (isModelHotReloadEnabled()) recordModelLook(object, 'matte', [{ ...options }]);
 }
 
 /**
@@ -279,6 +324,7 @@ export function clearMatte(object: Object3D): void {
     mat.needsUpdate = true;
   });
   object.userData[MATTE_FLAG] = false;
+  forgetModelLook(object, 'matte');
 }
 
 /** `true` se o objeto está fosco (via {@link setMatte}). Pro estado do toggle. */
@@ -300,6 +346,7 @@ export function isMatte(object: Object3D): boolean {
  */
 export function instance(gltf: GLTF, shadows: ShadowOptions = {}): Object3D {
   const obj = clone(gltf.scene);
+  registerModelRoot(gltf, obj); // antes do setShadows: a sombra default entra no look
   setShadows(obj, {
     castShadow: shadows.castShadow ?? true,
     receiveShadow: shadows.receiveShadow ?? true,

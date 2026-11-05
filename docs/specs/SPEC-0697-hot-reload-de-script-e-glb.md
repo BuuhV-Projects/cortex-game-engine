@@ -30,14 +30,20 @@ Node-only, `apply: 'serve'`, autocontido: importa só `node:*` e tipos do `vite`
 
   O caminho é relativo à raiz, com `/`. O módulo vira self-accepting, e a propagação
   para nele, sem chegar ao `main.ts`.
+  **Desvio na implementação:** módulo que declara membro `#privado` nativo
+  (`#nome` que não vem depois de `.`, letra ou aspas: o `PRIVATE_MEMBER_RE` do plugin)
+  **não** ganha o `accept` → reload completo. O nome privado nasce a cada avaliação da
+  classe; a instância viva trocada de protótipo não o tem e todo acesso lançaria
+  `TypeError`. O README pede `private` do TS.
 - **`transformIndexHtml`**: injeta no `<head>` um `<script type="module">` (cliente de
   hot reload) que chama `enableModelHotReload()` e escuta
   `import.meta.hot.on('cortex:model-changed', ({ url }) => hotReloadModel(url))`. Ele roda
   antes do `main.ts`, então o registro de raízes já está ligado quando o `buildScene` monta
   a cena.
 - **`hotUpdate`**, só no ambiente `client`:
-  - arquivo sob `.claude/`, `node_modules/` ou fora da raiz → `[]`. Isso corta o reload
-    causado por edição em outra worktree;
+  - arquivo sob `.claude/` ou `node_modules/` → `[]`. Isso corta o reload causado por
+    edição em outra worktree. Arquivo fora da raiz (pacote irmão por alias) segue o fluxo
+    normal do vite, sem evento de modelo;
   - `.glb`/`.gltf` sob a raiz → `this.environment.hot.send('cortex:model-changed', { url })`
     (URL relativa à raiz, com `/`) e `[]`;
   - o resto segue o fluxo normal do vite.
@@ -46,10 +52,18 @@ Node-only, `apply: 'serve'`, autocontido: importa só `node:*` e tipos do `vite`
 
 - Lê os scripts do módulo com a **mesma regra de nome** do `registerScripts`
   (`scriptName` > nome do arquivo > `class.name`). Essa regra é extraída para uma função
-  compartilhada, para os dois não divergirem.
+  compartilhada, para os dois não divergirem. O "um script por arquivo" conta **exports**,
+  não classes: `export class X` + `export default X` segue com `class.name` (o nome que
+  as cenas já persistem); a classe só é registrada uma vez.
 - Se o módulo exporta **qualquer valor** que não é subclasse de `ScriptBehavior`, devolve
   `false` sem mudar nada. O plugin então chama `invalidate()` → reload completo. Tipos não
   contam, porque somem na compilação.
+- **Desvio na implementação:** também devolve `false` se a classe registrada hoje sob um
+  nome do módulo está na cadeia de protótipos de um script registrado por **outro**
+  módulo (`Old.prototype.isPrototypeOf(Outro.prototype)`). O módulo base é
+  self-accepting, então o vite não reexecutaria a derivada, que seguiria herdando a base
+  velha. O `invalidate()` sobe aos importadores, e como o glob do `main.ts` importa todo
+  script, vira reload completo.
 - Para cada script do módulo:
   1. `registerScript(nome, NovaClasse)`. Instâncias criadas depois usam a classe nova.
   2. Para cada slot vivo com `type === nome` e `instance !== null`, em todo
@@ -58,7 +72,9 @@ Node-only, `apply: 'serve'`, autocontido: importa só `node:*` e tipos do `vite`
      - cria uma instância descartável `new NovaClasse()` e copia para a viva **só as
        propriedades próprias que ela não tem**;
      - para cada campo do schema novo que a instância não tinha antes da troca, aplica o
-       valor do slot (`slot.fields[campo]`), se houver;
+       valor do slot (`slot.fields[campo]`) ou, sem ele, o `default` do schema — a mesma
+       regra do `applyScriptFields` na criação (desvio registrado: o inicializador só vale
+       para campo fora do schema);
      - mantém `slot.started` (o `onStart` não roda de novo);
      - chama `instance.onHotReload?.()`, protegido por try/catch com `debug('script', …)`.
 - Nomes que **este caminho** registrou antes e sumiram do módulo: os slots vivos desse
@@ -95,12 +111,16 @@ produção e no host nativo. `enableModelHotReload()` liga. Ligado:
    - **pulada com aviso** se tiver animação (`userData.cortexAnim` ou clipes no GLB novo)
      ou se estiver presa a ECS (`Object3DComponent` aponta para ela: Character,
      Collider2D, Rapier). O motivo é que bbox, corpo e mixer dependem da geometria;
-   - senão: remove os filhos velhos, move para a raiz os filhos de `instance(novoGltf)` e
-     repete o `cortexLook` gravado na raiz, na ordem;
+   - senão: remove os filhos velhos **que vieram do GLB** (`instance` os marca com o
+     registro ligado; o que o jogo ou um script prendeu na raiz, como luz ou arma, fica),
+     move para a raiz os filhos de `instance(novoGltf)` e repete o `cortexLook` gravado
+     na raiz, na ordem;
    - scripts anexados à raiz que tinham raycast desligado: `restoreRaycasts()` e
      `disableRaycast(raiz)` de novo.
-4. Se nenhuma raiz da URL ficou com os filhos velhos, libera geometria, material e textura
-   do GLTF antigo.
+4. **Desvio na implementação:** o GLTF antigo **não** é liberado na troca. Ele pode ter
+   usuário que o registro não vê (a `source` da vegetação, que nunca entra na cena; o
+   personagem modular, que clona sem `instance`; `gltf.scene` direto). O `evictGLB` o põe
+   numa lista de órfãos que o `clearSceneAssetCaches` libera junto dos cacheados.
 5. Chama os callbacks de `onModelHotReload(cb)` com `{ url, root, oldChildren }`, para o
    jogo religar referências a filhos (rig de carro, rodas). `onModelHotReload` devolve a
    função de cancelamento.
@@ -111,7 +131,10 @@ produção e no host nativo. `enableModelHotReload()` liga. Ligado:
 ### 4. Template e vendoring
 
 - `templates/new-project/vite.config.ts`: `createHotReloadPlugin()` nos `plugins` e
-  `watch.ignored: ['**/src-tauri/**', '**/.claude/**']`.
+  `watch.ignored: ['**/src-tauri/**', isClaudePath]`. **Desvio na implementação:**
+  `isClaudePath` compara com a `.claude/` **desta** raiz por caminho absoluto (como o
+  port-hollow, SPEC-0148). O glob `**/.claude/**` casa o caminho absoluto no chokidar, e
+  um jogo rodando de `.claude/worktrees/w` deixaria de observar todos os próprios arquivos.
 - `templates/new-project/scripts/README.md`: o contrato (só exporta `ScriptBehavior`,
   topo sem efeito, `onHotReload`).
 - O comentário do `main.ts` do template que diz "editar um script recarrega a página" é
@@ -126,6 +149,9 @@ produção e no host nativo. `enableModelHotReload()` liga. Ligado:
 - Fora da fatia, e sem mudança em relação a hoje: GLB de `new AssetLoader()` próprio do
   jogo, kits fundidos pelo jogo, raízes animadas ou com física, textura avulsa, criar ou
   apagar script (o glob invalida o `main.ts`) e JSON de cena.
+- Vegetação e personagem modular usam o GLTF fora do registro: seguem com o modelo velho
+  até o Reiniciar (o GLTF velho fica vivo até o `clearSceneAssetCaches`).
+- Script com `#privado` nativo ou que é base de script de outro arquivo: reload completo.
 - Seleção do editor num **filho** de um GLB trocado fica apontando para o objeto velho
   (destacado da cena). Selecionar de novo resolve; a raiz não é afetada.
 - Raiz trocada no Play compila o pipeline no 1º draw (travada de dev aceitável; no editor

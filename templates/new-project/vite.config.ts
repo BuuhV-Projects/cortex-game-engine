@@ -1,9 +1,12 @@
 import { defineConfig, type Plugin } from 'vite'
-import { resolve } from 'path'
+import { resolve, sep } from 'path'
 import { cpSync, existsSync } from 'node:fs'
 // Plugin (dev) que grava as edições do editor (F2) em assets/scene-data.json.
 // Vendorizado pelo IDE; pareia com o write-back do editor. Ver ADR.
 import { createSceneSavePlugin, createAssetListPlugin } from './vendor/cortex-game-engine/vite/sceneSavePlugin.js'
+// Plugin (dev) de hot reload (ADR-0696): salvar um script em scripts/ ou um .glb
+// troca ao vivo, sem recarregar a página. Ver scripts/README.md.
+import { createHotReloadPlugin } from './vendor/cortex-game-engine/vite/hotReloadPlugin.js'
 
 /**
  * Plugin inline que copia `./assets/` recursivamente pra `dist/assets/`
@@ -27,15 +30,28 @@ function copyAssets(): Plugin {
   }
 }
 
+/**
+ * `.claude/` DESTA raiz (worktrees aninhadas, SPEC-0148), por caminho ABSOLUTO, nunca o
+ * glob `**\/.claude/**`: uma worktree mora em `.claude/worktrees/`, e o glob faria o vite
+ * DELA ignorar os próprios arquivos (nem hot reload nem reload completo).
+ */
+const CLAUDE_DIR = resolve(__dirname, '.claude')
+const samePath = (p: string): string => (process.platform === 'win32' ? p.toLowerCase() : p)
+function isClaudePath(path: string): boolean {
+  const abs = samePath(resolve(path))
+  return abs === samePath(CLAUDE_DIR) || abs.startsWith(samePath(CLAUDE_DIR) + sep)
+}
+
 // Algumas configurações abaixo existem para cooperar com Tauri (ADR-0024):
 // - clearScreen:false evita Vite limpar o terminal e esconder logs do Rust.
 // - server.strictPort: Tauri (devUrl) e o Play da IDE ligam na porta fixa 5174,
 //   então o Vite não pode pular pra outra se estiver ocupada.
-// - server.watch.ignored: evita re-bundle ao recompilar a casca Rust.
+// - server.watch.ignored: evita re-bundle ao recompilar a casca Rust e ao editar
+//   worktrees aninhadas em .claude/ (isClaudePath, acima).
 export default defineConfig(({ mode }) => ({
   root: '.',
   clearScreen: false,
-  plugins: [copyAssets(), createSceneSavePlugin(), createAssetListPlugin()],
+  plugins: [copyAssets(), createSceneSavePlugin(), createAssetListPlugin(), createHotReloadPlugin()],
   resolve: {
     alias: {
       // O IDE vendoriza o engine em ./vendor/cortex-game-engine ao criar o projeto.
@@ -55,7 +71,7 @@ export default defineConfig(({ mode }) => ({
     port: 5174,
     strictPort: true,
     watch: {
-      ignored: ['**/src-tauri/**'],
+      ignored: ['**/src-tauri/**', isClaudePath],
     },
   },
 }))

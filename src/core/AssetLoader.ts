@@ -297,6 +297,16 @@ export class AssetLoader {
   }
 
   /**
+   * Tira **uma** URL do cache, sem dispor o asset (o hot reload de GLB, SPEC-0697,
+   * decide o dispose depois de trocar os clones). A próxima carga da URL vai à rede.
+   *
+   * @param url - A mesma chave usada na carga.
+   */
+  evict(url: string): void {
+    this._cache.delete(url);
+  }
+
+  /**
    * **Despeja** o cache liberando os recursos de cada asset (SPEC-0152):
    * texturas → `dispose()`; GLTF/FBX → {@link disposeObjectResources}
    * (geometria + BVH + materiais/texturas); áudio → `free?.()` (existe no

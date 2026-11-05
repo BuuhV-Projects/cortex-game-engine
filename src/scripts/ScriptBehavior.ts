@@ -84,6 +84,18 @@ export abstract class ScriptBehavior {
    * cria uma nova no próximo Play (ciclo estilo Unity).
    */
   onDestroy?(): void;
+  /**
+   * Chamado no Play **depois que o arquivo do script foi salvo e a instância trocou
+   * de classe** (hot reload, SPEC-0697). A instância é a MESMA: o estado próprio
+   * (timers, refs, `entity`/`object3d`/`ctx`, valores mudados no Inspector) foi
+   * preservado, os métodos já são os novos, os campos novos vieram do inicializador
+   * novo e o `onStart` **não** roda de novo. Implemente só se precisar reagir à troca.
+   *
+   * @example
+   * // Recomeçar do zero a cada save (desfaz o onStart velho e roda o novo):
+   * override onHotReload() { this.onDestroy?.(); this.onStart?.(); }
+   */
+  onHotReload?(): void;
 
   /** Raycasts desligados por {@link disableRaycast}, pra poder restaurar. */
   private disabledRaycasts: { obj: Object3D; own: boolean; original?: RaycastFn }[] = [];

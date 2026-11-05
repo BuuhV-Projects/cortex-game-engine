@@ -1,6 +1,6 @@
 import { System } from '../ecs/System.js';
 import type { Entity } from '../ecs/Entity.js';
-import { ScriptComponent } from '../components/ScriptComponent.js';
+import { ScriptComponent, type ScriptSlot } from '../components/ScriptComponent.js';
 import type { ScriptBehavior, ScriptContext } from '../scripts/ScriptBehavior.js';
 import { getScript, getScriptFields } from '../scripts/ScriptRegistry.js';
 import { debug } from '../core/debug.js';
@@ -16,6 +16,34 @@ export function applyScriptFields(instance: ScriptBehavior, type: string, fields
     const v = fields[name];
     target[name] = v !== undefined ? v : def.default;
   }
+}
+
+/** Hosts vivos (entram no construtor, saem no `dispose`) — o hot reload acha as instâncias por aqui. */
+const liveHosts = new Set<ScriptHostSystem>();
+
+/**
+ * Itera os slots de script de todo {@link ScriptHostSystem} vivo — usado pelo hot reload
+ * (SPEC-0697) para trocar a classe das instâncias. Cobre as entidades do último `update`
+ * de cada host; slots sem instância (fora do Play) também passam.
+ */
+export function forEachLiveScriptSlot(cb: (slot: ScriptSlot, comp: ScriptComponent, entity: Entity) => void): void {
+  for (const host of liveHosts) host.forEachSlot(cb);
+}
+
+/**
+ * Derruba a instância de um slot: `restoreRaycasts` + `onDestroy` (exceção vira
+ * `debug('script', …)`), zera `instance` e `started`. Sem instância, nada faz.
+ */
+export function destroyScriptSlot(slot: ScriptSlot): void {
+  if (!slot.instance) return;
+  try {
+    slot.instance.restoreRaycasts();
+    slot.instance.onDestroy?.();
+  } catch (err) {
+    debug('script', 'onDestroy falhou em', slot.type, err);
+  }
+  slot.instance = null;
+  slot.started = false;
 }
 
 /**
@@ -82,6 +110,15 @@ export class ScriptHostSystem extends System {
     super();
     this.isEditing = gates?.isEditing;
     this.isPaused = gates?.isPaused;
+    liveHosts.add(this);
+  }
+
+  /** @internal Itera os slots hospedados — ver {@link forEachLiveScriptSlot}. */
+  forEachSlot(cb: (slot: ScriptSlot, comp: ScriptComponent, entity: Entity) => void): void {
+    for (const e of this.hosted) {
+      const comp = e.getComponent(ScriptComponent);
+      if (comp) for (const slot of comp.scripts) cb(slot, comp, e);
+    }
   }
 
   override update(entities: Entity[], deltaTime: number): void {
@@ -139,6 +176,7 @@ export class ScriptHostSystem extends System {
   override dispose(): void {
     this.teardown(this.hosted);
     this.hosted = [];
+    liveHosts.delete(this);
   }
 
   /**
@@ -151,17 +189,7 @@ export class ScriptHostSystem extends System {
     for (const e of entities) {
       const comp = e.getComponent(ScriptComponent);
       if (!comp) continue;
-      for (const slot of comp.scripts) {
-        if (!slot.instance) continue;
-        try {
-          slot.instance.restoreRaycasts();
-          slot.instance.onDestroy?.();
-        } catch (err) {
-          debug('script', 'onDestroy falhou em', slot.type, err);
-        }
-        slot.instance = null;
-        slot.started = false;
-      }
+      for (const slot of comp.scripts) destroyScriptSlot(slot);
     }
   }
 }

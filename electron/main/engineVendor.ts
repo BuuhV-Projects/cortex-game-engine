@@ -67,12 +67,15 @@ export async function vendorEngine(projectPath: string): Promise<void> {
   // Plugin de Vite (Node-only): copiado como JS compilado (+ .d.ts), pois roda
   // no vite.config do projeto — fora do bundle do runtime. O projeto importa de
   // `./vendor/cortex-game-engine/vite/sceneSavePlugin.js`. Ver src/vite/.
+  // hotReloadPlugin: fronteiras de hot reload de script e GLB (SPEC-0697).
   await mkdir(join(vendorDir, 'vite'), { recursive: true })
-  for (const ext of ['js', 'd.ts'] as const) {
-    await cp(
-      join(appPath, 'dist', 'src', 'vite', `sceneSavePlugin.${ext}`),
-      join(vendorDir, 'vite', `sceneSavePlugin.${ext}`),
-    )
+  for (const plugin of ['sceneSavePlugin', 'hotReloadPlugin'] as const) {
+    for (const ext of ['js', 'd.ts'] as const) {
+      await cp(
+        join(appPath, 'dist', 'src', 'vite', `${plugin}.${ext}`),
+        join(vendorDir, 'vite', `${plugin}.${ext}`),
+      )
+    }
   }
 }
 

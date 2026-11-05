@@ -631,6 +631,38 @@ alvo é **Rapier** (WASM) como motor dinâmico único, estilo Unity.
   e o export só leva os materiais citados pelo jogo (`native/scripts/package-usage.mjs`
   → filtro do `cookAssets`).
 
+## 6a. Hot reload em dev (ADR-0696 / SPEC-0697)
+
+Salvar um script ou um `.glb` troca **ao vivo**, sem recarregar a página (estilo Fast
+Refresh). O jogo não escreve `import.meta.hot`: o **plugin de Vite**
+`createHotReloadPlugin()` (`src/vite/hotReloadPlugin.ts`, Node-only, `apply: 'serve'`,
+vendorizado em `vendor/.../vite/` como o `sceneSavePlugin`) gera as fronteiras.
+
+- **Script** (`scripts/**.ts|js`): o `transform` acrescenta um `import.meta.hot.accept`
+  que chama `hotReplaceScripts(caminho, módulo)` (`src/scripts/ScriptHotReload.ts`). Ele
+  re-registra a classe e, em todo `ScriptHostSystem` vivo, troca o protótipo das
+  instâncias (`Object.setPrototypeOf`): **mesma instância, estado preservado**, campo
+  novo vem do inicializador novo (no schema: o slot, senão o `default`), `onStart` não
+  roda de novo, `onHotReload()` roda. Script que sumiu do módulo é destruído e sai do registro.
+  Fora do Play só troca o registro.
+- **GLB/glTF** sob a raiz: o `hotUpdate` manda `cortex:model-changed { url }`; o cliente
+  injetado no `<head>` do `index.html` (antes do `main.ts`) liga o registro
+  (`enableModelHotReload`, `src/scene/modelHotRegistry.ts` — **desligado por padrão**,
+  custo zero em produção/nativo) e chama `hotReloadModel(url)`
+  (`src/scene/ModelHotReload.ts`). Ele despeja os caches da URL, recarrega e troca os
+  **filhos** de cada raiz viva de `instance(loadGLB(url))`, **mantendo a raiz**
+  (componentes, scripts, `byId`) e repetindo o `userData.cortexLook` gravado
+  (matte/material/sombra/fog, na ordem). Só os filhos vindos do GLB trocam: o que o jogo
+  prendeu na raiz fica. O GLTF velho não é liberado na troca (vegetação e personagem
+  modular o usam fora do registro): vira órfão liberado no `clearSceneAssetCaches`.
+  `onModelHotReload(cb)` avisa o jogo para religar refs a filhos.
+- **Cai em reload completo** (como antes): `main.ts`, sistemas, módulo de script que
+  exporta não-script, que declara `#privado` nativo ou que é base de script de outro
+  arquivo, criar/apagar script, JSON de cena, textura avulsa, GLB de
+  `new AssetLoader()` do próprio jogo. **Pulada com `console.warn`** (Reiniciar resolve):
+  raiz animada ou presa a ECS.
+- O `hotUpdate` descarta mudança sob `.claude/`, `node_modules/` ou fora da raiz.
+
 ## 6a-bis. Chat IA tem DUAS cabecas (ADR-0191 → modos por tarefa, ADR-0265 → Orquestrador, ADR-0269)
 
 **Padrao desde o ADR-0269: modo Orquestrador.** O botao cicla Orquestrador →
@@ -983,6 +1015,23 @@ level.json (nó)  ──buildScene──▶  Object3D (mesh)  + Entidade ECS (co
   efeito só não aparece. Efeito custom de shader tem que ser **TSL/NodeMaterial**
   (`colorNode` etc.; ex.: splat do terreno, SPEC-0063). Valide rendering no harness
   (`.design-proto/`) com `WebGPURenderer`, não com `WebGLRenderer` clássico.
+- **Hot reload de script: módulo que exporta algo que não é `ScriptBehavior` recarrega a
+  página** (SPEC-0697). Um `export const VELOCIDADE = 3` ou um helper exportado num arquivo
+  de `scripts/` faz o `hotReplaceScripts` devolver `false` e o plugin chamar `invalidate()`
+  — reload completo, o estado some. Constante/helper compartilhado vai para fora de
+  `scripts/`; tipos podem ser exportados (somem na compilação).
+- **Hot reload re-roda o TOPO do módulo de script a cada save.** Listener de `document`,
+  `globalThis.__x`, `setInterval` ou cache de módulo no topo **duplicam** a cada save. Efeito
+  vai no `onStart` e é desfeito no `onDestroy`.
+- **Hot reload de GLB PULA raiz animada ou presa a ECS** (`userData.cortexAnim`, clipes no
+  GLB novo, ou `Object3DComponent` apontando para ela: Character/Collider2D/Rapier). Bbox,
+  corpo e mixer dependem da geometria velha; o aviso no console diz o nó. Reiniciar o Play
+  resolve.
+- **Watcher do Vite vendo `.claude/worktrees/`**: worktree aninhada no projeto faz qualquer
+  edição lá recarregar o jogo. O template ignora a `.claude/` da própria raiz por caminho
+  absoluto no `server.watch` (o glob `**/.claude/**` cegaria o vite de uma worktree) e o
+  `hotUpdate` do plugin descarta essas mudanças; `vite.config.ts` de jogo antigo precisa das
+  duas coisas.
 
 ## 8b. Narrativa: diálogo + UI de runtime (`src/dialogue/`, `src/narrative/`) — ADR-0070
 
