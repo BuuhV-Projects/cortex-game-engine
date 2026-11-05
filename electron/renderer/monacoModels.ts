@@ -50,26 +50,29 @@ function warnIfManyModels(origin: string): void {
  * cria o model naquele instante; dali em diante o worker do Monaco prefere o
  * model sobre a extra lib, então edição ao vivo não fica stale.
  *
- * Idempotente: pula arquivos já registrados. Arquivos que falhem ao ler são
- * silenciados — perder navegação pra 1 arquivo problemático é melhor que
- * abortar todo o pre-load. Leituras em paralelo.
+ * A cada `project-open` as extra libs do carregamento anterior são
+ * descartadas e TODOS os arquivos são relidos do disco — sem isso, ao trocar
+ * de projeto os arquivos do anterior continuariam visíveis pro TS service, e
+ * conteúdo salvo fora da sessão ficaria desatualizado. Arquivos que falhem ao
+ * ler são silenciados — perder navegação pra 1 arquivo problemático é melhor
+ * que abortar todo o pre-load. Leituras em paralelo.
  */
-const preloadedPaths = new Set<string>()
+const projectLibs = new Map<string, { dispose(): void }>()
 
 export async function preloadProjectFiles(projectDir: string): Promise<void> {
   try {
     const files = await window.electronAPI.listProjectFiles(projectDir)
+    for (const lib of projectLibs.values()) lib.dispose()
+    projectLibs.clear()
     await Promise.all(
       files.map(async (path) => {
         // Arquivo de teste fica fora do preload (SPEC-0166): é destino raro de
         // "ir para a definição" e abrir o arquivo cobre a navegação.
         if (!shouldPreloadProjectFile(path)) return
-        const uriString = pathToVirtualUri(path).toString()
-        if (preloadedPaths.has(uriString)) return
         try {
           const content = await window.electronAPI.readFile(path)
-          monacoTs.typescriptDefaults.addExtraLib(content, uriString)
-          preloadedPaths.add(uriString)
+          const uriString = pathToVirtualUri(path).toString()
+          projectLibs.set(uriString, monacoTs.typescriptDefaults.addExtraLib(content, uriString))
         } catch {
           // Arquivo pode ter sumido entre o list e o read — ignora.
         }

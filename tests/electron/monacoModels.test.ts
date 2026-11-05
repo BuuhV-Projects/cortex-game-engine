@@ -27,9 +27,16 @@ vi.mock('monaco-editor', () => ({
 }));
 
 // --- Mock do monacoWorkspace (addExtraLib é o que interessa) ----------------
-const addExtraLib = vi.fn();
+const disposedLibs: string[] = [];
+const addExtraLib = vi.fn((_content: string, path: string) => ({
+  dispose: () => disposedLibs.push(path),
+}));
 vi.mock('../../electron/renderer/monacoWorkspace.js', () => ({
-  monacoTs: { typescriptDefaults: { addExtraLib: (...args: unknown[]) => addExtraLib(...args) } },
+  monacoTs: {
+    typescriptDefaults: {
+      addExtraLib: (...args: unknown[]) => addExtraLib(...(args as [string, string])),
+    },
+  },
   pathToVirtualUri: (realPath: string) => {
     const posix = realPath
       .replace(/\\/g, '/')
@@ -73,6 +80,7 @@ beforeEach(() => {
   liveModels.clear();
   createModel.mockClear();
   addExtraLib.mockClear();
+  disposedLibs.length = 0;
   stubElectronAPI();
 });
 
@@ -89,11 +97,13 @@ describe('preloadProjectFiles (SPEC-0692)', () => {
     expect(registered).not.toContain('file:///_drive_d/jogos/demo/tests/rush.test.ts');
   });
 
-  it('não re-registra arquivo já pré-carregado em chamada repetida', async () => {
+  it('descarta as extra libs do projeto anterior ao abrir outro projeto', async () => {
     await preloadProjectFiles(PROJECT_DIR);
-    const firstCount = addExtraLib.mock.calls.length;
-    await preloadProjectFiles(PROJECT_DIR);
-    expect(addExtraLib.mock.calls.length).toBe(firstCount);
+    stubElectronAPI({ listProjectFiles: vi.fn(async () => ['D:/jogos/outro/game.ts']) });
+    await preloadProjectFiles('D:/jogos/outro');
+    expect(disposedLibs).toContain('file:///_drive_d/jogos/demo/main.ts');
+    const registered = addExtraLib.mock.calls.map((call) => call[1]);
+    expect(registered).toContain('file:///_drive_d/jogos/outro/game.ts');
   });
 });
 

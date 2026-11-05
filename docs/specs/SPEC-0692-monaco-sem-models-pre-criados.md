@@ -31,7 +31,13 @@ Ctrl+click).
    libs; quando o usuário navega, o `registerEditorOpener` do `Editor` (que já
    existia como fallback) lê o arquivo do disco e cria o model naquele
    instante. Quando um model passa a existir para a mesma URI, o worker do
-   Monaco o prefere sobre a extra lib, então edição ao vivo não fica stale.
+   Monaco o prefere sobre a extra lib, então edição ao vivo não fica stale
+   (o Studio nunca dá dispose em model de aba — ver `closeTab` — então o
+   model vence pela sessão inteira). A cada `project-open`, as extra libs do
+   carregamento anterior são descartadas (via o disposable que o
+   `addExtraLib` retorna) e tudo é relido do disco — troca de projeto não
+   vaza arquivos do anterior pro TS service, e conteúdo salvo fora da sessão
+   é atualizado.
 2. **Types do engine sob demanda.** Os `.d.ts` navegáveis do engine deixam de
    virar model no carregamento; o conteúdo fica num mapa
    (`engineTypeContents`) e o `registerEditorOpener` cria o model na primeira

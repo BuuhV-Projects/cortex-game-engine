@@ -18,7 +18,7 @@ type MonacoTypeScript = {
     getCompilerOptions(): Record<string, unknown>
     setCompilerOptions(opts: Record<string, unknown>): void
     setDiagnosticsOptions(opts: { noSemanticValidation?: boolean; noSyntaxValidation?: boolean }): void
-    addExtraLib(content: string, path: string): void
+    addExtraLib(content: string, path: string): { dispose(): void }
   }
   javascriptDefaults: {
     setDiagnosticsOptions(opts: { noSemanticValidation?: boolean; noSyntaxValidation?: boolean }): void
