@@ -119,7 +119,7 @@ describe('export nativo — toolchain auto-contido (TDR-0003)', () => {
     return { bare: [...bare], missing: [...missing] };
   }
 
-  // Entrypoints REAIS do export: o electron/main.ts spawna o export-game.mjs, e
+  // Entrypoints REAIS do export: o electron/main/exportIpc.ts spawna o export-game.mjs, e
   // ele spawna o bundle.mjs como PROCESSO à parte (execFileSync) — por não ser
   // um import, o bundle não entra no fecho do primeiro; entra como raiz própria.
   const graph = walkExportGraph(['native/scripts/export-game.mjs', 'native/scripts/bundle.mjs']);
