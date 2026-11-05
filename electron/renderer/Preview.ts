@@ -1,7 +1,8 @@
 import { t } from './i18n'
 import { h, icon } from './ui'
 import type { EditorLevelInfo } from './EditorPanels'
-import { createLoadingState, type LoadingPhase } from './previewLoading'
+import { createLoadingState, readExpectedLoadMs, saveLoadMs, type LoadingSnapshot } from './previewLoading'
+import { renderLoadingOverlay } from './previewLoadingView'
 
 /** Atalhos do editor exibidos no popover "Atalhos" (pill inferior-esquerda). */
 const SHORTCUTS: Array<[string, string]> = [
@@ -60,7 +61,7 @@ export class Preview {
   private serverUrl: string | null = null
   private fullscreen = false
   /** Aviso "preparando/travado" sobre o palco até o `load` do iframe (SPEC-0694). */
-  private readonly loading = createLoadingState((phase) => this.renderLoading(phase))
+  private readonly loading = createLoadingState((s) => this.renderLoading(s))
 
   constructor(container: HTMLElement) {
     this.container = container
@@ -110,7 +111,7 @@ export class Preview {
       const iframe = this.stageEl?.querySelector('iframe') as HTMLIFrameElement | null
       if (iframe && this.serverUrl) {
         iframe.src = this.withDebug(this.serverUrl)
-        this.loading.begin()
+        this.beginLoading()
       } else if (this.projectDir && !this.running) void this.toggle()
     })
     // Fullscreen agora dispara pelo ícone "expandir" da toolbar da casca.
@@ -327,7 +328,7 @@ export class Preview {
     const url = this.withLevel(this.withDebug(this.serverUrl), id)
     if (iframe) {
       iframe.src = url
-      this.loading.begin()
+      this.beginLoading()
     } else this.showIframe(this.serverUrl)
   }
 
@@ -425,7 +426,7 @@ export class Preview {
 
   private handleStopped(): void {
     this.running = false
-    this.loading.end()
+    this.loading.cancel()
     const startedSuccessfully = this.serverUrl !== null
     this.serverUrl = null
     if (this.stageEl) {
@@ -448,24 +449,19 @@ export class Preview {
     // `navigator.getGamepads()` no jogo (cross-origin) e o controle Xbox não conecta.
     iframe.allow = 'gamepad *; fullscreen'
     iframe.src = this.withDebug(url)
-    iframe.addEventListener('load', () => this.loading.end())
+    iframe.addEventListener('load', () => saveLoadMs(localStorage, this.projectDir, this.loading.loaded()))
     this.stageEl.appendChild(iframe)
-    this.loading.begin()
+    this.beginLoading()
   }
 
-  /**
-   * Desenha a fase do carregamento sobre o palco (SPEC-0694). Em `stalled` oferece
-   * reiniciar o SERVIDOR: só um processo novo destrava o pré-bundle preso.
-   */
-  private renderLoading(phase: LoadingPhase): void {
-    this.stageEl?.querySelector('.preview-loading')?.remove()
-    if (phase === 'idle' || !this.stageEl) return
-    const box = h('div', { class: 'preview-loading' },
-      h('p', { class: 'preview-placeholder' }, t(phase === 'stalled' ? 'preview.loading_stalled' : 'preview.loading_preparing')))
-    if (phase === 'stalled') {
-      box.append(h('span', { class: 'vp-pill', style: { cursor: 'pointer' }, onClick: () => void this.restartServer() }, t('preview.loading_restart')))
-    }
-    this.stageEl.appendChild(box)
+  /** Aviso + barra estimada (SPEC-0694); a duração esperada é a do último Play do projeto. */
+  private beginLoading(): void {
+    this.loading.begin(readExpectedLoadMs(localStorage, this.projectDir))
+  }
+
+  /** Desenha o overlay; em `stalled` o botão reinicia o SERVIDOR (processo novo). */
+  private renderLoading(snapshot: LoadingSnapshot): void {
+    if (this.stageEl) renderLoadingOverlay(this.stageEl, snapshot, () => void this.restartServer())
   }
 
   /** Stop + Play: mata o vite preso e sobe outro (recarregar o iframe não bastaria). */
