@@ -455,7 +455,7 @@ export class Preview {
 
   /**
    * Desenha a fase do carregamento sobre o palco (SPEC-0694). Em `stalled` oferece
-   * reiniciar — processo novo do vite, que é o que destrava o pré-bundle preso.
+   * reiniciar o SERVIDOR: só um processo novo destrava o pré-bundle preso.
    */
   private renderLoading(phase: LoadingPhase): void {
     this.stageEl?.querySelector('.preview-loading')?.remove()
@@ -463,9 +463,16 @@ export class Preview {
     const box = h('div', { class: 'preview-loading' },
       h('p', { class: 'preview-placeholder' }, t(phase === 'stalled' ? 'preview.loading_stalled' : 'preview.loading_preparing')))
     if (phase === 'stalled') {
-      box.append(h('span', { class: 'vp-pill', style: { cursor: 'pointer' }, onClick: () => document.dispatchEvent(new CustomEvent('request-canvas-reload')) }, t('preview.loading_restart')))
+      box.append(h('span', { class: 'vp-pill', style: { cursor: 'pointer' }, onClick: () => void this.restartServer() }, t('preview.loading_restart')))
     }
     this.stageEl.appendChild(box)
+  }
+
+  /** Stop + Play: mata o vite preso e sobe outro (recarregar o iframe não bastaria). */
+  private async restartServer(): Promise<void> {
+    if (this.running) await window.electronAPI.stopProject()
+    this.running = false
+    await this.toggle()
   }
 
   /**

@@ -38,7 +38,9 @@ que um Stop + Play (processo novo) resolve na prática.
    reiniciar, trocar de fase), o `Preview` sobrepõe "Preparando o projeto…" ao palco
    e remove no `load` do iframe. Se o `load` não chegar em **60 s**, o texto vira
    uma orientação de que o vite pode estar preso no pré-bundle, com um botão de
-   reiniciar — que dispara o `request-canvas-reload` já existente. Stop limpa tudo.
+   reiniciar que faz **Stop + Play** (`run:stop` e depois `run:start`): o otimizador
+   preso mora no processo do vite, então recarregar o iframe contra o mesmo processo
+   (o `request-canvas-reload`) não resolveria. Stop limpa o aviso.
 
 2. **O estado fica num módulo puro**, `electron/renderer/previewLoading.ts`
    (`createLoadingState`): fases `idle` → `preparing` → `stalled`, timer injetável,
