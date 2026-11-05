@@ -45,7 +45,8 @@ Node-only, `apply: 'serve'`, autocontido: importa só `node:*` e tipos do `vite`
     edição em outra worktree. Arquivo fora da raiz (pacote irmão por alias) segue o fluxo
     normal do vite, sem evento de modelo;
   - `.glb`/`.gltf` sob a raiz → `this.environment.hot.send('cortex:model-changed', { url })`
-    (URL relativa à raiz, com `/`) e `[]`;
+    (URL relativa à raiz, com `/`) e `[]`. GLB do `publicDir` manda a URL **servida**, relativa ao `publicDir`
+    (`public/models/x.glb` → `models/x.glb`), que é como o jogo o carrega;
   - o resto segue o fluxo normal do vite.
 
 ### 2. Script: `hotReplaceScripts(path, module): boolean` (`src/scripts/ScriptHotReload.ts`)

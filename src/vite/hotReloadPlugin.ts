@@ -62,12 +62,15 @@ export function createHotReloadPlugin(options: HotReloadPluginOptions = {}): Plu
   const scriptsDir = (options.scriptsDir ?? 'scripts').replace(/\\/g, '/').replace(/^\.?\/|\/$/g, '');
   const engineImport = JSON.stringify(options.engineImport ?? 'cortex-game-engine');
   let root = '';
+  /** `publicDir` resolvido (vazio se desligado): o vite serve o conteúdo dele na raiz da URL. */
+  let publicDir = '';
 
   return {
     name: 'cortex-hot-reload',
     apply: 'serve',
     configResolved(config) {
       root = normalizePath(config.root).replace(/\/$/, '');
+      publicDir = config.publicDir ? normalizePath(config.publicDir).replace(/\/$/, '') : '';
     },
     transform(code, id) {
       const rel = relativeToRoot(root, id.split('?')[0]);
@@ -109,12 +112,14 @@ export function createHotReloadPlugin(options: HotReloadPluginOptions = {}): Plu
     hotUpdate({ file, type }) {
       if (this.environment.name !== 'client') return;
       const rel = relativeToRoot(root, file);
+      // `public/models/x.glb` é servido como `/models/x.glb`: a URL do evento é relativa ao publicDir.
+      const fromPublic = publicDir ? relativeToRoot(publicDir, file) : null;
       // Fora da raiz (pacote irmão por alias): fluxo normal do vite, sem engolir o HMR.
-      if (rel === null) return;
-      if (rel.split('/').some((segment) => IGNORED_SEGMENTS.has(segment))) return [];
-      if (!MODEL_EXT_RE.test(rel)) return;
+      if (rel === null && fromPublic === null) return;
+      if (rel?.split('/').some((segment) => IGNORED_SEGMENTS.has(segment))) return [];
+      if (!MODEL_EXT_RE.test(file)) return;
       // Apagado: não há o que recarregar; o jogo segue com o modelo em memória.
-      if (type !== 'delete') this.environment.hot.send(MODEL_CHANGED_EVENT, { url: rel });
+      if (type !== 'delete') this.environment.hot.send(MODEL_CHANGED_EVENT, { url: fromPublic ?? rel });
       return [];
     },
   };

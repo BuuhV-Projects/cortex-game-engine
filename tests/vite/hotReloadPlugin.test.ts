@@ -22,9 +22,9 @@ function hook(plugin: Plugin, name: 'transform' | 'hotUpdate' | 'configResolved'
   return (typeof h === 'function' ? h : (h as { handler: HookFn }).handler) as HookFn;
 }
 
-function pluginAt(root = ROOT, options = {}): Plugin {
+function pluginAt(root = ROOT, options = {}, publicDir = `${ROOT}/public`): Plugin {
   const plugin = createHotReloadPlugin(options);
-  hook(plugin, 'configResolved').call(undefined, { root });
+  hook(plugin, 'configResolved').call(undefined, { root, publicDir });
   return plugin;
 }
 
@@ -121,6 +121,14 @@ describe('hotUpdate', () => {
     const outside = hotUpdate(plugin, 'D:/outro/src/lib.ts');
     expect(outside.result).toBeUndefined();
     expect(hotUpdate(plugin, 'D:/outro/assets/carro.glb').send).not.toHaveBeenCalled();
+  });
+
+  it('GLB do publicDir manda a URL servida (sem o prefixo do publicDir), inclusive fora da raiz', () => {
+    expect(hotUpdate(pluginAt(), `${ROOT}/public/models/x.glb`).send).toHaveBeenCalledWith('cortex:model-changed', { url: 'models/x.glb' });
+    const outside = hotUpdate(pluginAt(ROOT, {}, 'D:/estaticos'), 'D:/estaticos/carro.glb');
+    expect(outside.send).toHaveBeenCalledWith('cortex:model-changed', { url: 'carro.glb' });
+    // publicDir desligado (false → ''): o caminho segue relativo à raiz
+    expect(hotUpdate(pluginAt(ROOT, {}, ''), `${ROOT}/public/x.glb`).send).toHaveBeenCalledWith('cortex:model-changed', { url: 'public/x.glb' });
   });
 
   it('o resto segue o fluxo normal; GLB apagado não manda evento', () => {
