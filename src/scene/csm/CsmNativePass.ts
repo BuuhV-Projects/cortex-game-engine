@@ -148,13 +148,20 @@ export class CsmNativePass {
     const fonte = shadowSourceFor(backend);
     // E2 — registro com orçamento de upload por quadro; as geometrias que o streaming trouxe desde o frame passado
     // sobem neste mesmo quadro (SPEC-0289, ADR-0692).
+    // As seções fecham em `finally`: uma exceção não deixa a seção aberta no perf-trace.
     beginSection(SECTION_REGISTRY);
-    traceShadowGeometryPending(this._registry.atualizar(frame.scene, backend, frame.mirror.drainNewGeometries(), fonte).pendentes);
-    endSection(SECTION_REGISTRY);
+    try {
+      traceShadowGeometryPending(this._registry.atualizar(frame.scene, backend, frame.mirror.drainNewGeometries(), fonte).pendentes);
+    } finally {
+      endSection(SECTION_REGISTRY);
+    }
     // SPEC-0642: textura + UV de quem tem `alphaTest`, antes da 1ª cascata.
     beginSection(SECTION_ALPHA_CLIP);
-    this._alphaClip.sync(frame.mirror, backend, fonte);
-    endSection(SECTION_ALPHA_CLIP);
+    try {
+      this._alphaClip.sync(frame.mirror, backend, fonte);
+    } finally {
+      endSection(SECTION_ALPHA_CLIP);
+    }
     this._ensureReceivers(cascatas.length);
     const vsm = frame.renderer.shadowMap?.type === VSMShadowMap;
     const intervalo = Math.max(1, Math.floor(frame.farCascadeInterval));
@@ -258,11 +265,15 @@ export class CsmNativePass {
     // Tempo da ponte + C++ desta cascata, para o perf-trace achar a cascata cara (SPEC-0690, item 6).
     beginSection(SECTION_DRAW);
     const inicio = performance.now();
-    const resultado = frame.mirror.drawShadowPass(
-      shadowCamera, frame.filterCamera, frame.minRatio, this._viewProj64, alvo, NOS_DA_CENA_NAO_MEDIDOS, vsm,
-    );
+    let resultado: ShadowPassOutcome | undefined;
+    try {
+      resultado = frame.mirror.drawShadowPass(
+        shadowCamera, frame.filterCamera, frame.minRatio, this._viewProj64, alvo, NOS_DA_CENA_NAO_MEDIDOS, vsm,
+      );
+    } finally {
+      endSection(SECTION_DRAW);
+    }
     const ms = performance.now() - inicio;
-    endSection(SECTION_DRAW);
     if (!resultado) return this._refuse(i, cascata, 'sem-ponte', undefined, ms);
     if (!shadowPassAccepted(resultado)) return this._refuse(i, cascata, resultado.reason, resultado, ms);
 

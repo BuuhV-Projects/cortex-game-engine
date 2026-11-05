@@ -63,7 +63,9 @@ export class CameraFollowingCSM extends CSMShadowNode {
 
   /**
    * CSM escalonado (SPEC-0675): a cascata 0 redesenha todo quadro e a cascata `i > 0` só quando
-   * `(quadro + i) % farCascadeInterval === 0`, no caminho `three` (Studio/navegador) e no nativo (SPEC-0690).
+   * `(quadro + i) % farCascadeInterval === 0`. Antes da SPEC-0690 isso só valia no caminho `three` (no export o
+   * passe nativo era dono do `autoUpdate` e redesenhava tudo); agora o passe nativo aplica o mesmo intervalo, e o
+   * receptor nativo lê a matriz do último desenho de cada cascata.
    * `1` redesenha todas todo quadro. Público: o jogo/Inspector pode mudar em runtime.
    */
   farCascadeInterval = DEFAULT_FAR_CASCADE_INTERVAL;
@@ -140,8 +142,11 @@ export class CameraFollowingCSM extends CSMShadowNode {
     // Sem receptor do `three`, o `setup` do nó (que chama o `_init`) nunca rodou: as cascatas nascem aqui.
     if (self.camera === null) self._init({ camera: cam, renderer });
     beginSection(SECTION_CSM_NATIVE);
-    this._atualizar(cam, scene as Object3D, renderer as CsmNativeRenderer);
-    endSection(SECTION_CSM_NATIVE);
+    try {
+      this._atualizar(cam, scene as Object3D, renderer as CsmNativeRenderer);
+    } finally {
+      endSection(SECTION_CSM_NATIVE);
+    }
     this._lastUpdateFrame = frameId;
     this._lastUpdateByNative = true;
   }

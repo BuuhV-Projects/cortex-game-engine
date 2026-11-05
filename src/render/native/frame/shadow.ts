@@ -212,8 +212,11 @@ export class ShadowBlock {
 
   update(scene: unknown, camera: unknown): void {
     beginSection(SECTION_SHADOW_BLOCK);
-    this._update(scene, camera);
-    endSection(SECTION_SHADOW_BLOCK);
+    try {
+      this._update(scene, camera);
+    } finally {
+      endSection(SECTION_SHADOW_BLOCK);
+    }
   }
 
   private _update(scene: unknown, camera: unknown): void {
