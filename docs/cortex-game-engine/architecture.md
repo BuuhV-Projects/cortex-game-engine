@@ -145,9 +145,11 @@ senão o **editor do Studio** não resolve o tipo (runtime funciona, IntelliSens
   (Studio/navegador), a cascata 0 redesenha todo quadro e as distantes a cada
   `shadowFarCascadeInterval` quadros (default 2), revezando. A cascata que pula fica
   com mapa e `shadow.matrix` do mesmo quadro anterior (o `three` só recalcula a matriz
-  no `updateShadow`). ⚠️ Com espelho nativo o passe nativo é dono do `autoUpdate`:
-  num quadro recusado ele já chamou `updateMatrices`, e pular daria mapa velho com
-  matriz nova — por isso o escalonamento não age lá.
+  no `updateShadow`). Desde a SPEC-0690 o passe nativo (`scene/csm/CsmNativePass.ts`)
+  aplica o mesmo intervalo: o `updateMatrices` só roda dentro do desenho da cascata, e o
+  receptor nativo guarda a matriz do último desenho. ⚠️ Cascata nunca desenhada ou
+  recusada no último quadro é desenhada no quadro corrente (`!receiver.enabled`), senão
+  a faixa distante amostraria mapa vazio.
 
 - **Pré-aquecimento de pipeline (`Renderer.precompile`, SPEC-0196):** o three
   compila o pipeline na PRIMEIRA aparição de cada material — numa largada de
@@ -1458,6 +1460,21 @@ Substitui o `three` no desenho do export **por objeto**, a caminho de 0 recusas 
   braço `three` da paridade, ou na recusa do gate, devolve ao `three`. `?nativeShadow=0`,
   `?nativeShadowPass=0`; plantados `?nativeShadowShift=1` (amostragem) e
   `?nativeShadowPassShift=1` (mapa).
+- **CSM nativa (SPEC-0690, ADR-0691/0692)** `frame/shadowCsm.ts` + `scene/csm/`: com `csm: true` o
+  sol não tem mapa próprio (o `CSMShadowNode` clona uma luz por cascata), e o `updateBefore` do nó só
+  roda para material desenhado pelo `three` — no export ninguém o disparava e não havia sombra. Agora o
+  `ShadowBlock.update` acha o nó (`sun.shadow.shadowNode.isCSMShadowNode`) e chama
+  `CameraFollowingCSM.updateNative` 1× por quadro (guarda por `frameId` contra o `updateBefore`); o
+  `CsmNativePass` desenha cada cascata no C++ e guarda, por cascata, textura e matriz do último desenho.
+  O receptor é um WGSL só: `cascadeCount = 0` é o mapa único de antes, `> 0` lê uma `texture_depth_2d`
+  por cascata (bindings 10–15, até 6) com a escolha de cascata e o fade portados do `_setupFade` do
+  `three` (`csmCascadeMath.ts` é a porta pura do teste de paridade). ⚠️ Cascata recusada fica SEM
+  sombra (fator 1) só naquele quadro — nunca com o mapa velho. ⚠️ Caster skinned é EXCLUÍDO do passe
+  nativo (personagens sem sombra no export). ⚠️ A geometria e o UV do passe vêm do provedor
+  `ShadowGeometrySource` (store nativo → backend do `three` → upload com orçamento): com o
+  NativeRenderer o `three` nunca sobe os buffers dos objetos que o nativo desenha, e ler só o
+  `backend.get(...).buffer` dava `geometria-ausente` em toda cascata (ADR-0692). Custo medido nas
+  seções `shadowBlock`/`csmNative`/`shadowRegistry`/`shadowAlphaClip`/`shadowDraw` do perf-trace.
 - **Luz (R1.2, SPEC-0535)**: modelo `lambert` (`models/lambert.ts` exporta as partes comuns) e
   `standard` (com a LUT DFG do `three`, copiada porque é privada do módulo dele). O `standard`
   cobre o que o GLTFLoader cria de um kit do Blender (SPEC-0659): `MeshPhysical` só com
