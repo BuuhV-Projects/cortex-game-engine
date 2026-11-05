@@ -8,6 +8,7 @@
 #include "shadow_math.h"
 #include "shadow_pass_shaders.h"
 #include "shadow_pass_target.h"
+#include "shadow_pass_uniforms.h"
 
 #include <webgpu/wgpu.h>
 
@@ -18,37 +19,12 @@
 namespace render {
 namespace {
 
-/** Alinhamento que o WebGPU exige para offset dinâmico de uniforme. */
-constexpr uint64_t kUniformSlotAlign = 256;
 /** Slots pré-alocados; cresce conforme a cena pedir. */
 constexpr uint32_t kSlotsIniciais = 256;
 /** Passo padrão quando a geometria é densa (3 floats de posição). */
 constexpr uint64_t kVertexStridePadrao = 3 * sizeof(float);
 /** Uma amostra: o shadow map do `three` não é multiamostrado. */
 constexpr uint32_t kAmostras = 1;
-/** `mat3x3f` no WGSL: 3 colunas de `vec4f` (o 4º float é preenchimento). */
-constexpr uint32_t kUvColumns = 3;
-constexpr uint32_t kUvColumnFloats = 4;
-/** Linhas úteis de cada coluna da `Matrix3` do `three`. */
-constexpr uint32_t kUvRows = 3;
-/** Floats de preenchimento depois de `alphaTest` (o struct fecha em 256 bytes). */
-constexpr uint32_t kUniformPadding = 3;
-
-/**
- * Uniforme por caster: as três matrizes de {@link ShadowCasterMatrices} mais o
- * recorte alfa (SPEC-0642) — `uvTransform` em 3 colunas `vec4f` (o `mat3x3f` do
- * WGSL) e `alphaTest`. Ocupa o slot inteiro; as variantes depth-only só leem as
- * matrizes.
- */
-struct ShadowCasterUniforms {
-  ShadowCasterMatrices matrices;
-  float uvTransform[kUvColumns * kUvColumnFloats];
-  float alphaTest;
-  float padding[kUniformPadding];
-};
-static_assert(sizeof(ShadowCasterUniforms) == kUniformSlotAlign,
-              "o uniforme do caster tem de casar com o struct do WGSL");
-
 /** Colunas da matriz de instância = atributos `vec4f` por instância. */
 constexpr uint32_t kInstanceColumns = 4;
 /** Bytes de uma coluna (`vec4f`). */
@@ -102,6 +78,8 @@ struct Recursos {
   WGPUBuffer uniformes = nullptr;
   uint32_t slots = 0;
   WGPUTextureFormat formatoProfundidade = WGPUTextureFormat_Undefined;
+  /** Uniformes da cascata em montagem, mandados numa escrita só (reaproveitado entre chamadas). */
+  ShadowUniformStaging staging;
 };
 
 /** Tradução do enum puro (testável sem wgpu) para o do WebGPU. */
@@ -320,18 +298,17 @@ ShadowPassResult semDesenho(WGPUTexture alvo, uint32_t total, ShadowPassStatus s
 }
 
 /** Escreve o uniforme do caster no slot dele (matrizes + recorte alfa). */
-void escreverUniforme(HostGpu* gpu, Recursos& r, const Pronto& p, const double viewProjection[16],
-                      const double* projection, const double* view) {
-  ShadowCasterUniforms u = {};
-  shadowCasterMatrices(viewProjection, projection, view, p.item->model, u.matrices);
-  const AlphaClipEntry* recorte = p.item->alphaClip;
-  u.alphaTest = recorte ? recorte->alphaTest : 0.0f;
-  for (uint32_t c = 0; c < kUvColumns; ++c) {
-    for (uint32_t l = 0; l < kUvRows; ++l) {
-      u.uvTransform[c * kUvColumnFloats + l] = recorte ? recorte->uvTransform[c * kUvRows + l] : 0.0f;
-    }
-  }
-  wgpuQueueWriteBuffer(gpu->queue, r.uniformes, p.slot * kUniformSlotAlign, &u, sizeof(u));
+/** Monta o uniforme do caster no staging, no slot dele (a escrita na fila é uma só, antes do 1º draw). */
+void montarUniforme(Recursos& r, const Pronto& p, const double viewProjection[16], const double* projection,
+                    const double* view) {
+  composeShadowUniform(r.staging.at(p.slot), viewProjection, projection, view, p.item->model, p.item->alphaClip);
+}
+
+/** Manda os uniformes montados da cascata numa `wgpuQueueWriteBuffer` só (slots 0..n-1 contíguos). */
+void mandarUniformes(HostGpu* gpu, Recursos& r) {
+  if (r.staging.used() == 0) return;
+  wgpuQueueWriteBuffer(gpu->queue, r.uniformes, 0, r.staging.data(), r.staging.bytes());
+  r.staging.reset();
 }
 
 /** Os dois casters caem no mesmo pipeline (passo, cull, instância, recorte e passo do UV)? */
@@ -466,6 +443,7 @@ ShadowPassResult drawShadowCasters(HostGpu* gpu, WGPUTexture alvoProfundidade,
 
   // Segue o roteiro puro (`planShadowPass`): a próxima cascata reaproveita os
   // slots, então nenhuma escrita de uniforme cai depois do submit desta.
+  r.staging.reset();
   ShadowDepthPass aberto;
   size_t escritos = 0;
   uint32_t desenhados = 0;
@@ -481,9 +459,10 @@ ShadowPassResult drawShadowCasters(HostGpu* gpu, WGPUTexture alvoProfundidade,
         }
         break;
       case ShadowPassStep::kWriteUniform:
-        escreverUniforme(gpu, r, prontos[escritos++], viewProjection, projection, view);
+        montarUniforme(r, prontos[escritos++], viewProjection, projection, view);
         break;
       case ShadowPassStep::kDraw:
+        if (desenhados == 0) mandarUniformes(gpu, r);
         desenharUm(aberto, r, prontos[desenhados++], atual);
         break;
       case ShadowPassStep::kSubmit:

@@ -92,6 +92,8 @@ void testShadowPassStatusSegueOContrato();
 void testShadowItemFateContaOsDescartes();
 void testShadowPassDuasCascatasNoMesmoQuadro();
 void testShadowPassPlanoLimpaENaoSubmete();
+void testShadowUniformStagingCobreOsSlotsDaCascata();
+void testShadowUniformLevaORecorteDoCaster();
 void testShadowGateRecusaMaterialEmArray();
 void testShadowGateRecusaRecorteAlfaEPositionNode();
 void testShadowGateAceitaRecorteAlfaComTexturaNoHost();
@@ -207,6 +209,8 @@ int main() {
   tests::testShadowItemFateContaOsDescartes();
   tests::testShadowPassDuasCascatasNoMesmoQuadro();
   tests::testShadowPassPlanoLimpaENaoSubmete();
+  tests::testShadowUniformStagingCobreOsSlotsDaCascata();
+  tests::testShadowUniformLevaORecorteDoCaster();
   tests::testShadowGateRecusaMaterialEmArray();
   tests::testShadowGateRecusaRecorteAlfaEPositionNode();
   tests::testShadowGateRecusaGeometriaAusenteDoRegistro();
