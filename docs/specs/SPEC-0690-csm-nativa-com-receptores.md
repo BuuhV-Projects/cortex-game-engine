@@ -135,6 +135,24 @@ store de recorte só liam os buffers do three, e o three não sobe os buffers do
 - **Gate:** `position` fora de `float32x3` ganha o motivo `posicao-nao-float32x3`, no fim do enum (o JS indexa por
   ele).
 
+### 8. Custo por quadro do passe (medido no export do DDD 00)
+
+A primeira versão funcionando custava ~3,5 ms de CPU por quadro no `render`. Dois pontos respondiam por quase tudo:
+
+- **Recorte alfa (1,7 ms):** o sync relia a fonte de todo nó com recorte a cada quadro (consultas ao provedor,
+  matriz do UV). Agora o nó já mandado sai pela **chave** do que o objeto carregava: material, mapa e `version`,
+  `alphaTest`, wrap, geometria, atributo `uv`, e `offset`/`repeat`/`rotation`/`center` quando a matriz é automática.
+  A chave só compara referências e escalares do próprio objeto. A troca de buffer no provedor e o `dispose` do mapa
+  ou da geometria sobem uma época que faz todos relerem. Matriz manual (`matrixAutoUpdate = false`) é sempre relida.
+- **Uniformes (1,1 ms):** o `drawShadowCasters` fazia uma `wgpuQueueWriteBuffer` por caster. Agora os slots da
+  cascata, contíguos, são montados num staging reaproveitado (`shadow_pass_uniforms.h`) e vão numa escrita só, antes
+  do primeiro draw.
+
+Depois das duas mudanças, o bloco da sombra custa ~1,4 ms de mediana (0,6 do recorte, 0,6 do desenho).
+
+O perf-trace ganha as seções de CPU `shadowBlock`, `csmNative`, `shadowRegistry`, `shadowAlphaClip` e `shadowDraw`
+(`RenderSections`, SPEC-0585), aninhadas no `render`.
+
 ## Aceite
 
 1. Uma captura do export do DDD 00 mostra sombra de prédios e carros no chão, nas duas cascatas, e sem emenda
