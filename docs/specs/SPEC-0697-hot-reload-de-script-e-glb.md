@@ -159,4 +159,18 @@ produção e no host nativo. `enableModelHotReload()` liga. Ligado:
 
 ## Medição
 
-_Preenchida ao aplicar num jogo real._
+Medida no DDD 00 (`BuuhV-Projects/ddd00-game`, SPEC-0149 do jogo) em 2026-11-05, com vite 7.3.5 em dev e
+navegador embutido com o painel visível. Cada tempo vai do `Date.now()` do processo que grava o arquivo até o efeito na
+página, com o mesmo relógio dos dois lados. Para medir, o script `Girar` foi anexado a um carro e passou a publicar
+`{ versão, quadros }`.
+
+| mudança | antes (engine 0.107.0) | depois (esta spec) |
+| --- | --- | --- |
+| script, no editor | `full-reload` 44 ms depois do save; jogo pronto em **12,9 s** e **14,6 s** | **sem reload** (`hmr update`) |
+| script, em Play (`?play=1`) | `full-reload`; jogo pronto em **56,4 s**; contador do script reinicia e o jogo volta ao começo | código novo rodando em **149, 198 e 227 ms** com o jogo a 30 fps (623–1441 ms com ele engasgando); sem reload; contador contínuo |
+| `.glb` de nó `model` sem física | nada: fica o modelo velho até o Reiniciar (reload completo) | evento 5 ms depois do save; filhos trocados em **27, 29 e 316 ms**; sem reload; mesma raiz |
+
+- Com o jogo engasgando, o tempo da troca de script fica preso ao próximo quadro do jogo: o `onUpdate` só roda nele.
+- **Os 116 veículos do DDD 00 são pulados** ("presa a ECS"). São os únicos nós `model` do `buildScene` naquele
+  jogo; cidade, vegetação e kits o jogo monta por conta própria. A medição de GLB usou um prop sem física posto ao lado.
+  Carro com física é o primeiro item da próxima fatia.
