@@ -44,7 +44,8 @@ o que fazer com os casters que o C++ não desenha, e o que fazer quando uma casc
   CSM pelo TSL, com o mesmo mapa.
 - O `drawShadowCasters` passa a distinguir vazio (limpa), não pronto (recusa) e descartado no shim (recusa). Isso
   troca "recusa silenciosa por quadro vazio" por "limpeza explícita", e um bug ali deixaria sombra fantasma; o teste
-  do host cobre os três casos.
+  do host cobre a classificação e o roteiro dos três casos (funções puras); a execução na GPU fica para o aceite
+  em captura.
 - O WGSL do receptor ganha um ramo de CSM com N amostragens condicionais. O custo por fragmento é o PCFSoft de hoje
   (uma cascata), ou o dobro na faixa de fade. O aceite da SPEC-0690 mede isso por área.
 - Personagens sem sombra no export continuam sendo uma limitação conhecida.

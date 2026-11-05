@@ -1,7 +1,7 @@
 # SPEC-0690 — CSM nativa com receptores (sombra do sol em cascatas no renderer próprio)
 
 **Data:** 2026-11-05
-**Status:** proposto
+**Status:** implementado
 **Base:** SPEC-0245 (passe de sombra nativo), SPEC-0545 (sombra do sol no renderer nativo), SPEC-0675 (escalonamento
 da cascata distante), SPEC-0688 (`sunShadow` no perf-trace). Decisões em ADR-0691.
 
@@ -54,11 +54,24 @@ distinguir:
 | caso | hoje | depois |
 |---|---|---|
 | a enumeração deu 0 casters | sai sem abrir pass (`:318`): mapa do quadro anterior fica | abre o pass com `loadOp = clear` (profundidade 1) e devolve `kClearedEmpty` |
-| há casters, mas nenhum pronto (pipeline/geometria, `:357`) | 0 → recusa | `kNotReady` → recusa (o mapa não é limpo) |
-| o shim descartou algum caster (`scene_mirror_shim.cpp:500-520`: geometria ausente, lote instanciado vazio, recorte alfa sem entrada) | silencioso | conta `skipped`; com `skipped > 0` a cascata é recusada (`skipped:<motivo>`) |
+| há casters, mas algum sem geometria registrada, ou falha de pipeline/uniforme (`:357`) | desenha o que deu, ou 0 → recusa | `kNotReady` → recusa; nada é submetido (o mapa não é limpo nem desenhado pela metade) |
+| o shim descartou algum caster (`scene_mirror_shadow_shim.cpp`, `shadowItemFate`: geometria `kNoGeometry`, lote instanciado ausente na store, recorte alfa sem entrada) | silencioso | conta `skipped`; com `skipped > 0` nada é desenhado nem limpo (retorno 0, status `skipped`) e a cascata é recusada com o motivo `descartado` |
+| item com `instanceCount == 0` (lote instanciado vazio) | pulado | vazio legítimo: não conta como descarte; se todos forem assim, a cascata é `cleared-empty` |
+| gate aceitou, mas não há alvo | `-geometria-ausente` | retorno 0, status `refused`, motivo `sem-alvo` (retorno < 0 fica só para a recusa do gate) |
 
-O resultado chega ao JS como `{ drawn, skipped, status }`, e `status` é `ok | cleared-empty | not-ready |
-refused:<motivo>`.
+O drawShadowCasters segue um roteiro puro (`planShadowPass`, `assignShadowSlots` em `shadow_pass_status.h`): os
+slots de uniforme começam em 0 a cada chamada e cada cascata submete antes da próxima.
+
+**Contrato com o JS.** O vetor de saída ganha três posições depois das da SPEC-0289 (N = `kShadowGateRefusalCount`):
+`kGateOutSkipped` = N+3, `kGateOutExcluded` = N+4 e `kGateOutStatus` = N+5 (`kGateOutFloats` = N+6). O shim
+aceita o vetor antigo (N+3) e só escreve as posições novas quando cabe. O slot de status leva o código de
+`ShadowPassStatus` **+ 1** (`shadowStatusSlot`): o JS escreve 0 antes da chamada, e 0 depois dela quer dizer host
+anterior a esta SPEC (ou vetor zerado).
+
+No JS, `ShadowPassOutcome` (`mirrorBridge.ts`) ganha `skipped`, `excluded` e `status` (`ok | cleared-empty |
+not-ready | refused | skipped`). Com host antigo os três ficam ausentes e vale a regra de antes (`drawn === 0` é
+recusa). São aceitos `ok` e `cleared-empty`. O motivo vai em `reason`: o do gate, `nao-pronto`, `descartado` ou
+`sem-alvo`.
 
 ### 4. Personagens com esqueleto ficam fora do passe nativo
 
@@ -92,18 +105,28 @@ Novo módulo `src/render/native/frame/shadowCsm.ts` (o `shadow.ts` só escolhe o
 
 ### 6. Perf-trace
 
-O `sunShadow` da SPEC-0688 ganha `cascades: [{ status, drawn, skipped, excluded, ms }]` na amostra em que algum
-valor mudou, e `csmReceivers` (quantos draws nativos amostraram a CSM na janela). Nada novo fora do trace.
+O `sunShadow` da SPEC-0688 ganha:
+
+- `cascades: [{ status, drawn, skipped, excluded, ms }]` na amostra em que algum valor mudou. `ms` é o tempo da
+  chamada `drawShadowPass` da cascata (ponte + C++), com 1 casa, e 0 nas recusas que acontecem antes da chamada.
+  Como o `ms` varia, a lista sai na maioria das amostras;
+- `csmReceivers`: draws com `receiveShadow` que o `NativeRenderer` entregou em quadros com a CSM amostrada, somados
+  na janela (ausente quando é 0). Conta entregas à lista de desenho, não draws executados na GPU.
+
+Nada novo fora do trace.
 
 ## Aceite
 
 1. Uma captura do export do DDD 00 mostra sombra de prédios e carros no chão, nas duas cascatas, e sem emenda
    visível na troca (fade).
-2. **Desempenho:** a volta pelo mapa (`tour.sh`, perfil `none`), comparada a `tour-gc07`:
-   - mediana no máximo +0,5 ms por área (base: total 15,5 ms, Port Hollow 20,2 ms);
-   - p95 não piora em nenhuma área (base: total 27,7 ms).
-3. No perf-trace, `not-ready` e `refused:*` aparecem só nos quadros de streaming. Nenhuma área tem recusa contínua.
-4. `?semPasseDeSombraNativo=1` volta ao estado de hoje sem erro.
+2. **Desempenho:** a volta pelo mapa (`tour.sh`, perfil `none`), com o mesmo jogo, comparada a uma volta com a
+   engine da `main` rodada logo antes (a `tour-gc07` de 2026-11-04 é de um jogo sem os bandidos da SPEC-0135):
+   - mediana no máximo +0,5 ms por área;
+   - p95 não piora em nenhuma área.
+3. O WGSL compila no export: o pipeline lambert com `receiveShadow` nasce sem erro de shader (naga) e o
+   `[nativeShadow]` relata `amostrando`.
+4. No perf-trace, `not-ready` e `refused:*` aparecem só nos quadros de streaming. Nenhuma área tem recusa contínua.
+5. `?semPasseDeSombraNativo=1` volta ao estado de hoje sem erro.
 
 ## Testes
 
@@ -115,13 +138,20 @@ valor mudou, e `csmReceivers` (quantos draws nativos amostraram a CSM na janela)
   - o `ShadowBlock` em modo CSM escreve uma matriz por cascata e as texturas certas, e aumenta `version` na troca;
   - com CSM, o `NativeSunShadowPass` não toca no `autoUpdate`/`needsUpdate` do sol;
   - escalonamento: a cascata distante redesenha a cada `farCascadeInterval` quadros, com a matriz do último desenho;
-  - o WGSL gerado tem `nativeShadowCsm` e compila no validador do teste de shaders (o mesmo dos modelos).
+  - o WGSL gerado tem `nativeShadowCsm`, declara cada mapa uma vez nos bindings 10..15, tem chaves e parênteses
+    equilibrados e declara toda função que chama. O repo não tem validador de WGSL: a compilação real (naga) fica
+    no aceite 3.
 - **`cortex_host_tests`**:
   - `drawShadowCasters` com 0 casters limpa o alvo (`kClearedEmpty`);
   - com casters não prontos, devolve `kNotReady` sem limpar;
   - o caster descartado no shim conta em `skipped`;
   - skinned é excluído (não recusa a cascata);
-  - duas cascatas no mesmo quadro em alvos diferentes, sem reaproveitar o slot de uniforme errado.
+  - duas cascatas no mesmo quadro em alvos diferentes, sem reaproveitar o slot de uniforme errado (pelo roteiro
+    puro `planShadowPass`/`assignShadowSlots`, que o `drawShadowCasters` segue);
+  - o slot de status leva o código + 1.
+
+  A classificação e o roteiro são testados como funções puras; a execução na GPU (o clear e o não-submit) fica
+  para o aceite em captura.
 - **Fade:** um teste numérico em JS compara a fórmula do `nativeShadowCsm` (portada para uma função pura) com a do
   `_setupFade` do three em pontos da emenda.
 
