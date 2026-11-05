@@ -8,7 +8,7 @@
 
 > **censusBySceneNode**(`scene`, `limit`): \[`string`, `number`\][]
 
-Defined in: [src/core/PerfTrace.ts:238](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L238)
+Defined in: [src/core/PerfTrace.ts:246](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L246)
 
 Censo por nó de cena: quantos `Object3D` cada nó do `level.json` carrega, os `limit` maiores.
 

@@ -32,7 +32,13 @@ import { beginSection, endSection } from '../../render/RenderSections.js';
 import { shadowSourceFor } from '../../render/ShadowGeometrySource.js';
 import { ShadowAlphaClipSync } from '../../render/ShadowAlphaClipSync.js';
 import type { CsmCascadeReceiver, CsmReceiverState } from '../../render/native/frame/shadowCsm.js';
-import { SHADOW_DEPTH_TEXTURE_LABEL, ensureCascadeMap, type CascadeMapRenderer, type CascadeMapShadow } from './cascadeMaps.js';
+import {
+  SHADOW_DEPTH_TEXTURE_LABEL,
+  ensureCascadeMap,
+  releaseCascadeMap,
+  type CascadeMapRenderer,
+  type CascadeMapShadow,
+} from './cascadeMaps.js';
 
 /** Seções do perfil de render (`RenderSections`, SPEC-0585): o custo da CSM nativa por parte, no perf-trace. */
 const SECTION_REGISTRY = 'shadowRegistry';
@@ -135,10 +141,14 @@ export class CsmNativePass {
     }
   }
 
-  /** Fim do passe (o nó CSM foi descartado): solta os ouvintes do provedor e do espelho e esquece o registro. */
-  dispose(): void {
+  /**
+   * Fim do passe (o nó CSM foi descartado): solta os ouvintes do provedor e do espelho, desregistra a geometria e
+   * libera os mapas que o passe criou para as cascatas (sem isso, cada troca de fase vazava 2 × mapSize² de GPU).
+   */
+  dispose(cascatas: readonly CascataDoCsm[] = []): void {
     this._registry.dispose();
     this._alphaClip.dispose();
+    for (const cascata of cascatas) if (cascata.shadow) releaseCascadeMap(cascata.shadow);
   }
 
   /** Desenha as cascatas devidas neste quadro e decide, por cascata, quem é dono do mapa. */

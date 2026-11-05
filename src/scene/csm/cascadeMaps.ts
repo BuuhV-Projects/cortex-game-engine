@@ -50,6 +50,18 @@ export interface CascadeMapShadow {
  * A câmera nasce no do WebGL, e quem a passa para o do renderer é o mesmo `setup` do `ShadowNode`. Sem ele, a ortho
  * da cascata sai com z em [-1, 1]: o C++ desenharia com metade da profundidade cortada pelo clip do WebGPU.
  */
+/**
+ * Solta o mapa que {@link ensureCascadeMap} criou para esta `shadow` (teardown do nó CSM, SPEC-0690). Se o `three` já
+ * trocou o mapa pelo dele, só o nosso sai: o dele é do `ShadowNode`.
+ */
+export function releaseCascadeMap(shadow: CascadeMapShadow): void {
+  const nosso = criados.get(shadow);
+  if (nosso === undefined) return;
+  if (shadow.map === nosso) shadow.map = null;
+  nosso.dispose();
+  criados.delete(shadow);
+}
+
 export function ensureCascadeMap(shadow: CascadeMapShadow, renderer: CascadeMapRenderer): void {
   const camera = shadow.camera;
   const system = renderer.coordinateSystem;

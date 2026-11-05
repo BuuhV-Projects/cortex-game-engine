@@ -253,6 +253,13 @@ export class CasterGeometryRegistry {
     this._desouvir = null;
     this._fonte = null;
     this._fonteRelatada = null;
+    // O host faz AddRef do que guarda (ADR-0692): sem o unregister, os buffers deste registro ficariam presos até o
+    // fim do processo, mesmo com a cena descartada.
+    const api = ponte();
+    if (api) {
+      for (const id of this._registradas.keys()) api.unregister(id);
+      for (const id of this._ouvintesDeRecusa.keys()) api.unregister(id);
+    }
     this.limpar();
   }
 

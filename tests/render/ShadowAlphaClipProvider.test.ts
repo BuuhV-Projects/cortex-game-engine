@@ -136,6 +136,22 @@ describe('ShadowAlphaClipSync com provedor (ADR-0692)', () => {
     expect(uv.mock.results[0]!.value).toBe(true);
   });
 
+  it('a textura padrão 1×1 do three (sem version no backend) não vale como o mapa: dispara o upload real', () => {
+    const mapa = new Texture();
+    mapa.version = 1;
+    // Como o `createDefaultTexture` do three: o backend tem uma textura, mas sem a `version` do mapa.
+    const dados = new Map<unknown, Record<string, unknown>>([[mapa, { texture: { gpu: 'padrao' } }]]);
+    const updateTexture = vi.fn((t: Texture) => dados.set(t, { texture: { gpu: 'real' }, version: t.version }));
+    const host = {
+      backend: { get: (o: unknown) => dados.get(o) ?? {} },
+      _textures: { updateTexture, updateSampler: vi.fn() },
+    } as unknown as NativeRendererHost;
+    const device = { createBuffer: (d: { size: number }) => ({ size: d.size }), queue: { writeBuffer: () => undefined } };
+    const fonte = new NativeShadowSource(new NativeGeometryStore(device, host), host);
+    expect(fonte.texture(mapa)).toEqual({ gpu: 'real' });
+    expect(updateTexture).toHaveBeenCalledWith(mapa);
+  });
+
   it('textura que o three nunca subiu dispara o upload do caminho nativo', () => {
     const sets = instalarPonte();
     const { host, fonte } = hostNativo();

@@ -31,7 +31,7 @@ function fonteFalsa() {
   const ouvintes = new Set<(source: object) => void>();
   const buffer = { label: 'uv' };
   const fonte = {
-    texture: vi.fn((mapa: unknown) => (mapa ? { gpu: mapa } : null)),
+    texture: vi.fn((mapa: unknown): { gpu: unknown } | null => (mapa ? { gpu: mapa } : null)),
     uv: vi.fn((_geometria: unknown, out: ShadowUvSlot) => {
       out.buffer = buffer;
       out.stride = UV_STRIDE;
@@ -129,5 +129,41 @@ describe('ShadowAlphaClipSync: caminho rápido em regime', () => {
     rodar();
     rodar();
     expect(fonte.uv).toHaveBeenCalledTimes(2);
+  });
+
+  it('recusa fixa (alphaMap) não relê a fonte enquanto o objeto não muda; tirar o alphaMap registra', () => {
+    const { sets } = instalarPonte();
+    const fonte = fonteFalsa();
+    const malha = folha();
+    const material = malha.material as MeshStandardMaterial;
+    material.alphaMap = new Texture();
+    const getAttribute = vi.spyOn(malha.geometry, 'getAttribute');
+    const e = espelho([malha]);
+    const sync = new ShadowAlphaClipSync();
+    const rodarMesmo = () => sync.sync(e, backend, fonte as unknown as FonteDeUvETextura);
+    rodarMesmo();
+    getAttribute.mockClear();
+    rodarMesmo();
+    rodarMesmo();
+    expect(getAttribute).not.toHaveBeenCalled();
+    expect(sets).toHaveLength(0);
+    material.alphaMap = null;
+    rodarMesmo();
+    expect(sets).toHaveLength(1);
+  });
+
+  it('recusa transitória (textura ainda sem GPU) tenta todo quadro e registra quando a textura chega', () => {
+    const { sets } = instalarPonte();
+    const fonte = fonteFalsa();
+    fonte.texture.mockReturnValue(null);
+    const malha = folha();
+    const e = espelho([malha]);
+    const sync = new ShadowAlphaClipSync();
+    sync.sync(e, backend, fonte as unknown as FonteDeUvETextura);
+    sync.sync(e, backend, fonte as unknown as FonteDeUvETextura);
+    expect(fonte.texture).toHaveBeenCalledTimes(2);
+    fonte.texture.mockImplementation((mapa: unknown) => ({ gpu: mapa }));
+    sync.sync(e, backend, fonte as unknown as FonteDeUvETextura);
+    expect(sets).toHaveLength(1);
   });
 });

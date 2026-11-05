@@ -8,7 +8,7 @@
 
 > **collectVisible**(`scene`, `camera`): [`VisibleNode`](../interfaces/VisibleNode.md)[]
 
-Defined in: [src/core/PerfTrace.ts:243](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L243)
+Defined in: [src/core/PerfTrace.ts:251](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L251)
 
 Nós de cena dentro do frustum da câmera, do mais caro (triângulos) pro menos. Travessia completa.
 

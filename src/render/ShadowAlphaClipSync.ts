@@ -25,6 +25,18 @@
 import type { Object3D } from 'three';
 import { debug } from '../core/debug.js';
 import { shadowSourceFor, type ShadowGeometrySource, type ShadowUvSlot } from './ShadowGeometrySource.js';
+import {
+  guardarChave,
+  guardarRecusa,
+  mesmaChave,
+  mesmaRecusa,
+  novaChave,
+  novaChaveDaRecusa,
+  type Chave,
+  type ChaveDaRecusa,
+  type MaterialDoRecorte,
+  type ObjetoDoRecorte,
+} from './shadowAlphaClipKeys.js';
 
 /** A ponte `__cortexShadowAlphaClip` do host (`shadow_alpha_clip_shim.cpp`). */
 interface PonteDoRecorte {
@@ -82,33 +94,8 @@ interface FonteDoRecorte {
   matriz: Float32Array;
 }
 
-/**
- * O que o objeto carregava quando o recorte foi mandado: se nada disso mudou (nem a época do provedor), a fonte é a
- * mesma e o nó sai sem consultar o provedor. São só referências e escalares do próprio objeto (sem lookup).
- */
-interface Chave {
-  material: unknown;
-  mapa: unknown;
-  versaoDoMapa: number;
-  geometria: unknown;
-  uv: unknown;
-  alphaTestVisto: number;
-  wrapSVisto: number;
-  wrapTVisto: number;
-  /** `offset`, `repeat`, `rotation` e `center` do mapa: o que o `updateMatrix` usa. */
-  offsetX: number;
-  offsetY: number;
-  repeatX: number;
-  repeatY: number;
-  rotacao: number;
-  centroX: number;
-  centroY: number;
-  matrizAutomatica: boolean;
-  epoca: number;
-}
-
 /** O que já foi mandado ao host para um nó. */
-interface Enviado extends FonteDoRecorte, Chave {
+interface Enviado extends FonteDoRecorte, Chave, ChaveDaRecusa {
   indice: number;
   geracao: number;
   /** Algo foi mandado (aceito ou não) — sem mudança, não manda de novo. */
@@ -131,39 +118,6 @@ function novaFonte(): FonteDoRecorte {
     matriz: new Float32Array(FLOATS_DA_MATRIZ_UV),
   };
 }
-
-/** Época que nenhum provedor tem: força a primeira leitura. */
-const EPOCA_NENHUMA = -1;
-
-function novaChave(): Chave {
-  return {
-    material: null, mapa: null, versaoDoMapa: 0, geometria: null, uv: null, alphaTestVisto: 0, wrapSVisto: 0, wrapTVisto: 0,
-    offsetX: 0, offsetY: 0, repeatX: 0, repeatY: 0, rotacao: 0, centroX: 0, centroY: 0, matrizAutomatica: false,
-    epoca: EPOCA_NENHUMA,
-  };
-}
-
-type MaterialDoRecorte = {
-  alphaTest?: number;
-  alphaMap?: unknown;
-  colorNode?: unknown;
-  castShadowNode?: unknown;
-  maskNode?: unknown;
-  maskShadowNode?: unknown;
-  map?: {
-    version?: number;
-    offset?: { x: number; y: number };
-    repeat?: { x: number; y: number };
-    rotation?: number;
-    center?: { x: number; y: number };
-    channel?: number;
-    wrapS: number;
-    wrapT: number;
-    matrixAutoUpdate?: boolean;
-    updateMatrix?(): void;
-    matrix: { elements: ArrayLike<number> };
-  } | null;
-};
 
 type AtributoUv = {
   itemSize?: number;
@@ -254,52 +208,6 @@ function copiarFonte(de: FonteDoRecorte, para: FonteDoRecorte): void {
 /** O que avisa 'dispose' (textura e geometria do `three`): o handle de GPU dele some do backend. */
 type Descartavel = { addEventListener?(tipo: string, ouvinte: () => void): void };
 
-type ObjetoDoRecorte = Object3D & {
-  material?: MaterialDoRecorte | MaterialDoRecorte[];
-  geometry?: { attributes?: { uv?: unknown } };
-};
-
-/** A fonte do nó continua a mesma que foi mandada? (só campos do objeto; ver {@link Chave}). */
-function mesmaChave(objeto: ObjetoDoRecorte, c: Chave, epoca: number): boolean {
-  const material = objeto.material;
-  if (material !== c.material || c.epoca !== epoca || Array.isArray(material) || !material) return false;
-  const mapa = material.map;
-  const geometria = objeto.geometry;
-  if (mapa !== c.mapa || !mapa || geometria !== c.geometria || geometria?.attributes?.uv !== c.uv) return false;
-  if ((mapa.version ?? 0) !== c.versaoDoMapa || (material.alphaTest ?? 0) !== c.alphaTestVisto) return false;
-  if (mapa.wrapS !== c.wrapSVisto || mapa.wrapT !== c.wrapTVisto) return false;
-  if ((mapa.matrixAutoUpdate ?? false) !== c.matrizAutomatica) return false;
-  // Matriz manual: quem a muda é o jogo, e ela entra inteira no `mesmaFonte`; não há como saber sem ler.
-  if (!c.matrizAutomatica) return false;
-  return (
-    mapa.offset?.x === c.offsetX && mapa.offset.y === c.offsetY && mapa.repeat?.x === c.repeatX &&
-    mapa.repeat.y === c.repeatY && mapa.rotation === c.rotacao && mapa.center?.x === c.centroX &&
-    mapa.center.y === c.centroY
-  );
-}
-
-function guardarChave(objeto: ObjetoDoRecorte, c: Chave, epoca: number): void {
-  const material = objeto.material as MaterialDoRecorte;
-  const mapa = material.map!;
-  c.material = material;
-  c.mapa = mapa;
-  c.versaoDoMapa = mapa.version ?? 0;
-  c.geometria = objeto.geometry;
-  c.uv = objeto.geometry?.attributes?.uv;
-  c.alphaTestVisto = material.alphaTest ?? 0;
-  c.wrapSVisto = mapa.wrapS;
-  c.wrapTVisto = mapa.wrapT;
-  c.matrizAutomatica = mapa.matrixAutoUpdate ?? false;
-  c.offsetX = mapa.offset?.x ?? 0;
-  c.offsetY = mapa.offset?.y ?? 0;
-  c.repeatX = mapa.repeat?.x ?? 0;
-  c.repeatY = mapa.repeat?.y ?? 0;
-  c.rotacao = mapa.rotation ?? 0;
-  c.centroX = mapa.center?.x ?? 0;
-  c.centroY = mapa.center?.y ?? 0;
-  c.epoca = epoca;
-}
-
 function ponte(): PonteDoRecorte | null {
   return (globalThis as { __cortexShadowAlphaClip?: PonteDoRecorte }).__cortexShadowAlphaClip ?? null;
 }
@@ -383,7 +291,9 @@ export class ShadowAlphaClipSync {
     const geracao = espelho.generation;
     let enviado = this._enviados.get(objeto);
     if (!enviado) {
-      enviado = { ...novaFonte(), ...novaChave(), indice, geracao, mandado: false, registrado: false, motivo: '' };
+      enviado = {
+        ...novaFonte(), ...novaChave(), ...novaChaveDaRecusa(), indice, geracao, mandado: false, registrado: false, motivo: '',
+      };
       this._enviados.set(objeto, enviado);
     }
     // Slot ou espelho novos: o host já esqueceu o que era deste nó.
@@ -394,6 +304,8 @@ export class ShadowAlphaClipSync {
     }
     // Regime normal: já mandado, mesmo slot e nada mudou no objeto nem no provedor — sem consultar nada.
     if (enviado.mandado && mesmoSlot && mesmaChave(objeto as ObjetoDoRecorte, enviado, this._epoca)) return;
+    // Recusa que só depende do objeto (`alphaMap`, UV fora do formato…): nada mudou, segue recusada sem reler.
+    if (!enviado.mandado && mesmaRecusa(objeto as ObjetoDoRecorte, enviado, this._epoca)) return;
 
     const motivo = lerFonteDoRecorte(objeto, this._fonteDoQuadro!, this._fonte);
     if (motivo !== null) {
@@ -401,6 +313,7 @@ export class ShadowAlphaClipSync {
       if (enviado.registrado && mesmoSlot) api.erase(indice);
       enviado.mandado = false;
       enviado.registrado = false;
+      guardarRecusa(objeto as ObjetoDoRecorte, enviado, motivo, this._epoca);
       this._relatar(objeto, enviado, motivo);
       return;
     }
@@ -416,6 +329,7 @@ export class ShadowAlphaClipSync {
     enviado.geracao = geracao;
     enviado.mandado = true;
     enviado.registrado = ok;
+    enviado.recusaFixa = false;
     this._guardar(objeto as ObjetoDoRecorte, enviado);
     this._relatar(objeto, enviado, ok ? 'registrado' : 'host-recusou');
   };

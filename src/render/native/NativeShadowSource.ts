@@ -57,11 +57,13 @@ export class NativeShadowSource implements ShadowGeometrySource {
   /**
    * The map's GPU texture. In the steady state it is there and current: only a missing one (a caster the main
    * pass never drew) or one behind its `version` (the image loaded after a placeholder upload) pays the upload.
+   * The three's default 1×1 placeholder (`createDefaultTexture`, no `version` in the backend data) is never taken as
+   * the map: the alpha clip would keep it for good, since its fast path only rereads when the map changes.
    */
   texture(map: unknown): unknown {
     const data = this._host.backend.get(map) as { texture?: unknown; version?: number };
     const version = (map as { version?: number }).version;
-    if (data.texture && (data.version === undefined || data.version === version)) return data.texture;
+    if (data.texture && data.version === version) return data.texture;
     return uploadedTexture(this._host, map);
   }
 

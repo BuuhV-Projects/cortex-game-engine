@@ -156,7 +156,7 @@ export class CameraFollowingCSM extends CSMShadowNode {
    * de buffer do provedor, que vive tanto quanto o NativeRenderer e prenderia a cena velha (ADR-0692).
    */
   override dispose(): void {
-    this._nativePass.dispose();
+    this._nativePass.dispose((this as unknown as CsmInterno).lights ?? []);
     super.dispose();
   }
 

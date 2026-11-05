@@ -65,7 +65,7 @@ describe('CasterGeometryRegistry — ciclo de vida (ADR-0692)', () => {
     resetGeometryIds();
   });
 
-  it('dispose solta o ouvinte de troca de buffer e não mexe mais no host', () => {
+  it('dispose desregistra no host o que registrou, solta o ouvinte e não mexe mais no host', () => {
     const { chamadas } = instalarRegistroFalso();
     const ouvintes = new Set<(fonte: object) => void>();
     const off = vi.fn();
@@ -84,9 +84,12 @@ describe('CasterGeometryRegistry — ciclo de vida (ADR-0692)', () => {
     const registro = new CasterGeometryRegistry();
     registro.atualizar(cenaCom(g), backendVazio, [], fonte);
     registro.dispose();
+    // O host faz AddRef (ADR-0692): sem o unregister o buffer ficaria preso com a cena descartada.
+    expect(chamadas.unregister).toHaveBeenCalledWith(geometryId(g));
     expect(off).toHaveBeenCalledTimes(1);
     expect(ouvintes.size).toBe(0);
     chamadas.register.mockClear();
+    chamadas.unregister.mockClear();
     ouvintes.forEach((o) => o(g.getAttribute('position')));
     g.dispose();
     expect(chamadas.register).not.toHaveBeenCalled();
