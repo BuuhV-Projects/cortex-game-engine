@@ -28,10 +28,16 @@ import {
   traceShadowGeometryPending, traceSunShadowCascade, traceSunShadowDrawn, traceSunShadowHandedBack,
 } from '../../core/perfTrace/traceCounters.js';
 import { CasterGeometryRegistry } from '../../render/CasterGeometryRegistry.js';
+import { beginSection, endSection } from '../../render/RenderSections.js';
 import { shadowSourceFor } from '../../render/ShadowGeometrySource.js';
 import { ShadowAlphaClipSync } from '../../render/ShadowAlphaClipSync.js';
 import type { CsmCascadeReceiver, CsmReceiverState } from '../../render/native/frame/shadowCsm.js';
 import { SHADOW_DEPTH_TEXTURE_LABEL, ensureCascadeMap, type CascadeMapRenderer, type CascadeMapShadow } from './cascadeMaps.js';
+
+/** Seções do perfil de render (`RenderSections`, SPEC-0585): o custo da CSM nativa por parte, no perf-trace. */
+const SECTION_REGISTRY = 'shadowRegistry';
+const SECTION_ALPHA_CLIP = 'shadowAlphaClip';
+const SECTION_DRAW = 'shadowDraw';
 
 /** Elementos de uma `Matrix4`. */
 const ELEMENTOS_DA_MATRIZ = 16;
@@ -142,9 +148,13 @@ export class CsmNativePass {
     const fonte = shadowSourceFor(backend);
     // E2 — registro com orçamento de upload por quadro; as geometrias que o streaming trouxe desde o frame passado
     // sobem neste mesmo quadro (SPEC-0289, ADR-0692).
+    beginSection(SECTION_REGISTRY);
     traceShadowGeometryPending(this._registry.atualizar(frame.scene, backend, frame.mirror.drainNewGeometries(), fonte).pendentes);
+    endSection(SECTION_REGISTRY);
     // SPEC-0642: textura + UV de quem tem `alphaTest`, antes da 1ª cascata.
+    beginSection(SECTION_ALPHA_CLIP);
     this._alphaClip.sync(frame.mirror, backend, fonte);
+    endSection(SECTION_ALPHA_CLIP);
     this._ensureReceivers(cascatas.length);
     const vsm = frame.renderer.shadowMap?.type === VSMShadowMap;
     const intervalo = Math.max(1, Math.floor(frame.farCascadeInterval));
@@ -246,11 +256,13 @@ export class CsmNativePass {
     const elementos = this._viewProj.elements;
     for (let k = 0; k < ELEMENTOS_DA_MATRIZ; k++) this._viewProj64[k] = elementos[k]!;
     // Tempo da ponte + C++ desta cascata, para o perf-trace achar a cascata cara (SPEC-0690, item 6).
+    beginSection(SECTION_DRAW);
     const inicio = performance.now();
     const resultado = frame.mirror.drawShadowPass(
       shadowCamera, frame.filterCamera, frame.minRatio, this._viewProj64, alvo, NOS_DA_CENA_NAO_MEDIDOS, vsm,
     );
     const ms = performance.now() - inicio;
+    endSection(SECTION_DRAW);
     if (!resultado) return this._refuse(i, cascata, 'sem-ponte', undefined, ms);
     if (!shadowPassAccepted(resultado)) return this._refuse(i, cascata, resultado.reason, resultado, ms);
 

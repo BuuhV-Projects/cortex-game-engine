@@ -57,7 +57,8 @@ export interface EspelhoDoRecorte {
 }
 
 /** A parte do provedor do passe de sombra que o recorte usa. */
-export type FonteDeUvETextura = Pick<ShadowGeometrySource, 'uv' | 'texture'>;
+export type FonteDeUvETextura = Pick<ShadowGeometrySource, 'uv' | 'texture'> &
+  Partial<Pick<ShadowGeometrySource, 'onBufferReplaced'>>;
 
 /** Floats da `Matrix3` do `three`. */
 const FLOATS_DA_MATRIZ_UV = 9;
@@ -81,8 +82,33 @@ interface FonteDoRecorte {
   matriz: Float32Array;
 }
 
+/**
+ * O que o objeto carregava quando o recorte foi mandado: se nada disso mudou (nem a época do provedor), a fonte é a
+ * mesma e o nó sai sem consultar o provedor. São só referências e escalares do próprio objeto (sem lookup).
+ */
+interface Chave {
+  material: unknown;
+  mapa: unknown;
+  versaoDoMapa: number;
+  geometria: unknown;
+  uv: unknown;
+  alphaTestVisto: number;
+  wrapSVisto: number;
+  wrapTVisto: number;
+  /** `offset`, `repeat`, `rotation` e `center` do mapa: o que o `updateMatrix` usa. */
+  offsetX: number;
+  offsetY: number;
+  repeatX: number;
+  repeatY: number;
+  rotacao: number;
+  centroX: number;
+  centroY: number;
+  matrizAutomatica: boolean;
+  epoca: number;
+}
+
 /** O que já foi mandado ao host para um nó. */
-interface Enviado extends FonteDoRecorte {
+interface Enviado extends FonteDoRecorte, Chave {
   indice: number;
   geracao: number;
   /** Algo foi mandado (aceito ou não) — sem mudança, não manda de novo. */
@@ -106,6 +132,17 @@ function novaFonte(): FonteDoRecorte {
   };
 }
 
+/** Época que nenhum provedor tem: força a primeira leitura. */
+const EPOCA_NENHUMA = -1;
+
+function novaChave(): Chave {
+  return {
+    material: null, mapa: null, versaoDoMapa: 0, geometria: null, uv: null, alphaTestVisto: 0, wrapSVisto: 0, wrapTVisto: 0,
+    offsetX: 0, offsetY: 0, repeatX: 0, repeatY: 0, rotacao: 0, centroX: 0, centroY: 0, matrizAutomatica: false,
+    epoca: EPOCA_NENHUMA,
+  };
+}
+
 type MaterialDoRecorte = {
   alphaTest?: number;
   alphaMap?: unknown;
@@ -114,6 +151,11 @@ type MaterialDoRecorte = {
   maskNode?: unknown;
   maskShadowNode?: unknown;
   map?: {
+    version?: number;
+    offset?: { x: number; y: number };
+    repeat?: { x: number; y: number };
+    rotation?: number;
+    center?: { x: number; y: number };
     channel?: number;
     wrapS: number;
     wrapT: number;
@@ -209,6 +251,55 @@ function copiarFonte(de: FonteDoRecorte, para: FonteDoRecorte): void {
   para.matriz.set(de.matriz);
 }
 
+/** O que avisa 'dispose' (textura e geometria do `three`): o handle de GPU dele some do backend. */
+type Descartavel = { addEventListener?(tipo: string, ouvinte: () => void): void };
+
+type ObjetoDoRecorte = Object3D & {
+  material?: MaterialDoRecorte | MaterialDoRecorte[];
+  geometry?: { attributes?: { uv?: unknown } };
+};
+
+/** A fonte do nó continua a mesma que foi mandada? (só campos do objeto; ver {@link Chave}). */
+function mesmaChave(objeto: ObjetoDoRecorte, c: Chave, epoca: number): boolean {
+  const material = objeto.material;
+  if (material !== c.material || c.epoca !== epoca || Array.isArray(material) || !material) return false;
+  const mapa = material.map;
+  const geometria = objeto.geometry;
+  if (mapa !== c.mapa || !mapa || geometria !== c.geometria || geometria?.attributes?.uv !== c.uv) return false;
+  if ((mapa.version ?? 0) !== c.versaoDoMapa || (material.alphaTest ?? 0) !== c.alphaTestVisto) return false;
+  if (mapa.wrapS !== c.wrapSVisto || mapa.wrapT !== c.wrapTVisto) return false;
+  if ((mapa.matrixAutoUpdate ?? false) !== c.matrizAutomatica) return false;
+  // Matriz manual: quem a muda é o jogo, e ela entra inteira no `mesmaFonte`; não há como saber sem ler.
+  if (!c.matrizAutomatica) return false;
+  return (
+    mapa.offset?.x === c.offsetX && mapa.offset.y === c.offsetY && mapa.repeat?.x === c.repeatX &&
+    mapa.repeat.y === c.repeatY && mapa.rotation === c.rotacao && mapa.center?.x === c.centroX &&
+    mapa.center.y === c.centroY
+  );
+}
+
+function guardarChave(objeto: ObjetoDoRecorte, c: Chave, epoca: number): void {
+  const material = objeto.material as MaterialDoRecorte;
+  const mapa = material.map!;
+  c.material = material;
+  c.mapa = mapa;
+  c.versaoDoMapa = mapa.version ?? 0;
+  c.geometria = objeto.geometry;
+  c.uv = objeto.geometry?.attributes?.uv;
+  c.alphaTestVisto = material.alphaTest ?? 0;
+  c.wrapSVisto = mapa.wrapS;
+  c.wrapTVisto = mapa.wrapT;
+  c.matrizAutomatica = mapa.matrixAutoUpdate ?? false;
+  c.offsetX = mapa.offset?.x ?? 0;
+  c.offsetY = mapa.offset?.y ?? 0;
+  c.repeatX = mapa.repeat?.x ?? 0;
+  c.repeatY = mapa.repeat?.y ?? 0;
+  c.rotacao = mapa.rotation ?? 0;
+  c.centroX = mapa.center?.x ?? 0;
+  c.centroY = mapa.center?.y ?? 0;
+  c.epoca = epoca;
+}
+
 function ponte(): PonteDoRecorte | null {
   return (globalThis as { __cortexShadowAlphaClip?: PonteDoRecorte }).__cortexShadowAlphaClip ?? null;
 }
@@ -223,6 +314,15 @@ export class ShadowAlphaClipSync {
   /** O espelho cujas saídas de nó este sync ouve, e o `off` do ouvinte. */
   private _espelhoOuvido: EspelhoDoRecorte | null = null;
   private _desouvir: (() => void) | null = null;
+  /** Sobe quando o provedor troca um buffer: todo nó relê a fonte (o UV dele pode ter mudado de buffer). */
+  private _epoca = 0;
+  private _fonteOuvida: FonteDeUvETextura | null = null;
+  private _desouvirFonte: (() => void) | null = null;
+  private readonly _aoTrocarBuffer = (): void => {
+    this._epoca++;
+  };
+  /** Mapas e geometrias cujo `dispose` já é ouvido: o handle que o host guarda some com eles. */
+  private readonly _vigiados = new WeakSet<object>();
   /** O host apagou o slot do nó que saiu: quem voltar manda o `set` de novo, mesmo no mesmo slot. */
   private readonly _aoSairDoEspelho = (objeto: Object3D): void => {
     this._enviados.delete(objeto);
@@ -237,6 +337,7 @@ export class ShadowAlphaClipSync {
     const api = ponte();
     if (!api) return;
     this._ouvir(espelho);
+    this._ouvirFonte(fonte);
     if (espelho.alphaClipNodes.size === 0) return;
     this._api = api;
     this._fonteDoQuadro = fonte;
@@ -250,9 +351,21 @@ export class ShadowAlphaClipSync {
 
   /** Fim do passe: solta o ouvinte de saída de nó do espelho. */
   dispose(): void {
+    this._desouvirFonte?.();
+    this._desouvirFonte = null;
+    this._fonteOuvida = null;
     this._desouvir?.();
     this._desouvir = null;
     this._espelhoOuvido = null;
+  }
+
+  /** Provedor novo (outro renderer, ou o `three`): ouve as trocas de buffer dele e relê todos os nós. */
+  private _ouvirFonte(fonte: FonteDeUvETextura): void {
+    if (fonte === this._fonteOuvida) return;
+    this._desouvirFonte?.();
+    this._fonteOuvida = fonte;
+    this._desouvirFonte = fonte.onBufferReplaced?.(this._aoTrocarBuffer) ?? null;
+    this._epoca++;
   }
 
   private _ouvir(espelho: EspelhoDoRecorte): void {
@@ -270,7 +383,7 @@ export class ShadowAlphaClipSync {
     const geracao = espelho.generation;
     let enviado = this._enviados.get(objeto);
     if (!enviado) {
-      enviado = { ...novaFonte(), indice, geracao, mandado: false, registrado: false, motivo: '' };
+      enviado = { ...novaFonte(), ...novaChave(), indice, geracao, mandado: false, registrado: false, motivo: '' };
       this._enviados.set(objeto, enviado);
     }
     // Slot ou espelho novos: o host já esqueceu o que era deste nó.
@@ -279,6 +392,8 @@ export class ShadowAlphaClipSync {
       enviado.mandado = false;
       enviado.registrado = false;
     }
+    // Regime normal: já mandado, mesmo slot e nada mudou no objeto nem no provedor — sem consultar nada.
+    if (enviado.mandado && mesmoSlot && mesmaChave(objeto as ObjetoDoRecorte, enviado, this._epoca)) return;
 
     const motivo = lerFonteDoRecorte(objeto, this._fonteDoQuadro!, this._fonte);
     if (motivo !== null) {
@@ -289,7 +404,10 @@ export class ShadowAlphaClipSync {
       this._relatar(objeto, enviado, motivo);
       return;
     }
-    if (enviado.mandado && mesmoSlot && mesmaFonte(enviado, this._fonte)) return;
+    if (enviado.mandado && mesmoSlot && mesmaFonte(enviado, this._fonte)) {
+      this._guardar(objeto as ObjetoDoRecorte, enviado);
+      return;
+    }
 
     const f = this._fonte;
     const ok = api.set(indice, f.textura, f.bufferUv, f.passo, f.deslocamento, f.alphaTest, f.wrapS, f.wrapT, f.matriz);
@@ -298,8 +416,22 @@ export class ShadowAlphaClipSync {
     enviado.geracao = geracao;
     enviado.mandado = true;
     enviado.registrado = ok;
+    this._guardar(objeto as ObjetoDoRecorte, enviado);
     this._relatar(objeto, enviado, ok ? 'registrado' : 'host-recusou');
   };
+
+  /** Guarda a chave do que foi mandado e passa a ouvir o `dispose` do mapa e da geometria (sobe a época). */
+  private _guardar(objeto: ObjetoDoRecorte, enviado: Enviado): void {
+    guardarChave(objeto, enviado, this._epoca);
+    this._vigiar(enviado.mapa as Descartavel);
+    this._vigiar(enviado.geometria as Descartavel);
+  }
+
+  private _vigiar(alvo: Descartavel | null | undefined): void {
+    if (!alvo || this._vigiados.has(alvo)) return;
+    this._vigiados.add(alvo);
+    alvo.addEventListener?.('dispose', this._aoTrocarBuffer);
+  }
 
   /** Uma linha por mudança de estado do nó — nunca por quadro. */
   private _relatar(objeto: Object3D, enviado: Enviado, motivo: string): void {

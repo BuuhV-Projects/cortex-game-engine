@@ -21,6 +21,7 @@
  */
 import { PCFSoftShadowMap } from 'three';
 import { debug } from '../../../core/debug.js';
+import { beginSection, endSection } from '../../RenderSections.js';
 import { queryFlagRequested } from '../../TransformOnlyRefresh.js';
 import type { NativeRendererHost } from '../NativeRenderer.js';
 import type { FrameBlockFactory } from './FrameBlock.js';
@@ -52,6 +53,8 @@ const FLOAT_BYTES = 4;
 const PCF_SOFT_TAPS = 9;
 /** Frames between scene searches for a shadow-casting sun while none is found. */
 const LIGHT_RESCAN_FRAMES = 120;
+/** Seção do perfil de render (SPEC-0585): o bloco inteiro, com a CSM nativa que ele dirige (SPEC-0690). */
+const SECTION_SHADOW_BLOCK = 'shadowBlock';
 /** Known-answer shift (`?nativeShadowShift=1`), in shadow-map texels. */
 export const SHIFT_TEXELS = 8;
 
@@ -208,6 +211,12 @@ export class ShadowBlock {
   }
 
   update(scene: unknown, camera: unknown): void {
+    beginSection(SECTION_SHADOW_BLOCK);
+    this._update(scene, camera);
+    endSection(SECTION_SHADOW_BLOCK);
+  }
+
+  private _update(scene: unknown, camera: unknown): void {
     this._frame++;
     const d = this._data;
     this._next.fill(null);

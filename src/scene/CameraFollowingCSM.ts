@@ -13,6 +13,7 @@ import { CSMShadowNode } from 'three/examples/jsm/csm/CSMShadowNode.js';
 import { cullShadowCasters, DEFAULT_SHADOW_CASTER_MIN_RATIO } from './ShadowCasterCulling.js';
 import { debug } from '../core/debug.js';
 import { activeSceneMirror } from '../core/NativeSceneMirror.js';
+import { beginSection, endSection } from '../render/RenderSections.js';
 import type { CsmReceiverState } from '../render/native/frame/shadowCsm.js';
 import { CsmNativePass, type CascataDoCsm, type CsmNativeRenderer } from './csm/CsmNativePass.js';
 import { congelarPasseDeSombra, passeDeSombraNativoDesligado } from './csm/measurementQueries.js';
@@ -22,6 +23,8 @@ const SHADOW_CULL_INTERVAL = 10;
 
 /** Default de {@link CameraFollowingCSM.farCascadeInterval} (SPEC-0675). */
 export const DEFAULT_FAR_CASCADE_INTERVAL = 2;
+/** Seção do perfil de render (SPEC-0585) com o `updateNative` inteiro: reposicionar e desenhar as cascatas. */
+const SECTION_CSM_NATIVE = 'csmNative';
 
 /** Câmera do quadro, como o CSM a lê. */
 interface CameraDoQuadro {
@@ -136,7 +139,9 @@ export class CameraFollowingCSM extends CSMShadowNode {
     }
     // Sem receptor do `three`, o `setup` do nó (que chama o `_init`) nunca rodou: as cascatas nascem aqui.
     if (self.camera === null) self._init({ camera: cam, renderer });
+    beginSection(SECTION_CSM_NATIVE);
     this._atualizar(cam, scene as Object3D, renderer as CsmNativeRenderer);
+    endSection(SECTION_CSM_NATIVE);
     this._lastUpdateFrame = frameId;
     this._lastUpdateByNative = true;
   }

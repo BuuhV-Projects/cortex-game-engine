@@ -124,7 +124,7 @@ describe('ShadowAlphaClipSync com provedor (ADR-0692)', () => {
     expect(sets[0]!.uv).toBeTruthy();
   });
 
-  it('em regime o provedor preenche sempre o mesmo destino (sem slot novo por quadro)', () => {
+  it('em regime o provedor não é consultado: nada mudou no objeto nem no provedor', () => {
     instalarPonte();
     const { fonte } = hostNativo();
     const uv = vi.spyOn(fonte, 'uv');
@@ -132,9 +132,8 @@ describe('ShadowAlphaClipSync com provedor (ADR-0692)', () => {
     const espelho = espelhoFalso([folha(intercalada())]);
     sync.sync(espelho, backendVazio, fonte);
     sync.sync(espelho, backendVazio, fonte);
-    expect(uv).toHaveBeenCalledTimes(2);
-    expect(uv.mock.calls[1]![1]).toBe(uv.mock.calls[0]![1]);
-    expect(uv.mock.results[1]!.value).toBe(true);
+    expect(uv).toHaveBeenCalledTimes(1);
+    expect(uv.mock.results[0]!.value).toBe(true);
   });
 
   it('textura que o three nunca subiu dispara o upload do caminho nativo', () => {
