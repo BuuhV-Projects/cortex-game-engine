@@ -116,7 +116,16 @@ async function swapModel(url: string): Promise<ModelHotReloadResult> {
   const keys = evictGLB(url);
   const events: ModelHotReloadEvent[] = [];
   if (live.length > 0) {
-    const gltf = await loadGLB(keys[0] ?? url);
+    let gltf: GLTF;
+    try {
+      gltf = await loadGLB(keys[0] ?? url);
+    } catch (err) {
+      // Arquivo lido no meio da escrita (exportador ainda gravando): as raízes ficam com os
+      // filhos velhos, e o próximo save, já com o arquivo inteiro, recarrega do zero.
+      console.warn(`[cortex] hot reload de ${url}: não consegui carregar o GLB novo; salve de novo.`, err);
+      result.skipped.push(...live.map((root) => ({ reason: `${root.name || url}: GLB novo não carregou` })));
+      return result;
+    }
     for (const root of live) {
       const why = skipReason(root, gltf);
       if (why) {

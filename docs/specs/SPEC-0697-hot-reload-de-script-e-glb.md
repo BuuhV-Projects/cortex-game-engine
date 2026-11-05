@@ -107,7 +107,9 @@ produção e no host nativo. `enableModelHotReload()` liga. Ligado:
 1. Raízes vivas da URL. São podadas as que não estão mais ligadas a uma `Scene`.
 2. Despeja a URL dos caches (`SceneAssets` e o `AssetLoader` interno dele, com
    `evict(url)` novo) e carrega de novo com `loadGLB`. O vite dev serve com etag e
-   `no-cache`, então o arquivo novo chega sem cache-bust.
+   `no-cache`, então o arquivo novo chega sem cache-bust. Se a carga falhar (arquivo lido no
+   meio da escrita), as raízes ficam com os filhos velhos, sai um `console.warn` e a promise
+   resolve com todas em `skipped`; o próximo save recarrega do zero.
 3. Cada raiz:
    - **pulada com aviso** se tiver animação (`userData.cortexAnim` ou clipes no GLB novo)
      ou se estiver presa a ECS (`Object3DComponent` aponta para ela: Character,

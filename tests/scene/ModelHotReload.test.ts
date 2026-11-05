@@ -216,6 +216,18 @@ describe('hotReloadModel (SPEC-0697)', () => {
     expect(Object.prototype.hasOwnProperty.call(mesh, 'raycast')).toBe(false);
   });
 
+  it('GLB novo que não carrega (save pela metade): resolve sem troca e o próximo save troca', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { roots } = await spawn('assets/half.glb');
+    h.loadGLTF.mockReset().mockRejectedValueOnce(new Error('GLB truncado')).mockResolvedValueOnce(fakeGltf('v3').gltf);
+    const res = await hotReloadModel('assets/half.glb');
+    expect(res).toEqual({ url: 'assets/half.glb', swapped: 0, skipped: [{ reason: expect.stringContaining('não carregou') }] });
+    expect(roots[0]!.children.map((c) => c.name)).toEqual(['v1']);
+    expect(warn).toHaveBeenCalled();
+    expect((await hotReloadModel('assets/half.glb')).swapped).toBe(1);
+    expect(roots[0]!.children.map((c) => c.name)).toEqual(['v3']);
+  });
+
   it('save duplo: as trocas da mesma URL rodam em série', async () => {
     const { roots, v2 } = await spawn('assets/twice.glb');
     h.loadGLTF.mockResolvedValueOnce(fakeGltf('v3').gltf);
