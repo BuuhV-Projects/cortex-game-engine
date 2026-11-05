@@ -12,7 +12,7 @@ export interface HotReloadPluginOptions {
 
 /** Evento custom que o servidor manda quando um GLB/glTF muda (SPEC-0697). */
 const MODEL_CHANGED_EVENT = 'cortex:model-changed';
-/** Extensões de modelo trocadas sem reload (fatia 1 do ADR-0696). */
+/** Extensões de modelo trocadas sem reload (fatia 1 do ADR-0698). */
 const MODEL_EXT_RE = /\.(glb|gltf)$/i;
 /** Script: `.ts`/`.js`, fora `.d.ts` e arquivos de teste. */
 const SCRIPT_EXT_RE = /\.(ts|js)$/;
@@ -39,7 +39,7 @@ function relativeToRoot(root: string, file: string): string | null {
 
 /**
  * Plugin de Vite (Node-only, **dev**) que gera as fronteiras de hot reload do
- * engine (ADR-0696, SPEC-0697). O jogo não escreve `import.meta.hot`:
+ * engine (ADR-0698, SPEC-0697). O jogo não escreve `import.meta.hot`:
  * - **script** (`<scriptsDir>/**.ts|js`): o módulo vira self-accepting e o
  *   `accept` chama `hotReplaceScripts`, que troca a classe das instâncias vivas
  *   preservando o estado. Exportou algo que não é `ScriptBehavior` →

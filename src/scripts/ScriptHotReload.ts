@@ -12,7 +12,7 @@ import { forEachLiveScriptSlot, destroyScriptSlot } from '../systems/ScriptHostS
 import { debug } from '../core/debug.js';
 
 /**
- * **Hot reload de um módulo de script** (SPEC-0697, ADR-0696) — chamado pelo `accept`
+ * **Hot reload de um módulo de script** (SPEC-0697, ADR-0698) — chamado pelo `accept`
  * que o `createHotReloadPlugin` injeta em `scripts/*.ts`.
  *
  * Registra as classes novas (instâncias criadas depois usam o construtor novo) e troca

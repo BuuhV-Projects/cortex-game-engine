@@ -71,7 +71,7 @@ export * from './components/ScriptComponent.js';
 // ─── Scripts anexáveis (estilo MonoBehaviour — ADR-0085) ──────────────────────
 export * from './scripts/ScriptBehavior.js';
 export * from './scripts/ScriptRegistry.js';
-// Hot reload de script em dev (ADR-0696 / SPEC-0697): troca a classe das instâncias vivas.
+// Hot reload de script em dev (ADR-0698 / SPEC-0697): troca a classe das instâncias vivas.
 export * from './scripts/ScriptHotReload.js';
 
 // ─── Física dinâmica (Rapier — WASM; TDR-0002, fase 2/spike) ───────────────────

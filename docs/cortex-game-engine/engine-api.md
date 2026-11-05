@@ -116,7 +116,7 @@ game.world.addSystem(new ScriptHostSystem(
 Dentro do script: `this.object3d` (o nó), `this.entity` (ECS), `this.ctx` (`world/input/gamepad/scene/camera`).
 Persistência: o Inspector grava em `overlay.data.scripts[id]`; o `buildScene` reanexa no reload (overlay vence).
 
-### Hot reload em dev (script e .glb) — ADR-0696 / SPEC-0697
+### Hot reload em dev (script e .glb) — ADR-0698 / SPEC-0697
 
 `createHotReloadPlugin` (plugin de Vite), `hotReplaceScripts`, `ScriptBehavior.onHotReload`,
 `enableModelHotReload`, `hotReloadModel`, `onModelHotReload`, `ModelHotReloadEvent`,
@@ -129,9 +129,9 @@ template já vem ligado; em jogo antigo, ponha o plugin no `vite.config.ts`:
 import { createHotReloadPlugin } from './vendor/cortex-game-engine/vite/hotReloadPlugin.js'
 export default defineConfig({
   plugins: [/* ... */, createHotReloadPlugin()], // opções: { scriptsDir: 'scripts' }
-  // isClaudePath: a `.claude/` DESTA raiz por caminho absoluto (ver o vite.config.ts do
-  // template). O glob '**/.claude/**' cegaria o vite de um jogo aberto numa worktree.
-  server: { watch: { ignored: ['**/src-tauri/**', isClaudePath] } },
+  // isToolPath (SPEC-0696): as pastas de ferramenta DESTA raiz por caminho absoluto (ver o
+  // vite.config.ts do template). O glob '**/.claude/**' cegaria o vite de um jogo numa worktree.
+  server: { watch: { ignored: ['**/src-tauri/**', isToolPath] } },
 })
 ```
 

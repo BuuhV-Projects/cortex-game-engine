@@ -635,7 +635,7 @@ alvo é **Rapier** (WASM) como motor dinâmico único, estilo Unity.
   e o export só leva os materiais citados pelo jogo (`native/scripts/package-usage.mjs`
   → filtro do `cookAssets`).
 
-## 6a. Hot reload em dev (ADR-0696 / SPEC-0697)
+## 6a. Hot reload em dev (ADR-0698 / SPEC-0697)
 
 Salvar um script ou um `.glb` troca **ao vivo**, sem recarregar a página (estilo Fast
 Refresh). O jogo não escreve `import.meta.hot`: o **plugin de Vite**
@@ -665,7 +665,7 @@ vendorizado em `vendor/.../vite/` como o `sceneSavePlugin`) gera as fronteiras.
   arquivo, criar/apagar script, JSON de cena, textura avulsa, GLB de
   `new AssetLoader()` do próprio jogo. **Pulada com `console.warn`** (Reiniciar resolve):
   raiz animada ou presa a ECS.
-- O `hotUpdate` descarta mudança sob `.claude/`, `node_modules/` ou fora da raiz.
+- O `hotUpdate` descarta mudança sob `.claude/` ou `node_modules/`; fora da raiz segue o fluxo normal do vite.
 
 ## 6a-bis. Chat IA tem DUAS cabecas (ADR-0191 → modos por tarefa, ADR-0265 → Orquestrador, ADR-0269)
 
@@ -1041,10 +1041,10 @@ level.json (nó)  ──buildScene──▶  Object3D (mesh)  + Entidade ECS (co
   corpo e mixer dependem da geometria velha; o aviso no console diz o nó. Reiniciar o Play
   resolve.
 - **Watcher do Vite vendo `.claude/worktrees/`**: worktree aninhada no projeto faz qualquer
-  edição lá recarregar o jogo. O template ignora a `.claude/` da própria raiz por caminho
-  absoluto no `server.watch` (o glob `**/.claude/**` cegaria o vite de uma worktree) e o
-  `hotUpdate` do plugin descarta essas mudanças; `vite.config.ts` de jogo antigo precisa das
-  duas coisas.
+  edição lá recarregar o jogo. O template ignora as pastas de ferramenta da própria raiz
+  por caminho absoluto no `server.watch` (`isToolPath`, SPEC-0696; o glob `**/.claude/**`
+  cegaria o vite de uma worktree), e o `hotUpdate` do plugin descarta as mudanças sob
+  `.claude/` mesmo em jogo antigo sem isso.
 
 ## 8b. Narrativa: diálogo + UI de runtime (`src/dialogue/`, `src/narrative/`) — ADR-0070
 

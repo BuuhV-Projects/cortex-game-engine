@@ -10,7 +10,7 @@
 
 Defined in: src/scripts/ScriptHotReload.ts:35
 
-**Hot reload de um módulo de script** (SPEC-0697, ADR-0696) — chamado pelo `accept`
+**Hot reload de um módulo de script** (SPEC-0697, ADR-0698) — chamado pelo `accept`
 que o `createHotReloadPlugin` injeta em `scripts/*.ts`.
 
 Registra as classes novas (instâncias criadas depois usam o construtor novo) e troca

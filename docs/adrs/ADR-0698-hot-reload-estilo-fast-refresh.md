@@ -1,4 +1,4 @@
-# 0696 - Hot reload estilo Fast Refresh: fronteiras HMR geradas pelo plugin do engine
+# 0698 - Hot reload estilo Fast Refresh: fronteiras HMR geradas pelo plugin do engine
 
 **Data:** 2026-11-05
 **Status:** aceito
@@ -150,9 +150,9 @@ callback `onModelHotReload(cb)`.
   que funciona no iframe do Studio e no navegador puro, sem mudar a ponte do editor.
 - **O watcher do vite observava as worktrees aninhadas** (`.claude/worktrees/**`, ~70 mil
   arquivos no DDD 00): o 1º evento atrasava, e uma edição em **outra** worktree recarregava
-  o jogo. O template passa a ignorar a `.claude/` da própria raiz (caminho absoluto: o
-  glob `**/.claude/**` faria o vite de uma worktree ignorar os próprios arquivos), e o
-  plugin descarta caminhos de lá.
+  o jogo. O template já ignora as pastas de ferramenta da própria raiz no watcher
+  (`isToolPath`, SPEC-0696), e o plugin também descarta mudanças sob `.claude/`, para
+  cobrir jogos cujo `vite.config` ainda não tem isso.
 - Jogos existentes precisam re-vendorizar e acrescentar `createHotReloadPlugin()` no
   `plugins` do `vite.config.ts`. Sem o plugin, tudo segue como antes.
 - Implementação da fatia 1: SPEC-0697.

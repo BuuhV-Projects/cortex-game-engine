@@ -1,11 +1,11 @@
-# 0697 - Hot reload de script e de GLB sem recarregar a cena (fatia 1 do ADR-0696)
+# 0697 - Hot reload de script e de GLB sem recarregar a cena (fatia 1 do ADR-0698)
 
 **Data:** 2026-11-05
 **Status:** aceito
 
 ## Contexto
 
-O ADR-0696 decide que o engine gera as fronteiras HMR por um plugin vite, com um
+O ADR-0698 decide que o engine gera as fronteiras HMR por um plugin vite, com um
 contrato por tipo de arquivo. Esta spec cobre a primeira fatia: **script de
 comportamento** e **GLB de nó `model`**. São os dois casos que o engine já controla de
 ponta a ponta, ou seja, o `ScriptRegistry`/`ScriptHostSystem` e o `loadGLB`/`instance`.
@@ -130,11 +130,11 @@ produção e no host nativo. `enableModelHotReload()` liga. Ligado:
 
 ### 4. Template e vendoring
 
-- `templates/new-project/vite.config.ts`: `createHotReloadPlugin()` nos `plugins` e
-  `watch.ignored: ['**/src-tauri/**', isClaudePath]`. **Desvio na implementação:**
-  `isClaudePath` compara com a `.claude/` **desta** raiz por caminho absoluto (como o
-  port-hollow, SPEC-0148). O glob `**/.claude/**` casa o caminho absoluto no chokidar, e
-  um jogo rodando de `.claude/worktrees/w` deixaria de observar todos os próprios arquivos.
+- `templates/new-project/vite.config.ts`: `createHotReloadPlugin()` nos `plugins`. O
+  watcher já ignora as pastas de ferramenta da própria raiz (`isToolPath`, SPEC-0696),
+  por caminho absoluto. O glob `**/.claude/**` não serve, porque casa o caminho absoluto
+  no chokidar: um jogo rodando de `.claude/worktrees/w` deixaria de observar os próprios
+  arquivos.
 - `templates/new-project/scripts/README.md`: o contrato (só exporta `ScriptBehavior`,
   topo sem efeito, `onHotReload`).
 - O comentário do `main.ts` do template que diz "editar um script recarrega a página" é

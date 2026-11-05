@@ -17,7 +17,7 @@ Hooks: `onStart()` (1º frame de Play), `onUpdate(dt)` (todo frame de Play),
 `onDestroy()` (remoção). Handles do engine em `this.ctx` (world, input,
 gamepad, scene, camera); o objeto anexado em `this.object3d`.
 
-## Hot reload (ADR-0696)
+## Hot reload (ADR-0698)
 
 Salvar um script troca o comportamento **ao vivo**, no Play ou fora dele, sem
 recarregar a página: as instâncias vivas passam a usar a classe nova e
