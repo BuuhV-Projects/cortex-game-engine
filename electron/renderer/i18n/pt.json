@@ -136,6 +136,9 @@
     "fullscreen_exit": "⛶ Sair",
     "placeholder_start": "Clique em Play para executar o projeto.",
     "placeholder_stopped": "Projeto parado.",
+    "loading_preparing": "Preparando o projeto… (o vite monta as dependências no primeiro Play)",
+    "loading_stalled": "O projeto não respondeu em 60 s. O vite pode ter travado no pré-bundle das dependências.",
+    "loading_restart": "Reiniciar",
     "placeholder_failed_html": "Projeto falhou ao iniciar.<br>Veja o Console. Se faltar o <code>vite</code>, rode <code>yarn install</code> no Terminal."
   },
   "editor": {

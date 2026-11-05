@@ -1,6 +1,7 @@
 import { t } from './i18n'
 import { h, icon } from './ui'
 import type { EditorLevelInfo } from './EditorPanels'
+import { createLoadingState, type LoadingPhase } from './previewLoading'
 
 /** Atalhos do editor exibidos no popover "Atalhos" (pill inferior-esquerda). */
 const SHORTCUTS: Array<[string, string]> = [
@@ -58,6 +59,8 @@ export class Preview {
   private running = false
   private serverUrl: string | null = null
   private fullscreen = false
+  /** Aviso "preparando/travado" sobre o palco até o `load` do iframe (SPEC-0694). */
+  private readonly loading = createLoadingState((phase) => this.renderLoading(phase))
 
   constructor(container: HTMLElement) {
     this.container = container
@@ -105,8 +108,10 @@ export class Preview {
     // ainda, sobe ele.
     document.addEventListener('request-canvas-reload', () => {
       const iframe = this.stageEl?.querySelector('iframe') as HTMLIFrameElement | null
-      if (iframe && this.serverUrl) iframe.src = this.withDebug(this.serverUrl)
-      else if (this.projectDir && !this.running) void this.toggle()
+      if (iframe && this.serverUrl) {
+        iframe.src = this.withDebug(this.serverUrl)
+        this.loading.begin()
+      } else if (this.projectDir && !this.running) void this.toggle()
     })
     // Fullscreen agora dispara pelo ícone "expandir" da toolbar da casca.
     document.addEventListener('request-fullscreen-toggle', () => this.toggleFullscreen())
@@ -320,8 +325,10 @@ export class Preview {
     this.updateLevelPill()
     const iframe = this.stageEl?.querySelector('iframe')
     const url = this.withLevel(this.withDebug(this.serverUrl), id)
-    if (iframe) iframe.src = url
-    else this.showIframe(this.serverUrl)
+    if (iframe) {
+      iframe.src = url
+      this.loading.begin()
+    } else this.showIframe(this.serverUrl)
   }
 
   /** Anexa/troca o `?level=` numa URL. */
@@ -418,6 +425,7 @@ export class Preview {
 
   private handleStopped(): void {
     this.running = false
+    this.loading.end()
     const startedSuccessfully = this.serverUrl !== null
     this.serverUrl = null
     if (this.stageEl) {
@@ -440,7 +448,24 @@ export class Preview {
     // `navigator.getGamepads()` no jogo (cross-origin) e o controle Xbox não conecta.
     iframe.allow = 'gamepad *; fullscreen'
     iframe.src = this.withDebug(url)
+    iframe.addEventListener('load', () => this.loading.end())
     this.stageEl.appendChild(iframe)
+    this.loading.begin()
+  }
+
+  /**
+   * Desenha a fase do carregamento sobre o palco (SPEC-0694). Em `stalled` oferece
+   * reiniciar — processo novo do vite, que é o que destrava o pré-bundle preso.
+   */
+  private renderLoading(phase: LoadingPhase): void {
+    this.stageEl?.querySelector('.preview-loading')?.remove()
+    if (phase === 'idle' || !this.stageEl) return
+    const box = h('div', { class: 'preview-loading' },
+      h('p', { class: 'preview-placeholder' }, t(phase === 'stalled' ? 'preview.loading_stalled' : 'preview.loading_preparing')))
+    if (phase === 'stalled') {
+      box.append(h('span', { class: 'vp-pill', style: { cursor: 'pointer' }, onClick: () => document.dispatchEvent(new CustomEvent('request-canvas-reload')) }, t('preview.loading_restart')))
+    }
+    this.stageEl.appendChild(box)
   }
 
   /**

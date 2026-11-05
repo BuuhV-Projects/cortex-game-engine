@@ -136,6 +136,9 @@
     "fullscreen_exit": "⛶ Exit",
     "placeholder_start": "Click Play to run the project.",
     "placeholder_stopped": "Project stopped.",
+    "loading_preparing": "Preparing the project… (vite bundles dependencies on the first Play)",
+    "loading_stalled": "The project did not respond in 60 s. Vite may be stuck pre-bundling dependencies.",
+    "loading_restart": "Restart",
     "placeholder_failed_html": "Project failed to start.<br>Check the Console. If <code>vite</code> is missing, run <code>yarn install</code> in the Terminal."
   },
   "editor": {
