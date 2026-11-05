@@ -1,3 +1,10 @@
+# [0.109.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.108.1...v0.109.0) (2026-11-05)
+
+
+### Features
+
+* **engine:** hot reload de script e GLB sem recarregar a cena (ADR-0698, SPEC-0697) ([#67](https://github.com/BuuhV-Projects/cortex-game-engine/issues/67)) ([6832705](https://github.com/BuuhV-Projects/cortex-game-engine/commit/6832705beae27274d25e066c162d2ba2b439ca28))
+
 ## [0.108.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.108.0...v0.108.1) (2026-11-05)
 
 
