@@ -6,7 +6,7 @@
 
 # Interface: Bounds
 
-Defined in: [src/scene/SceneAssets.ts:26](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L26)
+Defined in: [src/scene/SceneAssets.ts:35](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L35)
 
 Caixa delimitadora (axis-aligned) de um objeto em **world space**, com os
 limites desempacotados em escalares. Use `maxX`/`minX`/`maxZ`/`minZ` pra
@@ -18,7 +18,7 @@ conectar peças pela borda real e `topY` pra empilhar algo no topo.
 
 > **bottomY**: `number`
 
-Defined in: [src/scene/SceneAssets.ts:42](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L42)
+Defined in: [src/scene/SceneAssets.ts:51](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L51)
 
 Base do objeto (= `min.y`).
 
@@ -28,7 +28,7 @@ Base do objeto (= `min.y`).
 
 > **center**: `Vector3`
 
-Defined in: [src/scene/SceneAssets.ts:34](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L34)
+Defined in: [src/scene/SceneAssets.ts:43](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L43)
 
 Centro geométrico.
 
@@ -38,7 +38,7 @@ Centro geométrico.
 
 > **max**: `Vector3`
 
-Defined in: [src/scene/SceneAssets.ts:30](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L30)
+Defined in: [src/scene/SceneAssets.ts:39](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L39)
 
 Canto máximo (x,y,z) em world space.
 
@@ -48,7 +48,7 @@ Canto máximo (x,y,z) em world space.
 
 > **maxX**: `number`
 
-Defined in: [src/scene/SceneAssets.ts:36](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L36)
+Defined in: [src/scene/SceneAssets.ts:45](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L45)
 
 ***
 
@@ -56,7 +56,7 @@ Defined in: [src/scene/SceneAssets.ts:36](https://github.com/BuuhV-Projects/cort
 
 > **maxZ**: `number`
 
-Defined in: [src/scene/SceneAssets.ts:38](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L38)
+Defined in: [src/scene/SceneAssets.ts:47](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L47)
 
 ***
 
@@ -64,7 +64,7 @@ Defined in: [src/scene/SceneAssets.ts:38](https://github.com/BuuhV-Projects/cort
 
 > **min**: `Vector3`
 
-Defined in: [src/scene/SceneAssets.ts:28](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L28)
+Defined in: [src/scene/SceneAssets.ts:37](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L37)
 
 Canto mínimo (x,y,z) em world space.
 
@@ -74,7 +74,7 @@ Canto mínimo (x,y,z) em world space.
 
 > **minX**: `number`
 
-Defined in: [src/scene/SceneAssets.ts:35](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L35)
+Defined in: [src/scene/SceneAssets.ts:44](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L44)
 
 ***
 
@@ -82,7 +82,7 @@ Defined in: [src/scene/SceneAssets.ts:35](https://github.com/BuuhV-Projects/cort
 
 > **minZ**: `number`
 
-Defined in: [src/scene/SceneAssets.ts:37](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L37)
+Defined in: [src/scene/SceneAssets.ts:46](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L46)
 
 ***
 
@@ -90,7 +90,7 @@ Defined in: [src/scene/SceneAssets.ts:37](https://github.com/BuuhV-Projects/cort
 
 > **size**: `Vector3`
 
-Defined in: [src/scene/SceneAssets.ts:32](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L32)
+Defined in: [src/scene/SceneAssets.ts:41](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L41)
 
 Dimensões reais (largura, altura, profundidade).
 
@@ -100,6 +100,6 @@ Dimensões reais (largura, altura, profundidade).
 
 > **topY**: `number`
 
-Defined in: [src/scene/SceneAssets.ts:40](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L40)
+Defined in: [src/scene/SceneAssets.ts:49](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L49)
 
 Topo do objeto (= `max.y`) — apoie outra peça aqui pra empilhar.

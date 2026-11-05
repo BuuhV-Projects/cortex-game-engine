@@ -72,7 +72,7 @@ O `Object3D` do nó ao qual o script está anexado (ou `null`). Injetado.
 
 > `static` `optional` **fields?**: [`ScriptFieldSchema`](../type-aliases/ScriptFieldSchema.md)
 
-Defined in: [src/scripts/ScriptBehavior.ts:134](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L134)
+Defined in: [src/scripts/ScriptBehavior.ts:146](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L146)
 
 Schema dos campos editáveis no Inspector — declare como `static fields` na subclasse.
 
@@ -96,7 +96,7 @@ depois exige atualizar level.json/scene-data que o referenciam.
 
 > `protected` **disableRaycast**(`target?`): `void`
 
-Defined in: [src/scripts/ScriptBehavior.ts:103](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L103)
+Defined in: [src/scripts/ScriptBehavior.ts:115](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L115)
 
 **Desliga o raycast de forma REVERSÍVEL** — o jeito certo de dizer "este mesh
 não é chão/parede" (lâmina, moeda, poça, decoração), sem que o character
@@ -135,6 +135,31 @@ cria uma nova no próximo Play (ciclo estilo Unity).
 #### Returns
 
 `void`
+
+***
+
+### onHotReload()?
+
+> `optional` **onHotReload**(): `void`
+
+Defined in: [src/scripts/ScriptBehavior.ts:98](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L98)
+
+Chamado no Play **depois que o arquivo do script foi salvo e a instância trocou
+de classe** (hot reload, SPEC-0697). A instância é a MESMA: o estado próprio
+(timers, refs, `entity`/`object3d`/`ctx`, valores mudados no Inspector) foi
+preservado, os métodos já são os novos, os campos novos vieram do inicializador
+novo e o `onStart` **não** roda de novo. Implemente só se precisar reagir à troca.
+
+#### Returns
+
+`void`
+
+#### Example
+
+```ts
+// Recomeçar do zero a cada save (desfaz o onStart velho e roda o novo):
+override onHotReload() { this.onDestroy?.(); this.onStart?.(); }
+```
 
 ***
 

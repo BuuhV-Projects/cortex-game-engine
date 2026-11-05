@@ -6,7 +6,7 @@
 
 # Class: ScriptHostSystem
 
-Defined in: [src/systems/ScriptHostSystem.ts:64](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ScriptHostSystem.ts#L64)
+Defined in: [src/systems/ScriptHostSystem.ts:92](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ScriptHostSystem.ts#L92)
 
 **Roda os scripts** ([ScriptBehavior](ScriptBehavior.md)) anexados via [ScriptComponent](ScriptComponent.md) — ADR-0085.
 Instancia cada slot pelo nome (registro), injeta `entity`/`object3d`/`ctx`, aplica os campos,
@@ -33,7 +33,7 @@ enxergar a transição. Os dois gates vêm nomeados no construtor — ver
 
 > **new ScriptHostSystem**(`ctx`, `gates?`): `ScriptHostSystem`
 
-Defined in: [src/systems/ScriptHostSystem.ts:78](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ScriptHostSystem.ts#L78)
+Defined in: [src/systems/ScriptHostSystem.ts:106](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ScriptHostSystem.ts#L106)
 
 #### Parameters
 
@@ -97,7 +97,7 @@ a gameplay (física/input) enquanto o editor está ativo
 
 > **priority**: `number` = `50`
 
-Defined in: [src/systems/ScriptHostSystem.ts:67](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ScriptHostSystem.ts#L67)
+Defined in: [src/systems/ScriptHostSystem.ts:95](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ScriptHostSystem.ts#L95)
 
 Prioridade de execução deste sistema.
 
@@ -114,7 +114,7 @@ Sistemas com valores menores executam antes. Padrão: `0`.
 
 > `readonly` **profileLabel**: `"ScriptHostSystem"` = `'ScriptHostSystem'`
 
-Defined in: [src/systems/ScriptHostSystem.ts:65](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ScriptHostSystem.ts#L65)
+Defined in: [src/systems/ScriptHostSystem.ts:93](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ScriptHostSystem.ts#L93)
 
 Nome do sistema no perfil por sistema (`World.enableSystemProfile`, SPEC-0236).
 Sem ele o perfil usa `constructor.name`, que no bundle minificado vira `fx`,
@@ -130,7 +130,7 @@ Sem ele o perfil usa `constructor.name`, que no bundle minificado vira `fx`,
 
 > `static` **requiredComponents**: *typeof* [`ScriptComponent`](ScriptComponent.md)[]
 
-Defined in: [src/systems/ScriptHostSystem.ts:66](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ScriptHostSystem.ts#L66)
+Defined in: [src/systems/ScriptHostSystem.ts:94](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ScriptHostSystem.ts#L94)
 
 Construtores dos componentes que este sistema requer.
 
@@ -156,7 +156,7 @@ static requiredComponents = [TransformComponent, VelocityComponent];
 
 > **dispose**(): `void`
 
-Defined in: [src/systems/ScriptHostSystem.ts:139](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ScriptHostSystem.ts#L139)
+Defined in: [src/systems/ScriptHostSystem.ts:176](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ScriptHostSystem.ts#L176)
 
 Teardown na TROCA DE FASE (`World.clear` chama) — o buraco que vazava a
 fase inteira (SPEC-0152): sem isto, o `onDestroy` dos scripts NUNCA rodava
@@ -178,7 +178,7 @@ entity → object3d → a CENA COMPLETA da fase anterior, uma por troca.
 
 > **update**(`entities`, `deltaTime`): `void`
 
-Defined in: [src/systems/ScriptHostSystem.ts:87](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ScriptHostSystem.ts#L87)
+Defined in: [src/systems/ScriptHostSystem.ts:124](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ScriptHostSystem.ts#L124)
 
 Executa a lógica do sistema para o frame/passo atual.
 
