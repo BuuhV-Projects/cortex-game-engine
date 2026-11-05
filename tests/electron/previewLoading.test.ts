@@ -9,6 +9,7 @@ import {
   DEFAULT_EXPECTED_MS,
   estimateProgress,
   LOAD_MS_KEY_PREFIX,
+  MIN_LOAD_MS,
   PROGRESS_AT_EXPECTED,
   PROGRESS_CAP,
   readExpectedLoadMs,
@@ -85,9 +86,13 @@ describe('createLoadingState — fases e porcentagem', () => {
     expect(phases()).toEqual(['preparing', 'idle'])
   })
 
-  it('loaded sem carregamento em curso devolve 0', () => {
+  it('loaded sem carregamento em curso ou depois de travado devolve 0', () => {
     const { state } = setup()
     expect(state.loaded()).toBe(0)
+    state.begin(EXPECTED_MS)
+    vi.advanceTimersByTime(STALL_AFTER_MS + 5_000)
+    expect(state.loaded()).toBe(0)
+    expect(state.snapshot.phase).toBe('idle')
   })
 
   it('cancel (Stop) some o aviso e desarma o travamento', () => {
@@ -133,9 +138,14 @@ describe('calibração por projeto', () => {
     expect(readExpectedLoadMs(store, 'D:/jogos/outro')).toBe(DEFAULT_EXPECTED_MS)
   })
 
-  it('não grava medida zero nem sem projeto, e ignora valor inválido', () => {
+  it('não grava medida abaixo do piso nem sem projeto, e ignora valor inválido', () => {
     const store = memoryStore()
     saveLoadMs(store, 'D:/jogos/demo', 0)
+    saveLoadMs(store, 'D:/jogos/demo', MIN_LOAD_MS - 1) // página de erro do vite
+    expect(store.getItem(LOAD_MS_KEY_PREFIX + 'D:/jogos/demo')).toBeNull()
+    saveLoadMs(store, 'D:/jogos/demo', MIN_LOAD_MS)
+    expect(readExpectedLoadMs(store, 'D:/jogos/demo')).toBe(MIN_LOAD_MS)
+    store.setItem(LOAD_MS_KEY_PREFIX + 'D:/jogos/demo', '0')
     saveLoadMs(store, null, 5_000)
     expect(readExpectedLoadMs(store, 'D:/jogos/demo')).toBe(DEFAULT_EXPECTED_MS)
     store.setItem(LOAD_MS_KEY_PREFIX + 'D:/jogos/demo', 'abc')

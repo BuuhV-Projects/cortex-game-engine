@@ -47,7 +47,9 @@ que um Stop + Play (processo novo) resolve na prática.
    tempo**, não medida: sobe linear até 90% no tempo esperado e depois rasteja até
    99%, sem nunca chegar a 100% antes do `load` real. O tempo esperado é a duração
    medida do último carregamento **daquele projeto** (guardada no `localStorage`,
-   chave `preview_loadMs:<dir>`); sem medida, 15 s. Assim, a partir do segundo Play
+   chave `preview_loadMs:<dir>`); sem medida, 15 s. Só grava quando o `load` chega
+   ainda em `preparing` e com pelo menos 500 ms: uma página de erro do vite (carga
+   instantânea) ou um `load` depois do travamento distorceriam o próximo Play. Assim, a partir do segundo Play
    a barra acompanha o projeto de verdade. Em `stalled` a porcentagem congela onde
    estava e a barra fica cinza.
 

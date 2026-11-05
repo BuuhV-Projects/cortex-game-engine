@@ -51,16 +51,26 @@ export function readExpectedLoadMs(store: Store, projectDir: string | null): num
   return raw !== null && Number.isFinite(ms) && ms > 0 ? ms : DEFAULT_EXPECTED_MS
 }
 
-/** Guarda a duração medida (ignora 0: `load` sem carregamento em curso). */
+/**
+ * Piso da medida: abaixo disso o `load` foi de uma página de erro do vite ou de um
+ * cache quente demais para calibrar — gravar faria a barra pular a 99% no próximo Play.
+ */
+export const MIN_LOAD_MS = 500
+
+/** Guarda a duração medida (ignora 0 — `load` fora de `preparing` — e medidas abaixo do piso). */
 export function saveLoadMs(store: Store, projectDir: string | null, ms: number): void {
-  if (projectDir && ms > 0) store.setItem(LOAD_MS_KEY_PREFIX + projectDir, String(Math.round(ms)))
+  if (projectDir && ms >= MIN_LOAD_MS) store.setItem(LOAD_MS_KEY_PREFIX + projectDir, String(Math.round(ms)))
 }
 
 export interface LoadingState {
   readonly snapshot: LoadingSnapshot
   /** URL colocada no iframe: mostra "preparando" a 0% e arma o timer de travamento. */
   begin(expectedMs?: number): void
-  /** `load` do iframe: some o aviso e devolve o tempo medido (calibra o próximo Play). */
+  /**
+   * `load` do iframe: some o aviso e devolve o tempo medido (calibra o próximo Play).
+   * Devolve 0 se não estava em `preparing`: um `load` depois do travamento mediria a
+   * espera do usuário, não o projeto.
+   */
   loaded(): number
   /** Stop: some o aviso sem medir nada. */
   cancel(): void
@@ -121,7 +131,7 @@ export function createLoadingState(
       tickHandle = timers.set(tick, PROGRESS_TICK_MS)
     },
     loaded() {
-      const elapsed = snapshot.phase === 'idle' ? 0 : now() - startedAt
+      const elapsed = snapshot.phase === 'preparing' ? now() - startedAt : 0
       finish()
       return elapsed
     },
