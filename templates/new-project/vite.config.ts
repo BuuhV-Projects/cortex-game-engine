@@ -4,7 +4,7 @@ import { cpSync, existsSync } from 'node:fs'
 // Plugin (dev) que grava as edições do editor (F2) em assets/scene-data.json.
 // Vendorizado pelo IDE; pareia com o write-back do editor. Ver ADR.
 import { createSceneSavePlugin, createAssetListPlugin } from './vendor/cortex-game-engine/vite/sceneSavePlugin.js'
-// Plugin (dev) de hot reload (ADR-0696): salvar um script em scripts/ ou um .glb
+// Plugin (dev) de hot reload (ADR-0698): salvar um script em scripts/ ou um .glb
 // troca ao vivo, sem recarregar a página. Ver scripts/README.md.
 import { createHotReloadPlugin } from './vendor/cortex-game-engine/vite/hotReloadPlugin.js'
 
@@ -31,23 +31,30 @@ function copyAssets(): Plugin {
 }
 
 /**
- * `.claude/` DESTA raiz (worktrees aninhadas, SPEC-0148), por caminho ABSOLUTO, nunca o
- * glob `**\/.claude/**`: uma worktree mora em `.claude/worktrees/`, e o glob faria o vite
- * DELA ignorar os próprios arquivos (nem hot reload nem reload completo).
+ * Pastas de ferramenta DESTA raiz (SPEC-0696): `.claude/` guarda as worktrees do
+ * projeto — cópias inteiras do jogo, cada uma com seu `index.html` — e `.cortex` e
+ * `.cortex-cache` guardam capturas e cache. Sem isto o vite da raiz varre e observa todas as cópias:
+ * o 1º Play com cache frio passou de 3 s para mais de 4 min no DDD 00.
+ *
+ * Caminho ABSOLUTO resolvido daqui, nunca o glob `**\/.claude/**`: uma worktree mora
+ * dentro de `.claude/worktrees/`, e o glob faria o vite DELA ignorar os próprios
+ * arquivos. Assim cada raiz (main, worktree ou o build do exe) cuida só de si.
  */
-const CLAUDE_DIR = resolve(__dirname, '.claude')
+const TOOL_DIRS = ['.claude', '.cortex', '.cortex-cache'].map((d) => resolve(__dirname, d))
 const samePath = (p: string): string => (process.platform === 'win32' ? p.toLowerCase() : p)
-function isClaudePath(path: string): boolean {
+function isToolPath(path: string): boolean {
   const abs = samePath(resolve(path))
-  return abs === samePath(CLAUDE_DIR) || abs.startsWith(samePath(CLAUDE_DIR) + sep)
+  return TOOL_DIRS.some((dir) => abs === samePath(dir) || abs.startsWith(samePath(dir) + sep))
 }
 
 // Algumas configurações abaixo existem para cooperar com Tauri (ADR-0024):
 // - clearScreen:false evita Vite limpar o terminal e esconder logs do Rust.
 // - server.strictPort: Tauri (devUrl) e o Play da IDE ligam na porta fixa 5174,
 //   então o Vite não pode pular pra outra se estiver ocupada.
-// - server.watch.ignored: evita re-bundle ao recompilar a casca Rust e ao editar
-//   worktrees aninhadas em .claude/ (isClaudePath, acima).
+// - server.watch.ignored: evita re-bundle ao recompilar a casca Rust e não observa
+//   as pastas de ferramenta (isToolPath, acima).
+// - optimizeDeps.entries: o pré-bundle só parte do index.html DESTA raiz. O padrão
+//   do vite é todo `.html` do projeto — incluindo os das worktrees em `.claude/`.
 export default defineConfig(({ mode }) => ({
   root: '.',
   clearScreen: false,
@@ -67,11 +74,14 @@ export default defineConfig(({ mode }) => ({
       ),
     },
   },
+  optimizeDeps: {
+    entries: ['index.html'],
+  },
   server: {
     port: 5174,
     strictPort: true,
     watch: {
-      ignored: ['**/src-tauri/**', isClaudePath],
+      ignored: ['**/src-tauri/**', isToolPath],
     },
   },
 }))

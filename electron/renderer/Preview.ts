@@ -1,7 +1,7 @@
 import { t } from './i18n'
 import { h, icon } from './ui'
 import type { EditorLevelInfo } from './EditorPanels'
-import { createLoadingState, readExpectedLoadMs, saveLoadMs, type LoadingSnapshot } from './previewLoading'
+import { PreviewLoadingFlow } from './previewLoadingFlow'
 import { renderLoadingOverlay } from './previewLoadingView'
 
 /** Atalhos do editor exibidos no popover "Atalhos" (pill inferior-esquerda). */
@@ -61,7 +61,13 @@ export class Preview {
   private serverUrl: string | null = null
   private fullscreen = false
   /** Aviso "preparando/travado" sobre o palco até o `load` do iframe (SPEC-0694). */
-  private readonly loading = createLoadingState((s) => this.renderLoading(s))
+  private readonly loading = new PreviewLoadingFlow({
+    render: (s, kind, attempt) => { if (this.stageEl) renderLoadingOverlay(this.stageEl, s, kind, attempt, () => void this.restartServer()) },
+    restart: () => void this.restartServer(),
+    projectDir: () => this.projectDir,
+    store: localStorage,
+    listen: (fn) => window.addEventListener('message', fn),
+  })
 
   constructor(container: HTMLElement) {
     this.container = container
@@ -111,7 +117,7 @@ export class Preview {
       const iframe = this.stageEl?.querySelector('iframe') as HTMLIFrameElement | null
       if (iframe && this.serverUrl) {
         iframe.src = this.withDebug(this.serverUrl)
-        this.beginLoading()
+        this.loading.begin()
       } else if (this.projectDir && !this.running) void this.toggle()
     })
     // Fullscreen agora dispara pelo ícone "expandir" da toolbar da casca.
@@ -328,7 +334,7 @@ export class Preview {
     const url = this.withLevel(this.withDebug(this.serverUrl), id)
     if (iframe) {
       iframe.src = url
-      this.beginLoading()
+      this.loading.begin()
     } else this.showIframe(this.serverUrl)
   }
 
@@ -429,7 +435,8 @@ export class Preview {
     this.loading.cancel()
     const startedSuccessfully = this.serverUrl !== null
     this.serverUrl = null
-    if (this.stageEl) {
+    // Retentativa automática (SPEC-0696): o aviso "tentando de novo" fica no palco.
+    if (this.stageEl && !this.loading.restarting) {
       // Se nunca detectamos a URL do vite, é provável que tenha falhado a
       // inicializar — orienta o usuário a instalar deps.
       this.stageEl.innerHTML = startedSuccessfully
@@ -449,25 +456,17 @@ export class Preview {
     // `navigator.getGamepads()` no jogo (cross-origin) e o controle Xbox não conecta.
     iframe.allow = 'gamepad *; fullscreen'
     iframe.src = this.withDebug(url)
-    iframe.addEventListener('load', () => saveLoadMs(localStorage, this.projectDir, this.loading.loaded()))
+    this.loading.track(iframe)
     this.stageEl.appendChild(iframe)
-    this.beginLoading()
-  }
-
-  /** Aviso + barra estimada (SPEC-0694); a duração esperada é a do último Play do projeto. */
-  private beginLoading(): void {
-    this.loading.begin(readExpectedLoadMs(localStorage, this.projectDir))
-  }
-
-  /** Desenha o overlay; em `stalled` o botão reinicia o SERVIDOR (processo novo). */
-  private renderLoading(snapshot: LoadingSnapshot): void {
-    if (this.stageEl) renderLoadingOverlay(this.stageEl, snapshot, () => void this.restartServer())
+    this.loading.begin()
   }
 
   /** Stop + Play: mata o vite preso e sobe outro (recarregar o iframe não bastaria). */
   private async restartServer(): Promise<void> {
     if (this.running) await window.electronAPI.stopProject()
     this.running = false
+    // O Stop da retentativa já chegou: daqui em diante um Stop é do usuário (SPEC-0696).
+    this.loading.restartStopDone()
     await this.toggle()
   }
 

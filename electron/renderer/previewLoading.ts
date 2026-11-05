@@ -42,13 +42,25 @@ export function estimateProgress(elapsedMs: number, expectedMs: number): number 
   return Math.min(PROGRESS_CAP, Math.round(PROGRESS_AT_EXPECTED + tail * (1 - Math.exp(-over))))
 }
 
-type Store = Pick<Storage, 'getItem' | 'setItem'>
+/** Fase 2 (SPEC-0695): a cena do jogo montando. Prefixo da calibração própria. */
+export const SCENE_MS_KEY_PREFIX = 'preview_sceneMs:'
+/** Duração esperada da fase 2 quando o projeto nunca foi medido. */
+export const DEFAULT_SCENE_EXPECTED_MS = 30_000
+/** Fase 2 sem terminar por este tempo: provável erro do jogo (ver o Console). */
+export const SCENE_STALL_AFTER_MS = 180_000
+
+export type Store = Pick<Storage, 'getItem' | 'setItem'>
 
 /** Duração medida do último carregamento do projeto (ou o default). */
-export function readExpectedLoadMs(store: Store, projectDir: string | null): number {
-  const raw = projectDir ? store.getItem(LOAD_MS_KEY_PREFIX + projectDir) : null
+export function readExpectedLoadMs(
+  store: Store,
+  projectDir: string | null,
+  prefix: string = LOAD_MS_KEY_PREFIX,
+  fallbackMs: number = DEFAULT_EXPECTED_MS,
+): number {
+  const raw = projectDir ? store.getItem(prefix + projectDir) : null
   const ms = Number(raw)
-  return raw !== null && Number.isFinite(ms) && ms > 0 ? ms : DEFAULT_EXPECTED_MS
+  return raw !== null && Number.isFinite(ms) && ms > 0 ? ms : fallbackMs
 }
 
 /**
@@ -58,8 +70,20 @@ export function readExpectedLoadMs(store: Store, projectDir: string | null): num
 export const MIN_LOAD_MS = 500
 
 /** Guarda a duração medida (ignora 0 — `load` fora de `preparing` — e medidas abaixo do piso). */
-export function saveLoadMs(store: Store, projectDir: string | null, ms: number): void {
-  if (projectDir && ms >= MIN_LOAD_MS) store.setItem(LOAD_MS_KEY_PREFIX + projectDir, String(Math.round(ms)))
+export function saveLoadMs(store: Store, projectDir: string | null, ms: number, prefix: string = LOAD_MS_KEY_PREFIX): void {
+  if (projectDir && ms >= MIN_LOAD_MS) store.setItem(prefix + projectDir, String(Math.round(ms)))
+}
+
+/**
+ * Lê uma mensagem do iframe (SPEC-0695): `null` se não é `state` da ponte do editor;
+ * senão, se a cena está pronta. Sem o campo `loading` (engine vendorizado antigo),
+ * conta como pronta — o aviso fecha na primeira mensagem, como antes.
+ */
+export function sceneReadyFrom(data: unknown): boolean | null {
+  if (!data || typeof data !== 'object') return null
+  const msg = data as { source?: unknown; type?: unknown; loading?: unknown }
+  if (msg.source !== 'cortex-editor' || msg.type !== 'state') return null
+  return msg.loading !== true
 }
 
 export interface LoadingState {

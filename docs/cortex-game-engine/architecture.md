@@ -371,6 +371,10 @@ senão o **editor do Studio** não resolve o tipo (runtime funciona, IntelliSens
   publica o `describeInspector`/outliner por **postMessage**; os painéis nativos da
   IDE (`electron/renderer/EditorPanels.ts`) renderizam e mandam de volta `field`/
   `button`/`select` → a ponte chama o handler → re-descreve → republica.
+  - A `state` leva **`loading`** (`inLoadingScope()` do `frameYield`: `setLoading`
+    ou `buildScene` em curso, SPEC-0695). O Preview do Studio
+    (`previewLoadingFlow.ts`) mantém o aviso "Montando a cena…" sobre o palco até
+    ele virar `false`; sem o campo (engine vendorizado antigo), fecha na 1ª `state`.
   - Campo **`file`** (importar asset, ex. textura do terreno): o file picker abre
     **no frame do renderizador** (clique do usuário = user activation; abrir no
     iframe do engine via postMessage seria bloqueado) e o conteúdo viaja como JSON
@@ -823,6 +827,15 @@ level.json (nó)  ──buildScene──▶  Object3D (mesh)  + Entidade ECS (co
 
 ## 8. Armadilhas conhecidas (já mordemos)
 
+- **Vite do projeto varrendo as worktrees em `.claude/` (SPEC-0696).** O padrão do
+  vite parte o pré-bundle de todo `.html` da raiz e observa a raiz inteira. Com 43
+  worktrees do jogo em `.claude/worktrees/` (66 mil entradas), o 1º Play do DDD 00
+  com cache frio passou de 240 s sem responder: 10 mil operações de disco na fila e
+  50 mil observadores. O template agora fixa `optimizeDeps.entries: ['index.html']`
+  e ignora `.claude`/`.cortex`/`.cortex-cache` DA PRÓPRIA RAIZ por caminho absoluto
+  (o glob `**/.claude/**` cegaria o vite de cada worktree): 3 s. Projetos antigos
+  precisam da mesma mudança no seu `vite.config.ts`. O Preview ainda reinicia o vite
+  sozinho até 2 vezes se ele não responder em 60 s.
 - **Host nativo: GLB carregado guarda cópia em RAM do que já está na GPU.** O
   `gltf.parser` retém o GLB inteiro e os mips KTX2 transcodificados ficam em
   `mipmaps[i].data` depois do upload — tudo memória externa do Hermes (teto 2 GB).
