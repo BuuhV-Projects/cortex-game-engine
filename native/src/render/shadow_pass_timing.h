@@ -2,8 +2,9 @@
 //
 // Com `CORTEX_SHADOW_PASS_TIMING=1`, cada `drawShadowPass` mede as etapas na
 // CPU (enumerar, gate, montar os itens, preparar pipelines e uniformes, gravar
-// os draws, submeter) e, a cada `kShadowTimingCalls` chamadas, imprime a média
-// de cada uma em µs no stderr. Desligado, cada marca custa a leitura de um bool.
+// os draws, fechar o pass e o encoder, submeter) e, a cada `kShadowTimingCalls`
+// chamadas, imprime a média de cada uma em µs no stderr. Desligado, cada marca
+// custa a leitura de um bool.
 #pragma once
 
 #include <chrono>
@@ -14,7 +15,7 @@
 namespace render {
 
 /** As etapas medidas, na ordem em que acontecem. */
-enum class ShadowPhase : uint8_t { kEnumerate, kGate, kItems, kPrepare, kEncode, kSubmit, kCount };
+enum class ShadowPhase : uint8_t { kEnumerate, kGate, kItems, kPrepare, kEncode, kFinish, kSubmit, kCount };
 
 /** Chamadas por linha de relato (≈ 5 s de jogo com duas cascatas a 60 fps). */
 constexpr uint32_t kShadowTimingCalls = 300;
@@ -43,7 +44,7 @@ class ShadowPassTiming {
   /** Fim de uma chamada desenhada; a cada `kShadowTimingCalls` imprime as médias e zera. */
   void end() {
     if (!enabled_ || ++calls_ < kShadowTimingCalls) return;
-    static const char* const kNames[] = {"enumerar", "gate", "itens", "preparar", "gravar", "submeter"};
+    static const char* const kNames[] = {"enumerar", "gate", "itens", "preparar", "gravar", "fechar", "submeter"};
     std::fprintf(stderr, "[shadow-timing] %u chamadas (us/chamada):", calls_);
     for (int i = 0; i < static_cast<int>(ShadowPhase::kCount); ++i) {
       std::fprintf(stderr, " %s=%.1f", kNames[i], totals_[i] / calls_ / kNanosPerMicro);

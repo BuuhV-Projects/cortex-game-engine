@@ -1,5 +1,6 @@
 // Ver shadow_pass_target.h (SPEC-0245; limpeza da SPEC-0690).
 #include "shadow_pass_target.h"
+#include "shadow_pass_timing.h"
 
 #include "../core/host_gpu.h"
 #include "../webgpu/pass_timing.h"
@@ -50,6 +51,7 @@ void submitShadowDepthPass(HostGpu* gpu, ShadowDepthPass& aberto) {
 
   WGPUCommandBufferDescriptor cd = WGPU_COMMAND_BUFFER_DESCRIPTOR_INIT;
   WGPUCommandBuffer cmd = wgpuCommandEncoderFinish(aberto.encoder, &cd);
+  ShadowPassTiming::instance().mark(ShadowPhase::kFinish);
   wgpuQueueSubmit(gpu->queue, 1, &cmd);
   wgpuCommandBufferRelease(cmd);
   wgpuCommandEncoderRelease(aberto.encoder);
