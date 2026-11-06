@@ -32,6 +32,8 @@ export class RigWeapon {
   private weapons = new Map<string, LoadedWeapon>()
   private gltf: GLTF | null = null
   private loadedPath = ''
+  /** Carga em andamento do `loadedPath` (a mesma promessa para chamadas simultâneas). */
+  private loading: Promise<string[]> | null = null
   private current: string | null = null
   /** Clone da arma escolhida, na cena (transform de mundo escrito em todo quadro). */
   readonly holder = new THREE.Group()
@@ -55,11 +57,23 @@ export class RigWeapon {
     return this.current
   }
 
-  /** Carrega (uma vez por caminho) o GLB das armas; sem arquivo = nenhuma arma. */
-  async load(path: string): Promise<string[]> {
-    if (path === this.loadedPath) return this.codes
+  /**
+   * Carrega (uma vez por caminho) o GLB das armas; sem arquivo = nenhuma arma.
+   * Chamadas simultâneas com o mesmo caminho esperam a mesma carga; depois de uma
+   * falha, a próxima chamada tenta de novo.
+   */
+  load(path: string): Promise<string[]> {
+    if (path === this.loadedPath) return this.loading ?? Promise.resolve(this.codes)
     this.clear()
     this.loadedPath = path
+    const loading = this.fetch(path).finally(() => {
+      if (this.loading === loading) this.loading = null
+    })
+    this.loading = loading
+    return loading
+  }
+
+  private async fetch(path: string): Promise<string[]> {
     try {
       const b64 = await window.electronAPI.readFileBase64(path)
       if (path !== this.loadedPath) return this.codes
@@ -75,6 +89,7 @@ export class RigWeapon {
       debug(SCOPE, 'armas carregadas', path, this.codes)
     } catch (err) {
       debug(SCOPE, 'sem GLB de armas (seletor só com "Sem arma")', path, err)
+      if (path === this.loadedPath) this.loadedPath = '' // tenta de novo na próxima
     }
     return this.codes
   }
