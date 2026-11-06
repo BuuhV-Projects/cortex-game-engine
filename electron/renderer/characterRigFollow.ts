@@ -157,7 +157,7 @@ function readVec(v: unknown): Vec3 | null {
   return Array.isArray(v) && v.length === 3 && v.every((x) => typeof x === 'number' && Number.isFinite(x)) ? [v[0], v[1], v[2]] : null
 }
 
-function readFollows(src: unknown): FollowLink[] {
+export function readFollows(src: unknown): FollowLink[] {
   if (!Array.isArray(src)) return []
   const out: FollowLink[] = []
   for (const c of src) {
