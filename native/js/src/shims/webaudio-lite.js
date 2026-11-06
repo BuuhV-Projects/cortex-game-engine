@@ -7,6 +7,7 @@
 // PannerNode (PositionalAudio) atenua pela distância ao ouvinte (SPEC-0700):
 // o fator entra na cadeia como mais um elo. Pan estéreo, cone e orientação
 // seguem ignorados (pendência da SPEC-0700: o host só tem ganho por voz).
+// suspend()/resume() calam e devolvem o ganho de toda voz viva (SPEC-0701).
 
 function GainParam(node) {
   this.__node = node;
@@ -44,6 +45,11 @@ function chainGain(chain) {
   return gain;
 }
 
+/** Gain sent to the host: muted while the context is suspended (SPEC-0701). */
+function voiceGain(source) {
+  return source.context.__suspended ? 0 : chainGain(source.__chain);
+}
+
 function GainNode(context) {
   this.context = context;
   this.gain = new GainParam(this);
@@ -58,7 +64,7 @@ GainNode.prototype.__updateVoices = function () {
   for (const source of this.__sources) {
     // A one-shot voice ends in the host without telling the JS: dropped by its expected end.
     if (!source.__voice || now >= source.__endsAt) this.__sources.delete(source);
-    else __cortexAudio.setGain(source.__voice, chainGain(source.__chain));
+    else __cortexAudio.setGain(source.__voice, voiceGain(source));
   }
   // A panner without voices stops following the listener (not retained by the context).
   if (this.__sources.size === 0) this.context.__livePanners.delete(this);
@@ -159,8 +165,11 @@ BufferSourceNode.prototype.__startVoice = function () {
   if (!this.__started || this.__voice || !this.__next) return;
   this.__chain = chainOf(this.__next);
   this.__voice = __cortexAudio.play(
-    this.buffer.__id, this.loop ? 1 : 0, chainGain(this.__chain), this.playbackRate.value, this.__offset,
+    this.buffer.__id, this.loop ? 1 : 0, voiceGain(this), this.playbackRate.value, this.__offset,
   );
+  // one-shots end in the host without a stop(): the expired ones leave here, not only on the next pause
+  this.context.__pruneVoiced();
+  this.context.__voiced.add(this);
   const rate = this.playbackRate.value > 0 ? this.playbackRate.value : 1;
   const left = Math.max(this.buffer.duration - this.__offset, 0);
   this.__endsAt = this.loop ? Infinity : this.context.currentTime + left / rate;
@@ -186,6 +195,7 @@ BufferSourceNode.prototype.stop = function () {
   this.__started = false;
   if (this.__voice) {
     __cortexAudio.stop(this.__voice);
+    this.context.__voiced.delete(this);
     for (const node of this.__chain) if (node.__sources) node.__sources.delete(this);
     this.__voice = 0;
   }
@@ -213,13 +223,32 @@ function AudioContextLite() {
   this.destination = { __next: null, connect: function () {}, disconnect: function () {} };
   /** Panners with a live voice: the ones the listener's moves recompute. */
   this.__livePanners = new Set();
+  /** Sources with a live voice: the ones suspend/resume reach (SPEC-0701). */
+  this.__voiced = new Set();
+  this.__suspended = false;
   this.listener = new AudioListenerLite(this);
 }
 Object.defineProperty(AudioContextLite.prototype, 'currentTime', {
   get() { return performance.now() / 1000; },
 });
-AudioContextLite.prototype.resume = function () { return Promise.resolve(); };
-AudioContextLite.prototype.suspend = function () { return Promise.resolve(); };
+/** Drops the sources whose voice is gone (stopped, or a one-shot past its expected end). */
+AudioContextLite.prototype.__pruneVoiced = function () {
+  const now = this.currentTime;
+  for (const source of this.__voiced) {
+    if (!source.__voice || now >= source.__endsAt) this.__voiced.delete(source);
+  }
+};
+/** Sends each live voice its gain (0 while suspended). */
+AudioContextLite.prototype.__applySuspend = function (suspended) {
+  this.__suspended = suspended;
+  this.state = suspended ? 'suspended' : 'running';
+  this.__pruneVoiced();
+  for (const source of this.__voiced) __cortexAudio.setGain(source.__voice, voiceGain(source));
+  return Promise.resolve();
+};
+// No host-side pause: suspend mutes every live voice and resume gives each its chain gain back (SPEC-0701).
+AudioContextLite.prototype.resume = function () { return this.__applySuspend(false); };
+AudioContextLite.prototype.suspend = function () { return this.__applySuspend(true); };
 AudioContextLite.prototype.close = function () { return Promise.resolve(); };
 AudioContextLite.prototype.createGain = function () { return new GainNode(this); };
 AudioContextLite.prototype.createPanner = function () { return new PannerNode(this); };
