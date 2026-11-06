@@ -1,3 +1,10 @@
+## [0.110.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.110.0...v0.110.1) (2026-11-06)
+
+
+### Bug Fixes
+
+* **native:** áudio do host decodifica OGG, atenua por distância, muda o tom ao vivo e retoma da pausa (SPEC-0700) ([a1cb475](https://github.com/BuuhV-Projects/cortex-game-engine/commit/a1cb4753c99f6af485e49d43238160cda4f662e0))
+
 # [0.110.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.109.0...v0.110.0) (2026-11-06)
 
 
