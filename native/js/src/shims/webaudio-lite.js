@@ -4,8 +4,9 @@
 // Each voice keeps its whole chain: a change on any link recomputes the full
 // product (SPEC-0607), never just "that node down" (the master used to erase
 // each sound's own volume).
-// PannerNode (PositionalAudio) toca sem espacialização por enquanto
-// (pendência M1 — volume/pitch funcionam).
+// PannerNode (PositionalAudio) atenua pela distância ao ouvinte (SPEC-0700):
+// o fator entra na cadeia como mais um elo. Pan estéreo, cone e orientação
+// seguem ignorados (pendência da SPEC-0700: o host só tem ganho por voz).
 
 function GainParam(node) {
   this.__node = node;
@@ -32,10 +33,14 @@ function chainOf(node) {
   return chain;
 }
 
-/** Product of the gains of a chain. */
+/** Product of the gains of a chain (a panner adds its distance factor). */
 function chainGain(chain) {
   let gain = 1;
-  for (let i = 0; i < chain.length; i++) if (chain[i].gain) gain *= chain[i].gain.value;
+  for (let i = 0; i < chain.length; i++) {
+    const node = chain[i];
+    if (node.gain) gain *= node.gain.value;
+    if (node.__distanceGain) gain *= node.__distanceGain();
+  }
   return gain;
 }
 
@@ -55,6 +60,8 @@ GainNode.prototype.__updateVoices = function () {
     if (!source.__voice || now >= source.__endsAt) this.__sources.delete(source);
     else __cortexAudio.setGain(source.__voice, chainGain(source.__chain));
   }
+  // A panner without voices stops following the listener (not retained by the context).
+  if (this.__sources.size === 0) this.context.__livePanners.delete(this);
 };
 
 function PannerNode(context) {
@@ -67,10 +74,59 @@ function PannerNode(context) {
   this.coneInnerAngle = 360;
   this.coneOuterAngle = 360;
   this.coneOuterGain = 0;
+  this.__position = { x: 0, y: 0, z: 0 };
 }
 PannerNode.prototype = Object.create(GainNode.prototype);
-PannerNode.prototype.setPosition = function () {};
+// Only the setPosition path: without positionX the THREE uses it (SPEC-0700).
+PannerNode.prototype.setPosition = function (x, y, z) {
+  this.__position.x = x;
+  this.__position.y = y;
+  this.__position.z = z;
+  this.__updateVoices();
+};
 PannerNode.prototype.setOrientation = function () {};
+/** WebAudio distance model gain (inverse / linear / exponential) to the listener. */
+PannerNode.prototype.__distanceGain = function () {
+  const p = this.__position;
+  const l = this.context.listener.__position;
+  const distance = Math.hypot(p.x - l.x, p.y - l.y, p.z - l.z);
+  const ref = this.refDistance;
+  const rolloff = this.rolloffFactor;
+  if (this.distanceModel === 'linear') {
+    const max = this.maxDistance;
+    if (max <= ref) return 1;
+    const clamped = Math.min(Math.max(distance, ref), max);
+    return 1 - Math.min(Math.max(rolloff, 0), 1) * (clamped - ref) / (max - ref);
+  }
+  if (ref <= 0) return distance > 0 ? 0 : 1;
+  const d = Math.max(distance, ref);
+  if (this.distanceModel === 'exponential') return Math.pow(d / ref, -rolloff);
+  return ref / (ref + rolloff * (d - ref));
+};
+
+/** playbackRate as an AudioParam: a change with a live voice reaches the host (SPEC-0700). */
+function RateParam(source) {
+  this.__source = source;
+  this.__value = 1;
+}
+Object.defineProperty(RateParam.prototype, 'value', {
+  get() { return this.__value; },
+  set(v) {
+    const source = this.__source;
+    const old = this.__value > 0 ? this.__value : 1;
+    this.__value = v;
+    if (!source.__voice || !(v > 0)) return;
+    __cortexAudio.setRate(source.__voice, v);
+    // The one-shot voice now ends sooner/later: rescale what is left.
+    const now = source.context.currentTime;
+    if (source.__endsAt !== Infinity && source.__endsAt > now) {
+      source.__endsAt = now + (source.__endsAt - now) * old / v;
+    }
+  },
+});
+RateParam.prototype.setTargetAtTime = function (v) { this.value = v; };
+RateParam.prototype.setValueAtTime = function (v) { this.value = v; };
+RateParam.prototype.linearRampToValueAtTime = function (v) { this.value = v; };
 
 function BufferSourceNode(context) {
   this.context = context;
@@ -78,11 +134,7 @@ function BufferSourceNode(context) {
   this.loop = false;
   this.loopStart = 0;
   this.loopEnd = 0;
-  this.playbackRate = {
-    value: 1,
-    setValueAtTime: function (v) { this.value = v; },
-    setTargetAtTime: function (v) { this.value = v; },
-  };
+  this.playbackRate = new RateParam(this);
   this.detune = {
     value: 0,
     setValueAtTime: function (v) { this.value = v; },
@@ -97,6 +149,8 @@ function BufferSourceNode(context) {
   this.__chain = null;
   /** `currentTime` the voice ends at (`Infinity` in loop). */
   this.__endsAt = Infinity;
+  /** Seconds into the buffer the voice starts at (`start(when, offset)`). */
+  this.__offset = 0;
 }
 // A voz nativa nasce quando a fonte está iniciada E ligada (SPEC-0341): o
 // THREE.Audio.play() chama start() ANTES de connect(), e fonte sem ligação é
@@ -105,12 +159,16 @@ BufferSourceNode.prototype.__startVoice = function () {
   if (!this.__started || this.__voice || !this.__next) return;
   this.__chain = chainOf(this.__next);
   this.__voice = __cortexAudio.play(
-    this.buffer.__id, this.loop ? 1 : 0, chainGain(this.__chain), this.playbackRate.value,
+    this.buffer.__id, this.loop ? 1 : 0, chainGain(this.__chain), this.playbackRate.value, this.__offset,
   );
   const rate = this.playbackRate.value > 0 ? this.playbackRate.value : 1;
-  this.__endsAt = this.loop ? Infinity : this.context.currentTime + this.buffer.duration / rate;
+  const left = Math.max(this.buffer.duration - this.__offset, 0);
+  this.__endsAt = this.loop ? Infinity : this.context.currentTime + left / rate;
   // registra a fonte nos gains da cadeia (volume ao vivo — ex.: BGM)
-  for (const node of this.__chain) if (node.__sources) node.__sources.add(this);
+  for (const node of this.__chain) {
+    if (node.__sources) node.__sources.add(this);
+    if (node.__distanceGain) this.context.__livePanners.add(node);
+  }
 };
 BufferSourceNode.prototype.connect = function (node) {
   this.__next = node;
@@ -118,8 +176,9 @@ BufferSourceNode.prototype.connect = function (node) {
   return node;
 };
 BufferSourceNode.prototype.disconnect = function () { this.__next = null; };
-BufferSourceNode.prototype.start = function () {
+BufferSourceNode.prototype.start = function (when, offset) {
   if (!this.buffer) return;
+  this.__offset = offset > 0 ? offset : 0;
   this.__started = true;
   this.__startVoice();
 };
@@ -130,19 +189,30 @@ BufferSourceNode.prototype.stop = function () {
     for (const node of this.__chain) if (node.__sources) node.__sources.delete(this);
     this.__voice = 0;
   }
-  if (this.onended) this.onended();
+  // 'ended' is async in WebAudio: THREE.Audio.pause() does stop() then
+  // `onended = null`, and a sync call reset its progress (resume restarted).
+  Promise.resolve().then(() => { if (this.onended) this.onended(); });
 };
 
 function AudioListenerLite(context) {
   this.context = context;
+  this.__position = { x: 0, y: 0, z: 0 };
 }
-AudioListenerLite.prototype.setPosition = function () {};
+// Moving the listener recomputes the voices of every panner that has one.
+AudioListenerLite.prototype.setPosition = function (x, y, z) {
+  this.__position.x = x;
+  this.__position.y = y;
+  this.__position.z = z;
+  for (const panner of this.context.__livePanners) panner.__updateVoices();
+};
 AudioListenerLite.prototype.setOrientation = function () {};
 
 function AudioContextLite() {
   this.state = 'running';
   this.sampleRate = 44100;
   this.destination = { __next: null, connect: function () {}, disconnect: function () {} };
+  /** Panners with a live voice: the ones the listener's moves recompute. */
+  this.__livePanners = new Set();
   this.listener = new AudioListenerLite(this);
 }
 Object.defineProperty(AudioContextLite.prototype, 'currentTime', {

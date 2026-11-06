@@ -72,6 +72,12 @@ if (-not (Test-Path (Join-Path $stbDir 'stb_truetype.h'))) {
     Write-Host 'baixando stb_truetype ...' -ForegroundColor Cyan
     Invoke-WebRequest -Uri "https://raw.githubusercontent.com/nothings/stb/$STB_COMMIT/stb_truetype.h" -OutFile (Join-Path $stbDir 'stb_truetype.h')
 }
+# stb_vorbis: decode de OGG Vorbis pelo miniaudio (SPEC-0700). Licença MIT/domínio
+# público no fim do próprio arquivo.
+if (-not (Test-Path (Join-Path $stbDir 'stb_vorbis.c'))) {
+    Write-Host 'baixando stb_vorbis ...' -ForegroundColor Cyan
+    Invoke-WebRequest -Uri "https://raw.githubusercontent.com/nothings/stb/$STB_COMMIT/stb_vorbis.c" -OutFile (Join-Path $stbDir 'stb_vorbis.c')
+}
 
 # ── fonte oficial da UI de runtime (ADR-0102/0103) — Roboto MEDIUM.
 # É a MESMA que o Studio embute via @font-face (src/ui/runtime/uiFont.ts), pro
