@@ -26,10 +26,13 @@ import {
   type Grip,
 } from './characterRigWeapon.js'
 
-/** O que o Ctrl+Z devolve: pose, ligações (e a pegada, se a edição foi nela) da chave. */
+/**
+ * O que o Ctrl+Z devolve: a edição crua de pose e ligações da chave (`undefined` =
+ * sem edição, herda) e a pegada, se a edição foi nela.
+ */
 interface UndoEntry {
-  pose: Map<string, Quat>
-  follow: FollowLink[]
+  pose: Map<string, Quat> | undefined
+  follow: FollowLink[] | undefined
   grip?: { weapon: string; grip: Grip | null }
 }
 
@@ -191,8 +194,8 @@ export class PoseStore {
   pushUndo(key: string, weapon?: string): void {
     const stack = this.undo.get(key) ?? []
     stack.push({
-      pose: this.wanted(key),
-      follow: this.wantedFollow(key),
+      pose: this.edited.get(key),
+      follow: this.editedFollow.get(key),
       ...(weapon ? { grip: { weapon, grip: this.editedGrips.get(weapon) ?? null } } : {}),
     })
     this.undo.set(key, stack)
@@ -207,8 +210,10 @@ export class PoseStore {
   undoLast(key: string): boolean {
     const prev = this.undo.get(key)?.pop()
     if (!prev) return false
-    this.edited.set(key, prev.pose)
-    this.editedFollow.set(key, prev.follow)
+    if (prev.pose) this.edited.set(key, prev.pose)
+    else this.edited.delete(key)
+    if (prev.follow) this.editedFollow.set(key, prev.follow)
+    else this.editedFollow.delete(key)
     if (prev.grip) {
       if (prev.grip.grip) this.editedGrips.set(prev.grip.weapon, prev.grip.grip)
       else this.editedGrips.delete(prev.grip.weapon)

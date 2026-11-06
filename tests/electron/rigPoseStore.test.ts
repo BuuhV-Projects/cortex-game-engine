@@ -124,4 +124,15 @@ describe('PoseStore', () => {
     expect(store.wanted('idle@ARM-02').size).toBe(0)
     expect((clipsOf(files.get(PATH)!)['idle']!['weapons'] as JsonObject)['ARM-02']).toEqual({ pose: {} })
   })
+
+  it('Ctrl+Z devolve a variante a "sem edição" e o save não grava o campo herdado', async () => {
+    const { store, files } = storeWith()
+    store.pushUndo('idle@ARM-02')
+    store.setPose('idle@ARM-02', new Map([['Spine', TILT]]))
+    store.setFollow('walk', [])
+    store.undoLast('idle@ARM-02')
+    expect(store.isUnsaved('idle@ARM-02')).toBe(false)
+    await store.save()
+    expect(clipsOf(files.get(PATH)!)['idle']!['weapons']).toBeUndefined()
+  })
 })
