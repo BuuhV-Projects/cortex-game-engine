@@ -6,7 +6,8 @@
 // each sound's own volume).
 // PannerNode (PositionalAudio) atenua pela distância ao ouvinte (SPEC-0700):
 // o fator entra na cadeia como mais um elo. Pan estéreo, cone e orientação
-/// seguem ignorados (pendência da SPEC-0700: o host só tem ganho por voz)./n// suspend()/resume() calam e devolvem o ganho de toda voz viva (SPEC-0701).
+// seguem ignorados (pendência da SPEC-0700: o host só tem ganho por voz).
+// suspend()/resume() calam e devolvem o ganho de toda voz viva (SPEC-0701).
 
 function GainParam(node) {
   this.__node = node;
