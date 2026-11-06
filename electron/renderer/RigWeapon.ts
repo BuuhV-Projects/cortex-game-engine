@@ -68,8 +68,9 @@ export class RigWeapon {
       this.gltf = gltf
       const roots = gltf.scene.children
       for (const w of weaponsFromNodes(roots.map((r) => ({ name: r.name, children: r.children.map((c) => c.name) })))) {
-        const node = roots.find((r) => r.name === w.code)!
-        this.weapons.set(w.code, { node, gripL: node.getObjectByName(w.gripL)!.position.clone() })
+        const node = roots.find((r) => r.name === w.code)
+        const gripL = node?.getObjectByName(w.gripL)
+        if (node && gripL) this.weapons.set(w.code, { node, gripL: gripL.position.clone() })
       }
       debug(SCOPE, 'armas carregadas', path, this.codes)
     } catch (err) {

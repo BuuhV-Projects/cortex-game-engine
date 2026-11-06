@@ -88,6 +88,9 @@ export function variantFollowsFromConfig(cfg: JsonObject): Map<string, FollowLin
  * `skinned.clips`; campo existente fica na posição, novo vai no fim; pose vazia
  * remove `pose`, lista vazia remove `follow`, arma sem nada some e `weapons` vazio
  * some. O resto do JSON fica igual. Chaves sem arma são ignoradas.
+ *
+ * Só mexe nas chaves recebidas (como `applyPoses`): para tirar uma variante da
+ * config, passe a chave com pose vazia (e lista vazia de ligações).
  */
 export function applyVariants(cfg: JsonObject, poses: ReadonlyMap<string, Pose>, follows: ReadonlyMap<string, readonly FollowLink[]>): JsonObject {
   const out = structuredClone(cfg)
