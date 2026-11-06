@@ -1,3 +1,19 @@
+## [0.110.2](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.110.1...v0.110.2) (2026-11-06)
+
+
+### Bug Fixes
+
+* **native:** comentário do cabeçalho do webaudio-lite em duas linhas (review do PR 70) ([f48bfed](https://github.com/BuuhV-Projects/cortex-game-engine/commit/f48bfed55e31aa7a144fc0bde7b9335a02c82488))
+* **native:** suspend/resume do AudioContext calam e devolvem as vozes vivas (SPEC-0701) ([4e89c6c](https://github.com/BuuhV-Projects/cortex-game-engine/commit/4e89c6cdda72859144156fc775d5b249ab1ecb02))
+* **native:** voz nova poda as one-shots vencidas do __voiced (review do PR 70) ([b0a3bdd](https://github.com/BuuhV-Projects/cortex-game-engine/commit/b0a3bdd4f5860dcea12e01949ab0d55989885d90))
+
+## [0.110.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.110.0...v0.110.1) (2026-11-06)
+
+
+### Bug Fixes
+
+* **native:** áudio do host decodifica OGG, atenua por distância, muda o tom ao vivo e retoma da pausa (SPEC-0700) ([a1cb475](https://github.com/BuuhV-Projects/cortex-game-engine/commit/a1cb4753c99f6af485e49d43238160cda4f662e0))
+
 # [0.110.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.109.0...v0.110.0) (2026-11-06)
 
 

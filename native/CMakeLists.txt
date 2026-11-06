@@ -43,6 +43,7 @@ add_executable(cortex_host
   src/shims/geometry_registry_shim.cpp
   src/shims/shadow_alpha_clip_shim.cpp
   src/shims/audio.cpp
+  src/shims/audio_decode.cpp
   src/shims/files.cpp
   src/shims/image_decode.cpp
   src/shims/stb_image_impl.cpp
@@ -350,7 +351,9 @@ add_executable(cortex_host_tests
   tests/raycast_parity_test.cpp
   tests/window_size_test.cpp
   tests/inflate_test.cpp
+  tests/audio_decode_test.cpp
   src/shims/inflate.cpp
+  src/shims/audio_decode.cpp
   src/shims/stb_image_impl.cpp
   src/physics/raycast/triangle_bvh.cpp
   src/physics/raycast/instance_set.cpp
@@ -376,4 +379,8 @@ add_executable(cortex_host_tests
 target_include_directories(cortex_host_tests PRIVATE
   ${TP}/wgpu/include
   ${TP}/stb
+  ${TP}/miniaudio
 )
+# Fixtures binárias dos testes (ex.: .ogg do audio_decode_test, SPEC-0700).
+target_compile_definitions(cortex_host_tests PRIVATE
+  CORTEX_TEST_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures")

@@ -2,8 +2,9 @@
 // Only the media-element subset games use: src, play/pause, volume, muted,
 // loop, preload and the 'ended'/'error' events. The track is fetched and
 // decoded whole on play() and freed when the src changes (ADR-0153).
-// ponytail: play() after pause() restarts the track (native voices have no
-// start offset); add an offset argument to __cortexAudio.play if a game needs it.
+// pause() keeps the played position and play() resumes from it (SPEC-0700).
+// ponytail: position by wall clock, not by samples the host consumed — device
+// latency (tens of ms) leaks into the resume; query the host if a game needs it.
 import { createEventBus } from './event-target.js';
 
 const MS_PER_SECOND = 1000;
@@ -31,6 +32,11 @@ function AudioElement(url) {
   this.__endTimer = 0;
   this.__generation = 0;
   this.__pending = null;
+  this.__duration = 0;
+  /** Seconds into the track playback starts/resumes at. */
+  this.__position = 0;
+  /** performance.now() when the live voice started (from `__position`). */
+  this.__startedAt = 0;
   if (url) this.src = url;
 }
 
@@ -52,6 +58,7 @@ AudioElement.prototype.__stopVoice = function () {
 // pending play().
 AudioElement.prototype.load = function () {
   this.__stopVoice();
+  this.__position = 0;
   if (this.__bufferId) __cortexAudio.free(this.__bufferId);
   this.__bufferId = 0;
   this.paused = true;
@@ -92,6 +99,45 @@ Object.defineProperty(AudioElement.prototype, 'muted', {
   },
 });
 
+/** Position now: the stored one plus the time the live voice has played. */
+AudioElement.prototype.__playedPosition = function () {
+  if (!this.__voice) return this.__position;
+  const position = this.__position + (performance.now() - this.__startedAt) / MS_PER_SECOND;
+  if (!this.__duration) return position;
+  return this.loop ? position % this.__duration : Math.min(position, this.__duration);
+};
+
+Object.defineProperty(AudioElement.prototype, 'duration', {
+  get() { return this.__bufferId ? this.__duration : NaN; },
+});
+
+Object.defineProperty(AudioElement.prototype, 'currentTime', {
+  get() { return this.__playedPosition(); },
+  set(value) {
+    const playing = !!this.__voice;
+    this.__stopVoice();
+    this.__position = Math.max(Number(value) || 0, 0);
+    this.ended = false;
+    if (playing) this.__startVoice();
+  },
+});
+
+// Native voice from `__position`; a one-shot schedules `ended` for what is left.
+AudioElement.prototype.__startVoice = function () {
+  if (this.__duration && this.__position >= this.__duration) this.__position = this.loop ? this.__position % this.__duration : this.__duration;
+  this.__voice = __cortexAudio.play(this.__bufferId, this.loop ? 1 : 0, this.__gain(), 1, this.__position);
+  this.__startedAt = performance.now();
+  if (this.loop) return;
+  this.__endTimer = setTimeout(() => {
+    this.__voice = 0;
+    this.__endTimer = 0;
+    this.__position = 0;
+    this.paused = true;
+    this.ended = true;
+    this.dispatchEvent(new Event('ended'));
+  }, (this.__duration - this.__position) * MS_PER_SECOND);
+};
+
 AudioElement.prototype.__decode = function (generation) {
   if (this.__bufferId) return Promise.resolve(this.__duration);
   return fetch(this.__src)
@@ -129,21 +175,13 @@ AudioElement.prototype.play = function () {
       this.dispatchEvent(new Event('error'));
       throw domError('NotSupportedError', 'Audio.play: cannot decode ' + this.__src);
     }
-    this.__voice = __cortexAudio.play(this.__bufferId, this.loop ? 1 : 0, this.__gain(), 1);
-    if (!this.loop) {
-      this.__endTimer = setTimeout(() => {
-        this.__voice = 0;
-        this.__endTimer = 0;
-        this.paused = true;
-        this.ended = true;
-        this.dispatchEvent(new Event('ended'));
-      }, duration * MS_PER_SECOND);
-    }
+    this.__startVoice();
   });
   return this.__pending;
 };
 
 AudioElement.prototype.pause = function () {
+  this.__position = this.__playedPosition();
   this.__stopVoice();
   this.paused = true;
 };
