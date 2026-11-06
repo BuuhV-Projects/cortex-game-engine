@@ -467,30 +467,6 @@ export class RigPoseEditor implements PoseInputTarget {
     this.edit((key) => this.store.setFollow(key, this.store.wantedFollow(key).filter((c) => c.bone !== bone)))
   }
 
-  /** Teclas da aba (W, E, Esc, Ctrl+Z). `true` se usou a tecla. */
-  handleKey(e: KeyboardEvent): boolean {
-    const target = e.target as HTMLElement | null
-    if (target && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))) return false
-    const key = e.key.toLowerCase()
-    if ((e.ctrlKey || e.metaKey) && !e.shiftKey && key === 'z') return this.undoLast()
-    if (e.ctrlKey || e.metaKey || e.altKey) return false
-    if (key === 'escape' && this.pickingFollow) {
-      this.pickingFollow = false
-      this.followWarn = ''
-      this.refresh()
-      return true
-    }
-    if (key === 'escape' && this.selected) {
-      this.select(null)
-      return true
-    }
-    if (!this.editable) return false
-    if (key === 'w') this.setMode('move')
-    else if (key === 'e') this.setMode('rotate')
-    else return false
-    return true
-  }
-
   dispose(): void {
     this.input.dispose()
     this.overlay.dispose()

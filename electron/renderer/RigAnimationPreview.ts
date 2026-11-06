@@ -84,7 +84,7 @@ export class RigAnimationPreview {
   // ── Pose por clipe (adendo 8) ──
   private readonly pose: RigPoseEditor
   private readonly onKey = (e: KeyboardEvent): void => {
-    if (this.el.isConnected && this.el.offsetParent !== null && this.pose.handleKey(e)) e.preventDefault()
+    if (this.el.isConnected && this.el.offsetParent !== null && this.pose.ui.handleKey(e)) e.preventDefault()
   }
 
   constructor() {

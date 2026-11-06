@@ -110,6 +110,30 @@ export class RigPosePanel {
     this.weaponSelect.disabled = !codes.length || !this.ed.hasModel
   }
 
+  /** Teclas da aba (W, E, Esc, Ctrl+Z). `true` se usou a tecla. */
+  handleKey(e: KeyboardEvent): boolean {
+    const target = e.target as HTMLElement | null
+    if (target && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))) return false
+    const key = e.key.toLowerCase()
+    if ((e.ctrlKey || e.metaKey) && !e.shiftKey && key === 'z') return this.ed.undoLast()
+    if (e.ctrlKey || e.metaKey || e.altKey) return false
+    if (key === 'escape' && this.ed.pickingFollow) {
+      this.ed.pickingFollow = false
+      this.ed.followWarn = ''
+      this.ed.refresh()
+      return true
+    }
+    if (key === 'escape' && this.ed.selected) {
+      this.ed.select(null)
+      return true
+    }
+    if (!this.ed.editable) return false
+    if (key === 'w') this.ed.setMode('move')
+    else if (key === 'e') this.ed.setMode('rotate')
+    else return false
+    return true
+  }
+
   render(): void {
     const ed = this.ed
     const key = ed.key
