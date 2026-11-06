@@ -167,6 +167,8 @@ BufferSourceNode.prototype.__startVoice = function () {
   this.__voice = __cortexAudio.play(
     this.buffer.__id, this.loop ? 1 : 0, voiceGain(this), this.playbackRate.value, this.__offset,
   );
+  // one-shots end in the host without a stop(): the expired ones leave here, not only on the next pause
+  this.context.__pruneVoiced();
   this.context.__voiced.add(this);
   const rate = this.playbackRate.value > 0 ? this.playbackRate.value : 1;
   const left = Math.max(this.buffer.duration - this.__offset, 0);
@@ -229,15 +231,19 @@ function AudioContextLite() {
 Object.defineProperty(AudioContextLite.prototype, 'currentTime', {
   get() { return performance.now() / 1000; },
 });
-/** Sends each live voice its gain (0 while suspended); drops one-shots already over. */
-AudioContextLite.prototype.__applySuspend = function (suspended) {
-  this.__suspended = suspended;
-  this.state = suspended ? 'suspended' : 'running';
+/** Drops the sources whose voice is gone (stopped, or a one-shot past its expected end). */
+AudioContextLite.prototype.__pruneVoiced = function () {
   const now = this.currentTime;
   for (const source of this.__voiced) {
     if (!source.__voice || now >= source.__endsAt) this.__voiced.delete(source);
-    else __cortexAudio.setGain(source.__voice, voiceGain(source));
   }
+};
+/** Sends each live voice its gain (0 while suspended). */
+AudioContextLite.prototype.__applySuspend = function (suspended) {
+  this.__suspended = suspended;
+  this.state = suspended ? 'suspended' : 'running';
+  this.__pruneVoiced();
+  for (const source of this.__voiced) __cortexAudio.setGain(source.__voice, voiceGain(source));
   return Promise.resolve();
 };
 // No host-side pause: suspend mutes every live voice and resume gives each its chain gain back (SPEC-0701).

@@ -18,7 +18,9 @@ O host (`__cortexAudio`) não tem pausa global, só `play/stop/setGain/setRate/d
 
 Implementar o `suspend/resume` no shim JS, sobre o ganho por voz que o host já tem (sem mudar o C++):
 
-- O contexto guarda as fontes com voz viva (`__voiced`: entra no `__startVoice`, sai no `stop`).
+- O contexto guarda as fontes com voz viva (`__voiced`: entra no `__startVoice`, sai no `stop`). A one-shot
+  termina no host sem `stop()`, então cada voz nova poda as vencidas pelo `__endsAt` (sem isso o conjunto retinha
+  todo SFX disparado até a próxima pausa).
 - O ganho que vai ao host passa por `voiceGain(source)`: **0 com o contexto suspenso**, senão o produto da cadeia
   (SPEC-0607, com o fator de distância da SPEC-0700).
 - `suspend()`: `state = 'suspended'` e `setGain(voz, 0)` em toda voz viva (a one-shot que já acabou pelo
@@ -42,3 +44,4 @@ suspensão termina calada. Pausa de verdade por voz no host fica para quando alg
   (inclusive o `setVolume` feito durante a suspensão) e `state = 'running'`.
 - Som que nasce com o contexto suspenso nasce mudo e ganha volume no `resume()`.
 - Voz parada (`stop`) não recebe ganho no `resume()`.
+- One-shot vencida sai do `__voiced` quando a próxima voz nasce, sem esperar a pausa.

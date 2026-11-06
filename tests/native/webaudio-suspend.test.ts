@@ -7,6 +7,8 @@ import { Audio, AudioContext as ThreeAudioContext, AudioListener } from 'three';
 // @ts-expect-error — shim JS do host, sem d.ts
 import { installWebAudioLite } from '../../native/js/src/shims/webaudio-lite.js';
 
+/** Depois do fim da one-shot de 1,5 s do decode simulado (ms). */
+const SHOT_OVER_MS = 2000;
 let nextVoice = 1;
 const cortexAudio = {
   decode: vi.fn(() => ({ id: 7, duration: 1.5, sampleRate: 44100, channels: 2 })),
@@ -83,6 +85,21 @@ describe('webaudio-lite: suspend/resume do contexto (SPEC-0701)', () => {
     expect(cortexAudio.play.mock.calls[0]![2]).toBe(0);
     await context.resume();
     expect(gainOf(1)).toBeCloseTo(0.6);
+  });
+
+  it('one-shot vencida sai do contexto sem esperar a pausa', async () => {
+    const now = vi.spyOn(performance, 'now').mockReturnValue(0);
+    const listener = new AudioListener();
+    const buffer = await listener.context.decodeAudioData(new ArrayBuffer(8));
+    const shot = new Audio(listener);
+    shot.setBuffer(buffer);
+    shot.play(); // 1,5 s, sem loop: termina no host sem stop()
+    const voiced = (context as unknown as { __voiced: Set<unknown> }).__voiced;
+    expect(voiced.size).toBe(1);
+    now.mockReturnValue(SHOT_OVER_MS);
+    await loop(listener, 0.5); // a próxima voz poda a vencida
+    expect(voiced.size).toBe(1);
+    now.mockRestore();
   });
 
   it('voz parada não recebe ganho no resume', async () => {
