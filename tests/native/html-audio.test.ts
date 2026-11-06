@@ -53,7 +53,7 @@ describe('html-audio (SPEC-0392)', () => {
 
     await audio.play();
     expect(fetch).toHaveBeenCalledWith('assets/sounds/music/track-01.mp3');
-    expect(cortexAudio.play).toHaveBeenCalledWith(BUFFER, 0, 0.5, 1);
+    expect(cortexAudio.play).toHaveBeenCalledWith(BUFFER, 0, 0.5, 1, 0);
     expect(audio.paused).toBe(false);
 
     vi.advanceTimersByTime(DURATION_S * 1000);
@@ -121,7 +121,7 @@ describe('html-audio (SPEC-0392)', () => {
     const ended = vi.fn();
     audio.addEventListener('ended', ended);
     await audio.play();
-    expect(cortexAudio.play).toHaveBeenCalledWith(BUFFER, 1, 1, 1);
+    expect(cortexAudio.play).toHaveBeenCalledWith(BUFFER, 1, 1, 1, 0);
     vi.advanceTimersByTime(DURATION_S * 1000 * 3);
     expect(ended).not.toHaveBeenCalled();
   });

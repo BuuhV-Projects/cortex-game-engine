@@ -131,10 +131,12 @@ void testAlphaClipTableSeguraOUvESoltaTudo();
 void testShadowGateRecusaPosicaoForaDeFloat32x3();
 void testShadowGatePosicaoSemConsultaContaComoAusente();
 void testInflate();
+void testAudioDecode();
 }  // namespace tests
 
 int main() {
   tests::testInflate();
+  tests::testAudioDecode();
   tests::testFormatFromString();
   tests::testWindowSizeParse();
   tests::testFormatToStringRoundtrip();

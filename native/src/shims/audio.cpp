@@ -1,9 +1,6 @@
 #include "audio.h"
 
-#define MA_NO_DEVICE_IO
-#define MA_NO_THREADING
-#define MINIAUDIO_IMPLEMENTATION
-#include <miniaudio.h>
+#include "audio_decode.h"
 
 #include <SDL3/SDL.h>
 
@@ -16,14 +13,6 @@
 namespace shims {
 namespace {
 
-// Buffer decodificado: float32 intercalado.
-struct AudioBufferData {
-  std::vector<float> samples;
-  int channels = 2;
-  int sampleRate = 44100;
-  double duration = 0;
-};
-
 struct Voice {
   SDL_AudioStream* stream = nullptr;
   int bufferId = 0;
@@ -35,40 +24,13 @@ std::map<int, Voice> g_voices;
 int g_nextBufferId = 1;
 int g_nextVoiceId = 1;
 
-bool decodeToBuffer(const void* bytes, size_t size, AudioBufferData* out) {
-  ma_decoder_config config =
-      ma_decoder_config_init(ma_format_f32, 0, 0);  // canais/taxa nativos
-  ma_decoder decoder;
-  if (ma_decoder_init_memory(bytes, size, &config, &decoder) != MA_SUCCESS)
-    return false;
-
-  out->channels = static_cast<int>(decoder.outputChannels);
-  out->sampleRate = static_cast<int>(decoder.outputSampleRate);
-  ma_uint64 totalFrames = 0;
-  ma_decoder_get_length_in_pcm_frames(&decoder, &totalFrames);
-  if (totalFrames > 0) out->samples.reserve(totalFrames * out->channels);
-
-  float chunk[4096];
-  const ma_uint64 chunkFrames = 4096 / out->channels;
-  for (;;) {
-    ma_uint64 read = 0;
-    ma_decoder_read_pcm_frames(&decoder, chunk, chunkFrames, &read);
-    if (read == 0) break;
-    out->samples.insert(out->samples.end(), chunk,
-                        chunk + read * out->channels);
-  }
-  ma_decoder_uninit(&decoder);
-  out->duration =
-      static_cast<double>(out->samples.size()) / out->channels /
-      out->sampleRate;
-  return !out->samples.empty();
-}
-
-void feedVoice(Voice& voice) {
+// Enfileira o buffer a partir da amostra `first` (offset do play só na 1ª vez).
+void feedVoice(Voice& voice, size_t first = 0) {
   const AudioBufferData& buffer = g_buffers[voice.bufferId];
+  if (first >= buffer.samples.size()) return;
   SDL_PutAudioStreamData(
-      voice.stream, buffer.samples.data(),
-      static_cast<int>(buffer.samples.size() * sizeof(float)));
+      voice.stream, buffer.samples.data() + first,
+      static_cast<int>((buffer.samples.size() - first) * sizeof(float)));
 }
 
 // __cortexAudio.decode(ArrayBuffer|TypedArray) → {id,duration,sampleRate,channels}|null
@@ -97,7 +59,7 @@ napi_value jsDecode(napi_env env, napi_callback_info info) {
   if (!bytes || size == 0) return nullValue;
 
   AudioBufferData buffer;
-  if (!decodeToBuffer(bytes, size, &buffer)) return nullValue;
+  if (!decodeAudio(bytes, size, &buffer)) return nullValue;
   int id = g_nextBufferId++;
   double duration = buffer.duration;
   int sampleRate = buffer.sampleRate;
@@ -117,13 +79,14 @@ napi_value jsDecode(napi_env env, napi_callback_info info) {
   return out;
 }
 
-// __cortexAudio.play(bufferId, loop, gain, rate) → voiceId (0 = falhou)
+// __cortexAudio.play(bufferId, loop, gain, rate, offsetSeconds) → voiceId
+// (0 = falhou). offsetSeconds (padrão 0) é o ponto de início (SPEC-0700).
 napi_value jsPlay(napi_env env, napi_callback_info info) {
-  size_t argc = 4;
-  napi_value args[4];
+  size_t argc = 5;
+  napi_value args[5];
   napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
-  double values[4] = {0, 0, 1, 1};
-  for (size_t i = 0; i < argc && i < 4; ++i)
+  double values[5] = {0, 0, 1, 1, 0};
+  for (size_t i = 0; i < argc && i < 5; ++i)
     napi_get_value_double(env, args[i], &values[i]);
 
   napi_value out = nullptr;
@@ -148,7 +111,8 @@ napi_value jsPlay(napi_env env, napi_callback_info info) {
   int voiceId = g_nextVoiceId++;
   Voice voice{stream, static_cast<int>(values[0]), values[1] != 0};
   g_voices[voiceId] = voice;
-  feedVoice(g_voices[voiceId]);
+  feedVoice(g_voices[voiceId],
+            startSampleAt(buffer, values[4], voice.loop));
   SDL_ResumeAudioStreamDevice(stream);
 
   napi_create_int32(env, voiceId, &out);
@@ -166,6 +130,23 @@ napi_value jsSetGain(napi_env env, napi_callback_info info) {
     auto it = g_voices.find(static_cast<int>(voiceId));
     if (it != g_voices.end())
       SDL_SetAudioStreamGain(it->second.stream, static_cast<float>(gain));
+  }
+  return njs::undefined(env);
+}
+
+// __cortexAudio.setRate(voiceId, rate) — tom ao vivo (SPEC-0700).
+napi_value jsSetRate(napi_env env, napi_callback_info info) {
+  size_t argc = 2;
+  napi_value args[2];
+  napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
+  double voiceId = 0, rate = 1;
+  if (argc >= 2) {
+    napi_get_value_double(env, args[0], &voiceId);
+    napi_get_value_double(env, args[1], &rate);
+    auto it = g_voices.find(static_cast<int>(voiceId));
+    if (it != g_voices.end() && rate > 0)
+      SDL_SetAudioStreamFrequencyRatio(it->second.stream,
+                                       static_cast<float>(rate));
   }
   return njs::undefined(env);
 }
@@ -218,6 +199,7 @@ void registerAudio(napi_env env) {
   njs::setMethod(env, audio, "decode", jsDecode);
   njs::setMethod(env, audio, "play", jsPlay);
   njs::setMethod(env, audio, "setGain", jsSetGain);
+  njs::setMethod(env, audio, "setRate", jsSetRate);
   njs::setMethod(env, audio, "stop", jsStop);
   njs::setMethod(env, audio, "free", jsFree);
   napi_set_named_property(env, global, "__cortexAudio", audio);
