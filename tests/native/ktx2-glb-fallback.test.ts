@@ -66,4 +66,16 @@ describe('convertGlbTextures — encoder ausente', () => {
     expect(n).toBe(2);
     expect(warn).not.toHaveBeenCalled();
   });
+
+  it('avisa cada textura ANTES do encode, pro modal do export (SPEC-0699)', async () => {
+    const seen: string[] = [];
+    encodeKtx2.mockImplementation(async () => {
+      seen.push('encode');
+      return new Uint8Array(1024);
+    });
+
+    await convertGlbTextures(docWithTextures(2), (i: number, n: number) => seen.push(`tex ${i}/${n}`));
+
+    expect(seen).toEqual(['tex 1/2', 'encode', 'tex 2/2', 'encode']);
+  });
 });
