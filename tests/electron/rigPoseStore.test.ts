@@ -13,8 +13,9 @@ import { PoseStore } from '../../electron/renderer/rigPoseStore'
 const TURN: Quat = [0, 0.707107, 0, 0.707107]
 const TILT: Quat = [0.707107, 0, 0, 0.707107]
 const PATH = 'cfg.json'
+const LINK = { bone: 'LeftHand', target: 'RightHand', offset: [0.1, 0, 0.2], rotation: [0, 0, 0, 1] }
 const TEXT = JSON.stringify({
-  skinned: { clips: { idle: { file: 'idle.fbx', pose: { Head: TURN } }, walk: { file: 'walk.fbx' } } },
+  skinned: { clips: { idle: { file: 'idle.fbx', pose: { Head: TURN }, follow: [LINK] }, walk: { file: 'walk.fbx' } } },
 }, null, 2) + '\n'
 
 function storeWith(text = TEXT): { store: PoseStore; files: Map<string, string> } {
@@ -64,12 +65,12 @@ describe('PoseStore', () => {
 
   it('variante salva que o build não tem pede "gere de novo"', async () => {
     const { store } = storeWith()
-    store.setGenerated({ clips: { idle: { poseOffsets: { Head: TURN } } } })
+    store.setGenerated({ clips: { idle: { poseOffsets: { Head: TURN }, follow: [LINK] } } })
     expect(store.needsRegen('idle@ARM-02', 'idle')).toBe(false)
     store.setPose('idle@ARM-02', new Map([['Spine', TILT]]))
     await store.save()
     expect(store.needsRegen('idle@ARM-02', 'idle')).toBe(true)
-    store.setGenerated({ clips: { 'idle@ARM-02': { poseOffsets: { Spine: TILT } } } })
+    store.setGenerated({ clips: { 'idle@ARM-02': { poseOffsets: { Spine: TILT }, follow: [LINK] } } })
     expect(store.needsRegen('idle@ARM-02', 'idle@ARM-02')).toBe(false)
   })
 
@@ -106,5 +107,21 @@ describe('PoseStore', () => {
     expect(store.isUnsaved('walk')).toBe(true)
     store.setConfig('outra.json', parseConfigObject(TEXT))
     expect(store.isUnsaved('walk')).toBe(false)
+  })
+
+  it('variante salva só com pose ainda herda as ligações do clipe base', async () => {
+    const { store } = storeWith()
+    store.setPose('idle@ARM-02', new Map([['Spine', TILT]]))
+    await store.save()
+    expect(store.wantedFollow('idle@ARM-02')).toHaveLength(1)
+    expect(store.isUnsaved('idle@ARM-02')).toBe(false)
+  })
+
+  it('zerar a pose da variante fica gravado e não volta a herdar a do base', async () => {
+    const { store, files } = storeWith()
+    store.setPose('idle@ARM-02', new Map())
+    await store.save()
+    expect(store.wanted('idle@ARM-02').size).toBe(0)
+    expect((clipsOf(files.get(PATH)!)['idle']!['weapons'] as JsonObject)['ARM-02']).toEqual({ pose: {} })
   })
 })

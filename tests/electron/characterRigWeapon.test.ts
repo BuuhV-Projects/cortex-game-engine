@@ -69,11 +69,17 @@ describe('variantes na config', () => {
     expect(clipsOf(next)['walk']).toEqual(clipsOf(config())['walk'])
   })
 
-  it('pose e ligações vazias tiram a arma e o `weapons`', () => {
-    const noPose = applyVariants(config(), new Map([['walk@ARM-02', new Map()]]), new Map())
-    expect(Object.keys((clipsOf(noPose)['walk']!['weapons'] as Record<string, JsonObject>)['ARM-02']!)).toEqual(['follow'])
-    const empty = applyVariants(noPose, new Map(), new Map([['walk@ARM-02', []]]))
-    expect(clipsOf(empty)['walk']).toEqual({ file: 'walk.fbx' })
+  it('pose e ligações vazias ficam gravadas (sobrepõem o clipe base)', () => {
+    const next = applyVariants(config(), new Map([['walk@ARM-02', new Map()]]), new Map([['walk@ARM-02', []]]))
+    expect((clipsOf(next)['walk']!['weapons'] as Record<string, JsonObject>)['ARM-02']).toEqual({ pose: {}, follow: [] })
+    expect(variantPosesFromConfig(next).get('walk@ARM-02')!.size).toBe(0)
+    expect(variantFollowsFromConfig(next).get('walk@ARM-02')).toEqual([])
+  })
+
+  it('sem o campo, a variante não entra (herda o clipe base)', () => {
+    const cfg = applyVariants(config(), new Map([['idle@ESC-01', new Map([['Head', TURN]])]]), new Map())
+    expect(variantPosesFromConfig(cfg).has('idle@ESC-01')).toBe(true)
+    expect(variantFollowsFromConfig(cfg).has('idle@ESC-01')).toBe(false)
   })
 
   it('ignora clipe fora da config e chave sem arma', () => {

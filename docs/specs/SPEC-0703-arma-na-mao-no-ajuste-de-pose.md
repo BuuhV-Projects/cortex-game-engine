@@ -34,11 +34,12 @@ onde ela é guardada (uma variante por arma) e o que aparece na prévia (a arma 
 ### Variante `clipe@ARMA` (config)
 
 - Gravada em `skinned.clips[clipe].weapons[ARMA] = { "pose": {…}, "follow": [ … ] }`, com o
-  formato dos adendos 8 e 9. Pose vazia remove `pose`, lista vazia remove `follow`, entrada
-  vazia remove a arma e `weapons` vazio some; o resto do JSON fica igual.
+  formato dos adendos 8 e 9. Só os campos editados são gravados; pose ou lista vazia fica
+  gravada (`{}`/`[]`) e sobrepõe a do clipe base. O resto do JSON fica igual.
 - Só existe variante de clipe que está em `skinned.clips` (como a pose do adendo 8).
-- Enquanto a variante não tem nada salvo nem editado, ela **parte do clipe base**: a pose e
-  as ligações desejadas são as do clipe. A primeira edição copia as do clipe e muda a cópia.
+- Cada campo da variante (`pose`, `follow`) que não existe **herda o do clipe base**: a pose e
+  as ligações desejadas são as do clipe. A primeira edição copia as do clipe e muda a cópia;
+  salvar só a pose mantém as ligações herdadas (e vice-versa).
 - "Aplicar a todos os clipes" (pose) com arma escolhida aplica a pose na variante daquela
   arma em todos os clipes.
 - Gerado no build: o pipeline (F2) assa a variante como a animação `clipe@ARMA` do GLB, com
@@ -87,8 +88,8 @@ Textos novos em pt/en.
 ## Aceite
 
 1. Testes puros: chave `clipe@ARMA` (montar/separar, nome de clipe com `@` recusado como
-   arma), leitura/gravação de variantes (ordem dos campos, vazios somem, clipe fora da
-   config ignorado), variante partindo do clipe base, pegada (padrão, 6 casas, igual ao
+   arma), leitura/gravação de variantes (ordem dos campos, vazios gravados, clipe fora da
+   config ignorado), variante partindo do clipe base campo a campo, pegada (padrão, 6 casas, igual ao
    padrão some), lista de armas por nós com `_Grip_L`.
 2. Na prévia real (DDD 61, LUC-01): escolher `ARM-02` → o fuzil aparece na mão direita e
    acompanha o clipe; a bolinha do `Grip_L` aparece no fuzil; "Mão esquerda no apoio" leva a

@@ -73,47 +73,42 @@ function variantEntries(cfg: JsonObject): Array<[string, JsonObject]> {
   return out
 }
 
-/** Poses das variantes salvas (chave `clipe@ARMA`); a leitura dos ossos é a do adendo 8. */
+/**
+ * Poses das variantes salvas (chave `clipe@ARMA`); a leitura dos ossos é a do
+ * adendo 8. Só entra a variante que tem `pose`: sem o campo, ela herda a do clipe.
+ */
 export function variantPosesFromConfig(cfg: JsonObject): Map<string, Map<string, Quat>> {
-  return new Map(variantEntries(cfg).map(([key, w]) => [key, readPose(w['pose'])]))
+  return new Map(variantEntries(cfg).filter(([, w]) => w['pose'] !== undefined).map(([key, w]) => [key, readPose(w['pose'])]))
 }
 
-/** Ligações das variantes salvas (chave `clipe@ARMA`). */
+/** Ligações das variantes salvas (chave `clipe@ARMA`); sem `follow`, herda as do clipe. */
 export function variantFollowsFromConfig(cfg: JsonObject): Map<string, FollowLink[]> {
-  return new Map(variantEntries(cfg).map(([key, w]) => [key, readFollows(w['follow'])]))
+  return new Map(variantEntries(cfg).filter(([, w]) => w['follow'] !== undefined).map(([key, w]) => [key, readFollows(w['follow'])]))
 }
 
 /**
  * Grava as variantes numa cópia da config: só de clipes que existem em
- * `skinned.clips`; campo existente fica na posição, novo vai no fim; pose vazia
- * remove `pose`, lista vazia remove `follow`, arma sem nada some e `weapons` vazio
- * some. O resto do JSON fica igual. Chaves sem arma são ignoradas.
- *
- * Só mexe nas chaves recebidas (como `applyPoses`): para tirar uma variante da
- * config, passe a chave com pose vazia (e lista vazia de ligações).
+ * `skinned.clips`; campo existente fica na posição, novo vai no fim. Pose ou
+ * ligações vazias ficam gravadas (`{}`/`[]`): sobrepõem as do clipe base, que só
+ * valem quando o campo não existe. O resto do JSON fica igual. Chaves sem arma são
+ * ignoradas; só mexe nas chaves recebidas (como `applyPoses`).
  */
 export function applyVariants(cfg: JsonObject, poses: ReadonlyMap<string, Pose>, follows: ReadonlyMap<string, readonly FollowLink[]>): JsonObject {
   const out = structuredClone(cfg)
   const clips = clipsOf(out)
   if (!clips) return out
-  const write = (key: string, field: 'pose' | 'follow', value: JsonObject | JsonObject[] | null): void => {
+  const write = (key: string, field: 'pose' | 'follow', value: JsonObject | JsonObject[]): void => {
     const { clip, weapon } = splitVariant(key)
     const entry = clips[clip]
     if (!weapon || !isObject(entry)) return
     const weapons = isObject(entry['weapons']) ? entry['weapons'] : {}
     const w = isObject(weapons[weapon]) ? weapons[weapon] : {}
-    if (value) w[field] = value
-    else delete w[field]
-    if (Object.keys(w).length) weapons[weapon] = w
-    else delete weapons[weapon]
-    if (Object.keys(weapons).length) entry['weapons'] = weapons
-    else delete entry['weapons']
+    w[field] = value
+    weapons[weapon] = w
+    entry['weapons'] = weapons
   }
-  for (const [key, pose] of poses) {
-    const json = poseToJson(pose)
-    write(key, 'pose', Object.keys(json).length ? json : null)
-  }
-  for (const [key, list] of follows) write(key, 'follow', list.length ? list.map(followToJson) : null)
+  for (const [key, pose] of poses) write(key, 'pose', poseToJson(pose))
+  for (const [key, list] of follows) write(key, 'follow', list.map(followToJson))
   return out
 }
 
