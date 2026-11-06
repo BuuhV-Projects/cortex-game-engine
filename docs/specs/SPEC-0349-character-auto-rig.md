@@ -645,3 +645,9 @@ A distância entre as duas mãos foi medida em 8 tempos do clipe (pausado) e em 
   foi rodado;
 - a confirmação ao trocar de clipe com ligação não salva (diálogo nativo);
 - a linha tracejada só foi vista nas capturas, onde fica curta com as mãos juntas.
+
+## Adendo 10 (2026-11-06) - arma na mão (pose por arma × clipe)
+
+Especificado à parte na SPEC-0703 (fase F1 do ADR-0702): seletor de arma na aba Animações,
+arma presa no `RightHand` pela pegada (`skinned.weaponGrips`), `Grip_L` como alvo da mão de
+apoio e pose/ligações por variante `clipe@ARMA` (`skinned.clips[clipe].weapons[ARMA]`).
