@@ -30,11 +30,13 @@ beforeEach(() => {
   put('src/main.ts', "const t = '/assets/packages/cortex-yughues-ground-textures/materials/clay/color.jpg';");
   // citação dentro de node_modules/vendor não conta
   put('node_modules/x/index.js', "'packages/cortex-yughues-ground-textures/materials/salt/color.jpg'");
+  // nem em pasta oculta: .claude guarda worktrees/caches das sessões (SPEC-0699)
+  put('.claude/worktrees/w/scenes/a.json', "'packages/cortex-yughues-ground-textures/materials/salt/color.jpg'");
 });
 afterEach(() => rmSync(game, { recursive: true, force: true }));
 
 describe('package-usage', () => {
-  it('acha os materiais citados por cena e código, ignorando node_modules', () => {
+  it('acha os materiais citados por cena e código, ignorando node_modules e pasta oculta', () => {
     expect([...usedPackageMaterials(game)].sort()).toEqual([
       'cortex-yughues-ground-textures/clay',
       'cortex-yughues-ground-textures/grass01',

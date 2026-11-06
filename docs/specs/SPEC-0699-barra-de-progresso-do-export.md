@@ -15,6 +15,10 @@ mudar nada, e pareceu travado. O export estava vivo: era o cook das texturas
 2. Dentro de um GLB o encode é textura por textura, sem aviso nenhum.
 3. A conversão é CPU entre `await`s de microtarefa. O `console.log` num pipe pode
    esperar o loop do Node respirar, e então a linha só chega depois.
+4. Antes do cook, a busca dos materiais de pacote usados (`usedPackageMaterials`,
+   SPEC-0641 §6) lia todo `.json/.ts/.js` do projeto, inclusive o `.claude/`, com
+   as worktrees e caches das sessões. No port-hollow eram 15.748 arquivos (80 MB)
+   e **63,6 s** com a barra parada em 22%.
 
 ## Decisão
 
@@ -22,10 +26,12 @@ mudar nada, e pareceu travado. O export estava vivo: era o cook das texturas
 script emite `[export:progress] <json>` com:
 
 ```json
+{ "phase": "scan" }
 { "phase": "cook", "done": 45, "total": 118, "file": "vehicles/taxi.glb", "tex": [3, 12] }
 { "phase": "pack" }
 ```
 
+- `scan`: procurando os materiais de pacote usados pelo jogo.
 - `cook`: `done` = arquivos já processados, `total` = arquivos do cook, `file` =
   o arquivo em processamento, `tex` = `[textura atual, texturas do GLB]` quando
   há encode em curso.
@@ -42,7 +48,12 @@ uma linha de detalhe com o que está sendo feito agora:
 
 - "Comprimindo texturas 45/118 · textura 3/12" + nome do arquivo (com reticências
   se não couber);
-- "Gravando assets.pak…".
+- "Gravando assets.pak…";
+- "Procurando materiais de textura usados pelo jogo…".
+
+**Varredura de materiais.** `usedPackageMaterials` pula toda pasta oculta
+(`.claude`, `.cortex`, `.git`…): elas guardam worktrees, caches e screenshots, não
+autoria. No port-hollow a busca caiu de 63,6 s para 52 ms, com o mesmo resultado.
 
 O percentual soma o peso das etapas já concluídas mais a fração da atual. Pesos
 (`STEP_WEIGHT`): prepare 1, bundle 15, bytecode 5, runtime 1, assets 78. Dentro

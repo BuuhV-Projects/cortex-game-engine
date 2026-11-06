@@ -7,15 +7,22 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-/** Pastas do jogo que não são fonte de referência (deps, build, os próprios assets). */
-const SKIP_DIRS = new Set(['node_modules', 'vendor', 'assets', '.git', '.cortex-cache', 'dist', 'dist-native', 'native-build']);
+/**
+ * Pastas do jogo que não são fonte de referência (deps, build, os próprios assets).
+ * Pasta oculta (`.claude`, `.cortex`, `.git`…) também fica fora: guarda worktrees,
+ * caches e screenshots, não autoria — no port-hollow o `.claude` sozinho custava
+ * 60 s de varredura (SPEC-0699).
+ */
+const SKIP_DIRS = new Set(['node_modules', 'vendor', 'assets', 'dist', 'dist-native', 'native-build']);
 const TEXT_EXT = new Set(['.json', '.ts', '.tsx', '.js', '.mjs', '.cjs']);
 const REF_RE = /packages\/([a-z0-9][a-z0-9-]*)\/materials\/([a-z0-9][a-z0-9-]*)\//g;
 
 function* textFiles(dir) {
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
     if (e.isDirectory()) {
-      if (!SKIP_DIRS.has(e.name) && !e.name.startsWith('dist')) yield* textFiles(path.join(dir, e.name));
+      if (!SKIP_DIRS.has(e.name) && !e.name.startsWith('dist') && !e.name.startsWith('.')) {
+        yield* textFiles(path.join(dir, e.name));
+      }
     } else if (TEXT_EXT.has(path.extname(e.name).toLowerCase())) {
       yield path.join(dir, e.name);
     }

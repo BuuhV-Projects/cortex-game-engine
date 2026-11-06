@@ -22,6 +22,7 @@ describe('exportProgress', () => {
     expect(assetsFraction({ phase: 'cook', done: 1, total: 4, tex: [3, 4] })).toBe(1.5 / 4)
     expect(assetsFraction({ phase: 'cook', done: 0, total: 0 })).toBe(0)
     expect(assetsFraction({ phase: 'pack' })).toBe(1)
+    expect(assetsFraction({ phase: 'scan' })).toBe(0)
   })
 
   it('parse do payload do IPC', () => {
@@ -31,6 +32,7 @@ describe('exportProgress', () => {
       total: 9,
       file: 'a b.glb',
     })
+    expect(parseDetail('progress:{"phase":"scan"}')).toEqual({ phase: 'scan' })
     expect(parseDetail('assets')).toBeNull()
     expect(parseDetail('progress:{quebrado')).toBeNull()
     expect(parseDetail('progress:{"phase":"outra"}')).toBeNull()

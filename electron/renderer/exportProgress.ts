@@ -20,7 +20,7 @@ export const STEP_WEIGHT: Record<StepKey, number> = {
 
 /** Detalhe dentro da etapa, como o script emite em `[export:progress] <json>`. */
 export interface ExportDetail {
-  phase: 'cook' | 'pack'
+  phase: 'scan' | 'cook' | 'pack'
   done?: number
   total?: number
   file?: string
@@ -30,6 +30,7 @@ export interface ExportDetail {
 /** Fração (0..1) da etapa `assets` já feita, segundo o detalhe. */
 export function assetsFraction(d: ExportDetail): number {
   if (d.phase === 'pack') return 1
+  if (d.phase === 'scan') return 0
   const total = d.total ?? 0
   if (total <= 0) return 0
   const [i, n] = d.tex ?? [0, 0]
@@ -53,7 +54,7 @@ export function parseDetail(payload: string): ExportDetail | null {
   if (!payload.startsWith('progress:')) return null
   try {
     const d = JSON.parse(payload.slice('progress:'.length)) as ExportDetail
-    return d.phase === 'cook' || d.phase === 'pack' ? d : null
+    return d.phase === 'scan' || d.phase === 'cook' || d.phase === 'pack' ? d : null
   } catch {
     return null
   }

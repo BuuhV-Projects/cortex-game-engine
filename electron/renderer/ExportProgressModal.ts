@@ -132,12 +132,12 @@ export class ExportProgressModal {
     this.fileEl.textContent = ''
   }
 
-  /** Barra + "o que está fazendo" durante o cook de texturas e o pack. */
+  /** Barra + "o que está fazendo" durante a varredura, o cook de texturas e o pack. */
   private showDetail(d: ExportDetail): void {
     this.setState('assets', 'active')
     this.setPercent(overallPercent('assets', assetsFraction(d)))
-    if (d.phase === 'pack') {
-      this.detailEl.textContent = t('bottomPanel.export_pack')
+    if (d.phase === 'scan' || d.phase === 'pack') {
+      this.detailEl.textContent = t(`bottomPanel.export_${d.phase}`)
       this.fileEl.textContent = ''
       return
     }
