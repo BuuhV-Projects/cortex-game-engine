@@ -35,7 +35,10 @@ function walk(dir, out = []) {
 /**
  * Cozinha `assetsDir` → `cookedDir` (GLB com texturas KTX2; resto copiado).
  * `cacheDir` guarda GLB cozidos por hash da fonte (persiste entre exports).
- * `onProgress(done, total)` é chamado por arquivo processado (pro modal do export).
+ * `onProgress({ done, total, file, tex })` (pro modal do export, SPEC-0699) é
+ * chamado ANTES de cada GLB, antes de cada textura (`tex = [i, n]`) e ao fim
+ * (`done === total`). Cópia simples não avisa: é rápida e floodaria o stdout.
+ * Depois de cada aviso o cook cede o loop, pra linha sair no pipe na hora.
  * `include(rel)` (opcional) deixa arquivos de fora — ex.: material de pacote de
  * textura que o jogo não usa (SPEC-0641 §6). Os ignorados contam em `skipped`.
  */
@@ -48,6 +51,11 @@ export async function cookAssets(assetsDir, cookedDir, cacheDir, onProgress, inc
   stats.skipped = every.length - all.length;
   const total = all.length;
   let done = 0;
+  const report = async (file, tex) => {
+    if (!onProgress) return;
+    onProgress({ done, total, file, tex });
+    await new Promise((r) => setImmediate(r));
+  };
   for (const full of all) {
     const rel = path.relative(assetsDir, full);
     const out = path.join(cookedDir, rel);
@@ -58,9 +66,10 @@ export async function cookAssets(assetsDir, cookedDir, cacheDir, onProgress, inc
       fs.copyFileSync(full, out);
       stats.copied++;
       stats.after += fs.statSync(out).size;
-      onProgress?.(++done, total);
+      done++;
       continue;
     }
+    await report(rel);
 
     const bytes = fs.readFileSync(full);
     // COOK_VERSION entra no hash: mudar a política de encode (ex.: ETC1S→UASTC,
@@ -75,7 +84,7 @@ export async function cookAssets(assetsDir, cookedDir, cacheDir, onProgress, inc
     } else {
       try {
         const doc = await io.read(full); // por caminho (readBinary rejeita alguns GLB)
-        const n = await convertGlbTextures(doc);
+        const n = await convertGlbTextures(doc, (i, count) => report(rel, [i, count]));
         if (n > 0) {
           await io.write(out, doc);
           stats.glbConverted++;
@@ -90,7 +99,8 @@ export async function cookAssets(assetsDir, cookedDir, cacheDir, onProgress, inc
       }
     }
     stats.after += fs.statSync(out).size;
-    onProgress?.(++done, total);
+    done++;
   }
+  await report();
   return stats;
 }

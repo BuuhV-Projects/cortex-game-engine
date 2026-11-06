@@ -58,6 +58,9 @@ if (!gameDir || !fs.existsSync(path.join(gameDir, 'main.ts'))) {
 // linhas pra alimentar o modal de progresso do export. As chaves batem com os
 // passos exibidos: prepare → bundle → bytecode → runtime → assets → done.
 const step = (key) => console.log(`[export:step] ${key}`);
+// Detalhe dentro da etapa (SPEC-0699): `{ phase: 'cook', done, total, file, tex }`
+// ou `{ phase: 'pack' }` — vira a barra + a linha "o que está fazendo" do modal.
+const progress = (info) => console.log(`[export:progress] ${JSON.stringify(info)}`);
 
 const gameName = path.basename(gameDir);
 // Identidade do jogo (ADR-0126): `id` estável (saves) + `name` de exibição, do
@@ -246,8 +249,6 @@ if (fs.existsSync(assetsDir)) {
   const cookedDir = path.join(os.tmpdir(), `cortex-cook-${process.pid}`);
   fs.rmSync(cookedDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
   const cacheDir = path.join(gameDir, '.cortex-cache', 'ktx2');
-  // Progresso por arquivo pro modal do Studio (marcador parseado no main.ts).
-  // Throttle: 1 a cada 3 (+ o último) pra não floodar o stdout com centenas.
   // CORTEX_NO_COOK: pula a conversão KTX2 e empacota os assets CRUS (PNG/JPG). Só
   // pra debug (isolar problemas de textura KTX2 no host). Prod SEMPRE cozinha.
   const skipCook = process.env.CORTEX_NO_COOK === '1';
@@ -260,15 +261,14 @@ if (fs.existsSync(assetsDir)) {
     // CORTEX_EXPORT_ALL_PACKAGES=1 desliga o filtro (diagnóstico).
     const usedMaterials = usedPackageMaterials(gameDir);
     const include = process.env.CORTEX_EXPORT_ALL_PACKAGES === '1' ? undefined : packageAssetFilter(usedMaterials);
-    const cs = await cookAssets(assetsDir, cookedDir, cacheDir, (done, total) => {
-      if (done === total || done % 3 === 0) console.log(`[export:cook] ${done}/${total}`);
-    }, include);
+    const cs = await cookAssets(assetsDir, cookedDir, cacheDir, (p) => progress({ phase: 'cook', ...p }), include);
     if (cs.skipped) console.log(`[export] pacotes: ${usedMaterials.size} materiais usados, ${cs.skipped} arquivos de pacote fora do pak`);
     console.log(
       `[export] cook: ${cs.glbConverted} GLB convertidos (+${cs.glbCached} do cache, ${cs.glbNoTex} sem textura) · ` +
         `assets ${(cs.before / 1e6).toFixed(1)} → ${(cs.after / 1e6).toFixed(1)} MB`,
     );
   }
+  progress({ phase: 'pack' });
   guardLocks('assets', () => {
     const r = packDir(packSrc, path.join(dist, 'assets.pak'), 'assets/');
     console.log(`[export] assets.pak: ${r.files} arquivos, ${(r.bytes / 1e6).toFixed(1)} MB`);

@@ -1,4 +1,5 @@
 import { t } from './i18n'
+import { STEPS, type StepKey, type ExportDetail, assetsFraction, overallPercent, parseDetail } from './exportProgress'
 
 /**
  * Modal de progresso do export CortexNative (ADR-0101).
@@ -8,12 +9,9 @@ import { t } from './i18n'
  * chegam via `electronAPI.onExportProgress` (marcadores do script) e o
  * `main.ts` os retransmite. Enquanto roda, o modal não pode ser fechado
  * (Escape/cancel são bloqueados); ao terminar, aparece o rodapé com
- * "Abrir pasta" / "Fechar".
+ * "Abrir pasta" / "Fechar". Embaixo das etapas, uma barra com o percentual do
+ * export e uma linha com o que está sendo feito agora (SPEC-0699).
  */
-
-/** Ordem das etapas exibidas (bate com as chaves emitidas pelo script). */
-const STEPS = ['prepare', 'bundle', 'bytecode', 'runtime', 'assets'] as const
-type StepKey = (typeof STEPS)[number]
 
 type StepState = 'pending' | 'active' | 'done'
 
@@ -22,6 +20,10 @@ export class ExportProgressModal {
   private rows = new Map<StepKey, HTMLElement>()
   private footer: HTMLElement
   private statusEl: HTMLElement
+  private bar: HTMLProgressElement
+  private percentEl: HTMLElement
+  private detailEl: HTMLElement
+  private fileEl: HTMLElement
   private running = true
   private distDir: string | null = null
 
@@ -57,6 +59,27 @@ export class ExportProgressModal {
       this.setState(key, 'pending')
     }
 
+    const progress = document.createElement('div')
+    progress.className = 'export-modal__progress'
+    const barRow = document.createElement('div')
+    barRow.className = 'export-modal__bar-row'
+    this.bar = document.createElement('progress')
+    this.bar.className = 'export-modal__bar'
+    this.bar.max = 100
+    this.bar.value = 0
+    this.percentEl = document.createElement('span')
+    this.percentEl.className = 'export-modal__percent'
+    this.percentEl.textContent = '0%'
+    barRow.appendChild(this.bar)
+    barRow.appendChild(this.percentEl)
+    this.detailEl = document.createElement('div')
+    this.detailEl.className = 'export-modal__detail'
+    this.fileEl = document.createElement('div')
+    this.fileEl.className = 'export-modal__file'
+    progress.appendChild(barRow)
+    progress.appendChild(this.detailEl)
+    progress.appendChild(this.fileEl)
+
     this.statusEl = document.createElement('div')
     this.statusEl.className = 'export-modal__status'
     this.statusEl.textContent = t('bottomPanel.export_hint')
@@ -67,6 +90,7 @@ export class ExportProgressModal {
 
     this.dialog.appendChild(header)
     this.dialog.appendChild(steps)
+    this.dialog.appendChild(progress)
     this.dialog.appendChild(this.statusEl)
     this.dialog.appendChild(this.footer)
     document.body.appendChild(this.dialog)
@@ -79,22 +103,21 @@ export class ExportProgressModal {
     this.dialog.showModal()
   }
 
-  /** Marca a etapa recebida como ativa e todas as anteriores como concluídas. */
+  /**
+   * Marca a etapa recebida como ativa e todas as anteriores como concluídas. Um
+   * payload `progress:<json>` é detalhe dentro de `assets` (cook/pack).
+   */
   step(key: string): void {
-    // Sub-progresso da conversão de texturas (KTX2), dentro do passo "assets":
-    // `cook:<feitos>/<total>` — mostra a contagem por arquivo no rótulo do passo
-    // e na linha de status (a conversão é a parte mais lenta do export).
-    if (key.startsWith('cook:')) {
-      const [done, total] = key.slice(5).split('/')
-      this.setState('assets', 'active')
-      const msg = t('bottomPanel.export_cook', { done: done ?? '0', total: total ?? '?' })
-      const label = this.rows.get('assets')?.querySelector('.export-modal__label')
-      if (label) label.textContent = msg
-      this.statusEl.textContent = msg
+    const detail = parseDetail(key)
+    if (detail) {
+      this.showDetail(detail)
       return
     }
     if (key === 'done') {
       for (const k of STEPS) this.setState(k, 'done')
+      this.setPercent(100)
+      this.detailEl.textContent = ''
+      this.fileEl.textContent = ''
       return
     }
     const idx = STEPS.indexOf(key as StepKey)
@@ -104,6 +127,30 @@ export class ExportProgressModal {
       else if (i === idx) this.setState(STEPS[i], 'active')
       else this.setState(STEPS[i], 'pending')
     }
+    this.setPercent(overallPercent(STEPS[idx]))
+    this.detailEl.textContent = t(`bottomPanel.export_step_${key}`)
+    this.fileEl.textContent = ''
+  }
+
+  /** Barra + "o que está fazendo" durante o cook de texturas e o pack. */
+  private showDetail(d: ExportDetail): void {
+    this.setState('assets', 'active')
+    this.setPercent(overallPercent('assets', assetsFraction(d)))
+    if (d.phase === 'pack') {
+      this.detailEl.textContent = t('bottomPanel.export_pack')
+      this.fileEl.textContent = ''
+      return
+    }
+    let msg = t('bottomPanel.export_cook', { done: String(d.done ?? 0), total: String(d.total ?? '?') })
+    if (d.tex) msg += t('bottomPanel.export_cook_tex', { i: String(d.tex[0]), n: String(d.tex[1]) })
+    this.detailEl.textContent = msg
+    this.fileEl.textContent = d.file ?? ''
+    this.fileEl.title = d.file ?? ''
+  }
+
+  private setPercent(pct: number): void {
+    this.bar.value = pct
+    this.percentEl.textContent = `${Math.floor(pct)}%`
   }
 
   /**
@@ -114,7 +161,12 @@ export class ExportProgressModal {
   finish(ok: boolean, distDir?: string, failMessage?: string): void {
     this.running = false
     this.distDir = distDir ?? null
-    if (ok) for (const k of STEPS) this.setState(k, 'done')
+    if (ok) {
+      for (const k of STEPS) this.setState(k, 'done')
+      this.setPercent(100)
+    }
+    this.detailEl.textContent = ''
+    this.fileEl.textContent = ''
 
     this.statusEl.textContent = ok
       ? t('bottomPanel.export_done_ok')

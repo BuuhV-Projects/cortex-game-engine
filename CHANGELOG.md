@@ -1,3 +1,10 @@
+# [0.110.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.109.0...v0.110.0) (2026-11-06)
+
+
+### Features
+
+* **studio:** barra de progresso do export com o arquivo e a textura em curso (SPEC-0699) ([8fcce5c](https://github.com/BuuhV-Projects/cortex-game-engine/commit/8fcce5c9be871d598f933ebdc67469b0bdf21ee6))
+
 # [0.109.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.108.1...v0.109.0) (2026-11-05)
 
 
