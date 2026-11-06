@@ -26,8 +26,12 @@ function classifyLinear(doc) {
   return linear;
 }
 
-/** Converte as texturas do doc pra KTX2 (in-place). Devolve nº convertidas. */
-export async function convertGlbTextures(doc) {
+/**
+ * Converte as texturas do doc pra KTX2 (in-place). Devolve nº convertidas.
+ * `onTexture(i, n)` (opcional) é chamado ANTES do encode da i-ésima (1-based) —
+ * pro modal do export mostrar a textura em curso (SPEC-0699).
+ */
+export async function convertGlbTextures(doc, onTexture) {
   const linear = classifyLinear(doc);
   const pending = doc
     .getRoot()
@@ -37,7 +41,8 @@ export async function convertGlbTextures(doc) {
   let created = false;
   // Abaixo disto (PNG fonte) a conversão não compensa o overhead do KTX2.
   const MIN_CONVERT_SOURCE_BYTES = 16 * 1024;
-  for (const texture of pending) {
+  for (const [i, texture] of pending.entries()) {
+    await onTexture?.(i + 1, pending.length);
     const src = texture.getImage();
     const isLinear = linear.has(texture);
     let ktx2;

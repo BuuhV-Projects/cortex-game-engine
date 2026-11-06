@@ -48,17 +48,21 @@ export function registerExportIpc(): void {
       let output = ''
       // Marcadores `[export:step] <key>` (prepare/bundle/bytecode/runtime/assets/
       // done) do script viram eventos pro modal de progresso do renderer. O parse
-      // é por linha porque um chunk de stdout pode conter várias.
+      // é por linha: um chunk de stdout pode ter várias, e a última pode vir
+      // cortada — esse resto espera o próximo chunk em `pending`.
+      let pending = ''
       const emitSteps = (chunk: string): void => {
-        for (const line of chunk.split('\n')) {
+        const lines = (pending + chunk).split('\n')
+        pending = lines.pop() ?? ''
+        for (const line of lines) {
           const trimmed = line.trim()
           const step = /^\[export:step\]\s+(\w+)/.exec(trimmed)
-          // Sub-progresso da conversão de texturas: `[export:cook] 45/118` → o modal
-          // mostra a contagem no passo "assets" (a parte mais lenta do export).
-          const cook = /^\[export:cook\]\s+(\d+)\/(\d+)/.exec(trimmed)
+          // Detalhe dentro da etapa (SPEC-0699): `[export:progress] {json}` → o modal
+          // mostra a barra e o arquivo/textura em curso. O JSON vai cru pro renderer.
+          const detail = /^\[export:progress\]\s+(\{.*\})$/.exec(trimmed)
           if (_event.sender.isDestroyed()) continue
           if (step) _event.sender.send('export:progress', step[1])
-          else if (cook) _event.sender.send('export:progress', `cook:${cook[1]}/${cook[2]}`)
+          else if (detail) _event.sender.send('export:progress', `progress:${detail[1]}`)
         }
       }
       child.stdout?.on('data', (d: Buffer) => { const s = d.toString(); output += s; emitSteps(s) })
