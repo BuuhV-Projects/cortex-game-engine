@@ -18,8 +18,6 @@ export const WEAPON_SEP = '@'
 const TARGET_SEP = '#'
 /** Sufixo do nó do apoio da mão esquerda dentro do nó da arma. */
 export const GRIP_L_SUFFIX = '_Grip_L'
-/** Separa a arma do alvo na chave da pegada (`ARM-01#npc-001`, SPEC-0711). */
-const GRIP_TARGET_SEP = '#'
 /** GLB das armas quando a config não diz (`skinned.weaponsGlb`). */
 export const DEFAULT_WEAPONS_GLB = 'assets/armas/armas.glb'
 /** Osso em que a arma fica presa. */
@@ -166,7 +164,7 @@ export function applyGrips(cfg: JsonObject, grips: ReadonlyMap<string, Grip>): J
   if (!isObject(skinned)) return out
   const all = isObject(skinned['weaponGrips']) ? skinned['weaponGrips'] : {}
   for (const [key, g] of grips) {
-    if (!key.includes(GRIP_TARGET_SEP) && sameGrip(g, DEFAULT_GRIP)) delete all[key]
+    if (!key.includes(TARGET_SEP) && sameGrip(g, DEFAULT_GRIP)) delete all[key]
     else all[key] = gripToJson(g)
   }
   if (Object.keys(all).length) skinned['weaponGrips'] = all

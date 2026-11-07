@@ -10,7 +10,7 @@ import { stripBom } from './rigPoseStore'
 import { bakeJob, bakeJobs, lostLinks, type BakeJob } from './RigBake'
 import { keysForView, retargetBaked } from './RigBakeCharacters'
 import { retargetRig } from './characterRigRetarget'
-import { gripKey, gripKeyOf, splitKey, type CharactersConfig } from './characterRigCharacters'
+import { gripKey, splitKey, type CharactersConfig } from './characterRigCharacters'
 import type { PoseStore } from './rigPoseStore'
 import { loadGlb } from './RigCharacterSource'
 import type { RigArmAdjust } from './RigArmAdjust'
@@ -73,13 +73,13 @@ export function bakeMessage(out: BakeOutcome): { text: string; warn: boolean } |
  * A pegada de cada arma das variantes assadas, com a chave do JSON do skin do par (SPEC-0711): no do player, `ARMA` =
  * a do player resolvida; no dos NPCs, `ARMA` (do grupo) ou `ARMA#CÓDIGO`.
  */
-function jobGrips(store: PoseStore, jobs: readonly BakeJob[], npc: CharactersConfig | null, player: string): Map<string, Grip> {
+export function jobGrips(store: PoseStore, jobs: readonly BakeJob[], npc: CharactersConfig | null, player: string): Map<string, Grip> {
   const out = new Map<string, Grip>()
   for (const j of jobs) {
     const { weapon, target } = splitKey(j.name)
     if (!weapon) continue
     if (!npc) out.set(weapon, store.gripOf(gripKey(weapon, player || null)))
-    else out.set(target === npc.group ? weapon : gripKey(weapon, target), store.gripOf(gripKeyOf(j.name)!))
+    else out.set(target === npc.group ? weapon : gripKey(weapon, target), store.gripOf(gripKey(weapon, target)))
   }
   return out
 }

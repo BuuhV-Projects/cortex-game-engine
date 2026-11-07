@@ -3,7 +3,7 @@
  * Só a pegada mudada também grava (SPEC-0709).
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { bakeFlow, runBake, type BakeRunInput } from '../../electron/renderer/RigBakeRun.js'
+import { bakeFlow, jobGrips, runBake, type BakeRunInput } from '../../electron/renderer/RigBakeRun.js'
 import { ZERO_OFFSETS } from '../../electron/renderer/characterRigArmSpace.js'
 import { parseConfigObject } from '../../electron/renderer/characterRigSelection.js'
 import { PoseStore } from '../../electron/renderer/rigPoseStore.js'
@@ -122,5 +122,15 @@ describe('runBake — só a pegada (SPEC-0709)', () => {
     const written = new Map(a.characterRigWriteBake.mock.calls.map((call) => [call[2], JSON.parse(call[4] as string).weaponGrips]))
     expect(written.get('a.json')).toEqual({ 'ARM-01': GRIP })
     expect(written.get('v.json')).toEqual({ 'ARM-01#npc-001': NPC })
+  })
+
+  it('jobGrips: NPC sem pegada própria herda a do grupo; a chave do JSON dos NPCs é ARMA ou ARMA#CÓDIGO', () => {
+    const NPC = { offset: [0.03, 0.05, 0], rotation: [0, 0, 0, 1] }
+    const chars = { group: 'NPC', glb: 'v.glb', clips: 'v.json', preview: 'p', codes: ['npc-001', 'npc-002'] }
+    const c = { code: 'LUC-01', skinned: { characters: chars, clips: { idle: {} }, weaponGrips: { 'ARM-01': GRIP, 'ARM-01#NPC': NPC } } }
+    const { store } = withStore(c, { clips: {} }, []).pose
+    const jobs = [{ name: 'idle@ARM-01#npc-002', anim: 'idle' }, { name: 'idle@ARM-01#NPC', anim: 'idle' }]
+    expect([...jobGrips(store, jobs, chars, 'LUC-01')].map(([k, g]) => [k, g.offset])).toEqual([['ARM-01#npc-002', NPC.offset], ['ARM-01', NPC.offset]])
+    expect(jobGrips(store, [{ name: 'idle@ARM-01', anim: 'idle' }], null, 'LUC-01').get('ARM-01')!.offset).toEqual(GRIP.offset)
   })
 })
