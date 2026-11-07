@@ -9,13 +9,13 @@
     "@babel/plugin-transform-arrow-functions": "7.29.7",
     "@babel/plugin-transform-block-scoping": "7.29.7",
     "@babel/plugin-transform-classes": "7.28.4",
-    "@gltf-transform/core": "4.4.1",
-    "@gltf-transform/extensions": "4.4.1",
-    "esbuild": "0.25.12",
+    "@gltf-transform/core": "4.5.1",
+    "@gltf-transform/extensions": "4.5.1",
+    "esbuild": "0.28.2",
     "png-to-ico": "2.1.8",
     "rcedit": "4.0.1",
-    "three": "0.184.0",
+    "three": "0.187.0",
     "three-mesh-bvh": "0.9.17",
-    "zod": "4.4.3"
+    "zod": "4.6.7"
   }
 }
