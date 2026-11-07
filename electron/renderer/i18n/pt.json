@@ -357,8 +357,11 @@
     },
     "bake": {
       "button": "Gravar no GLB do jogo",
-      "hint": "Grava as correções e as variantes por arma (clipe@ARMA) direto no GLB e no JSON do skin do build mostrado, com backup (.bak).",
+      "hint": "Grava as correções, as variantes por arma (clipe@ARMA) e a pegada de cada arma direto no GLB e no JSON do skin do build mostrado, com backup (.bak).",
       "confirm": "Gravar {count} clipe(s) em {file}? O par atual (GLB e JSON) vai para .bak.",
+      "confirm_grips": "Gravar {count} pegada(s) de arma em {file}? O par atual (GLB e JSON) vai para .bak.",
+      "done_grips": "Gravado: {count} pegada(s) de arma em {file}.",
+      "grips": "Mais {count} pegada(s) de arma no JSON do skin.",
       "none": "Nada a gravar: o GLB já está igual ao desejado.",
       "refused": "{name}: o GLB tem uma ligação que foi removida; o assado não desfaz ligação gravada (gere o rig no pipeline).",
       "done": "Gravado: {count} clipe(s) em {file}.",

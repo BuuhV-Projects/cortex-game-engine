@@ -11,7 +11,7 @@ import type { JsonObject } from './characterRigSelection.js'
 import { ARM_OFFSET_KEYS, QUAT_IDENTITY, quatInv, quatMul, type ArmOffsets, type Quat } from './characterRigArmSpace.js'
 import { quatAngleDeg, quatNormalize, poseToJson } from './characterRigPose.js'
 import { followToJson, type FollowLink } from './characterRigFollow.js'
-import { gripToJson, type Grip } from './characterRigWeapon.js'
+import { gripToJson, gripsFromConfig, sameGrip, type Grip } from './characterRigWeapon.js'
 
 /** Fração da base do osso de baixo que o auxiliar recebe (`HELPER_SHARE` do pipeline). */
 export const HELPER_SHARE = 0.5
@@ -143,6 +143,16 @@ export function bakedSidecar(skin: JsonObject, entries: readonly BakeEntry[], gr
     out['weaponGrips'] = all
   }
   return out
+}
+
+/**
+ * Pegadas salvas que o JSON do skin `skin` não tem iguais (ausente ou diferente a 6 casas): as que o Gravar
+ * tem que levar mesmo sem clipe a assar (SPEC-0709).
+ */
+export function gripsToWrite(saved: ReadonlyMap<string, Grip>, skin: unknown): Map<string, Grip> {
+  // lida como a config (`gripsFromConfig`): a comparação não depende da ordem das chaves do JSON
+  const have = gripsFromConfig({ skinned: { weaponGrips: isObject(skin) ? (skin['weaponGrips'] ?? null) : null } })
+  return new Map([...saved].filter(([w, g]) => { const h = have.get(w); return !h || !sameGrip(g, h) }))
 }
 
 /** `skinned.jointLimitsDeg` da config (parte do osso → graus); ausente ou inválido = sem limite. */
