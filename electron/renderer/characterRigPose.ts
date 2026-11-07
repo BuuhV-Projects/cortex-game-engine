@@ -291,7 +291,7 @@ export function readQuat(v: unknown): Quat | null {
   return quatNormalize(v as Quat)
 }
 
-function readPose(src: unknown): Map<string, Quat> {
+export function readPose(src: unknown): Map<string, Quat> {
   const out = new Map<string, Quat>()
   if (!isObject(src)) return out
   for (const bone of POSE_BONES) {

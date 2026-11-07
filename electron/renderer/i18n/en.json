@@ -355,6 +355,17 @@
       "follow_remove": "remove",
       "follow_regen": "Links or pose differ from the GLB: generate the rig again (the preview shows the wanted ones)."
     },
+    "weapon": {
+      "title": "Weapon in hand",
+      "hint": "Pick a weapon from the project: it is held in the right hand and the edited pose becomes this clip's pose with this weapon (clip@WEAPON).",
+      "none": "No weapon",
+      "support": "Left hand on support",
+      "support_hint": "Moves the left hand to the green point (Grip_L) and links it to the right hand, so it follows the weapon on recoil.",
+      "grip_reset": "Reset grip",
+      "grip_hint": "Move (W) or rotate (E) the weapon relative to the hand: applies to every clip of this weapon.",
+      "selected": "Grip of weapon {weapon}",
+      "switch_confirm": "This weapon's pose for this clip is not saved and will be discarded if you switch weapons. Switch anyway?"
+    },
     "bone": {
       "Hips": "Hips",
       "Spine": "Spine",

@@ -355,6 +355,17 @@
       "follow_remove": "remover",
       "follow_regen": "Ligações ou pose diferentes do GLB: gere o rig de novo (a prévia mostra as desejadas)."
     },
+    "weapon": {
+      "title": "Arma na mão",
+      "hint": "Escolha uma arma do projeto: ela fica presa na mão direita e a pose editada passa a ser a deste clipe com esta arma (clipe@ARMA).",
+      "none": "Sem arma",
+      "support": "Mão esquerda no apoio",
+      "support_hint": "Leva a mão esquerda até o ponto verde (Grip_L) e liga-a à mão direita, para acompanhar a arma no recuo.",
+      "grip_reset": "Zerar pegada",
+      "grip_hint": "Mova (W) ou gire (E) a arma em relação à mão: vale para todos os clipes desta arma.",
+      "selected": "Pegada da arma {weapon}",
+      "switch_confirm": "A pose desta arma neste clipe não foi salva e será descartada se trocar de arma. Trocar mesmo assim?"
+    },
     "bone": {
       "Hips": "Quadril",
       "Spine": "Coluna",

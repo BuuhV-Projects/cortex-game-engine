@@ -4,33 +4,12 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { h } from './ui'
 import { getLocale, t } from './i18n'
 import { debug } from '../../src/core/debug'
-import { formatSeconds, resolveProjectPath, splitPath, type RigBuildKind, type RigClip, type RigEntry } from './characterRigRegistry'
-import { fileLabel, parseConfigObject, serializeConfig } from './characterRigSelection'
-import {
-  ARM_OFFSET_KEYS,
-  ARM_OFFSET_LIMITS,
-  ARM_SIDES,
-  CHEST_BONE,
-  ZERO_OFFSETS,
-  applyArmOffsets,
-  applyArmOffsetsToAll,
-  armOffsetsFromConfig,
-  armOffsetsFromSkin,
-  chestAxis,
-  chestUp,
-  clampOffset,
-  configClipNames,
-  localAfterWorldRotation,
-  offsetDelta,
-  sameOffsets,
-  sideRotations,
-  twistRotation,
-  undoInReverse,
-  type ArmOffsetKey,
-  type ArmOffsets,
-  type Quat,
-  type Vec3,
-} from './characterRigArmSpace'
+import { formatSeconds, resolveProjectPath, type RigBuildKind, type RigClip, type RigEntry } from './characterRigRegistry'
+import { fileLabel, parseConfigObject } from './characterRigSelection'
+import { RigArmAdjust } from './RigArmAdjust'
+import { RigPlaybar } from './RigPlaybar'
+import { stripBom } from './rigPoseStore'
+import { variantKey, weaponsGlbOf } from './characterRigWeapon'
 import { RigPoseEditor } from './RigPoseEditor'
 import type { JsonObject } from './characterRigSelection'
 
@@ -46,13 +25,11 @@ import type { JsonObject } from './characterRigSelection'
  * Adendo 5: `shoulderBack` (ombros pra trás) e "aplicar a todos os clipes".
  * Adendo 7: `armTwist`/`foreArmTwist` (giro no eixo do braço e do antebraço).
  * Adendo 8: pose por clipe, junta a junta (`RigPoseEditor`), aplicada depois dos
- * braços na mesma pilha de desfazer do quadro.
+ * braços na mesma pilha de desfazer do quadro. Os sliders ficam em `RigArmAdjust`.
+ * SPEC-0703: com uma arma escolhida, toca a variante `clipe@ARMA` se o build a tem.
  */
 
 const SCOPE = 'characterRig'
-const SPEED_MIN = 0.25
-const SPEED_MAX = 2
-const SPEED_STEP = 0.25
 /** Distância da câmera em alturas do personagem (enquadra o corpo inteiro com margem). */
 const CAMERA_DISTANCE = 1.9
 
@@ -63,47 +40,6 @@ export interface RigPreviewInput {
   builds: RigBuildKind[]
   /** Selecionados na config que ainda não estão no rig (nome do clipe, FBX). */
   pending: Array<{ name: string; file: string }>
-}
-
-const ARM_LABEL: Record<ArmOffsetKey, string> = {
-  shoulderLift: 'characterRig.arm.shoulder',
-  armSpace: 'characterRig.arm.space',
-  elbowSpace: 'characterRig.arm.elbow',
-  shoulderBack: 'characterRig.arm.back',
-  armTwist: 'characterRig.arm.arm_twist',
-  foreArmTwist: 'characterRig.arm.forearm_twist',
-}
-
-function toQuat(q: THREE.Quaternion): Quat {
-  return [q.x, q.y, q.z, q.w]
-}
-
-function formatDeg(v: number): string {
-  return `${v > 0 ? '+' : ''}${v.toFixed(1)}°`
-}
-
-/** Parâmetros `{lift, space, elbow, back, armTwist, foreTwist}` das mensagens de estado. */
-function degParams(o: ArmOffsets): Record<string, string> {
-  return { lift: formatDeg(o.shoulderLift), space: formatDeg(o.armSpace), elbow: formatDeg(o.elbowSpace), back: formatDeg(o.shoulderBack), armTwist: formatDeg(o.armTwist), foreTwist: formatDeg(o.foreArmTwist) }
-}
-
-/** Tira o BOM do começo do texto. */
-function stripBom(text: string): string {
-  return text.charCodeAt(0) === 0xfeff ? text.slice(1) : text
-}
-
-interface ArmControl {
-  range: HTMLInputElement
-  num: HTMLInputElement
-  reset: HTMLButtonElement
-}
-
-interface ArmBones {
-  model: THREE.Object3D
-  chest: THREE.Object3D
-  /** Rotação do peito no repouso, no espaço do modelo. */
-  chestRest: Quat
-  sides: Array<{ sign: number; shoulder: THREE.Object3D; arm: THREE.Object3D; foreArm: THREE.Object3D; hand: THREE.Object3D }>
 }
 
 function base64ToArrayBuffer(b64: string): ArrayBuffer {
@@ -120,16 +56,7 @@ export class RigAnimationPreview {
   private readonly buildInfo: HTMLElement
   private readonly listEl: HTMLElement
   private readonly statusEl: HTMLElement
-  private readonly playBtn: HTMLButtonElement
-  private readonly timeInput: HTMLInputElement
-  private readonly timeLabel: HTMLElement
-  private readonly speedInput: HTMLInputElement
-  private readonly speedLabel: HTMLElement
-  private readonly forceLoopInput: HTMLInputElement
-  private readonly armControls = new Map<ArmOffsetKey, ArmControl>()
-  private readonly armStateEl: HTMLElement
-  private readonly armSaveBtn: HTMLButtonElement
-  private readonly armAllBtn: HTMLButtonElement
+  private readonly bar: RigPlaybar
 
   private renderer: THREE.WebGLRenderer | null = null
   private readonly scene = new THREE.Scene()
@@ -145,37 +72,19 @@ export class RigAnimationPreview {
   private model: THREE.Object3D | null = null
   private mixer: THREE.AnimationMixer | null = null
   private gltfClips = new Map<string, THREE.AnimationClip>()
-  private action: THREE.AnimationAction | null = null
   private current: RigClip | null = null
-  private paused = false
-  private scrubbing = false
   private loadToken = 0
   /** Clipe a tocar assim que o GLB carregar (pedido antes da carga terminar). */
   private wanted: string | null = null
 
-  // ── Ajuste dos braços (adendo 4) ──
-  private configPath = ''
-  /** Na config do disco, por clipe de `skinned.clips` (só os que existem na config). */
-  private savedOffsets = new Map<string, ArmOffsets>()
-  /** Editados no painel (pendentes de gravar). */
-  private editedOffsets = new Map<string, ArmOffsets>()
-  /** Gravados no build mostrado (`clips[nome].armOffsets` do JSON do skin). */
-  private generatedOffsets = new Map<string, ArmOffsets>()
-  private bones: ArmBones | null = null
-  /**
-   * Pose do mixer nos ossos girados, antes do ajuste. O `PropertyMixer` do three
-   * só reescreve o osso quando o valor do clipe muda: sem restaurar antes de cada
-   * `mixer.update`, o ajuste somaria a cada quadro (pausado ou quadro repetido).
-   */
-  private readonly armPose: Array<[THREE.Object3D, THREE.Quaternion]> = []
-  private readonly tmpQ = new THREE.Quaternion()
-  private readonly tmpQ2 = new THREE.Quaternion()
-  private readonly tmpV = new THREE.Vector3()
-  private readonly tmpV2 = new THREE.Vector3()
+  /** GLB das armas da config (relativo ao projeto), resolvido quando o projeto chega. */
+  private weaponsGlb = ''
+  // ── Ajuste dos braços (adendos 4–7) ──
+  private readonly arm: RigArmAdjust
   // ── Pose por clipe (adendo 8) ──
   private readonly pose: RigPoseEditor
   private readonly onKey = (e: KeyboardEvent): void => {
-    if (this.el.isConnected && this.el.offsetParent !== null && this.pose.handleKey(e)) e.preventDefault()
+    if (this.el.isConnected && this.el.offsetParent !== null && this.pose.ui.handleKey(e)) e.preventDefault()
   }
 
   constructor() {
@@ -186,56 +95,8 @@ export class RigAnimationPreview {
     this.statusEl = h('div', { class: 'rig-status' })
 
     this.viewEl = h('div', { class: 'rig-view rig-anim__view' })
-    this.playBtn = h('button', { class: 'export-modal__btn export-modal__btn--secondary rig-anim__play', type: 'button', onClick: () => this.togglePlay() }, '▶') as HTMLButtonElement
-    this.timeInput = h('input', { type: 'range', class: 'rig-anim__time', value: '0' }) as HTMLInputElement
-    Object.assign(this.timeInput, { min: '0', max: '1', step: '0.001' })
-    this.timeInput.addEventListener('pointerdown', () => (this.scrubbing = true))
-    this.timeInput.addEventListener('pointerup', () => (this.scrubbing = false))
-    this.timeInput.addEventListener('change', () => (this.scrubbing = false))
-    this.timeInput.addEventListener('input', () => this.seek(Number(this.timeInput.value)))
-    this.timeLabel = h('span', { class: 'rig-anim__tcode' }, '0.00 / 0.00 s')
-    this.speedInput = h('input', { type: 'range', class: 'rig-anim__speed', title: t('characterRig.anim.speed') }) as HTMLInputElement
-    Object.assign(this.speedInput, { min: String(SPEED_MIN), max: String(SPEED_MAX), step: String(SPEED_STEP), value: '1' })
-    this.speedInput.addEventListener('input', () => this.applySpeed())
-    this.speedLabel = h('span', { class: 'rig-anim__tcode' }, '1.00×')
-    this.forceLoopInput = h('input', { type: 'checkbox' }) as HTMLInputElement
-    this.forceLoopInput.addEventListener('change', () => this.applyLoop())
-
-    const playbar = h('div', { class: 'rig-anim__playbar' },
-      this.playBtn,
-      this.timeInput,
-      this.timeLabel,
-      h('span', { class: 'rig-anim__sep' }),
-      h('span', { class: 'rig-anim__lbl' }, t('characterRig.anim.speed')),
-      this.speedInput,
-      this.speedLabel,
-      h('label', { class: 'rig-check' }, this.forceLoopInput, h('span', {}, t('characterRig.anim.force_loop'))),
-    )
-
-    for (const key of ARM_OFFSET_KEYS) {
-      const { min, max, step } = ARM_OFFSET_LIMITS[key]
-      const range = h('input', { type: 'range', class: 'rig-arm__range' }) as HTMLInputElement
-      const num = h('input', { type: 'number', class: 'gs-input rig-arm__num' }) as HTMLInputElement
-      for (const el of [range, num]) Object.assign(el, { min: String(min), max: String(max), step: String(step), value: '0' })
-      range.addEventListener('input', () => this.setOffset(key, Number(range.value)))
-      num.addEventListener('change', () => this.setOffset(key, Number(num.value)))
-      const reset = h('button', { class: 'export-modal__btn export-modal__btn--secondary rig-arm__reset', type: 'button', onClick: () => this.setOffset(key, 0) }, t('characterRig.arm.reset')) as HTMLButtonElement
-      this.armControls.set(key, { range, num, reset })
-    }
-    this.armStateEl = h('div', { class: 'rig-arm__state' })
-    this.armSaveBtn = h('button', { class: 'export-modal__btn export-modal__btn--secondary', type: 'button', onClick: () => void this.saveArm() }, t('characterRig.arm.save')) as HTMLButtonElement
-    this.armAllBtn = h('button', { class: 'export-modal__btn export-modal__btn--secondary', type: 'button', title: t('characterRig.arm.apply_all_hint'), onClick: () => void this.applyToAll() }, t('characterRig.arm.apply_all')) as HTMLButtonElement
-    const armRows = ARM_OFFSET_KEYS.map((key) => {
-      const c = this.armControls.get(key)!
-      const { min, max } = ARM_OFFSET_LIMITS[key]
-      return h('label', { class: 'rig-arm__row', title: t('characterRig.arm.range', { min, max }) },
-        h('span', { class: 'rig-anim__lbl rig-arm__lbl' }, t(ARM_LABEL[key])), c.range, c.num, h('span', { class: 'rig-anim__lbl' }, '°'), c.reset)
-    })
-    const armBar = h('div', { class: 'rig-arm', title: t('characterRig.arm.hint') },
-      h('div', { class: 'rig-side__title' }, t('characterRig.arm.title')),
-      h('div', { class: 'rig-arm__rows' }, ...armRows),
-      h('div', { class: 'rig-arm__foot' }, this.armStateEl, this.armAllBtn, this.armSaveBtn))
-
+    this.arm = new RigArmAdjust(() => this.current?.name ?? null, () => this.renderList())
+    this.bar = new RigPlaybar(() => this.arm.restore())
     this.initThree()
     this.pose = new RigPoseEditor({
       scene: this.scene,
@@ -243,6 +104,9 @@ export class RigAnimationPreview {
       canvas: this.renderer?.domElement ?? null,
       orbit: this.controls,
       onChange: () => this.renderList(),
+      onWeapon: () => {
+        if (this.current) this.play(this.current.name, true)
+      },
     })
 
     this.el = h('div', { class: 'rig-anim' },
@@ -253,8 +117,8 @@ export class RigAnimationPreview {
         h('div', { class: 'rig-side__title' }, t('characterRig.anim.clips')),
         this.listEl,
         this.statusEl),
-      h('div', { class: 'rig-anim__main' }, this.viewEl, playbar, armBar),
-      this.pose.panel,
+      h('div', { class: 'rig-anim__main' }, this.viewEl, this.bar.el, this.arm.el),
+      this.pose.ui.el,
     )
 
     this.resizeObserver = new ResizeObserver(() => this.resize())
@@ -310,13 +174,13 @@ export class RigAnimationPreview {
       if (!this.active) return
       this.raf = requestAnimationFrame(tick)
       const dt = this.clock.getDelta()
-      this.restoreArmPose()
-      if (this.mixer && !this.paused && !this.scrubbing) this.mixer.update(dt)
-      this.applyArmOffsets()
-      this.pose.apply(this.armPose)
+      this.arm.restore()
+      this.bar.update(dt)
+      this.arm.apply()
+      this.pose.apply(this.arm.undoStack)
       this.controls?.update()
       this.renderer?.render(this.scene, this.camera)
-      this.syncTime()
+      this.bar.sync()
     }
     tick()
   }
@@ -341,6 +205,7 @@ export class RigAnimationPreview {
       && prev.entry[this.kind]?.glb === input.entry[this.kind]?.glb
       && prev.entry[this.kind]?.at === input.entry[this.kind]?.at
     this.renderBuilds()
+    void this.loadWeapons()
     if (keep) {
       this.renderList()
       return
@@ -371,7 +236,7 @@ export class RigAnimationPreview {
     this.kind = kind
     this.renderBuilds()
     this.renderList()
-    this.renderArm()
+    this.arm.render()
     const path = resolveProjectPath(input.projectDir, build.glb)
     this.setStatus(t('characterRig.loading', { file: path }))
     try {
@@ -381,8 +246,8 @@ export class RigAnimationPreview {
       if (token !== this.loadToken) return
       const skin = await this.loadSkin(resolveProjectPath(input.projectDir, build.clips))
       if (token !== this.loadToken) return
-      this.generatedOffsets = armOffsetsFromSkin(skin)
       this.setModel(gltf)
+      this.arm.setModel(this.model, skin)
       this.pose.setGenerated(skin)
       this.setStatus('')
       debug(SCOPE, 'rig carregado', kind, path, gltf.animations.map((a) => a.name))
@@ -413,13 +278,9 @@ export class RigAnimationPreview {
     this.scene.add(model)
     this.model = model
     this.gltfClips = new Map(gltf.animations.map((a) => [a.name, a]))
-    this.bones = this.findArmBones(model)
     this.pose.setModel(model) // lê o repouso antes do mixer
     this.mixer = new THREE.AnimationMixer(model)
-    this.mixer.addEventListener('finished', () => {
-      this.paused = true
-      this.syncPlayBtn()
-    })
+    this.bar.setMixer(this.mixer)
     // Enquadra pela caixa na pose de ligação (pés no chão em y ≈ 0).
     const box = new THREE.Box3().setFromObject(model, true)
     const height = Math.max(box.max.y - box.min.y, 0.1)
@@ -436,11 +297,9 @@ export class RigAnimationPreview {
 
   /** Libera o modelo: mixer, geometrias, materiais, texturas e esqueletos. */
   private clearModel(): void {
-    this.action = null
+    this.bar.setMixer(null)
     this.current = null
-    this.bones = null
-    this.armPose.length = 0
-    this.generatedOffsets = new Map()
+    this.arm.setModel(null, null)
     this.pose.setModel(null)
     this.pose.setClip(null)
     this.pose.setGenerated(null)
@@ -463,7 +322,6 @@ export class RigAnimationPreview {
       }
     })
     this.model = null
-    this.syncTime()
   }
 
   // ── Lista ─────────────────────────────────────────────────────────────────
@@ -484,7 +342,7 @@ export class RigAnimationPreview {
       h('span', { class: 'rig-clip__name' }, c.name),
       h('span', { class: 'rig-clip__meta' }, `${formatSeconds(c.duration)}${c.loop ? ' · ⟳' : ''}`),
       h('span', { class: 'rig-clip__file' }, absent ? t('characterRig.anim.absent') : fileLabel(c.file)),
-      ...(this.needsRegen(c.name) || this.pose.needsRegen(c.name) ? [h('span', { class: 'rig-clip__adj' }, t('characterRig.arm.regen_short'))] : []))
+      ...(this.arm.needsRegen(c.name) || this.pose.needsRegen(c.name) ? [h('span', { class: 'rig-clip__adj' }, t('characterRig.arm.regen_short'))] : []))
       ;(row as HTMLButtonElement).disabled = absent
       this.listEl.append(row)
     }
@@ -501,7 +359,7 @@ export class RigAnimationPreview {
   /** Pose não salva do clipe mostrado: confirma antes de trocar (adendo 8). */
   private async confirmLeavePose(): Promise<boolean> {
     const name = this.current?.name
-    if (!name || !this.pose.isUnsaved(name)) return true
+    if (!name || !this.pose.isUnsaved()) return true
     return window.electronAPI.confirmDialog(t('characterRig.pose.switch_confirm', { name }))
   }
 
@@ -518,91 +376,29 @@ export class RigAnimationPreview {
     await this.loadBuild(kind)
   }
 
-  /** Toca o clipe `name` do registro (do início). */
-  play(name: string): void {
-    const clip = this.gltfClips.get(name)
+  /**
+   * Toca o clipe `name` do registro (do início), ou a variante `name@ARMA` da arma
+   * escolhida se o GLB a tem. `keep` = só a arma mudou: com a mesma animação, não reinicia.
+   */
+  play(name: string, keep = false): void {
+    const weapon = this.pose.weapon.weapon
+    const variant = weapon ? variantKey(name, weapon) : null
+    const anim = variant && this.gltfClips.has(variant) ? variant : name
+    const clip = this.gltfClips.get(anim)
     const rig = this.input?.entry.clips.find((c) => c.name === name)
     if (!this.mixer || !clip || !rig) {
       this.wanted = name // ainda carregando: toca quando chegar
       return
     }
-    this.action?.stop()
     this.current = rig
-    this.action = this.mixer.clipAction(clip)
-    this.applyLoop()
-    this.action.reset().play()
-    this.paused = false
-    this.applySpeed()
-    this.timeInput.max = String(clip.duration)
-    this.pose.setClip(name)
-    this.syncPlayBtn()
+    if (!(keep && this.bar.clip === clip)) this.bar.start(clip, rig.loop)
+    this.pose.setClip(name, anim)
     this.renderList()
-    this.renderArm()
-    debug(SCOPE, 'tocando', name, { loop: rig.loop, duration: clip.duration })
+    this.arm.render()
+    debug(SCOPE, 'tocando', anim, { loop: rig.loop, duration: clip.duration })
   }
 
-  private applyLoop(): void {
-    if (!this.action || !this.current) return
-    const loop = this.current.loop || this.forceLoopInput.checked
-    this.action.setLoop(loop ? THREE.LoopRepeat : THREE.LoopOnce, Infinity)
-    this.action.clampWhenFinished = !loop
-    if (loop && this.paused && this.atEnd()) {
-      this.action.paused = false
-    }
-  }
-
-  private applySpeed(): void {
-    const s = Number(this.speedInput.value)
-    this.speedLabel.textContent = `${s.toFixed(2)}×`
-    if (this.mixer) this.mixer.timeScale = s
-  }
-
-  private atEnd(): boolean {
-    const a = this.action
-    return !!a && a.time >= a.getClip().duration - 1e-3
-  }
-
-  private togglePlay(): void {
-    const a = this.action
-    if (!a) return
-    if (this.paused) {
-      if (this.atEnd() && a.loop === THREE.LoopOnce) a.reset()
-      a.paused = false
-      a.enabled = true
-      if (!a.isRunning()) a.play()
-      this.paused = false
-    } else {
-      this.paused = true
-    }
-    this.syncPlayBtn()
-  }
-
-  private seek(time: number): void {
-    const a = this.action
-    if (!a || !this.mixer) return
-    a.enabled = true
-    a.paused = false
-    if (!a.isRunning()) a.play()
-    a.time = Math.min(time, a.getClip().duration)
-    this.restoreArmPose()
-    this.mixer.update(0)
-    this.syncTime()
-  }
-
-  private syncPlayBtn(): void {
-    this.playBtn.textContent = this.paused || !this.action ? '▶' : '❚❚'
-    this.playBtn.title = t(this.paused ? 'characterRig.anim.play' : 'characterRig.anim.pause')
-  }
-
-  private syncTime(): void {
-    const a = this.action
-    const dur = a?.getClip().duration ?? 0
-    const time = a ? Math.min(a.time, dur) : 0
-    if (!this.scrubbing) this.timeInput.value = String(time)
-    this.timeLabel.textContent = `${time.toFixed(2)} / ${formatSeconds(dur)}`
-  }
-
-  // ── Ajuste dos braços (adendo 4) ──────────────────────────────────────────
+  // ── Config (braços, pose e armas) ─────────────────────────────────────────
 
   /**
    * (Re)lê os ajustes da config no disco. Mesma config: ajuste ainda não salvo
@@ -615,17 +411,16 @@ export class RigAnimationPreview {
     } catch (err) {
       debug(SCOPE, 'config ilegível (ajuste dos braços e pose)', configPath, err)
     }
-    const saved = cfg ? armOffsetsFromConfig(cfg) : new Map<string, ArmOffsets>()
+    this.arm.setConfig(configPath, cfg)
     this.pose.setConfig(configPath, cfg)
-    if (configPath !== this.configPath) {
-      this.editedOffsets = new Map()
-    } else {
-      for (const name of [...this.editedOffsets.keys()]) if (!this.isUnsaved(name)) this.editedOffsets.delete(name)
-    }
-    this.configPath = configPath
-    this.savedOffsets = saved
+    this.weaponsGlb = weaponsGlbOf(cfg)
     this.renderList()
-    this.renderArm()
+    await this.loadWeapons()
+  }
+
+  /** GLB das armas do projeto no seletor (precisa do projeto: `show`). */
+  private async loadWeapons(): Promise<void> {
+    if (this.input && this.weaponsGlb) await this.pose.setWeaponsGlb(resolveProjectPath(this.input.projectDir, this.weaponsGlb))
   }
 
   /** JSON do skin do build (`armOffsets`/`poseOffsets` por clipe); ilegível = `null` (gerado = 0). */
@@ -638,195 +433,14 @@ export class RigAnimationPreview {
     }
   }
 
+  /** Grava os ajustes dos braços pendentes (antes de Gerar rig). */
+  saveArm(): Promise<boolean> {
+    return this.arm.save()
+  }
+
   /** Grava a pose pendente de todos os clipes (Salvar pose / antes de Gerar rig). */
   savePose(): Promise<boolean> {
-    return this.pose.save()
-  }
-
-  private wantedOffsets(name: string): ArmOffsets {
-    return this.editedOffsets.get(name) ?? this.savedOffsets.get(name) ?? ZERO_OFFSETS
-  }
-
-  private generatedOf(name: string): ArmOffsets {
-    return this.generatedOffsets.get(name) ?? ZERO_OFFSETS
-  }
-
-  /** O ajuste desejado difere do que está no GLB mostrado. */
-  private needsRegen(name: string): boolean {
-    return !!this.kind && this.savedOffsets.has(name) && !sameOffsets(this.wantedOffsets(name), this.generatedOf(name))
-  }
-
-  private isUnsaved(name: string): boolean {
-    const v = this.editedOffsets.get(name)
-    return !!v && !sameOffsets(v, this.savedOffsets.get(name) ?? ZERO_OFFSETS)
-  }
-
-  private setOffset(key: ArmOffsetKey, value: number): void {
-    const name = this.current?.name
-    if (!name || !this.savedOffsets.has(name)) return
-    this.editedOffsets.set(name, { ...this.wantedOffsets(name), [key]: clampOffset(key, value) })
-    this.renderArm()
-    this.renderList()
-  }
-
-  private renderArm(): void {
-    const name = this.current?.name ?? null
-    const editable = !!name && this.savedOffsets.has(name)
-    const v = name ? this.wantedOffsets(name) : ZERO_OFFSETS
-    for (const [key, c] of this.armControls) {
-      c.range.value = String(v[key])
-      c.num.value = String(v[key])
-      c.range.disabled = c.num.disabled = !editable
-      c.reset.disabled = !editable || v[key] === 0
-    }
-    this.armSaveBtn.disabled = ![...this.editedOffsets.keys()].some((n) => this.isUnsaved(n))
-    this.armAllBtn.disabled = !editable || this.savedOffsets.size < 2
-    this.armStateEl.classList.remove('warn')
-    if (!name) {
-      this.armStateEl.textContent = t('characterRig.arm.no_clip')
-      return
-    }
-    if (!editable) {
-      this.armStateEl.textContent = t('characterRig.arm.not_in_config', { name })
-      this.armStateEl.classList.add('warn')
-      return
-    }
-    const gen = this.generatedOf(name)
-    const parts = [t('characterRig.arm.generated', degParams(gen))]
-    if (this.needsRegen(name)) {
-      parts.push(t('characterRig.arm.regen', degParams(offsetDelta(v, gen))))
-      this.armStateEl.classList.add('warn')
-    }
-    if (this.isUnsaved(name)) parts.push(t('characterRig.arm.unsaved'))
-    this.armStateEl.textContent = parts.join(' ')
-  }
-
-  /**
-   * Relê a config do disco e grava os ajustes pendentes (campo 0 sai), só se o
-   * texto muda. `false` se não conseguiu gravar.
-   */
-  async saveArm(): Promise<boolean> {
-    const path = this.configPath
-    const pending = new Map([...this.editedOffsets].filter(([n]) => this.isUnsaved(n)))
-    if (!path || !pending.size) return true
-    try {
-      const before = stripBom(await window.electronAPI.readFile(path))
-      const next = applyArmOffsets(parseConfigObject(before), pending)
-      const text = serializeConfig(next)
-      if (text !== before) {
-        await window.electronAPI.writeFile(path, text)
-        debug(SCOPE, 'ajuste dos braços gravado', path, Object.fromEntries(pending))
-      }
-      this.savedOffsets = armOffsetsFromConfig(next)
-      this.editedOffsets = new Map()
-      this.renderList()
-      this.renderArm()
-      this.armStateEl.textContent = `${this.armStateEl.textContent} ${t('characterRig.arm.saved', { file: splitPath(path).name })}`
-      return true
-    } catch (err) {
-      this.armStateEl.textContent = t('characterRig.save_failed', { error: err instanceof Error ? err.message : String(err) })
-      this.armStateEl.classList.add('warn')
-      return false
-    }
-  }
-
-  /**
-   * Copia os 4 valores do clipe atual para todos os clipes de `skinned.clips`
-   * (adendo 5): confirma, relê a config do disco e grava na hora (só se o texto
-   * muda). Edições pendentes de outros clipes são substituídas.
-   */
-  async applyToAll(): Promise<boolean> {
-    const path = this.configPath
-    const name = this.current?.name
-    if (!path || !name || !this.savedOffsets.has(name)) return false
-    const offsets = this.wantedOffsets(name)
-    try {
-      const before = stripBom(await window.electronAPI.readFile(path))
-      const cfg = parseConfigObject(before)
-      const count = configClipNames(cfg).length
-      if (!(await window.electronAPI.confirmDialog(t('characterRig.arm.apply_all_confirm', { name, count, ...degParams(offsets) })))) return false
-      const next = applyArmOffsetsToAll(cfg, offsets)
-      const text = serializeConfig(next)
-      if (text !== before) {
-        await window.electronAPI.writeFile(path, text)
-        debug(SCOPE, 'ajuste dos braços aplicado a todos os clipes', path, { from: name, count, offsets })
-      }
-      this.savedOffsets = armOffsetsFromConfig(next)
-      this.editedOffsets = new Map()
-      this.renderList()
-      this.renderArm()
-      this.armStateEl.textContent = `${this.armStateEl.textContent} ${t('characterRig.arm.applied_all', { count, file: splitPath(path).name })}`
-      return true
-    } catch (err) {
-      this.armStateEl.textContent = t('characterRig.save_failed', { error: err instanceof Error ? err.message : String(err) })
-      this.armStateEl.classList.add('warn')
-      return false
-    }
-  }
-
-  /** Direção `from` → `to` no espaço do modelo (getWorldPosition recalcula a cadeia já girada). */
-  private boneDir(from: THREE.Object3D, to: THREE.Object3D, model: THREE.Object3D): Vec3 {
-    const a = model.worldToLocal(from.getWorldPosition(this.tmpV))
-    const c = model.worldToLocal(to.getWorldPosition(this.tmpV2))
-    return [c.x - a.x, c.y - a.y, c.z - a.z]
-  }
-
-  /** Rotação de mundo de `o` no espaço do modelo. */
-  private modelQuat(o: THREE.Object3D, model: THREE.Object3D): Quat {
-    model.getWorldQuaternion(this.tmpQ2).invert()
-    return toQuat(this.tmpQ2.multiply(o.getWorldQuaternion(this.tmpQ)))
-  }
-
-  private findArmBones(model: THREE.Object3D): ArmBones | null {
-    const chest = model.getObjectByName(CHEST_BONE)
-    const sides = ARM_SIDES.map((s) => ({ sign: s.sign, shoulder: model.getObjectByName(s.shoulder), arm: model.getObjectByName(s.arm), foreArm: model.getObjectByName(s.foreArm), hand: model.getObjectByName(s.hand) }))
-    if (!chest || sides.some((s) => !s.shoulder?.parent || !s.arm?.parent || !s.foreArm?.parent || !s.hand)) {
-      debug(SCOPE, 'rig sem os ossos do ajuste dos braços', { chest: !!chest })
-      return null
-    }
-    model.updateMatrixWorld(true)
-    return {
-      model,
-      chest,
-      chestRest: this.modelQuat(chest, model),
-      sides: sides.map((s) => ({ sign: s.sign, shoulder: s.shoulder!, arm: s.arm!, foreArm: s.foreArm!, hand: s.hand! })),
-    }
-  }
-
-  /** Devolve aos ossos a pose do mixer (desfaz o ajuste do quadro anterior). */
-  private restoreArmPose(): void {
-    undoInReverse(this.armPose, (bone, q) => bone.quaternion.copy(q))
-  }
-
-  /** Depois do mixer: gira clavícula e braço pela diferença (mesma conta do `arm_offsets` do jogo). */
-  private applyArmOffsets(): void {
-    const b = this.bones
-    const name = this.current?.name
-    if (!b || !name) return
-    const d = offsetDelta(this.wantedOffsets(name), this.generatedOf(name))
-    if (ARM_OFFSET_KEYS.every((k) => !d[k])) return
-    const chest = this.modelQuat(b.chest, b.model)
-    const axis = chestAxis(chest, b.chestRest)
-    const up = chestUp(chest, b.chestRest)
-    for (const side of b.sides) {
-      const r = sideRotations(axis, up, side.sign, d)
-      // clavícula, braço, antebraço: cada um lê o pai já girado (getWorldQuaternion recalcula a cadeia)
-      // a torção usa a direção do osso já girado (pivô dele → pivô do filho), como o `arm_offsets`
-      const steps: Array<[THREE.Object3D, () => Quat | null]> = [
-        [side.shoulder, () => r.shoulder],
-        [side.arm, () => r.arm],
-        [side.arm, () => (d.armTwist ? twistRotation(this.boneDir(side.arm, side.foreArm, b.model), side.sign, d.armTwist) : null)],
-        [side.foreArm, () => r.foreArm],
-        [side.foreArm, () => (d.foreArmTwist ? twistRotation(this.boneDir(side.foreArm, side.hand, b.model), side.sign, d.foreArmTwist) : null)],
-      ]
-      for (const [bone, rotOf] of steps) {
-        const rot = rotOf()
-        if (!rot) continue
-        this.armPose.push([bone, bone.quaternion.clone()])
-        const local = localAfterWorldRotation(this.modelQuat(bone.parent!, b.model), toQuat(bone.quaternion), rot)
-        bone.quaternion.set(local[0], local[1], local[2], local[3])
-      }
-    }
+    return this.pose.ui.save()
   }
 
   private setStatus(text: string, warn = false): void {
