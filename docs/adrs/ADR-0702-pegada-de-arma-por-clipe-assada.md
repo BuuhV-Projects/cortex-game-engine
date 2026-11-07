@@ -37,15 +37,16 @@ Escolhas do usuário entre as alternativas apresentadas:
    - Rejeitadas: *arma × modo* (mira/pronto) somado por cima de qualquer clipe — menos
      ajustes, mas o usuário quer controle por clipe; *postura × modo* — todas as armas
      longas iguais.
-2. **Assado no clipe pelo pipeline**, não somado em tempo de execução. O pipeline de
-   personagem do DDD 61 (`prepare-character.sh` + `character_*.py`) passa a ser **recurso
-   da engine** (os jogos chamam a engine em vez de manter cópia); o Port Hollow continua
-   consumindo o GLB. Os NPCs regeram os clipes deles pelo mesmo caminho.
-   - Rejeitada: JSON lido e somado por quadro pelo jogo — sem Blender, mas duas contas da
-     mesma pose (Studio e jogo) e nada a ver do jeito que o jogo toca.
-   - Consequência aceita: a arma longa precisa de **clipes novos** (pacotes FBX de arma
-     longa na aba Pasta); a postura calculada deixa de ser o caminho do player quando a
-     variante existe.
+2. **Assado no GLB que o jogo já tem, pelo Studio** (revisto em 2026-11-06, ver abaixo). O Studio
+   grava as correções e as variantes `clipe@ARMA` direto no GLB do personagem do projeto aberto, a
+   partir das animações que já estão nele, com a mesma conta da prévia. Não reimporta fontes (FBX,
+   marcadores, bone heat) e não importa nada de outro jogo.
+   - Rejeitadas: JSON somado por quadro pelo jogo (duas contas da mesma pose, nada a ver do jeito que o
+     jogo toca); levar o `prepare-character` do DDD 61 para a engine (escolha inicial, desfeita: o
+     pipeline reimporta tudo das fontes, inclusive clipes de outro jogo, e o pedido era só editar o que
+     o jogo tem).
+   - Consequência aceita: a arma longa precisa de clipes de arma longa no GLB do player para ter
+     variante; a postura calculada deixa de ser o caminho do player quando a variante existe.
 3. **Arma presa rígida na mão direita** por uma pegada por arma:
    `skinned.weaponGrips[ARMA] = { offset: [x,y,z], rotation: [x,y,z,w] }`, no espaço do
    osso `RightHand` (posição do `Grip_R` e giro da arma). A mesma pegada vale no Studio e
@@ -64,10 +65,15 @@ Escolhas do usuário entre as alternativas apresentadas:
 | Fase | Onde | Entrega |
 |---|---|---|
 | F1 | engine (Studio) | Seletor de arma na aba Animações, arma na mão pela pegada, `Grip_L` como alvo, pose/ligações por arma × clipe gravadas na config (SPEC-0703) |
-| F2 | engine | Pipeline de personagem como recurso da engine, assando as variantes `clipe@ARMA` e lendo `weaponGrips` |
-| F3 | jogo (Port Hollow) | Player com config própria, toca `clipe@ARMA` e prende a arma pela pegada |
-| F4 | jogo + engine | NPC com ossos (ADR próprio): rig compartilhado, skin no lote, clipes por osso |
-| F5 | jogo | NPCs tocando as variantes de arma |
+| F2 | engine (Studio) | Gravar no GLB do jogo: corrige os clipes ajustados e cria as variantes `clipe@ARMA` no GLB e no JSON do skin, com `weaponGrips` (SPEC-0704) |
+| F3 | jogo (Port Hollow) | Player toca `clipe@ARMA` quando segura a arma e prende a arma pela pegada |
+| F4 | jogo + engine | NPC com ossos (ADR próprio): rig compartilhado, skin no lote, clipes por osso, editável no Studio como o player |
+| F5 | jogo | NPCs tocando os clipes ajustados e as variantes de arma |
+
+**Revisão (2026-11-06).** O usuário esclareceu que queria só editar no Studio as animações que o jogo já
+tem, com a arma escolhida na mão, para o player e para os NPCs. A F2 deixou de ser levar o pipeline do
+DDD 61 para a engine (que reimportava das fontes e trazia clipes de outro jogo) e passou a ser gravar o
+ajuste no GLB existente. O `prepare-character` do DDD 61 continua lá, para gerar personagem do zero.
 
 ## Consequências
 
