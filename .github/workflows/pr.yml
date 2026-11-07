@@ -206,7 +206,7 @@ jobs:
       # AQUI, e não dentro da action, pra não mudar o comportamento do
       # `release.yml`, que a compartilha.
       - name: Cache do cargo (crate rapier-native)
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ~/.cargo/registry
