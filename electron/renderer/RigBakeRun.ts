@@ -63,6 +63,7 @@ function isObject(v: unknown): v is JsonObject {
 export function bakeMessage(out: BakeOutcome): { text: string; warn: boolean } | null {
   if (out.kind === 'none') return { text: t('characterRig.bake.none'), warn: false }
   if (out.kind === 'refused') return { text: t('characterRig.bake.refused', { name: out.name }), warn: true }
+  if (out.kind === 'done' && !out.count) return { text: t('characterRig.bake.done_grips', { count: out.grips ?? 0, file: out.file }), warn: false }
   if (out.kind === 'done') return { text: t('characterRig.bake.done', { count: out.count, file: out.file }) + (out.grips ? ` ${t('characterRig.bake.grips', { count: out.grips })}` : ''), warn: false }
   return null
 }
@@ -102,7 +103,9 @@ export async function runBake(input: BakeRunInput): Promise<BakeOutcome> {
   if (!writePlayer && !npcPair) return { kind: 'none' }
   const gripCount = new Set([...playerGrips.keys(), ...npcGrips.keys()]).size
   const file = [writePlayer ? splitPath(input.glb).name : null, npcPair ? splitPath(npcPair.glb).name : null].filter(Boolean).join(' + ')
-  const ask = t('characterRig.bake.confirm', { count: all.length, file }) + (gripCount ? ` ${t('characterRig.bake.grips', { count: gripCount })}` : '')
+  const ask = all.length
+    ? t('characterRig.bake.confirm', { count: all.length, file }) + (gripCount ? ` ${t('characterRig.bake.grips', { count: gripCount })}` : '')
+    : t('characterRig.bake.confirm_grips', { count: gripCount, file })
   if (!(await window.electronAPI.confirmDialog(ask))) return { kind: 'cancelled' }
   const ctx = { sk: pose.skeleton, arm, store, clips: input.gltfClips, limits: pose.limits }
   const baked = jobs.map((j) => bakeJob(ctx, j))

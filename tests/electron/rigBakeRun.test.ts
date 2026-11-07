@@ -1,5 +1,6 @@
 /**
  * "Gravar no GLB do jogo" (SPEC-0704): sem o JSON do skin do build, nada é assado nem gravado.
+ * Só a pegada mudada também grava (SPEC-0709).
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { bakeFlow, runBake, type BakeRunInput } from '../../electron/renderer/RigBakeRun.js'
@@ -83,5 +84,30 @@ describe('runBake — antes de assar', () => {
     expect(await bakeFlow(withStore({ skinned: { clips: { idle: {} } } }, { clips: {} }, ['idle']), async () => false, reload)).toBeNull()
     expect(a.confirmDialog).not.toHaveBeenCalled()
     expect(reload).not.toHaveBeenCalled()
+  })
+})
+
+describe('runBake — só a pegada (SPEC-0709)', () => {
+  afterEach(() => vi.unstubAllGlobals())
+  const GRIP = { offset: [0.04, -0.01, 0.02], rotation: [0, 0, 0, 1] }
+  const cfg = { skinned: { clips: { idle: {} }, weaponGrips: { 'ARM-01': GRIP } } }
+  const GLB = 'R0xCLWlndWFs'
+
+  it('pegada igual no JSON do skin: nada a gravar', async () => {
+    const a = { confirmDialog: vi.fn(), readFileBase64: vi.fn(), characterRigWriteBake: vi.fn() }
+    vi.stubGlobal('window', { electronAPI: a })
+    const skin = { clips: { idle: {} }, weaponGrips: { 'ARM-01': { rotation: GRIP.rotation, offset: GRIP.offset } } }
+    expect(await runBake(withStore(cfg, skin, ['idle']))).toEqual({ kind: 'none' })
+    expect(a.confirmDialog).not.toHaveBeenCalled()
+  })
+
+  it('pegada nova sem clipe a assar: grava o JSON do skin com ela e o GLB igual', async () => {
+    const a = { confirmDialog: vi.fn(async () => true), readFileBase64: vi.fn(async () => GLB), characterRigWriteBake: vi.fn() }
+    vi.stubGlobal('window', { electronAPI: a })
+    const out = await runBake(withStore(cfg, { clips: { idle: {} } }, ['idle']))
+    expect(out).toEqual({ kind: 'done', count: 0, grips: 1, file: 'a.glb' })
+    const [, glb, json, glbB64, sidecar] = a.characterRigWriteBake.mock.calls[0]!
+    expect([glb, json, glbB64]).toEqual(['a.glb', 'a.json', GLB])
+    expect(JSON.parse(sidecar as string).weaponGrips).toEqual({ 'ARM-01': GRIP })
   })
 })

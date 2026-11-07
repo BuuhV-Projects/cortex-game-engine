@@ -18,7 +18,9 @@ já está igual ao desejado" e a pegada nova não chegava ao jogo.
   tem personagens). Pegada ausente ou diferente (a 6 casas) no JSON do skin = pegada a gravar.
 - Sem clipe a assar e sem pegada a gravar: "Nada a gravar", como antes.
 - Só pegada a gravar num par: o JSON do skin ganha `weaponGrips` novo e o GLB é regravado igual (o par vai
-  junto para o `.bak`, ADR-0705). A confirmação conta os clipes e as pegadas.
+  junto para o `.bak`, ADR-0705). Confirmação e estado têm texto próprio ("Gravar N pegada(s) de arma em…"); com
+  clipes e pegadas, o texto dos clipes ganha "Mais N pegada(s)". A comparação lê a pegada como a config (não
+  depende da ordem das chaves do JSON).
 - Com clipes a assar, as pegadas das armas deles continuam indo junto, como antes.
 
 ## Fora
