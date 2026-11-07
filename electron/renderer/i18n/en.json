@@ -278,6 +278,7 @@
       "folder": "Folder"
     },
     "anim": {
+      "viewKeys": "Views (numpad): 1 front, 3 right, 7 top (Ctrl/Shift: the opposite side), 9 flips, 5 perspective/orthographic. Orbiting releases the aligned view.",
       "need_rig": "Generate this character's rig first (not in tools/characters/rigs.json, or the GLB is missing).",
       "build": "Generated rig",
       "build_info": "{kind} · {at}",

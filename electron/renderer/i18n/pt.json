@@ -278,6 +278,7 @@
       "folder": "Pasta"
     },
     "anim": {
+      "viewKeys": "Vistas (teclado numérico): 1 frente, 3 direita, 7 topo (Ctrl/Shift: o lado oposto), 9 inverte, 5 perspectiva/ortográfica. Girar solta a vista alinhada.",
       "need_rig": "Gere o rig deste personagem primeiro (não está em tools/characters/rigs.json, ou o GLB não existe).",
       "build": "Rig gerado",
       "build_info": "{kind} · {at}",
