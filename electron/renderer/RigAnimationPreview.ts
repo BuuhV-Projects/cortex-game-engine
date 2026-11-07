@@ -9,6 +9,7 @@ import { fileLabel, parseConfigObject } from './characterRigSelection'
 import { RigArmAdjust } from './RigArmAdjust'
 import { RigPlaybar } from './RigPlaybar'
 import { stripBom } from './rigPoseStore'
+import { jointLimitsOf } from './characterRigBake'
 import { variantKey, weaponsGlbOf } from './characterRigWeapon'
 import { RigPoseEditor } from './RigPoseEditor'
 import type { JsonObject } from './characterRigSelection'
@@ -412,6 +413,7 @@ export class RigAnimationPreview {
       debug(SCOPE, 'config ilegível (ajuste dos braços e pose)', configPath, err)
     }
     this.arm.setConfig(configPath, cfg)
+    this.pose.limits = jointLimitsOf(cfg)
     this.pose.setConfig(configPath, cfg)
     this.weaponsGlb = weaponsGlbOf(cfg)
     this.renderList()
