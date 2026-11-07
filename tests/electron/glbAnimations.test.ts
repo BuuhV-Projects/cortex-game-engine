@@ -248,6 +248,19 @@ describe('glbAnimations — revisão (SPEC-0704)', () => {
     const glb = tweaked((j) => (j.nodes[0].name = 'Bone.L ok'))
     const out = replaceAnimations(glb, [spin('novo', 'BoneL_ok')])
     expect(parseGlb(out).json.animations[1].channels[0].target.node).toBe(0)
+    // ida e volta: o que a leitura devolve a escrita aceita
+    const read = readAnimations(glb)
+    expect(read[0]!.channels[0]!.node).toBe('BoneL_ok')
+    expect(readAnimations(replaceAnimations(glb, read))).toEqual(read)
+  })
+
+  it('canal fora de rotation/translation/scale ou LINEAR/STEP e animação repetida no GLB são recusados', () => {
+    const bad = (over: Record<string, string>): BakedClip => ({ name: 'novo', channels: [{ ...spin('novo').channels[0]!, ...over } as BakedClip['channels'][number]] })
+    expect(() => replaceAnimations(syntheticGlb(), [bad({ path: 'weights' })])).toThrow(/weights/)
+    expect(() => replaceAnimations(syntheticGlb(), [bad({ interpolation: 'CUBICSPLINE' })])).toThrow(/CUBICSPLINE/)
+    const twice = tweaked((j) => j.animations.push(structuredClone(j.animations[0])))
+    expect(() => replaceAnimations(twice, [spin('idle')])).toThrow(/mais de uma animação idle/)
+    expect(() => replaceAnimations(twice, [spin('outro')])).not.toThrow()
   })
 
   it('nó com nome repetido depois de normalizar é recusado', () => {
