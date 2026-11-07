@@ -8,6 +8,8 @@ import { formatSeconds, resolveProjectPath, type RigBuildKind, type RigClip, typ
 import { fileLabel, parseConfigObject } from './characterRigSelection'
 import { RigArmAdjust } from './RigArmAdjust'
 import { RigPlaybar } from './RigPlaybar'
+import { bakeMessage, runBake } from './RigBakeRun'
+import { jointLimitsOf } from './characterRigBake'
 import { stripBom } from './rigPoseStore'
 import { variantKey, weaponsGlbOf } from './characterRigWeapon'
 import { RigPoseEditor } from './RigPoseEditor'
@@ -56,6 +58,9 @@ export class RigAnimationPreview {
   private readonly buildInfo: HTMLElement
   private readonly listEl: HTMLElement
   private readonly statusEl: HTMLElement
+  private readonly bakeBtn: HTMLButtonElement
+  /** JSON do skin do build mostrado (o assado parte dele). */
+  private skin: unknown = null
   private readonly bar: RigPlaybar
 
   private renderer: THREE.WebGLRenderer | null = null
@@ -93,6 +98,7 @@ export class RigAnimationPreview {
     this.buildInfo = h('div', { class: 'rig-anim__info' })
     this.listEl = h('div', { class: 'rig-anim__list' })
     this.statusEl = h('div', { class: 'rig-status' })
+    this.bakeBtn = h('button', { class: 'export-modal__btn export-modal__btn--secondary', type: 'button', title: t('characterRig.bake.hint'), onClick: () => void this.bake() }, t('characterRig.bake.button')) as HTMLButtonElement
 
     this.viewEl = h('div', { class: 'rig-view rig-anim__view' })
     this.arm = new RigArmAdjust(() => this.current?.name ?? null, () => this.renderList())
@@ -114,6 +120,7 @@ export class RigAnimationPreview {
         h('div', { class: 'rig-side__title' }, t('characterRig.anim.build')),
         this.buildSelect,
         this.buildInfo,
+        this.bakeBtn,
         h('div', { class: 'rig-side__title' }, t('characterRig.anim.clips')),
         this.listEl,
         this.statusEl),
@@ -247,6 +254,7 @@ export class RigAnimationPreview {
       const skin = await this.loadSkin(resolveProjectPath(input.projectDir, build.clips))
       if (token !== this.loadToken) return
       this.setModel(gltf)
+      this.skin = skin
       this.arm.setModel(this.model, skin)
       this.pose.setGenerated(skin)
       this.setStatus('')
@@ -393,6 +401,7 @@ export class RigAnimationPreview {
     this.current = rig
     if (!(keep && this.bar.clip === clip)) this.bar.start(clip, rig.loop)
     this.pose.setClip(name, anim)
+    this.arm.anim = anim
     this.renderList()
     this.arm.render()
     debug(SCOPE, 'tocando', anim, { loop: rig.loop, duration: clip.duration })
@@ -412,6 +421,7 @@ export class RigAnimationPreview {
       debug(SCOPE, 'config ilegível (ajuste dos braços e pose)', configPath, err)
     }
     this.arm.setConfig(configPath, cfg)
+    this.pose.limits = jointLimitsOf(cfg)
     this.pose.setConfig(configPath, cfg)
     this.weaponsGlb = weaponsGlbOf(cfg)
     this.renderList()
@@ -430,6 +440,28 @@ export class RigAnimationPreview {
     } catch (err) {
       debug(SCOPE, 'JSON do skin ilegível: ajuste e pose gerados = 0', path, err)
       return null
+    }
+  }
+
+  /**
+   * "Gravar no GLB do jogo" (SPEC-0704): salva a config pendente, assa as chaves que diferem do build
+   * mostrado e grava o GLB e o JSON do skin dele; depois recarrega o build.
+   */
+  private async bake(): Promise<void> {
+    const input = this.input
+    const build = input && this.kind ? input.entry[this.kind] : undefined
+    if (!input || !build || !this.kind) return
+    this.bakeBtn.disabled = true
+    try {
+      if (!(await this.saveArm()) || !(await this.savePose())) return
+      const out = await runBake({ projectDir: input.projectDir, glb: build.glb, clips: build.clips, pose: this.pose, arm: this.arm, gltfClips: this.gltfClips, skin: this.skin })
+      if (out.kind === 'done') await this.loadBuild(this.kind)
+      const msg = bakeMessage(out)
+      if (msg) this.setStatus(msg.text, msg.warn)
+    } catch (err) {
+      this.setStatus(t('characterRig.bake.failed', { error: err instanceof Error ? err.message : String(err) }), true)
+    } finally {
+      this.bakeBtn.disabled = false
     }
   }
 

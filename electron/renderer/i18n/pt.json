@@ -355,6 +355,15 @@
       "follow_remove": "remover",
       "follow_regen": "Ligações ou pose diferentes do GLB: gere o rig de novo (a prévia mostra as desejadas)."
     },
+    "bake": {
+      "button": "Gravar no GLB do jogo",
+      "hint": "Grava as correções e as variantes por arma (clipe@ARMA) direto no GLB e no JSON do skin do build mostrado, com backup (.bak).",
+      "confirm": "Gravar {count} clipe(s) em {file}? O par atual (GLB e JSON) vai para .bak.",
+      "none": "Nada a gravar: o GLB já está igual ao desejado.",
+      "refused": "{name}: o GLB tem uma ligação que foi removida; o assado não desfaz ligação gravada (gere o rig no pipeline).",
+      "done": "Gravado: {count} clipe(s) em {file}.",
+      "failed": "Não gravou: {error}"
+    },
     "weapon": {
       "title": "Arma na mão",
       "hint": "Escolha uma arma do projeto: ela fica presa na mão direita e a pose editada passa a ser a deste clipe com esta arma (clipe@ARMA).",

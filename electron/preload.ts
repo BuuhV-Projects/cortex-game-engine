@@ -61,6 +61,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   characterRigRun: (projectDir: string, configRel: string, action: 'generate' | 'approve' | 'revert' = 'generate') =>
     ipcRenderer.invoke('characterRig:run', projectDir, configRel, action) as Promise<{ code: number }>,
 
+  /** Grava o assado da aba Animações no jogo: GLB (base64) + JSON do skin, com backup (SPEC-0704). */
+  characterRigWriteBake: (projectDir: string, glbRel: string, jsonRel: string, glbBase64: string, jsonText: string) =>
+    ipcRenderer.invoke('characterRig:writeBake', projectDir, glbRel, jsonRel, glbBase64, jsonText) as Promise<void>,
+
   /** Mata o auto-rig em andamento. */
   characterRigStop: () => ipcRenderer.invoke('characterRig:stop') as Promise<void>,
 

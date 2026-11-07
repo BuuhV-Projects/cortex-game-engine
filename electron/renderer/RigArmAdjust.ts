@@ -90,6 +90,8 @@ export class RigArmAdjust {
   /** Gravados no build mostrado (`clips[nome].armOffsets` do JSON do skin). */
   private generated = new Map<string, ArmOffsets>()
   private bones: ArmBones | null = null
+  /** Animação mostrada (`clipe@ARMA` quando o build tem a variante): o gerado vem dela (SPEC-0704). */
+  anim: string | null = null
   /** Há um build carregado (o gerado é o dele). */
   private loaded = false
   /**
@@ -133,6 +135,7 @@ export class RigArmAdjust {
   /** Novo GLB (ossos do ajuste) e o JSON do skin dele; `null` limpa. */
   setModel(model: THREE.Object3D | null, skin: unknown): void {
     this.undoStack.length = 0
+    this.anim = null
     this.loaded = !!model
     this.bones = model ? this.findBones(model) : null
     this.generated = model ? armOffsetsFromSkin(skin) : new Map()
@@ -149,11 +152,13 @@ export class RigArmAdjust {
     this.render()
   }
 
-  private wanted(name: string): ArmOffsets {
+  /** Ajuste desejado do clipe (edição ou config). */
+  wanted(name: string): ArmOffsets {
     return this.edited.get(name) ?? this.saved.get(name) ?? ZERO_OFFSETS
   }
 
-  private generatedOf(name: string): ArmOffsets {
+  /** Ajuste gravado no build para a animação `name`. */
+  generatedOf(name: string): ArmOffsets {
     return this.generated.get(name) ?? ZERO_OFFSETS
   }
 
@@ -197,9 +202,9 @@ export class RigArmAdjust {
       this.stateEl.classList.add('warn')
       return
     }
-    const gen = this.generatedOf(name)
+    const gen = this.generatedOf(this.anim ?? name)
     const parts = [t('characterRig.arm.generated', degParams(gen))]
-    if (this.needsRegen(name)) {
+    if (!sameOffsets(v, gen)) {
       parts.push(t('characterRig.arm.regen', degParams(offsetDelta(v, gen))))
       this.stateEl.classList.add('warn')
     }
@@ -285,12 +290,14 @@ export class RigArmAdjust {
     undoInReverse(this.undoStack, (bone, q) => bone.quaternion.copy(q))
   }
 
-  /** Depois do mixer: gira clavícula e braço pela diferença (mesma conta do `arm_offsets` do jogo). */
-  apply(): void {
+  /**
+   * Depois do mixer: gira clavícula e braço pela diferença (mesma conta do `arm_offsets` do jogo) entre o
+   * desejado do clipe `base` e o gerado na animação `anim` (a mostrada; o assado passa a dele).
+   */
+  apply(base: string | null = this.clip(), anim: string | null = this.anim ?? base): void {
     const b = this.bones
-    const name = this.clip()
-    if (!b || !name) return
-    const d = offsetDelta(this.wanted(name), this.generatedOf(name))
+    if (!b || !base || !anim) return
+    const d = offsetDelta(this.wanted(base), this.generatedOf(anim))
     if (ARM_OFFSET_KEYS.every((k) => !d[k])) return
     const chest = this.modelQuat(b.chest, b.model)
     const axis = chestAxis(chest, b.chestRest)

@@ -355,6 +355,15 @@
       "follow_remove": "remove",
       "follow_regen": "Links or pose differ from the GLB: generate the rig again (the preview shows the wanted ones)."
     },
+    "bake": {
+      "button": "Write to game GLB",
+      "hint": "Writes the corrections and the per-weapon variants (clip@WEAPON) straight into the GLB and skin JSON of the shown build, with backup (.bak).",
+      "confirm": "Write {count} clip(s) to {file}? The current pair (GLB and JSON) goes to .bak.",
+      "none": "Nothing to write: the GLB already matches.",
+      "refused": "{name}: the GLB has a link that was removed; baking can't undo a baked link (regenerate the rig in the pipeline).",
+      "done": "Written: {count} clip(s) to {file}.",
+      "failed": "Not written: {error}"
+    },
     "weapon": {
       "title": "Weapon in hand",
       "hint": "Pick a weapon from the project: it is held in the right hand and the edited pose becomes this clip's pose with this weapon (clip@WEAPON).",
