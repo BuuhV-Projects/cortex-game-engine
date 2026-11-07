@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
+import { RigViewCamera } from './RigViewCamera.js'
 import { h } from './ui'
 import { getLocale, t } from './i18n'
 import { debug } from '../../src/core/debug'
@@ -65,6 +66,8 @@ export class RigAnimationPreview {
   private readonly scene = new THREE.Scene()
   private readonly camera = new THREE.PerspectiveCamera(40, 1, 0.01, 200)
   private controls: OrbitControls | null = null
+  /** Vistas do teclado numérico (SPEC-0712). */
+  private view: RigViewCamera | null = null
   private readonly resizeObserver: ResizeObserver
   private readonly clock = new THREE.Clock()
   private raf = 0
@@ -87,7 +90,7 @@ export class RigAnimationPreview {
   // ── Pose por clipe (adendo 8) ──
   private readonly pose: RigPoseEditor
   private readonly onKey = (e: KeyboardEvent): void => {
-    if (this.el.isConnected && this.el.offsetParent !== null && this.pose.ui.handleKey(e)) e.preventDefault()
+    if (this.el.isConnected && this.el.offsetParent !== null && (this.view?.handleKey(e) || this.pose.ui.handleKey(e))) e.preventDefault()
   }
 
   constructor() {
@@ -98,7 +101,7 @@ export class RigAnimationPreview {
     this.statusEl = h('div', { class: 'rig-status' })
     this.bakeBtn = h('button', { class: 'export-modal__btn export-modal__btn--secondary', type: 'button', title: t('characterRig.bake.hint'), onClick: () => void this.bake() }, t('characterRig.bake.button')) as HTMLButtonElement
 
-    this.viewEl = h('div', { class: 'rig-view rig-anim__view' })
+    this.viewEl = h('div', { class: 'rig-view rig-anim__view', title: t('characterRig.anim.viewKeys') })
     this.arm = new RigArmAdjust(() => this.current?.name ?? null, () => this.renderList())
     this.bar = new RigPlaybar(() => this.arm.restore())
     this.initThree()
@@ -143,6 +146,7 @@ export class RigAnimationPreview {
       this.renderer = renderer
       this.controls = new OrbitControls(this.camera, renderer.domElement)
       this.controls.enableDamping = true
+      this.view = new RigViewCamera(this.camera, this.controls)
     } catch (err) {
       this.setStatus(t('characterRig.no_webgl'), true)
       debug(SCOPE, 'WebGL indisponível (prévia)', err)
@@ -302,6 +306,7 @@ export class RigAnimationPreview {
     this.camera.far = height * 100
     this.camera.position.set(target.x + height * 0.6, target.y + height * 0.15, target.z + height * CAMERA_DISTANCE)
     this.camera.updateProjectionMatrix()
+    this.view?.reset()
     this.controls?.target.copy(target)
     this.controls?.update()
     this.renderList()
@@ -485,6 +490,7 @@ export class RigAnimationPreview {
     this.resizeObserver.disconnect()
     this.clearModel()
     this.pose.dispose()
+    this.view?.dispose()
     this.controls?.dispose()
     this.renderer?.dispose()
     this.renderer?.forceContextLoss()
