@@ -1,11 +1,14 @@
 # SPEC-0704 - Gravar o ajuste de pose no GLB do jogo (variantes clipe@ARMA)
 
 **Data:** 2026-11-06
-**Status:** aceito
+**Status:** aceito (implementação em quatro PRs, ver "Entrega" abaixo; completa quando o botão Gravar entrar)
 
 Fase F2 do ADR-0702 (revisto). Grava no GLB do personagem que o jogo já usa as correções da aba
 Animações (SPEC-0349 adendos 4–9) e as variantes por arma (SPEC-0703), sem reimportar fontes. Como
 o arquivo é reescrito: ADR-0705.
+
+Entrega em quatro PRs: o painel dividido com o modo só publicado; a cirurgia no GLB (`glbAnimations.ts`);
+a conta (limite de junta e auxiliares, já valendo na prévia); e o botão Gravar com o IPC.
 
 ## Comportamento
 
