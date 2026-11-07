@@ -16,7 +16,8 @@ name: PR checks
 #                   "compatibilidade de build": bundle.mjs real sobre o engine,
 #                   hermesc, link do cortex_host.exe) e roda os testes
 #                   unitários do C++ (`cortex_host_tests`, TDR-0004).
-#                   Pulado quando o PR só toca docs (job `changes`).
+#                   Pulado quando o PR não toca native/, src/, deps nem o
+#                   próprio gate (job `changes`, SPEC-0706).
 #  3. `rules`     — regras do CLAUDE.md sobre o diff (SPEC-0654, TDR-0008).
 #  4. `trail`     — gera o mapa do trail e checa o diff contra os learnings
 #                   (SPEC-0657, TDR-0009).
@@ -56,7 +57,7 @@ env:
   TIMEOUT_NATIVE_TESTS_MINUTES: '15'
 
 jobs:
-  # PR que só toca docs/markdown pula o host nativo (TDR-0008). O pulo é por
+  # PR que não toca o que o host valida pula o job nativo (TDR-0008, SPEC-0706). O pulo é por
   # `if` no job, nunca por `paths` no `on:` — job pulado conta como verde no
   # check obrigatório; workflow não disparado deixa o check pendente.
   changes:
@@ -79,7 +80,8 @@ jobs:
         run: |
           if [ -z "$BASE" ]; then echo "native=true" >> "$GITHUB_OUTPUT"; exit 0; fi
           files=$(git diff --name-only "$BASE...$HEAD")
-          if echo "$files" | grep -qvE '^(docs/|graft/|\.claude/)|\.md$'; then native=true; else native=false; fi
+          # Só o que o build/teste do host consome (SPEC-0706).
+          if echo "$files" | grep -qE '^(native/|src/|package\.json$|yarn\.lock$|\.github/actions/build-native-host/|\.github/workflows/pr\.yml$)'; then native=true; else native=false; fi
           echo "native=$native" >> "$GITHUB_OUTPUT"
           echo "host nativo necessário: $native"
 
