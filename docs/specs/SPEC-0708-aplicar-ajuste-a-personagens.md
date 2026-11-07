@@ -1,7 +1,7 @@
 # SPEC-0708 - Aplicar o ajuste de pose a todos, a um ou a personagens selecionados
 
 **Data:** 2026-11-07
-**Status:** em implementação
+**Status:** implementado
 **Decisão:** ADR-0707
 
 ## Config (`skinned.characters`, opcional)
@@ -48,3 +48,12 @@ Gravar no GLB do jogo assa as chaves de personagem também: as do player no GLB 
 1. Testes: chave com `#` (montar, separar, herança); a escolha do jogo do mais específico ao geral; o retarget do
    Studio igual ao do jogo (gabarito); a config grava o mesmo ajuste nas chaves selecionadas.
 2. No Studio, no Port Hollow: escolher um NPC, ajustar, "Só este", gravar; o GLB dos NPCs ganha `clipe#npc-NNN`.
+
+## Implementação
+
+- `characterRigCharacters.ts` (chave, herança por espaço, alvos), `characterRigCharacterConfig.ts` (config),
+  `rigPoseStore.ts` (herança pela cadeia, `applyEditTo`, `discardEdit`).
+- `RigCharacterSource.ts` (seletor, malha de prévia, clipes retargetados por `characterRigRetarget.ts`, variantes dos
+  NPCs), `RigApplyTo.ts` (o "aplicar a" no painel de pose), `RigBakeCharacters.ts` + `RigBakeRun.ts` (cada visão assa
+  as chaves do esqueleto dela; até dois pares gravados).
+- Os braços (ajuste de `armOffsets`) só no player.

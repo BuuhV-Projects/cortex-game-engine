@@ -435,6 +435,22 @@
       "revert": "Desfazer publicação",
       "rejected": "Recusado: nada foi publicado. Ajuste os marcadores (ou a seleção) e gere de novo.",
       "revert_confirm": "Desfazer a última publicação? O jogo volta aos arquivos de antes dela."
+    },
+    "apply": {
+      "label": "Aplicar a",
+      "hint": "A quem o ajuste vale ao gravar (o mesmo giro deforma diferente em corpos diferentes)",
+      "player_everyone": "Player e todos os NPCs",
+      "player_only": "Só o player",
+      "player_selected": "Selecionados",
+      "npc_only": "Só este",
+      "npc_selected": "NPCs selecionados",
+      "npc_allNpcs": "Todos os NPCs"
+    },
+    "character": {
+      "label": "Personagem",
+      "hint": "Quem a prévia mostra: o player ou um NPC (no esqueleto dele, com os clipes do player)",
+      "player": "Player ({code})",
+      "no_preview": "Sem a malha de prévia de {code}: rode o script de prévia do jogo"
     }
   }
 }

@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js'
+import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { h } from './ui'
 import { getLocale, t } from './i18n'
@@ -10,7 +10,9 @@ import { RigArmAdjust } from './RigArmAdjust'
 import { RigPlaybar } from './RigPlaybar'
 import { bakeFlow, readSkinJson } from './RigBakeRun'
 import { jointLimitsOf } from './characterRigBake'
-import { variantKey, weaponsGlbOf } from './characterRigWeapon'
+import { weaponsGlbOf } from './characterRigWeapon'
+import { charactersOf } from './characterRigCharacters'
+import { RigCharacterSource, loadGlb } from './RigCharacterSource'
 import { RigPoseEditor } from './RigPoseEditor'
 import type { JsonObject } from './characterRigSelection'
 
@@ -43,17 +45,12 @@ export interface RigPreviewInput {
   pending: Array<{ name: string; file: string }>
 }
 
-function base64ToArrayBuffer(b64: string): ArrayBuffer {
-  const bin = atob(b64)
-  const bytes = new Uint8Array(bin.length)
-  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
-  return bytes.buffer
-}
-
 export class RigAnimationPreview {
   readonly el: HTMLElement
   private readonly viewEl: HTMLElement
   private readonly buildSelect: HTMLSelectElement
+  /** Player ou NPC na prévia (SPEC-0708). */
+  private readonly chars = new RigCharacterSource(() => void (this.kind && this.loadBuild(this.kind)))
   private readonly buildInfo: HTMLElement
   private readonly listEl: HTMLElement
   private readonly statusEl: HTMLElement
@@ -120,6 +117,7 @@ export class RigAnimationPreview {
       h('aside', { class: 'rig-side' },
         h('div', { class: 'rig-side__title' }, t('characterRig.anim.build')),
         this.buildSelect,
+        this.chars.select,
         this.buildInfo,
         this.bakeBtn,
         h('div', { class: 'rig-side__title' }, t('characterRig.anim.clips')),
@@ -248,16 +246,20 @@ export class RigAnimationPreview {
     const path = resolveProjectPath(input.projectDir, build.glb)
     this.setStatus(t('characterRig.loading', { file: path }))
     try {
-      const b64 = await window.electronAPI.readFileBase64(path)
-      if (token !== this.loadToken) return
-      const gltf: GLTF = await new Promise((res, rej) => new GLTFLoader().parse(base64ToArrayBuffer(b64), '', res, rej))
+      const player = await loadGlb(path)
       if (token !== this.loadToken) return
       const skin = await readSkinJson(resolveProjectPath(input.projectDir, build.clips))
+      // num NPC: a malha dele, os clipes do player retargetados e as variantes dele (SPEC-0708)
+      const view = await this.chars.view(input.projectDir, player, skin)
       if (token !== this.loadToken) return
+      const gltf: GLTF = view.gltf
       this.setModel(gltf)
+      this.gltfClips = view.clips
       this.skin = skin
-      this.arm.setModel(this.model, skin)
-      this.pose.setGenerated(skin)
+      this.arm.setModel(this.chars.character ? null : this.model, skin) // braços: só no player
+      this.pose.target = this.chars.character
+      this.pose.ui.applyTo.setContext(this.chars.characters, this.chars.player, this.chars.character)
+      this.pose.setGenerated(view.skin)
       this.setStatus('')
       debug(SCOPE, 'rig carregado', kind, path, gltf.animations.map((a) => a.name))
       const first = input.entry.clips.find((c) => this.gltfClips.has(c.name))
@@ -390,9 +392,7 @@ export class RigAnimationPreview {
    * escolhida se o GLB a tem. `keep` = só a arma mudou: com a mesma animação, não reinicia.
    */
   play(name: string, keep = false): void {
-    const weapon = this.pose.weapon.weapon
-    const variant = weapon ? variantKey(name, weapon) : null
-    const anim = variant && this.gltfClips.has(variant) ? variant : name
+    const anim = this.chars.anim(this.gltfClips, name, this.pose.weapon.weapon)
     const clip = this.gltfClips.get(anim)
     const rig = this.input?.entry.clips.find((c) => c.name === name)
     if (!this.mixer || !clip || !rig) {
@@ -424,6 +424,9 @@ export class RigAnimationPreview {
     this.arm.setConfig(configPath, cfg)
     this.pose.limits = jointLimitsOf(cfg)
     this.pose.setConfig(configPath, cfg)
+    const code = typeof cfg?.['code'] === 'string' ? cfg['code'] : ''
+    this.chars.setContext(charactersOf(cfg), code)
+    this.pose.ui.applyTo.setContext(this.chars.characters, code, this.chars.character)
     this.weaponsGlb = weaponsGlbOf(cfg)
     this.renderList()
     await this.loadWeapons()
@@ -445,7 +448,7 @@ export class RigAnimationPreview {
     const kind = this.kind
     this.bakeBtn.disabled = true
     const msg = await bakeFlow(
-      { projectDir: input.projectDir, glb: build.glb, clips: build.clips, pose: this.pose, arm: this.arm, gltfClips: this.gltfClips, skin: this.skin },
+      { projectDir: input.projectDir, glb: build.glb, clips: build.clips, pose: this.pose, arm: this.arm, gltfClips: this.gltfClips, skin: this.skin, character: this.chars.character, player: this.chars.player },
       async () => (await this.saveArm()) && (await this.savePose()),
       () => this.loadBuild(kind),
     )

@@ -162,6 +162,12 @@ export class PoseStore {
     return [...(this.inherited(key, (k) => this.editedFollow.get(k) ?? this.savedFollow.get(k)) ?? [])]
   }
 
+  /** Descarta a edição não salva da chave (o "aplicar a" levou para outras chaves). */
+  discardEdit(key: string): void {
+    this.edited.delete(key)
+    this.editedFollow.delete(key)
+  }
+
   /**
    * "Aplicar a" (SPEC-0708): a pose e as ligações desejadas de `from` viram a edição de cada chave de `to`, com o espaço
    * de onde vieram (`player` = editado no player, para um NPC). Grava no próximo `save`.
