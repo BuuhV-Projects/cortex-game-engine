@@ -50,6 +50,7 @@ export function trackPointer(start: PointerEvent, onMove: (ev: PointerEvent) => 
 
 export class RigMarkerViewport {
   private renderer: THREE.WebGLRenderer | null = null
+  private readonly resizeObserver = new ResizeObserver(() => this.resize())
   private readonly scene = new THREE.Scene()
   private readonly camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.01, 1000)
   private readonly raycaster = new THREE.Raycaster()
@@ -79,7 +80,7 @@ export class RigMarkerViewport {
     const key = new THREE.DirectionalLight(KEY_COLOR, KEY_INTENSITY)
     key.position.set(...KEY_POSITION)
     this.scene.add(hemi, key)
-    new ResizeObserver(() => this.resize()).observe(viewEl)
+    this.resizeObserver.observe(viewEl)
     this.bindView()
   }
 
@@ -255,6 +256,7 @@ export class RigMarkerViewport {
   }
 
   dispose(): void {
+    this.resizeObserver.disconnect()
     this.clearModel()
     this.renderer?.dispose()
     this.renderer?.forceContextLoss()
