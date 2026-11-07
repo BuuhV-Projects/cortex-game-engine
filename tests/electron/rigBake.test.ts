@@ -113,3 +113,35 @@ describe('RigBake — recusas', () => {
     expect(() => bakeJob(ctx, { name: 'idle', anim: 'idle' })).toThrow(/morphTargetInfluences/)
   })
 })
+
+describe('RigBake — chaves a assar', () => {
+  const LINK = { bone: 'LeftHand', target: 'RightHand', offset: [0.1, 0, 0], rotation: [0, 0, 0, 1] }
+  const cfgText = JSON.stringify({ skinned: { clips: { idle: { pose: { Head: TURN } }, walk: {}, run: {}, pistolIdle: { weapons: { 'ARM-02': { pose: { LeftArm: TURN } } } } } } })
+  function storeOf(generated: unknown): PoseStore {
+    const s = new PoseStore({ read: async () => cfgText, write: async () => {} })
+    s.setConfig(PATH, parseConfigObject(cfgText))
+    s.setGenerated(generated)
+    return s
+  }
+
+  it('assa o clipe que difere do GLB e as variantes; pula o igual e o que não está no GLB', () => {
+    const store = storeOf({ clips: { idle: {}, walk: {}, pistolIdle: {} } })
+    const jobs = bakeJobs(store, noArm, store.baseClips(), store.variantKeys(), new Set(['idle', 'walk', 'pistolIdle']))
+    expect(jobs).toEqual([{ name: 'idle', anim: 'idle' }, { name: 'pistolIdle@ARM-02', anim: 'pistolIdle' }])
+  })
+
+  it('variante cujo clipe base não está no GLB fica de fora', () => {
+    const store = storeOf({ clips: {} })
+    expect(bakeJobs(store, noArm, [], store.variantKeys(), new Set(['idle'])).map((j) => j.name)).toEqual([])
+  })
+
+  it('ligação gravada no GLB e removida do desejado recusa; igual não recusa', () => {
+    const gone = storeOf({ clips: { walk: { follow: [LINK] } } })
+    expect(lostLinks(gone, { name: 'walk', anim: 'walk' })).toBe(true)
+    const kept = new PoseStore({ read: async () => '', write: async () => {} })
+    const withLink = JSON.stringify({ skinned: { clips: { walk: { follow: [LINK] } } } })
+    kept.setConfig(PATH, parseConfigObject(withLink))
+    kept.setGenerated({ clips: { walk: { follow: [LINK] } } })
+    expect(lostLinks(kept, { name: 'walk', anim: 'walk' })).toBe(false)
+  })
+})
