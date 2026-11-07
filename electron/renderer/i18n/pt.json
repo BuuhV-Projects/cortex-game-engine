@@ -362,6 +362,7 @@
       "none": "Nada a gravar: o GLB já está igual ao desejado.",
       "refused": "{name}: o GLB tem uma ligação que foi removida; o assado não desfaz ligação gravada (gere o rig no pipeline).",
       "done": "Gravado: {count} clipe(s) em {file}.",
+      "skin_unreadable": "O JSON do skin do build está ilegível: nada foi gravado (o par GLB + JSON ficaria inconsistente).",
       "failed": "Não gravou: {error}"
     },
     "weapon": {

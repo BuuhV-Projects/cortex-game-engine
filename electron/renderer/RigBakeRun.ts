@@ -63,6 +63,8 @@ export function bakeMessage(out: BakeOutcome): { text: string; warn: boolean } |
 
 /** Assa e grava. Lança se não gravou (a mensagem vai para o estado). */
 export async function runBake(input: BakeRunInput): Promise<BakeOutcome> {
+  // sem o JSON do skin não há como gravar o par: o JSON novo perderia o que o jogo lê (stride, marks…)
+  if (!isObject(input.skin)) throw new Error(t('characterRig.bake.skin_unreadable'))
   const { pose, arm } = input
   const store = pose.store
   const jobs = bakeJobs(store, arm, store.baseClips(), store.variantKeys(), new Set(input.gltfClips.keys()))
@@ -80,8 +82,7 @@ export async function runBake(input: BakeRunInput): Promise<BakeOutcome> {
     const w = splitVariant(j.name).weapon
     if (w) grips.set(w, store.grip(w))
   }
-  const skin = isObject(input.skin) ? input.skin : {}
-  const sidecar = bakedSidecar(skin, baked.map((b) => b.entry), grips)
+  const sidecar = bakedSidecar(input.skin, baked.map((b) => b.entry), grips)
   await window.electronAPI.characterRigWriteBake(input.projectDir, input.glb, input.clips, bytesToBase64(next), JSON.stringify(sidecar, null, SIDECAR_INDENT) + '\n')
   debug(SCOPE, 'assado gravado no GLB', input.glb, jobs.map((j) => j.name))
   return { kind: 'done', count: jobs.length, file }

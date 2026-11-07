@@ -362,6 +362,7 @@
       "none": "Nothing to write: the GLB already matches.",
       "refused": "{name}: the GLB has a link that was removed; baking can't undo a baked link (regenerate the rig in the pipeline).",
       "done": "Written: {count} clip(s) to {file}.",
+      "skin_unreadable": "The build's skin JSON is unreadable: nothing was written (the GLB + JSON pair would become inconsistent).",
       "failed": "Not written: {error}"
     },
     "weapon": {
