@@ -55,7 +55,9 @@ export async function hasRigPipeline(projectDir: string): Promise<boolean> {
   try {
     const files = await window.electronAPI.readDir(`${trimDir(projectDir)}/tools`)
     return files.some((f) => !f.isDir && f.name === PIPELINE_SCRIPT)
-  } catch {
+  } catch (err) {
+    // sem `tools/` (ou ilegível): modo só publicado; o log diferencia falha de leitura de pasta ausente
+    debug(SCOPE, 'tools/ ilegível: painel sem pipeline', projectDir, err)
     return false
   }
 }
