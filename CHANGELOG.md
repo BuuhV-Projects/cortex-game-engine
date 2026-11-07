@@ -1,3 +1,10 @@
+# [0.116.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.115.1...v0.116.0) (2026-11-07)
+
+
+### Features
+
+* **studio:** vistas do teclado numérico na prévia do Auto-rig (SPEC-0710) ([60218d6](https://github.com/BuuhV-Projects/cortex-game-engine/commit/60218d6623bd3acc93aa1e2590cc676472bde9eb))
+
 ## [0.115.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.115.0...v0.115.1) (2026-11-07)
 
 
