@@ -3,6 +3,7 @@ import { debug } from '../../src/core/debug'
 import { localAfterWorldRotation, type Quat, type Vec3 } from './characterRigArmSpace'
 import { POSE_BONES, POSE_PARENTS, poseCorrections, worldCorrections } from './characterRigPose'
 import { followConstraints, type FollowLink } from './characterRigFollow'
+import { HELPER_PAIRS, clampJoint, helperQuat, limitOf } from './characterRigBake'
 
 /**
  * Os 22 ossos Mixamo do GLB da prévia (SPEC-0349 adendos 8 e 9): repouso lido
@@ -26,6 +27,10 @@ export class RigSkeleton {
   rest = new Map<string, Quat>()
   /** Cabeça de cada osso no repouso do GLB, no espaço do modelo. */
   restHeads = new Map<string, Vec3>()
+  /** Quatérnion local de repouso (antes do mixer) dos 22 ossos e dos auxiliares de cotovelo/joelho. */
+  restLocal = new Map<string, Quat>()
+  /** Os 22 ossos e os auxiliares, por nome. */
+  readonly allBones = new Map<string, THREE.Object3D>()
   private readonly tmpV = new THREE.Vector3()
   private readonly tmpQ = new THREE.Quaternion()
   private readonly tmpQ2 = new THREE.Quaternion()
@@ -36,6 +41,8 @@ export class RigSkeleton {
     this.bones.clear()
     this.rest = new Map()
     this.restHeads = new Map()
+    this.restLocal = new Map()
+    this.allBones.clear()
     if (!model) return
     model.updateMatrixWorld(true)
     for (const n of POSE_BONES) {
@@ -46,6 +53,39 @@ export class RigSkeleton {
     for (const [n, b] of this.bones) {
       this.rest.set(n, this.modelQuat(b))
       this.restHeads.set(n, this.modelPos(b))
+    }
+    for (const n of [...POSE_BONES, ...Object.keys(HELPER_PAIRS)]) {
+      const b = model.getObjectByName(n)
+      if (!b) continue
+      this.allBones.set(n, b)
+      this.restLocal.set(n, toQuat(b.quaternion))
+    }
+  }
+
+  /**
+   * Limite de junta (`skinned.jointLimitsDeg`) e auxiliares de cotovelo/joelho refeitos do osso de baixo,
+   * como o pipeline (SPEC-0704): a prévia mostra o mesmo que o assado grava. Passos na pilha do quadro.
+   */
+  applyLimitsAndHelpers(limits: Readonly<Record<string, number>>, undoStack: UndoStack): void {
+    const set = (n: string, q: Quat): void => {
+      const b = this.allBones.get(n)!
+      undoStack.push([b, b.quaternion.clone()])
+      b.quaternion.set(q[0], q[1], q[2], q[3])
+    }
+    for (const n of POSE_BONES) {
+      const limit = limitOf(n, limits)
+      const b = this.allBones.get(n)
+      const rest = this.restLocal.get(n)
+      if (limit === null || !b || !rest) continue
+      const q = toQuat(b.quaternion)
+      const c = clampJoint(rest, q, limit)
+      if (c !== q) set(n, c)
+    }
+    for (const [helper, [, lower]] of Object.entries(HELPER_PAIRS)) {
+      const low = this.allBones.get(lower)
+      const rest = this.restLocal.get(lower)
+      if (!this.allBones.has(helper) || !low || !rest) continue
+      set(helper, helperQuat(rest, toQuat(low.quaternion)))
     }
   }
 
