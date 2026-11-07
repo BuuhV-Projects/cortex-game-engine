@@ -248,6 +248,10 @@ describe('glbAnimations — revisão (SPEC-0704)', () => {
     const glb = tweaked((j) => (j.nodes[0].name = 'Bone.L ok'))
     const out = replaceAnimations(glb, [spin('novo', 'BoneL_ok')])
     expect(parseGlb(out).json.animations[1].channels[0].target.node).toBe(0)
+    // ida e volta: o que a leitura devolve a escrita aceita
+    const read = readAnimations(glb)
+    expect(read[0]!.channels[0]!.node).toBe('BoneL_ok')
+    expect(readAnimations(replaceAnimations(glb, read))).toEqual(read)
   })
 
   it('nó com nome repetido depois de normalizar é recusado', () => {

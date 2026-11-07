@@ -116,13 +116,13 @@ export function animationNames(glb: Uint8Array): string[] {
   return (parseGlb(glb).json.animations ?? []).map((a: Json, i: number) => a.name ?? `${UNNAMED_PREFIX}${i}`)
 }
 
-/** Lê as animações do GLB como clipes (nó pelo nome; '' se o nó não tiver nome). */
+/** Lê as animações do GLB como clipes (nó pelo nome que o three usa, o mesmo que `replaceAnimations` casa; '' sem nome). */
 export function readAnimations(glb: Uint8Array): BakedClip[] {
   const { json, bin } = parseGlb(glb)
   return readRaw(json, bin).map((clip) => ({
     name: clip.name,
     channels: clip.channels.map((c) => ({
-      node: json.nodes?.[c.node]?.name ?? '',
+      node: sanitizeNodeName(json.nodes?.[c.node]?.name ?? ''),
       path: c.path as BakedChannel['path'],
       interpolation: c.interpolation as BakedChannel['interpolation'],
       times: c.times,
