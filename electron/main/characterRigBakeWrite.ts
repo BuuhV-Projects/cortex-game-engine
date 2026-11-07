@@ -4,7 +4,7 @@
  * `<arquivo>.bak`; depois os `.tmp` trocam de nome. Uma falha antes da troca não toca no par atual.
  */
 import { copyFileSync, existsSync, renameSync, rmSync, writeFileSync } from 'fs'
-import { isAbsolute, relative, resolve } from 'path'
+import { isAbsolute, relative, resolve, sep } from 'path'
 
 /** Sufixos dos arquivos de passagem e de backup. */
 export const BAKE_TMP_SUFFIX = '.tmp'
@@ -17,7 +17,8 @@ export function insideProject(projectDir: string, rel: string): string {
   const root = resolve(projectDir)
   const abs = resolve(root, rel)
   const back = relative(root, abs)
-  if (!back || back.startsWith('..') || isAbsolute(back)) throw new Error(`caminho fora do projeto: ${rel}`)
+  // sobe de pasta só quando o primeiro segmento é '..' (um arquivo '..fundo.glb' é legítimo)
+  if (!back || back === '..' || back.startsWith(`..${sep}`) || isAbsolute(back)) throw new Error(`caminho fora do projeto: ${rel}`)
   return abs
 }
 

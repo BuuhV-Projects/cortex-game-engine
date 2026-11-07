@@ -39,6 +39,8 @@ describe('writeBakePair', () => {
     expect(() => writeBakePair(dir, 'a.png', JSON_REL, Uint8Array.from([1]), '{}')).toThrow(/\.glb/)
     expect(existsSync(join(dir, JSON_REL))).toBe(false)
     expect(() => insideProject(dir, '.')).toThrow()
+    expect(insideProject(dir, 'assets/..fundo.glb')).toMatch(/\.\.fundo\.glb$/)
+    expect(() => insideProject(dir, 'assets/../../x.glb')).toThrow(/fora do projeto/)
   })
 
   it('falha numa pasta que não existe não deixa .tmp nem muda o par', () => {
