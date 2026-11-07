@@ -22,6 +22,8 @@ Herança (a mesma cadeia por espaço da pose, `inheritChain`, só as chaves com 
 
 Na gravação, a pegada da chave mostrada vai para as chaves dos alvos escolhidos, como a pose (se a pegada foi
 editada). Editada no player e levada a NPCs selecionados, a pegada vai como está.
+Se a chave mostrada não é um dos alvos, a edição dela é descartada — inclusive a pegada, que é a da arma e do alvo
+dela e vale para todos os clipes: a pegada editada em `idle@ARMA` e levada só para `#LUC-01` deixa `ARMA` como estava.
 
 ## Gravar no GLB do jogo
 
