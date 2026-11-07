@@ -1,3 +1,17 @@
+# [0.114.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.113.1...v0.114.0) (2026-11-07)
+
+
+### Bug Fixes
+
+* **studio:** correções da revisão adversarial do assado no GLB (SPEC-0704) ([a1f0332](https://github.com/BuuhV-Projects/cortex-game-engine/commit/a1f033294ddacb546cdc6d0b307e6c7b3b4167d3))
+* **studio:** insideProject aceita nome de arquivo que começa com '..' (review do PR 72) ([9b462e5](https://github.com/BuuhV-Projects/cortex-game-engine/commit/9b462e5877367674c915ebe70b0bb9f566e2f31b))
+* **studio:** recusa gravar no GLB com o JSON do skin ilegível (review do PR 72) ([c4c86e1](https://github.com/BuuhV-Projects/cortex-game-engine/commit/c4c86e1dc60384802209241c0ac109ff2651f21a))
+
+
+### Features
+
+* **studio:** gravar o ajuste de pose e as variantes clipe@ARMA no GLB do jogo (SPEC-0704) ([e0a4c3f](https://github.com/BuuhV-Projects/cortex-game-engine/commit/e0a4c3f3bc0dedf16a2602d07631c2eee13855f6))
+
 ## [0.113.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.113.0...v0.113.1) (2026-11-07)
 
 
