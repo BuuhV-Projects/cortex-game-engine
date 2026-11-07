@@ -71,6 +71,8 @@ export class RigPoseEditor implements PoseInputTarget {
   pickingFollow = false
   /** Aviso da escolha do alvo (alvo na própria cadeia). */
   followWarn = ''
+  /** `skinned.jointLimitsDeg` da config: limite de junta também na prévia (SPEC-0704). */
+  limits: Readonly<Record<string, number>> = {}
   /** "Mão esquerda no apoio": captura a ligação no quadro seguinte ao IK. */
   private captureSupport = false
 
@@ -148,6 +150,11 @@ export class RigPoseEditor implements PoseInputTarget {
     return this.clip ? variantKey(this.clip, this.weapon.weapon) : null
   }
 
+  /** Ossos do GLB mostrado (o assado usa os mesmos). */
+  get skeleton(): RigSkeleton {
+    return this.sk
+  }
+
   get hasModel(): boolean {
     return !!this.sk.model
   }
@@ -199,9 +206,14 @@ export class RigPoseEditor implements PoseInputTarget {
     const showing = this.overlay.visible || this.mode !== 'off' || !!this.selected || !!code
     const delta = poseDelta(this.store.wanted(key), this.store.generatedPose(anim))
     const follows = this.store.wantedFollow(key)
-    if (!delta.size && !follows.length && !showing) return
+    if (!delta.size && !follows.length && !showing) {
+      // os braços podem ter girado o antebraço: limite e auxiliares como no assado (SPEC-0704)
+      if (undoStack.length) sk.applyLimitsAndHelpers(this.limits, undoStack)
+      return
+    }
     const frame = sk.readFrame()
     sk.applyPose(frame, delta, follows, undoStack)
+    sk.applyLimitsAndHelpers(this.limits, undoStack)
     if (code) this.weapon.attach(sk.bones.get(GRIP_BONE) ?? null, this.store.grip(code))
     if (this.captureSupport) {
       this.captureSupport = false
