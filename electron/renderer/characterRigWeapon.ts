@@ -14,6 +14,8 @@ import { followToJson, readFollows, type FollowLink } from './characterRigFollow
 
 /** Separa o clipe da arma na chave da variante (`idle@ARM-02`). */
 export const WEAPON_SEP = '@'
+/** Separador do alvo de personagem na chave (`clipe@ARMA#ALVO`, SPEC-0708). */
+const TARGET_SEP = '#'
 /** Sufixo do nó do apoio da mão esquerda dentro do nó da arma. */
 export const GRIP_L_SUFFIX = '_Grip_L'
 /** GLB das armas quando a config não diz (`skinned.weaponsGlb`). */
@@ -50,8 +52,13 @@ export function variantKey(clip: string, weapon: string | null): string {
   return weapon ? `${clip}${WEAPON_SEP}${weapon}` : clip
 }
 
-/** Separa a chave no último `@`: `idle@ARM-02` → `{ clip: 'idle', weapon: 'ARM-02' }`. */
+/**
+ * Separa a chave no último `@`: `idle@ARM-02` → `{ clip: 'idle', weapon: 'ARM-02' }`. O alvo de personagem
+ * (`#…`, SPEC-0708) sai antes: `idle@ARM-02#npc-001` → a mesma arma do mesmo clipe.
+ */
 export function splitVariant(key: string): { clip: string; weapon: string | null } {
+  const h = key.lastIndexOf(TARGET_SEP)
+  if (h > 0 && h < key.length - 1) key = key.slice(0, h)
   const i = key.lastIndexOf(WEAPON_SEP)
   return i > 0 && i < key.length - 1 ? { clip: key.slice(0, i), weapon: key.slice(i + 1) } : { clip: key, weapon: null }
 }
