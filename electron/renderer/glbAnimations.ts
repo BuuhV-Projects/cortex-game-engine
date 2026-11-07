@@ -159,6 +159,9 @@ function readFloats(json: Json, bin: Uint8Array, index: number): Float32Array {
 const UNNAMED_PREFIX = 'animation_'
 /** Paths que a cirurgia sabe regravar. */
 const KNOWN_PATHS = new Set(['rotation', 'translation', 'scale', 'weights'])
+/** O que um clipe do Studio pode trazer (o tipo TS não chega em runtime: o clipe vem de outro módulo). */
+const BAKED_PATHS = new Set(['rotation', 'translation', 'scale'])
+const BAKED_INTERPOLATIONS = new Set(['LINEAR', 'STEP'])
 
 /** Nome do nó como o three o guarda (o `PropertyBinding.sanitizeNodeName`): espaço vira `_`, `[].:/` somem. */
 export function sanitizeNodeName(name: string): string {
@@ -276,6 +279,7 @@ function toRaw(clip: BakedClip, nodeIndex: Map<string, number>, rest: Json, name
     channels: clip.channels.map((c) => {
       const node = nodeIndex.get(c.node)
       if (node === undefined) throw new Error(`clipe ${clip.name}: nó "${c.node}" não existe no GLB`)
+      if (!BAKED_PATHS.has(c.path) || !BAKED_INTERPOLATIONS.has(c.interpolation)) throw new Error(`clipe ${clip.name}: canal ${c.path}/${c.interpolation} do nó ${c.node} não suportado`)
       return { node, path: c.path, interpolation: c.interpolation, times: c.times, values: c.values }
     }),
   }
@@ -368,6 +372,12 @@ export function replaceAnimations(glb: Uint8Array, clips: readonly BakedClip[]):
   }
 
   const existing = readRaw(json, bin)
+  // duas animações com o mesmo nome no GLB: não há como saber qual o clipe substitui
+  const seen = new Set<string>()
+  for (const a of existing) {
+    if (seen.has(a.name) && byName.has(a.name)) throw new Error(`o GLB tem mais de uma animação ${a.name}`)
+    seen.add(a.name)
+  }
   const final: RawClip[] = existing.map((old) => {
     const next = byName.get(old.name)
     return next ? toRaw(next, nodeIndex, old.rest, old.named) : old

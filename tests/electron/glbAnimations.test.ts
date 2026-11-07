@@ -254,6 +254,15 @@ describe('glbAnimations — revisão (SPEC-0704)', () => {
     expect(readAnimations(replaceAnimations(glb, read))).toEqual(read)
   })
 
+  it('canal fora de rotation/translation/scale ou LINEAR/STEP e animação repetida no GLB são recusados', () => {
+    const bad = (over: Record<string, string>): BakedClip => ({ name: 'novo', channels: [{ ...spin('novo').channels[0]!, ...over } as BakedClip['channels'][number]] })
+    expect(() => replaceAnimations(syntheticGlb(), [bad({ path: 'weights' })])).toThrow(/weights/)
+    expect(() => replaceAnimations(syntheticGlb(), [bad({ interpolation: 'CUBICSPLINE' })])).toThrow(/CUBICSPLINE/)
+    const twice = tweaked((j) => j.animations.push(structuredClone(j.animations[0])))
+    expect(() => replaceAnimations(twice, [spin('idle')])).toThrow(/mais de uma animação idle/)
+    expect(() => replaceAnimations(twice, [spin('outro')])).not.toThrow()
+  })
+
   it('nó com nome repetido depois de normalizar é recusado', () => {
     const glb = tweaked((j) => {
       j.nodes[0].name = 'Bone.L'
