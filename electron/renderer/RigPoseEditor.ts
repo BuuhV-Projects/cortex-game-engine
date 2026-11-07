@@ -218,7 +218,7 @@ export class RigPoseEditor implements PoseInputTarget {
     const frame = sk.readFrame()
     sk.applyPose(frame, delta, follows, undoStack)
     sk.applyLimitsAndHelpers(this.limits, undoStack)
-    if (code) this.weapon.attach(sk.bones.get(GRIP_BONE) ?? null, this.store.grip(code))
+    if (code) this.weapon.attach(sk.bones.get(GRIP_BONE) ?? null, this.store.grip(key))
     if (this.captureSupport) {
       this.captureSupport = false
       this.linkSupport()
@@ -326,7 +326,7 @@ export class RigPoseEditor implements PoseInputTarget {
     const bone = this.selected
     if (!key || !bone || !this.editable) return
     if (bone === WEAPON_SELECTION) {
-      this.store.pushUndo(key, this.weapon.weapon ?? undefined)
+      this.store.pushUndo(key, !!this.weapon.weapon)
       this.gripDrag = true
       return
     }
@@ -343,7 +343,7 @@ export class RigPoseEditor implements PoseInputTarget {
     if (this.gripDrag) {
       const hand = this.sk.bones.get(GRIP_BONE)
       const code = this.weapon.weapon
-      if (hand && code) this.store.setGrip(code, this.weapon.gripFor(hand, proxy.position, proxy.quaternion))
+      if (hand && code && this.key) this.store.setGrip(this.key, this.weapon.gripFor(hand, proxy.position, proxy.quaternion))
       this.host.onChange()
       this.ui.render()
       return
@@ -388,10 +388,10 @@ export class RigPoseEditor implements PoseInputTarget {
   }
 
   /** Empilha o desfazer, aplica a edição na chave mostrada e avisa. */
-  private edit(fn: (key: string) => void, weapon?: string): void {
+  private edit(fn: (key: string) => void, withGrip = false): void {
     const key = this.key
     if (!key || !this.editable) return
-    this.store.pushUndo(key, weapon)
+    this.store.pushUndo(key, withGrip)
     fn(key)
     this.changed()
   }
@@ -426,7 +426,7 @@ export class RigPoseEditor implements PoseInputTarget {
   /** Volta a pegada da arma mostrada ao padrão. */
   resetGrip(): void {
     const code = this.weapon.weapon
-    if (code) this.edit(() => this.store.setGrip(code, { ...DEFAULT_GRIP }), code)
+    if (code) this.edit((key) => this.store.setGrip(key, { ...DEFAULT_GRIP }), true)
   }
 
   resetBone(bone: string): void {

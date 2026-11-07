@@ -4,8 +4,8 @@
  * sessão e a gravação. Sem DOM e sem three.js.
  *
  * Chave = clipe (`idle`), variante por arma (`idle@ARM-02`) ou por personagem (`idle@ARM-02#npc-001`,
- * SPEC-0708). A chave sem nada salvo nem editado herda pela cadeia da `inheritChain`. A pegada é por arma (vale para todos os
- * clipes dela) e entra no desfazer da chave editada.
+ * SPEC-0708). A chave sem nada salvo nem editado herda pela cadeia da `inheritChain`. A pegada é por arma e alvo
+ * (`ARMA#ALVO`, SPEC-0711: vale para todos os clipes dela, herda pela mesma cadeia) e entra no desfazer da chave editada.
  */
 
 import type { JsonObject } from './characterRigSelection.js'
@@ -25,7 +25,7 @@ import {
   variantPosesFromConfig,
   type Grip,
 } from './characterRigWeapon.js'
-import { charactersOf, inheritChain, isNpcTarget, splitKey, type CharactersConfig } from './characterRigCharacters.js'
+import { charactersOf, gripChain, gripKey, gripKeyOf, inheritChain, isNpcTarget, splitKey, type CharactersConfig } from './characterRigCharacters.js'
 import { applyCharacterVariants, characterFollowsFromConfig, characterPosesFromConfig, characterSpacesFromConfig, type EditSpace } from './characterRigCharacterConfig.js'
 
 /**
@@ -35,7 +35,7 @@ import { applyCharacterVariants, characterFollowsFromConfig, characterPosesFromC
 interface UndoEntry {
   pose: Map<string, Quat> | undefined
   follow: FollowLink[] | undefined
-  grip?: { weapon: string; grip: Grip | null }
+  grip?: { key: string; grip: Grip | null }
 }
 
 /** Leitura e gravação do arquivo (a janela do Electron, trocável nos testes). */
@@ -81,7 +81,7 @@ export class PoseStore {
     } else {
       for (const k of [...this.edited.keys()]) if (!this.poseUnsaved(k)) this.edited.delete(k)
       for (const k of [...this.editedFollow.keys()]) if (!this.followUnsaved(k)) this.editedFollow.delete(k)
-      for (const w of [...this.editedGrips.keys()]) if (!this.gripUnsaved(w)) this.editedGrips.delete(w)
+      for (const g of [...this.editedGrips.keys()]) if (!this.gripUnsaved(g)) this.editedGrips.delete(g)
     }
     this.path = path
   }
@@ -166,6 +166,8 @@ export class PoseStore {
   discardEdit(key: string): void {
     this.edited.delete(key)
     this.editedFollow.delete(key)
+    const g = gripKeyOf(key)
+    if (g) this.editedGrips.delete(g)
   }
 
   /**
@@ -175,9 +177,14 @@ export class PoseStore {
   applyEditTo(from: string, to: readonly string[], space: EditSpace): void {
     const pose = this.wanted(from)
     const links = this.wantedFollow(from)
+    // a pegada vai junto só se foi editada, como está (SPEC-0711)
+    const fromGrip = gripKeyOf(from)
+    const grip = fromGrip && this.editedGrips.has(fromGrip) ? this.grip(from) : null
     for (const k of to) {
       // a própria chave também leva o espaço (reeditada num NPC, deixa de ser "do player")
       if (isNpcTarget(this.chars, splitKey(k).target)) this.editedSpaces.set(k, space)
+      const g = gripKeyOf(k)
+      if (grip && g && g !== fromGrip) this.editedGrips.set(g, { ...grip })
       if (k === from) continue
       this.edited.set(k, new Map(pose))
       this.editedFollow.set(k, [...links])
@@ -215,30 +222,56 @@ export class PoseStore {
     return !!v && !sameFollows(v, this.savedLinks(key))
   }
 
-  private gripUnsaved(weapon: string): boolean {
-    const g = this.editedGrips.get(weapon)
-    return !!g && !sameGrip(g, this.savedGrips.get(weapon) ?? DEFAULT_GRIP)
+  /** A primeira pegada da cadeia de `grip` (chave de pegada) que `get` tem; nenhuma = o padrão. */
+  private inheritedGrip(grip: string, get: (g: string) => Grip | undefined): Grip {
+    for (const g of gripChain(grip, this.chars)) {
+      const v = get(g)
+      if (v) return v
+    }
+    return DEFAULT_GRIP
+  }
+
+  private gripUnsaved(grip: string): boolean {
+    const g = this.editedGrips.get(grip)
+    return !!g && !sameGrip(g, this.inheritedGrip(grip, (k) => this.savedGrips.get(k)))
   }
 
   /** Pose ou ligações da chave (ou a pegada da arma dela) ainda não gravadas. */
   isUnsaved(key: string): boolean {
-    const w = splitVariant(key).weapon
-    return this.poseUnsaved(key) || this.followUnsaved(key) || (!!w && this.gripUnsaved(w))
+    const g = gripKeyOf(key)
+    return this.poseUnsaved(key) || this.followUnsaved(key) || (!!g && this.gripUnsaved(g))
   }
 
   anyUnsaved(): boolean {
     return [...this.edited.keys()].some((k) => this.poseUnsaved(k))
       || [...this.editedFollow.keys()].some((k) => this.followUnsaved(k))
-      || [...this.editedGrips.keys()].some((w) => this.gripUnsaved(w))
+      || [...this.editedGrips.keys()].some((g) => this.gripUnsaved(g))
   }
 
-  /** As pegadas gravadas na config (por arma). */
-  get savedGripMap(): ReadonlyMap<string, Grip> {
-    return this.savedGrips
+  /** Pegada pela chave de pegada (`ARMA#ALVO`): a editada ou a salva, pela cadeia de herança. */
+  gripOf(grip: string): Grip {
+    return this.inheritedGrip(grip, (k) => this.editedGrips.get(k) ?? this.savedGrips.get(k))
   }
 
-  grip(weapon: string): Grip {
-    return this.editedGrips.get(weapon) ?? this.savedGrips.get(weapon) ?? DEFAULT_GRIP
+  /** Pegada da arma da chave da pose (`clipe@ARMA#ALVO`); sem arma, o padrão. */
+  grip(key: string): Grip {
+    const g = gripKeyOf(key)
+    return g ? this.gripOf(g) : DEFAULT_GRIP
+  }
+
+  /**
+   * As pegadas salvas como vão para um JSON do skin (SPEC-0711): no do player (`npc` falso), `ARMA` = a do player
+   * resolvida (`ARMA#player` → `ARMA`); no dos NPCs, `ARMA` = a do grupo e `ARMA#CÓDIGO` = a de um NPC.
+   */
+  skinGrips(npc: boolean, player: string): Map<string, Grip> {
+    const out = new Map<string, Grip>()
+    for (const g of this.savedGrips.keys()) {
+      const { clip: weapon, target } = splitKey(g)
+      if ((isNpcTarget(this.chars, target) && target !== player) !== npc) continue
+      if (!npc) out.set(weapon, this.gripOf(gripKey(weapon, player || null)))
+      else out.set(target === this.chars!.group ? weapon : g, this.gripOf(g))
+    }
+    return out
   }
 
   // ── Edição ────────────────────────────────────────────────────────────────
@@ -251,17 +284,20 @@ export class PoseStore {
     this.editedFollow.set(key, links)
   }
 
-  setGrip(weapon: string, grip: Grip): void {
-    this.editedGrips.set(weapon, grip)
+  /** Edita a pegada da arma da chave da pose (a do alvo dela; sem arma, nada). */
+  setGrip(key: string, grip: Grip): void {
+    const g = gripKeyOf(key)
+    if (g) this.editedGrips.set(g, grip)
   }
 
-  /** Empilha o estado atual da chave (antes de uma edição); `weapon` = a edição é na pegada. */
-  pushUndo(key: string, weapon?: string): void {
+  /** Empilha o estado atual da chave (antes de uma edição); `withGrip` = a edição é na pegada. */
+  pushUndo(key: string, withGrip = false): void {
     const stack = this.undo.get(key) ?? []
+    const g = withGrip ? gripKeyOf(key) : null
     stack.push({
       pose: this.edited.get(key),
       follow: this.editedFollow.get(key),
-      ...(weapon ? { grip: { weapon, grip: this.editedGrips.get(weapon) ?? null } } : {}),
+      ...(g ? { grip: { key: g, grip: this.editedGrips.get(g) ?? null } } : {}),
     })
     this.undo.set(key, stack)
   }
@@ -280,8 +316,8 @@ export class PoseStore {
     if (prev.follow) this.editedFollow.set(key, prev.follow)
     else this.editedFollow.delete(key)
     if (prev.grip) {
-      if (prev.grip.grip) this.editedGrips.set(prev.grip.weapon, prev.grip.grip)
-      else this.editedGrips.delete(prev.grip.weapon)
+      if (prev.grip.grip) this.editedGrips.set(prev.grip.key, prev.grip.grip)
+      else this.editedGrips.delete(prev.grip.key)
     }
     return true
   }
@@ -295,7 +331,7 @@ export class PoseStore {
   async save(): Promise<number> {
     const pending = new Map([...this.edited].filter(([k]) => this.poseUnsaved(k)))
     const pendingFollow = new Map([...this.editedFollow].filter(([k]) => this.followUnsaved(k)))
-    const pendingGrips = new Map([...this.editedGrips].filter(([w]) => this.gripUnsaved(w)))
+    const pendingGrips = new Map([...this.editedGrips].filter(([g]) => this.gripUnsaved(g)))
     if (!this.path || (!pending.size && !pendingFollow.size && !pendingGrips.size)) return 0
     // base (sem arma nem alvo), variante por arma, variante por personagem (SPEC-0708)
     const kindOf = (k: string): 'base' | 'weapon' | 'character' => {

@@ -110,4 +110,17 @@ describe('runBake — só a pegada (SPEC-0709)', () => {
     expect([glb, json, glbB64]).toEqual(['a.glb', 'a.json', GLB])
     expect(JSON.parse(sidecar as string).weaponGrips).toEqual({ 'ARM-01': GRIP })
   })
+
+  it('com personagens: a do player vai ao JSON dele e a do NPC ao dos NPCs, sem trocar (SPEC-0711)', async () => {
+    const NPC = { offset: [0.03, 0.05, 0], rotation: [0, 0, 0, 1] }
+    const chars = { group: 'NPC', glb: 'v.glb', clips: 'v.json', preview: 'p', codes: ['npc-001'] }
+    const c = { code: 'LUC-01', skinned: { characters: chars, clips: { idle: {} }, weaponGrips: { 'ARM-01': GRIP, 'ARM-01#npc-001': NPC } } }
+    const a = { confirmDialog: vi.fn(async () => true), readFileBase64: vi.fn(async () => GLB), readFile: vi.fn(async () => '{"clips":{}}'), characterRigWriteBake: vi.fn() }
+    vi.stubGlobal('window', { electronAPI: a })
+    const out = await runBake({ ...withStore(c, { clips: { idle: {} } }, ['idle']), player: 'LUC-01' })
+    expect(out).toEqual({ kind: 'done', count: 0, grips: 2, file: 'a.glb + v.glb' })
+    const written = new Map(a.characterRigWriteBake.mock.calls.map((call) => [call[2], JSON.parse(call[4] as string).weaponGrips]))
+    expect(written.get('a.json')).toEqual({ 'ARM-01': GRIP })
+    expect(written.get('v.json')).toEqual({ 'ARM-01#npc-001': NPC })
+  })
 })

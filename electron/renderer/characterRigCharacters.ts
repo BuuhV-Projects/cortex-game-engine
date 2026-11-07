@@ -79,6 +79,26 @@ export function inheritChain(key: string, chars: CharactersConfig | null): strin
   return out
 }
 
+/** Chave da pegada (SPEC-0711, ADR-0710): `ARMA` ou `ARMA#ALVO`. */
+export const gripKey = (weapon: string, target: string | null): string => (target ? `${weapon}${CHAR_SEP}${target}` : weapon)
+
+/** A chave da pegada da chave da pose `clipe@ARMA#ALVO` (`null` sem arma). */
+export function gripKeyOf(key: string): string | null {
+  const { weapon, target } = splitKey(key)
+  return weapon ? gripKey(weapon, target) : null
+}
+
+/** Pegadas da mais específica à mais geral (a cadeia da pose, só as chaves com arma): NPC nunca herda a do player. */
+export function gripChain(grip: string, chars: CharactersConfig | null): string[] {
+  const { clip: weapon, target } = splitKey(grip)
+  const out: string[] = []
+  for (const k of inheritChain(fullKey('_', weapon, target), chars)) {
+    const g = gripKeyOf(k)
+    if (g && !out.includes(g)) out.push(g)
+  }
+  return out
+}
+
 /** O que a opção de "aplicar a" grava, por quem se edita (ADR-0707). */
 export type ApplyTo = 'everyone' | 'only' | 'selected' | 'allNpcs'
 
