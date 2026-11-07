@@ -9,6 +9,7 @@ import {
   listCharacterConfigs,
   loadRigRegistry,
   rigPanelMode,
+  resolveTab,
   type ConfigEntry,
   type RigPanelMode,
   type RigTab,
@@ -210,9 +211,8 @@ class CharacterRigPanel {
   }
 
   private setTab(wanted: RigTab): void {
-    const tab = this.mode.tabs.includes(wanted) ? wanted : this.fallbackTab
-    // Animações sem rig fica bloqueada, a não ser que seja a única aba (aviso no topo).
-    if (tab === 'animations' && !this.animationsEnabled && tab !== this.fallbackTab) return
+    const tab = resolveTab(this.mode, wanted, this.animationsEnabled)
+    if (!tab) return
     this.tab = tab
     for (const [k, btn] of this.tabBtns) {
       btn.classList.toggle('on', k === tab)

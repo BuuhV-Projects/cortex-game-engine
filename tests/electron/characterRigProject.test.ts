@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { hasRigPipeline, rigPanelMode } from '../../electron/renderer/characterRigProject.js'
+import { hasRigPipeline, resolveTab, rigPanelMode } from '../../electron/renderer/characterRigProject.js'
 
 describe('rigPanelMode (SPEC-0704)', () => {
   it('com o prepare-character.sh: as três abas e gerar/revisar', () => {
@@ -31,5 +31,21 @@ describe('hasRigPipeline (SPEC-0704)', () => {
       throw new Error('ENOENT')
     })
     expect(await hasRigPipeline('D:/jogo')).toBe(false)
+  })
+})
+
+describe('resolveTab (SPEC-0704)', () => {
+  const full = rigPanelMode({ hasPipeline: true })
+  const published = rigPanelMode({ hasPipeline: false })
+
+  it('sem pipeline: Marcadores e Pasta caem em Animações, mesmo sem rig', () => {
+    expect(resolveTab(published, 'markers', false)).toBe('animations')
+    expect(resolveTab(published, 'folder', true)).toBe('animations')
+  })
+
+  it('com pipeline: a aba pedida; Animações sem rig fica bloqueada', () => {
+    expect(resolveTab(full, 'folder', false)).toBe('folder')
+    expect(resolveTab(full, 'animations', true)).toBe('animations')
+    expect(resolveTab(full, 'animations', false)).toBeNull()
   })
 })
