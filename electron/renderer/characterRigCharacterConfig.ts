@@ -76,8 +76,10 @@ export function applyCharacterVariants(
     t['weapons'] = weapons
     return e
   }
+  // o espaço segue a última edição: `own` apaga o `player` de antes (senão o assado retargetaria de novo)
   const mark = (key: string, e: JsonObject): void => {
     if (spaces.get(key) === 'player') e['space'] = PLAYER_SPACE
+    else if (spaces.has(key)) delete e['space']
   }
   for (const [key, pose] of poses) {
     const e = entryOf(key)

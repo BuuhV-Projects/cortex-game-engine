@@ -176,10 +176,11 @@ export class PoseStore {
     const pose = this.wanted(from)
     const links = this.wantedFollow(from)
     for (const k of to) {
+      // a própria chave também leva o espaço (reeditada num NPC, deixa de ser "do player")
+      if (isNpcTarget(this.chars, splitKey(k).target)) this.editedSpaces.set(k, space)
       if (k === from) continue
       this.edited.set(k, new Map(pose))
       this.editedFollow.set(k, [...links])
-      if (isNpcTarget(this.chars, splitKey(k).target)) this.editedSpaces.set(k, space)
     }
   }
 

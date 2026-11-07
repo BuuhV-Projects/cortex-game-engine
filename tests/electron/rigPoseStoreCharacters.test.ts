@@ -49,4 +49,17 @@ describe('PoseStore com personagens (SPEC-0708)', () => {
     near(back.wanted('idle@ARM-02#npc-002').get('RightHand')) // herdou do grupo
     expect(back.spaceOf('idle@ARM-02#NPC')).toBe('own')
   })
+
+  it('chave gravada do player e reeditada no NPC perde o space player (o assado não retargeta de novo)', async () => {
+    const { s, disk } = store()
+    s.setPose('walk', new Map([['LeftArm', TURN]]))
+    s.applyEditTo('walk', ['walk#npc-001'], 'player')
+    await s.save()
+    s.setPose('walk#npc-001', new Map([['Head', TURN]]))
+    s.applyEditTo('walk#npc-001', ['walk#npc-001'], 'own')
+    await s.save()
+    const entry = (JSON.parse(disk.text).skinned.clips.walk.characters['npc-001']) as Record<string, unknown>
+    expect(entry['space']).toBeUndefined()
+    expect(s.spaceOf('walk#npc-001')).toBe('own')
+  })
 })
