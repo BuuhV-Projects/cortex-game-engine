@@ -145,6 +145,15 @@ export function bakedSidecar(skin: JsonObject, entries: readonly BakeEntry[], gr
   return out
 }
 
+/**
+ * Pegadas salvas que o JSON do skin `skin` não tem iguais (ausente ou diferente a 6 casas): as que o Gravar
+ * tem que levar mesmo sem clipe a assar (SPEC-0709).
+ */
+export function gripsToWrite(saved: ReadonlyMap<string, Grip>, skin: unknown): Map<string, Grip> {
+  const have = isObject(skin) && isObject(skin['weaponGrips']) ? (skin['weaponGrips'] as JsonObject) : {}
+  return new Map([...saved].filter(([w, g]) => JSON.stringify(gripToJson(g)) !== JSON.stringify(have[w])))
+}
+
 /** `skinned.jointLimitsDeg` da config (parte do osso → graus); ausente ou inválido = sem limite. */
 export function jointLimitsOf(cfg: JsonObject | null): Record<string, number> {
   const skinned = cfg?.['skinned']
