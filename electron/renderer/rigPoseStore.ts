@@ -232,6 +232,11 @@ export class PoseStore {
       || [...this.editedGrips.keys()].some((w) => this.gripUnsaved(w))
   }
 
+  /** As pegadas gravadas na config (por arma). */
+  get savedGripMap(): ReadonlyMap<string, Grip> {
+    return this.savedGrips
+  }
+
   grip(weapon: string): Grip {
     return this.editedGrips.get(weapon) ?? this.savedGrips.get(weapon) ?? DEFAULT_GRIP
   }

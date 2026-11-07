@@ -21,6 +21,7 @@ import {
   HELPER_PAIRS,
   bakedSidecar,
   clampJoint,
+  gripsToWrite,
   helperQuat,
   limitOf,
   keepContinuous,
@@ -168,5 +169,17 @@ describe('bakedSidecar', () => {
     expect(Object.keys(out)).toEqual(['bones', 'clips', 'tail', 'weaponGrips'])
     const kept = bakedSidecar(out, [], new Map())
     expect(kept['weaponGrips']).toEqual(out['weaponGrips'])
+  })
+})
+
+describe('pegada sem clipe a assar (SPEC-0709)', () => {
+  it('leva a pegada ausente ou diferente no JSON do skin; a igual a 6 casas fica de fora', () => {
+    const moved = { offset: [0.01, 0.02, 0.03] as [number, number, number], rotation: DEFAULT_GRIP.rotation }
+    const saved = new Map([['ARM-01', moved], ['ARM-02', DEFAULT_GRIP]])
+    expect([...gripsToWrite(saved, { clips: {} }).keys()]).toEqual(['ARM-01', 'ARM-02'])
+    const skin = bakedSidecar({ clips: {} }, [], new Map([['ARM-02', DEFAULT_GRIP]]))
+    expect([...gripsToWrite(saved, skin).keys()]).toEqual(['ARM-01'])
+    expect(gripsToWrite(saved, bakedSidecar(skin, [], saved)).size).toBe(0)
+    expect([...gripsToWrite(saved, null).keys()]).toEqual(['ARM-01', 'ARM-02'])
   })
 })

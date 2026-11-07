@@ -5,7 +5,7 @@ import { resolveProjectPath, splitPath } from './characterRigRegistry'
 import type { JsonObject } from './characterRigSelection'
 import type { Grip } from './characterRigWeapon'
 import { splitVariant } from './characterRigWeapon'
-import { bakedSidecar } from './characterRigBake'
+import { bakedSidecar, gripsToWrite } from './characterRigBake'
 import { replaceAnimations } from './glbAnimations'
 import { stripBom } from './rigPoseStore'
 import { bakeJob, bakeJobs, lostLinks, type BakeJob } from './RigBake'
@@ -40,7 +40,7 @@ export interface BakeRunInput {
 }
 
 /** Resultado para a linha de estado. */
-export type BakeOutcome = { kind: 'none' } | { kind: 'refused'; name: string } | { kind: 'cancelled' } | { kind: 'done'; count: number; file: string }
+export type BakeOutcome = { kind: 'none' } | { kind: 'refused'; name: string } | { kind: 'cancelled' } | { kind: 'done'; count: number; grips?: number; file: string }
 
 function base64ToBytes(b64: string): Uint8Array {
   const bin = atob(b64)
@@ -63,7 +63,8 @@ function isObject(v: unknown): v is JsonObject {
 export function bakeMessage(out: BakeOutcome): { text: string; warn: boolean } | null {
   if (out.kind === 'none') return { text: t('characterRig.bake.none'), warn: false }
   if (out.kind === 'refused') return { text: t('characterRig.bake.refused', { name: out.name }), warn: true }
-  if (out.kind === 'done') return { text: t('characterRig.bake.done', { count: out.count, file: out.file }), warn: false }
+  if (out.kind === 'done' && !out.count) return { text: t('characterRig.bake.done_grips', { count: out.grips ?? 0, file: out.file }), warn: false }
+  if (out.kind === 'done') return { text: t('characterRig.bake.done', { count: out.count, file: out.file }) + (out.grips ? ` ${t('characterRig.bake.grips', { count: out.grips })}` : ''), warn: false }
   return null
 }
 
@@ -90,26 +91,38 @@ export async function runBake(input: BakeRunInput): Promise<BakeOutcome> {
   const toNpc: BakeJob[] = character || !chars ? [] : bakeJobs(store, arm, [], view.toNpc, anims)
   if (view.skipped.length) debug(SCOPE, 'chaves para a outra visão (player × NPC)', view.skipped)
   const all = [...jobs, ...toNpc]
-  if (!all.length) return { kind: 'none' }
   const refused = all.find((j) => lostLinks(store, j))
   if (refused) return { kind: 'refused', name: refused.name }
-  const npcPair = character || toNpc.length ? chars : null
-  const file = [character ? null : splitPath(input.glb).name, npcPair ? splitPath(npcPair.glb).name : null].filter(Boolean).join(' + ')
-  if (!(await window.electronAPI.confirmDialog(t('characterRig.bake.confirm', { count: all.length, file })))) return { kind: 'cancelled' }
+  // pegada salva que o JSON do skin não tem igual vai mesmo sem clipe a assar (SPEC-0709)
+  const npcSkinPath = chars ? resolveProjectPath(input.projectDir, chars.clips) : null
+  const npcSkin = npcSkinPath ? await readSkinJson(npcSkinPath) : null
+  const playerGrips = character ? new Map<string, Grip>() : gripsToWrite(store.savedGripMap, input.skin)
+  const npcGrips = chars ? gripsToWrite(store.savedGripMap, npcSkin) : new Map<string, Grip>()
+  const writePlayer = !character && (jobs.length > 0 || playerGrips.size > 0)
+  const npcPair = chars && (character || toNpc.length || npcGrips.size) ? chars : null
+  if (!writePlayer && !npcPair) return { kind: 'none' }
+  const gripCount = new Set([...playerGrips.keys(), ...npcGrips.keys()]).size
+  const file = [writePlayer ? splitPath(input.glb).name : null, npcPair ? splitPath(npcPair.glb).name : null].filter(Boolean).join(' + ')
+  const ask = all.length
+    ? t('characterRig.bake.confirm', { count: all.length, file }) + (gripCount ? ` ${t('characterRig.bake.grips', { count: gripCount })}` : '')
+    : t('characterRig.bake.confirm_grips', { count: gripCount, file })
+  if (!(await window.electronAPI.confirmDialog(ask))) return { kind: 'cancelled' }
   const ctx = { sk: pose.skeleton, arm, store, clips: input.gltfClips, limits: pose.limits }
   const baked = jobs.map((j) => bakeJob(ctx, j))
-  const grips = new Map<string, Grip>()
+  const jobGrips = new Map<string, Grip>()
   for (const j of all) {
     const w = splitVariant(j.name).weapon
-    if (w) grips.set(w, store.grip(w))
+    if (w) jobGrips.set(w, store.grip(w))
   }
-  if (!character && baked.length) {
+  // sem clipe a assar o GLB vai igual: o par inteiro passa pelo backup e pela troca atômica (ADR-0705)
+  const withClips = (glb: Uint8Array, clips: Parameters<typeof replaceAnimations>[1]): Uint8Array => (clips.length ? replaceAnimations(glb, clips) : glb)
+  if (writePlayer) {
     const glb = base64ToBytes(await window.electronAPI.readFileBase64(resolveProjectPath(input.projectDir, input.glb)))
-    await writePair(input.projectDir, input.glb, input.clips, replaceAnimations(glb, baked.map((b) => b.clip)), bakedSidecar(input.skin, baked.map((b) => b.entry), grips))
+    const grips = new Map([...playerGrips, ...jobGrips])
+    await writePair(input.projectDir, input.glb, input.clips, withClips(glb, baked.map((b) => b.clip)), bakedSidecar(input.skin, baked.map((b) => b.entry), grips))
   }
   if (npcPair) {
     const glbPath = resolveProjectPath(input.projectDir, npcPair.glb)
-    const npcSkin = await readSkinJson(resolveProjectPath(input.projectDir, npcPair.clips))
     let clips = character ? baked.map((b) => b.clip) : []
     let entries = character ? baked.map((b) => b.entry) : []
     if (toNpc.length && pose.skeleton.model) {
@@ -121,10 +134,11 @@ export async function runBake(input: BakeRunInput): Promise<BakeOutcome> {
       entries = fromPlayer.map(({ b }) => b.entry)
     }
     const glb = base64ToBytes(await window.electronAPI.readFileBase64(glbPath))
-    await writePair(input.projectDir, npcPair.glb, npcPair.clips, replaceAnimations(glb, clips), bakedSidecar(isObject(npcSkin) ? npcSkin : { clips: {} }, entries, grips))
+    const grips = new Map([...npcGrips, ...jobGrips])
+    await writePair(input.projectDir, npcPair.glb, npcPair.clips, withClips(glb, clips), bakedSidecar(isObject(npcSkin) ? npcSkin : { clips: {} }, entries, grips))
   }
   debug(SCOPE, 'assado gravado', file, all.map((j) => j.name))
-  return { kind: 'done', count: all.length, file }
+  return { kind: 'done', count: all.length, grips: gripCount, file }
 }
 
 /**

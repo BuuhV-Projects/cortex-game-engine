@@ -358,8 +358,11 @@
     },
     "bake": {
       "button": "Write to game GLB",
-      "hint": "Writes the corrections and the per-weapon variants (clip@WEAPON) straight into the GLB and skin JSON of the shown build, with backup (.bak).",
+      "hint": "Writes the corrections, the per-weapon variants (clip@WEAPON) and each weapon grip straight into the GLB and skin JSON of the shown build, with backup (.bak).",
       "confirm": "Write {count} clip(s) to {file}? The current pair (GLB and JSON) goes to .bak.",
+      "confirm_grips": "Write {count} weapon grip(s) to {file}? The current pair (GLB and JSON) goes to .bak.",
+      "done_grips": "Written: {count} weapon grip(s) to {file}.",
+      "grips": "Plus {count} weapon grip(s) in the skin JSON.",
       "none": "Nothing to write: the GLB already matches.",
       "refused": "{name}: the GLB has a link that was removed; baking can't undo a baked link (regenerate the rig in the pipeline).",
       "done": "Written: {count} clip(s) to {file}.",
