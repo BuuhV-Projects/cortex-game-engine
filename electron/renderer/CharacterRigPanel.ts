@@ -284,10 +284,12 @@ class CharacterRigPanel {
 
   /** Aprovar/recusar só com uma folha aguardando revisão; desfazer só com rig publicado. */
   private updateReviewBar(): void {
-    const reviewing = this.awaitingReview && !this.running
+    // sem o pipeline não há o que aprovar nem desfazer (o CSS da barra vence o `hidden` dela)
+    const can = this.mode.canGenerate && !this.running
+    const reviewing = can && this.awaitingReview
     this.approveBtn.hidden = !reviewing
     this.rejectBtn.hidden = !reviewing
-    this.revertBtn.hidden = this.running || !this.rig?.published
+    this.revertBtn.hidden = !can || !this.rig?.published
   }
 
   /** Recusar não roda nada: o staging fica, nada é publicado; ajustar os marcadores e gerar de novo. */
