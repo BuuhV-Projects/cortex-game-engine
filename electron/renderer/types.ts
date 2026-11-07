@@ -123,6 +123,7 @@ export interface ElectronAPI {
   characterRigRun(projectDir: string, configRel: string, action?: 'generate' | 'approve' | 'revert'): Promise<{ code: number }>
   /** Mata o auto-rig em andamento. */
   characterRigStop(): Promise<void>
+  characterRigWriteBake(projectDir: string, glbRel: string, jsonRel: string, glbBase64: string, jsonText: string): Promise<void>
   /** Saída do auto-rig. Retorna a função que remove o listener. */
   onCharacterRigOutput(callback: (text: string) => void): () => void
   /** Abre uma pasta no explorador do SO (ex.: dist-native após o export). */

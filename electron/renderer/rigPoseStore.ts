@@ -96,6 +96,16 @@ export class PoseStore {
     return this.saved.has(splitVariant(key).clip)
   }
 
+  /** Clipes base da config. */
+  baseClips(): string[] {
+    return [...this.saved.keys()].filter((k) => !splitVariant(k).weapon)
+  }
+
+  /** Variantes `clipe@ARMA` salvas na config (pose ou ligações próprias). */
+  variantKeys(): string[] {
+    return [...new Set([...this.saved.keys(), ...this.savedFollow.keys()])].filter((k) => !!splitVariant(k).weapon && this.editable(k))
+  }
+
   /** Clipes base na config (para "aplicar a todos"). */
   get clipCount(): number {
     return [...this.saved.keys()].filter((k) => !splitVariant(k).weapon).length

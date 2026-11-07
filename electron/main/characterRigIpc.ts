@@ -8,6 +8,7 @@ import { existsSync } from 'fs'
 import { spawn, spawnSync, type ChildProcess } from 'child_process'
 import { envForSpawn, validatePath } from './shared.js'
 import { killProcessTree } from './projectRunner.js'
+import { writeBakePair } from './characterRigBakeWrite.js'
 
 /** Processo do auto-rig em andamento (um por vez, separado do terminal). */
 let characterRigProcess: ChildProcess | null = null
@@ -95,6 +96,18 @@ export function registerCharacterRigIpc(): void {
         finish(2)
       })
     })
+  })
+
+  /**
+   * Grava o assado da aba Animações (SPEC-0704): GLB + JSON do skin juntos, com backup, só dentro do
+   * projeto. Lança com a mensagem se não gravou.
+   */
+  ipcMain.handle('characterRig:writeBake', (_event, projectDir: unknown, glbRel: unknown, jsonRel: unknown, glbBase64: unknown, jsonText: unknown) => {
+    const safeDir = validatePath(projectDir)
+    if (typeof glbRel !== 'string' || typeof jsonRel !== 'string' || typeof glbBase64 !== 'string' || typeof jsonText !== 'string') {
+      throw new Error('characterRig:writeBake: argumentos inválidos')
+    }
+    writeBakePair(safeDir, glbRel, jsonRel, Buffer.from(glbBase64, 'base64'), jsonText)
   })
 
   /** Mata o auto-rig em andamento (botão Parar / painel fechado). */

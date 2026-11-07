@@ -5,9 +5,9 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { quatInv, quatMul, type Quat, type Vec3 } from '../../electron/renderer/characterRigArmSpace'
-import { POSE_BONES, quatDistance, twoBoneIk } from '../../electron/renderer/characterRigPose'
-import { moveJointPose, rotateJointPose, wristTarget, type Snapshot } from '../../electron/renderer/characterRigPoseEdit'
+import { quatInv, quatMul, type Quat, type Vec3 } from '../../electron/renderer/characterRigArmSpace.js'
+import { POSE_BONES, quatDistance, twoBoneIk } from '../../electron/renderer/characterRigPose.js'
+import { moveJointPose, rotateJointPose, wristTarget, type Snapshot } from '../../electron/renderer/characterRigPoseEdit.js'
 
 const I: Quat = [0, 0, 0, 1]
 const TURN: Quat = [0, 0.7071068, 0, 0.7071068]
