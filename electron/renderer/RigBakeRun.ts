@@ -7,6 +7,7 @@ import type { Grip } from './characterRigWeapon'
 import { splitVariant } from './characterRigWeapon'
 import { bakedSidecar } from './characterRigBake'
 import { replaceAnimations } from './glbAnimations'
+import { stripBom } from './rigPoseStore'
 import { bakeJob, bakeJobs, lostLinks } from './RigBake'
 import type { RigArmAdjust } from './RigArmAdjust'
 import type { RigPoseEditor } from './RigPoseEditor'
@@ -84,4 +85,29 @@ export async function runBake(input: BakeRunInput): Promise<BakeOutcome> {
   await window.electronAPI.characterRigWriteBake(input.projectDir, input.glb, input.clips, bytesToBase64(next), JSON.stringify(sidecar, null, SIDECAR_INDENT) + '\n')
   debug(SCOPE, 'assado gravado no GLB', input.glb, jobs.map((j) => j.name))
   return { kind: 'done', count: jobs.length, file }
+}
+
+/**
+ * O botão inteiro: salva a config pendente (`save`), assa e grava, recarrega o build (`reload`) e devolve
+ * a mensagem do estado (`null` = nada a dizer). Erro vira mensagem, não exceção.
+ */
+export async function bakeFlow(input: BakeRunInput, save: () => Promise<boolean>, reload: () => Promise<void>): Promise<{ text: string; warn: boolean } | null> {
+  try {
+    if (!(await save())) return null
+    const out = await runBake(input)
+    if (out.kind === 'done') await reload()
+    return bakeMessage(out)
+  } catch (err) {
+    return { text: t('characterRig.bake.failed', { error: err instanceof Error ? err.message : String(err) }), warn: true }
+  }
+}
+
+/** JSON do skin do build (`armOffsets`/`poseOffsets` por clipe, de onde o assado parte); ilegível = `null`. */
+export async function readSkinJson(path: string): Promise<unknown> {
+  try {
+    return JSON.parse(stripBom(await window.electronAPI.readFile(path))) as unknown
+  } catch (err) {
+    debug(SCOPE, 'JSON do skin ilegível: ajuste e pose gerados = 0', path, err)
+    return null
+  }
 }

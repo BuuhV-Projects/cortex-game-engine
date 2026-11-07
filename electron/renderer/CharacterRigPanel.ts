@@ -278,6 +278,7 @@ class CharacterRigPanel {
     this.folderRunBtn.disabled = on
     this.saveBtn.disabled = on
     this.stopBtn.hidden = !on
+    this.preview.setBusy(on) // o pipeline regrava o GLB: o assado espera (SPEC-0704)
     this.updateReviewBar()
   }
 

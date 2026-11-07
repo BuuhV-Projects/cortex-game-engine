@@ -21,8 +21,8 @@ export function insideProject(projectDir: string, rel: string): string {
   return abs
 }
 
-/** Grava o par (GLB binário + JSON texto) com backup do par anterior. Devolve os caminhos absolutos. */
-export function writeBakePair(projectDir: string, glbRel: string, jsonRel: string, glb: Uint8Array, json: string): { glb: string; json: string } {
+/** Grava o par (GLB binário + JSON texto) com backup do par anterior. Devolve os caminhos absolutos. `rename` só muda nos testes. */
+export function writeBakePair(projectDir: string, glbRel: string, jsonRel: string, glb: Uint8Array, json: string, rename: (from: string, to: string) => void = renameSync): { glb: string; json: string } {
   if (!GLB_EXT.test(glbRel) || !JSON_EXT.test(jsonRel)) throw new Error('o assado grava um .glb e um .json')
   const files = [
     { path: insideProject(projectDir, glbRel), data: glb },
@@ -30,8 +30,23 @@ export function writeBakePair(projectDir: string, glbRel: string, jsonRel: strin
   ]
   try {
     for (const f of files) writeFileSync(f.path + BAKE_TMP_SUFFIX, f.data)
-    for (const f of files) if (existsSync(f.path)) copyFileSync(f.path, f.path + BAKE_BACKUP_SUFFIX)
-    for (const f of files) renameSync(f.path + BAKE_TMP_SUFFIX, f.path)
+    const had = files.map((f) => existsSync(f.path))
+    files.forEach((f, i) => had[i] && copyFileSync(f.path, f.path + BAKE_BACKUP_SUFFIX))
+    const swapped: number[] = []
+    try {
+      files.forEach((f, i) => {
+        rename(f.path + BAKE_TMP_SUFFIX, f.path)
+        swapped.push(i)
+      })
+    } catch (err) {
+      // um trocado e o outro não: volta o trocado ao par anterior (o .bak), ou some se não havia
+      for (const i of swapped) {
+        const f = files[i]!
+        if (had[i]) copyFileSync(f.path + BAKE_BACKUP_SUFFIX, f.path)
+        else rmSync(f.path, { force: true })
+      }
+      throw err
+    }
   } finally {
     for (const f of files) rmSync(f.path + BAKE_TMP_SUFFIX, { force: true })
   }

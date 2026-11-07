@@ -33,7 +33,10 @@ interface RawChannel {
 }
 
 interface RawClip {
+  /** Nome para casar com os clipes (o do arquivo, ou o padrão do three `animation_<i>` sem nome). */
   name: string
+  /** A animação tinha `name` no arquivo (sem nome, continua sem nome ao regravar). */
+  named: boolean
   /** Campos extras da animação original (extras/extensions), re-emitidos como estavam. */
   rest: Json
   channels: RawChannel[]
@@ -110,7 +113,7 @@ export function buildGlb(json: Json, bin: Uint8Array): Uint8Array {
 
 /** Nomes das animações do GLB, na ordem do arquivo. */
 export function animationNames(glb: Uint8Array): string[] {
-  return (parseGlb(glb).json.animations ?? []).map((a: Json, i: number) => a.name ?? `animation${i}`)
+  return (parseGlb(glb).json.animations ?? []).map((a: Json, i: number) => a.name ?? `${UNNAMED_PREFIX}${i}`)
 }
 
 /** Lê as animações do GLB como clipes (nó pelo nome; '' se o nó não tiver nome). */
@@ -152,15 +155,30 @@ function readFloats(json: Json, bin: Uint8Array, index: number): Float32Array {
   return out
 }
 
+/** Nome que o GLTFLoader dá à animação sem nome (`animation_<índice>`). */
+const UNNAMED_PREFIX = 'animation_'
+/** Paths que a cirurgia sabe regravar. */
+const KNOWN_PATHS = new Set(['rotation', 'translation', 'scale', 'weights'])
+
+/** Nome do nó como o three o guarda (o `PropertyBinding.sanitizeNodeName`): espaço vira `_`, `[].:/` somem. */
+export function sanitizeNodeName(name: string): string {
+  return name.replace(/\s/g, '_').replace(/[[\].:/]/g, '')
+}
+
 function readRaw(json: Json, bin: Uint8Array): RawClip[] {
   return (json.animations ?? []).map((anim: Json, i: number) => {
     const { channels = [], samplers = [], name, ...rest } = anim
+    const label = name ?? `${UNNAMED_PREFIX}${i}`
     return {
-      name: name ?? `animation${i}`,
+      name: label,
+      named: name !== undefined,
       rest,
       channels: channels.map((ch: Json) => {
         const s = samplers[ch.sampler]
-        if (!s) throw new Error(`animação ${name}: sampler ${ch.sampler} não existe`)
+        if (!s) throw new Error(`animação ${label}: sampler ${ch.sampler} não existe`)
+        // o que a cirurgia não reproduz é recusado, não perdido em silêncio (ADR-0705)
+        if (typeof ch.target?.node !== 'number' || !KNOWN_PATHS.has(ch.target.path)) throw new Error(`animação ${label}: canal sem nó ou com path ${ch.target?.path} não suportado`)
+        if (ch.target.extensions || ch.target.extras || ch.extensions || ch.extras || s.extensions || s.extras) throw new Error(`animação ${label}: canal ou sampler com extensions/extras não suportado`)
         return {
           node: ch.target.node,
           path: ch.target.path,
@@ -250,9 +268,10 @@ function sameFloats(a: Float32Array, b: Float32Array): boolean {
 }
 
 /** Converte um clipe do Studio para o formato interno (nó por índice), validando nó e tamanhos. */
-function toRaw(clip: BakedClip, nodeIndex: Map<string, number>, rest: Json): RawClip {
+function toRaw(clip: BakedClip, nodeIndex: Map<string, number>, rest: Json, named = true): RawClip {
   return {
     name: clip.name,
+    named,
     rest,
     channels: clip.channels.map((c) => {
       const node = nodeIndex.get(c.node)
@@ -317,7 +336,7 @@ class AnimationWriter {
       samplers.push({ input: input.index, interpolation: ch.interpolation, output })
       channels.push({ sampler: samplers.length - 1, target: { node: ch.node, path: ch.path } })
     }
-    return { channels, name: clip.name, samplers, ...clip.rest }
+    return { channels, ...(clip.named ? { name: clip.name } : {}), samplers, ...clip.rest }
   }
 }
 
@@ -332,10 +351,16 @@ class AnimationWriter {
 export function replaceAnimations(glb: Uint8Array, clips: readonly BakedClip[]): Uint8Array {
   const { json, bin } = parseGlb(glb)
   const cut = findCut(json, bin)
+  // nó pelo nome que o three usa nas faixas; dois nós com o mesmo nome não têm como ser escolhidos
   const nodeIndex = new Map<string, number>()
+  const twice = new Set<string>()
   ;(json.nodes ?? []).forEach((n: Json, i: number) => {
-    if (typeof n.name === 'string' && !nodeIndex.has(n.name)) nodeIndex.set(n.name, i)
+    if (typeof n.name !== 'string') return
+    const key = sanitizeNodeName(n.name)
+    if (nodeIndex.has(key)) twice.add(key)
+    else nodeIndex.set(key, i)
   })
+  for (const c of clips) for (const ch of c.channels) if (twice.has(ch.node)) throw new Error(`clipe ${c.name}: nó ${ch.node} aparece mais de uma vez no GLB`)
   const byName = new Map<string, BakedClip>()
   for (const c of clips) {
     if (byName.has(c.name)) throw new Error(`clipe ${c.name} repetido`)
@@ -345,7 +370,7 @@ export function replaceAnimations(glb: Uint8Array, clips: readonly BakedClip[]):
   const existing = readRaw(json, bin)
   const final: RawClip[] = existing.map((old) => {
     const next = byName.get(old.name)
-    return next ? toRaw(next, nodeIndex, old.rest) : old
+    return next ? toRaw(next, nodeIndex, old.rest, old.named) : old
   })
   const known = new Set(existing.map((c) => c.name))
   for (const c of clips) if (!known.has(c.name)) final.push(toRaw(c, nodeIndex, {}))

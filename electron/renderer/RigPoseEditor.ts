@@ -206,7 +206,11 @@ export class RigPoseEditor implements PoseInputTarget {
     const showing = this.overlay.visible || this.mode !== 'off' || !!this.selected || !!code
     const delta = poseDelta(this.store.wanted(key), this.store.generatedPose(anim))
     const follows = this.store.wantedFollow(key)
-    if (!delta.size && !follows.length && !showing) return
+    if (!delta.size && !follows.length && !showing) {
+      // os braços podem ter girado o antebraço: limite e auxiliares como no assado (SPEC-0704)
+      if (undoStack.length) sk.applyLimitsAndHelpers(this.limits, undoStack)
+      return
+    }
     const frame = sk.readFrame()
     sk.applyPose(frame, delta, follows, undoStack)
     sk.applyLimitsAndHelpers(this.limits, undoStack)

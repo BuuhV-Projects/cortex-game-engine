@@ -222,3 +222,40 @@ describe.skipIf(!HAS_LUC)('glbAnimations — LUC-01 real', () => {
     }
   })
 })
+
+/** O GLB sintético com o JSON mexido por `edit`. */
+function tweaked(edit: (json: Record<string, any>) => void): Uint8Array {
+  const { json, bin } = parseGlb(syntheticGlb())
+  edit(json)
+  return buildGlb(json, bin)
+}
+
+describe('glbAnimations — revisão (SPEC-0704)', () => {
+  it('animação sem nome continua sem nome ao regravar', () => {
+    const glb = tweaked((j) => delete j.animations[0].name)
+    const out = replaceAnimations(glb, [spin('pistolIdle@ARM-02')])
+    const anims = parseGlb(out).json.animations
+    expect('name' in anims[0]).toBe(false)
+    expect(anims[1].name).toBe('pistolIdle@ARM-02')
+  })
+
+  it('canal com extensions é recusado, não perdido', () => {
+    const glb = tweaked((j) => (j.animations[0].channels[0].target.extensions = { KHR_animation_pointer: { pointer: '/x' } }))
+    expect(() => replaceAnimations(glb, [spin('novo')])).toThrow(/extensions/)
+  })
+
+  it('casa o nó pelo nome que o three usa (sem "." e com "_" no espaço)', () => {
+    const glb = tweaked((j) => (j.nodes[0].name = 'Bone.L ok'))
+    const out = replaceAnimations(glb, [spin('novo', 'BoneL_ok')])
+    expect(parseGlb(out).json.animations[1].channels[0].target.node).toBe(0)
+  })
+
+  it('nó com nome repetido depois de normalizar é recusado', () => {
+    const glb = tweaked((j) => {
+      j.nodes[0].name = 'Bone.L'
+      j.nodes.push({ name: 'BoneL' })
+      j.scenes[0].nodes.push(1)
+    })
+    expect(() => replaceAnimations(glb, [spin('novo', 'BoneL')])).toThrow(/mais de uma vez/)
+  })
+})

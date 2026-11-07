@@ -102,3 +102,14 @@ describe.skipIf(!HAS_LUC)('RigBake — LUC-01 real', () => {
     expect((sidecar['clips'] as Record<string, Record<string, unknown>>)[VARIANT]!['weapon']).toBe('ARM-02')
   })
 })
+
+describe('RigBake — recusas', () => {
+  it('clipe com shape key animada recusa o assado (gravar apagaria a faixa)', () => {
+    const clip = new THREE.AnimationClip('idle', 1, [
+      new THREE.QuaternionKeyframeTrack('Hips.quaternion', [0, 1], [0, 0, 0, 1, 0, 0, 0, 1]),
+      new THREE.NumberKeyframeTrack('Face.morphTargetInfluences', [0, 1], [0, 1]),
+    ])
+    const ctx = { sk: new RigSkeleton(), arm: noArm, store: new PoseStore({ read: async () => '', write: async () => {} }), clips: new Map([['idle', clip]]), limits: {} } as BakeContext
+    expect(() => bakeJob(ctx, { name: 'idle', anim: 'idle' })).toThrow(/morphTargetInfluences/)
+  })
+})

@@ -89,6 +89,9 @@ function copied(track: THREE.KeyframeTrack, path: BakedChannel['path']): BakedCh
 export function bakeJob(ctx: BakeContext, job: BakeJob): { clip: BakedClip; entry: BakeEntry } {
   const base = ctx.clips.get(job.anim)
   if (!base) throw new Error(`animação ${job.anim} não está no GLB`)
+  // o assado só refaz rotação/translação/escala: shape key animada se perderia ao trocar o clipe
+  const lost = base.tracks.find((t) => !t.name.endsWith(QUAT_PATH) && !t.name.endsWith(POSITION_PATH) && !t.name.endsWith(SCALE_PATH))
+  if (lost) throw new Error(`${job.anim}: faixa ${lost.name} não é assada (gravar a apagaria)`)
   const { clip: baseClip, weapon } = splitVariant(job.name)
   const times = framesOf(base)
   const rotTracks = base.tracks.filter((t) => t.name.endsWith(QUAT_PATH) && ctx.sk.allBones.has(boneOf(t)))
@@ -133,6 +136,8 @@ export function bakeJob(ctx: BakeContext, job: BakeJob): { clip: BakedClip; entr
   for (const t of base.tracks) {
     if (t.name.endsWith(POSITION_PATH)) channels.push(copied(t, 'translation'))
     else if (t.name.endsWith(SCALE_PATH)) channels.push(copied(t, 'scale'))
+    // rotação de nó fora do esqueleto (ex. a raiz da armature) sai como estava
+    else if (t.name.endsWith(QUAT_PATH) && !names.includes(boneOf(t))) channels.push(copied(t, 'rotation'))
   }
   const entry: BakeEntry = {
     name: job.name,

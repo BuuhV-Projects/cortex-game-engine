@@ -8,9 +8,8 @@ import { formatSeconds, resolveProjectPath, type RigBuildKind, type RigClip, typ
 import { fileLabel, parseConfigObject } from './characterRigSelection'
 import { RigArmAdjust } from './RigArmAdjust'
 import { RigPlaybar } from './RigPlaybar'
-import { bakeMessage, runBake } from './RigBakeRun'
+import { bakeFlow, readSkinJson } from './RigBakeRun'
 import { jointLimitsOf } from './characterRigBake'
-import { stripBom } from './rigPoseStore'
 import { variantKey, weaponsGlbOf } from './characterRigWeapon'
 import { RigPoseEditor } from './RigPoseEditor'
 import type { JsonObject } from './characterRigSelection'
@@ -59,6 +58,8 @@ export class RigAnimationPreview {
   private readonly listEl: HTMLElement
   private readonly statusEl: HTMLElement
   private readonly bakeBtn: HTMLButtonElement
+  /** O pipeline está rodando (Gerar/Aprovar/Desfazer): não assa por cima. */
+  private busy = false
   /** JSON do skin do build mostrado (o assado parte dele). */
   private skin: unknown = null
   private readonly bar: RigPlaybar
@@ -251,7 +252,7 @@ export class RigAnimationPreview {
       if (token !== this.loadToken) return
       const gltf: GLTF = await new Promise((res, rej) => new GLTFLoader().parse(base64ToArrayBuffer(b64), '', res, rej))
       if (token !== this.loadToken) return
-      const skin = await this.loadSkin(resolveProjectPath(input.projectDir, build.clips))
+      const skin = await readSkinJson(resolveProjectPath(input.projectDir, build.clips))
       if (token !== this.loadToken) return
       this.setModel(gltf)
       this.skin = skin
@@ -433,16 +434,6 @@ export class RigAnimationPreview {
     if (this.input && this.weaponsGlb) await this.pose.setWeaponsGlb(resolveProjectPath(this.input.projectDir, this.weaponsGlb))
   }
 
-  /** JSON do skin do build (`armOffsets`/`poseOffsets` por clipe); ilegível = `null` (gerado = 0). */
-  private async loadSkin(path: string): Promise<unknown> {
-    try {
-      return JSON.parse(stripBom(await window.electronAPI.readFile(path))) as unknown
-    } catch (err) {
-      debug(SCOPE, 'JSON do skin ilegível: ajuste e pose gerados = 0', path, err)
-      return null
-    }
-  }
-
   /**
    * "Gravar no GLB do jogo" (SPEC-0704): salva a config pendente, assa as chaves que diferem do build
    * mostrado e grava o GLB e o JSON do skin dele; depois recarrega o build.
@@ -450,19 +441,22 @@ export class RigAnimationPreview {
   private async bake(): Promise<void> {
     const input = this.input
     const build = input && this.kind ? input.entry[this.kind] : undefined
-    if (!input || !build || !this.kind) return
+    if (!input || !build || !this.kind || this.busy) return
+    const kind = this.kind
     this.bakeBtn.disabled = true
-    try {
-      if (!(await this.saveArm()) || !(await this.savePose())) return
-      const out = await runBake({ projectDir: input.projectDir, glb: build.glb, clips: build.clips, pose: this.pose, arm: this.arm, gltfClips: this.gltfClips, skin: this.skin })
-      if (out.kind === 'done') await this.loadBuild(this.kind)
-      const msg = bakeMessage(out)
-      if (msg) this.setStatus(msg.text, msg.warn)
-    } catch (err) {
-      this.setStatus(t('characterRig.bake.failed', { error: err instanceof Error ? err.message : String(err) }), true)
-    } finally {
-      this.bakeBtn.disabled = false
-    }
+    const msg = await bakeFlow(
+      { projectDir: input.projectDir, glb: build.glb, clips: build.clips, pose: this.pose, arm: this.arm, gltfClips: this.gltfClips, skin: this.skin },
+      async () => (await this.saveArm()) && (await this.savePose()),
+      () => this.loadBuild(kind),
+    )
+    if (msg) this.setStatus(msg.text, msg.warn)
+    this.bakeBtn.disabled = this.busy
+  }
+
+  /** O painel avisa que o pipeline começou/terminou. */
+  setBusy(on: boolean): void {
+    this.busy = on
+    this.bakeBtn.disabled = on
   }
 
   /** Grava os ajustes dos braços pendentes (antes de Gerar rig). */

@@ -2,7 +2,7 @@
  * Gravação do assado do auto-rig (SPEC-0704): par GLB + JSON com backup, só dentro do projeto.
  */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { BAKE_BACKUP_SUFFIX, BAKE_TMP_SUFFIX, insideProject, writeBakePair } from '../../electron/main/characterRigBakeWrite'
@@ -46,5 +46,18 @@ describe('writeBakePair', () => {
     expect(() => writeBakePair(dir, GLB, 'assets/nao-existe/x.json', Uint8Array.from([2]), '{}')).toThrow()
     expect([...readFileSync(join(dir, GLB))]).toEqual([1])
     expect(existsSync(join(dir, GLB + BAKE_TMP_SUFFIX))).toBe(false)
+  })
+
+  it('falha na troca do JSON volta o GLB ao par anterior', () => {
+    writeFileSync(join(dir, GLB), Uint8Array.from([1]))
+    writeFileSync(join(dir, JSON_REL), '{"old":1}')
+    let calls = 0
+    const flaky = (from: string, to: string): void => {
+      if (++calls === 2) throw new Error('EBUSY')
+      renameSync(from, to)
+    }
+    expect(() => writeBakePair(dir, GLB, JSON_REL, Uint8Array.from([2]), '{"new":1}', flaky)).toThrow(/EBUSY/)
+    expect([...readFileSync(join(dir, GLB))]).toEqual([1])
+    expect(readFileSync(join(dir, JSON_REL), 'utf8')).toBe('{"old":1}')
   })
 })
