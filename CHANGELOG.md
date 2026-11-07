@@ -1,3 +1,17 @@
+# [0.111.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.110.2...v0.111.0) (2026-11-07)
+
+
+### Bug Fixes
+
+* **studio:** carga das armas compartilhada entre chamadas e refeita após falha (review do PR 71) ([62c69c2](https://github.com/BuuhV-Projects/cortex-game-engine/commit/62c69c2b78e6027116429b9e541f46ae19d0b054))
+* **studio:** Ctrl+Z restaura a edição crua da chave, sem fixar o herdado (review do PR 71) ([910b35f](https://github.com/BuuhV-Projects/cortex-game-engine/commit/910b35f9292962b0e99d5fbced115725151d413f))
+* **studio:** variante clipe@ARMA herda campo a campo do clipe base (review do PR 71) ([2febd3d](https://github.com/BuuhV-Projects/cortex-game-engine/commit/2febd3d45bd69c71d871249f9109091a241774de))
+
+
+### Features
+
+* **studio:** arma na mão no ajuste de pose do auto-rig (SPEC-0703) ([5f67848](https://github.com/BuuhV-Projects/cortex-game-engine/commit/5f67848b8763185656e9971266fa6e3d44dbf047))
+
 ## [0.110.2](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.110.1...v0.110.2) (2026-11-06)
 
 
