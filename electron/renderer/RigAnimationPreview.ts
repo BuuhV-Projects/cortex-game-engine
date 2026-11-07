@@ -257,6 +257,7 @@ export class RigAnimationPreview {
       this.gltfClips = view.clips
       this.skin = skin
       this.arm.setModel(this.chars.character ? null : this.model, skin) // braços: só no player
+      this.arm.el.hidden = !!this.chars.character
       this.pose.target = this.chars.character
       this.pose.ui.applyTo.setContext(this.chars.characters, this.chars.player, this.chars.character)
       this.pose.setGenerated(view.skin)
