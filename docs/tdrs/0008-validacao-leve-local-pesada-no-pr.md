@@ -42,7 +42,7 @@ O repo é público, então minutos de Actions não custam.
   `console.log` adicionado em `src/`. Registro ausente vira aviso, não erro,
   porque a regra tem exceção para correção trivial.
 - **Host nativo é pulado** quando o PR não toca o que ele valida (`native/`, `src/`,
-  `package.json`/`yarn.lock`, a action e o `pr.yml` — SPEC-0706). O pulo é por `if`
+  `package.json`/`yarn.lock`, `tsconfig.json`, a action e o `pr.yml` — SPEC-0706). O pulo é por `if`
   no job, não por filtro de paths do workflow: job pulado conta como verde no
   check obrigatório; workflow não disparado deixa o check pendente para sempre.
 - **Aprovação vem de um workflow**, disparado pelo `check_run` concluído do

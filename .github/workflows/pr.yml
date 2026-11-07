@@ -81,7 +81,7 @@ jobs:
           if [ -z "$BASE" ]; then echo "native=true" >> "$GITHUB_OUTPUT"; exit 0; fi
           files=$(git diff --name-only "$BASE...$HEAD")
           # Só o que o build/teste do host consome (SPEC-0706).
-          if echo "$files" | grep -qE '^(native/|src/|package\.json$|yarn\.lock$|\.github/actions/build-native-host/|\.github/workflows/pr\.yml$)'; then native=true; else native=false; fi
+          if echo "$files" | grep -qE '^(native/|src/|package\.json$|yarn\.lock$|tsconfig\.json$|\.github/actions/build-native-host/|\.github/workflows/pr\.yml$)'; then native=true; else native=false; fi
           echo "native=$native" >> "$GITHUB_OUTPUT"
           echo "host nativo necessário: $native"
 

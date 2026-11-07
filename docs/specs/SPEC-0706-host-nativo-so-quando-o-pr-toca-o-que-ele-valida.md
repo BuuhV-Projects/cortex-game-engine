@@ -19,6 +19,7 @@ build/teste do host consome:
 - `native/` — fonte C++, Rust, shims JS, scripts de bundle e export-toolchain;
 - `src/` — o engine, que o `bundle.mjs` empacota no host;
 - `package.json` / `yarn.lock` da raiz — de onde o bundle resolve o `three` e o resto;
+- `tsconfig.json` da raiz — o esbuild do bundle lê ao transpilar o `src/` (`target` muda o JS gerado);
 - `.github/actions/build-native-host/` e `.github/workflows/pr.yml` — o próprio gate.
 
 Fora disso o job é pulado por `if` (continua valendo: job pulado conta como verde no
