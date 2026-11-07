@@ -1,3 +1,17 @@
+# [0.115.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.114.0...v0.115.0) (2026-11-07)
+
+
+### Bug Fixes
+
+* **studio:** o ajuste dos braços some na prévia do NPC (o display vencia o hidden); teste do assado num NPC com os dados reais (SPEC-0708) ([bd9620a](https://github.com/BuuhV-Projects/cortex-game-engine/commit/bd9620a973d263a5d4c475be4f5a79c96e249b89))
+* **studio:** reeditar num NPC uma chave gravada do player tira o space player (review do PR 78) ([9daca3f](https://github.com/BuuhV-Projects/cortex-game-engine/commit/9daca3fabcd20e86c938d89d942f0fbf753b465d))
+
+
+### Features
+
+* **studio:** chave de ajuste por personagem (clipe@ARMA#ALVO), herança por espaço e o aplicar a (SPEC-0708) ([4f34fcf](https://github.com/BuuhV-Projects/cortex-game-engine/commit/4f34fcf71ad4f16d04e312195f63b3524367f965))
+* **studio:** prévia do NPC, aplicar a todos/só este/selecionados e o assado no GLB dos NPCs (SPEC-0708) ([e024b55](https://github.com/BuuhV-Projects/cortex-game-engine/commit/e024b550e296ac6785688cea812908b52f0d552a))
+
 # [0.114.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.113.1...v0.114.0) (2026-11-07)
 
 
