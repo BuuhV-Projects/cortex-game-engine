@@ -1,5 +1,5 @@
 /**
- * Vistas do teclado numérico na prévia do Auto-rig, como no Blender (SPEC-0710).
+ * Vistas do teclado numérico na prévia do Auto-rig, como no Blender (SPEC-0712).
  * Parte pura: tecla → vista, vista oposta e a vista alinhada mais próxima.
  * Direções são do ALVO para a CÂMERA, em eixos globais do mundo.
  */

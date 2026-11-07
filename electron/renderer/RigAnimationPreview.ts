@@ -66,7 +66,7 @@ export class RigAnimationPreview {
   private readonly scene = new THREE.Scene()
   private readonly camera = new THREE.PerspectiveCamera(40, 1, 0.01, 200)
   private controls: OrbitControls | null = null
-  /** Vistas do teclado numérico (SPEC-0710). */
+  /** Vistas do teclado numérico (SPEC-0712). */
   private view: RigViewCamera | null = null
   private readonly resizeObserver: ResizeObserver
   private readonly clock = new THREE.Clock()

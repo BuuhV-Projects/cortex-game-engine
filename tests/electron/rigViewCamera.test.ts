@@ -1,4 +1,4 @@
-/** Câmera das vistas do numpad no Auto-rig (SPEC-0710), com PerspectiveCamera + OrbitControls reais. */
+/** Câmera das vistas do numpad no Auto-rig (SPEC-0712), com PerspectiveCamera + OrbitControls reais. */
 
 import { describe, it, expect } from 'vitest'
 import * as THREE from 'three'

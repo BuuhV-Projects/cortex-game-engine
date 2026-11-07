@@ -1,4 +1,4 @@
-# SPEC-0710 - Vistas do teclado numérico na prévia do Auto-rig
+# SPEC-0712 - Vistas do teclado numérico na prévia do Auto-rig
 
 **Data:** 2026-11-07
 **Status:** implementado

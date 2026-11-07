@@ -1,4 +1,4 @@
-/** Vistas do teclado numérico na prévia do Auto-rig (SPEC-0710): tecla → vista, oposta e mais próxima. */
+/** Vistas do teclado numérico na prévia do Auto-rig (SPEC-0712): tecla → vista, oposta e mais próxima. */
 
 import { describe, it, expect } from 'vitest'
 import { OPPOSITE_VIEW, VIEW_DIRECTIONS, isInverseView, nearestView, viewActionForKey, type RigView } from '../../electron/renderer/rigViewKeys.js'

@@ -10,7 +10,7 @@ const ORTHO_FOV = 1
 const RELEASE_COS = Math.cos(THREE.MathUtils.degToRad(0.5))
 
 /**
- * Vistas do teclado numérico na prévia do Auto-rig (SPEC-0710): 1/3/7 alinham em eixos globais
+ * Vistas do teclado numérico na prévia do Auto-rig (SPEC-0712): 1/3/7 alinham em eixos globais
  * já ortográficas, 9 inverte, 5 alterna perspectiva/ortográfica; girar solta para perspectiva.
  *
  * ponytail: ortográfica emulada com FOV de 1° (paralaxe ~1%); OrthographicCamera de verdade
