@@ -47,13 +47,13 @@ describe('PoseStore', () => {
   it('grava a variante em weapons e a pegada em weaponGrips', async () => {
     const { store, files } = storeWith()
     store.setPose('walk@ARM-02', new Map([['Spine', TILT]]))
-    store.setGrip('ARM-02', { offset: [0, 0.1, 0], rotation: TURN })
+    store.setGrip('walk@ARM-02', { offset: [0, 0.1, 0], rotation: TURN })
     expect(await store.save()).toBe(2)
     const text = files.get(PATH)!
     expect(clipsOf(text)['walk']).toEqual({ file: 'walk.fbx', weapons: { 'ARM-02': { pose: { Spine: TILT } } } })
     expect((parseConfigObject(text)['skinned'] as JsonObject)['weaponGrips']).toEqual({ 'ARM-02': { offset: [0, 0.1, 0], rotation: TURN } })
     expect(store.anyUnsaved()).toBe(false)
-    expect(store.grip('ARM-02').offset).toEqual([0, 0.1, 0])
+    expect(store.grip('idle@ARM-02').offset).toEqual([0, 0.1, 0])
   })
 
   it('nada pendente não regrava o arquivo', async () => {
@@ -76,12 +76,12 @@ describe('PoseStore', () => {
 
   it('Ctrl+Z volta a pose e a pegada', () => {
     const { store } = storeWith()
-    store.pushUndo('idle@ARM-02', 'ARM-02')
+    store.pushUndo('idle@ARM-02', true)
     store.setPose('idle@ARM-02', new Map())
-    store.setGrip('ARM-02', { offset: [1, 2, 3], rotation: TURN })
+    store.setGrip('idle@ARM-02', { offset: [1, 2, 3], rotation: TURN })
     expect(store.undoLast('idle@ARM-02')).toBe(true)
     expect([...store.wanted('idle@ARM-02').keys()]).toEqual(['Head'])
-    expect(store.grip('ARM-02')).toEqual(DEFAULT_GRIP)
+    expect(store.grip('idle@ARM-02')).toEqual(DEFAULT_GRIP)
     expect(store.undoLast('idle@ARM-02')).toBe(false)
   })
 

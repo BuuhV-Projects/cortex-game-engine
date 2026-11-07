@@ -4,13 +4,14 @@ import { debug } from '../../src/core/debug'
 import { resolveProjectPath, splitPath } from './characterRigRegistry'
 import type { JsonObject } from './characterRigSelection'
 import type { Grip } from './characterRigWeapon'
-import { splitVariant } from './characterRigWeapon'
 import { bakedSidecar, gripsToWrite } from './characterRigBake'
 import { replaceAnimations } from './glbAnimations'
 import { stripBom } from './rigPoseStore'
 import { bakeJob, bakeJobs, lostLinks, type BakeJob } from './RigBake'
 import { keysForView, retargetBaked } from './RigBakeCharacters'
 import { retargetRig } from './characterRigRetarget'
+import { gripKey, splitKey, type CharactersConfig } from './characterRigCharacters'
+import type { PoseStore } from './rigPoseStore'
 import { loadGlb } from './RigCharacterSource'
 import type { RigArmAdjust } from './RigArmAdjust'
 import type { RigPoseEditor } from './RigPoseEditor'
@@ -68,6 +69,21 @@ export function bakeMessage(out: BakeOutcome): { text: string; warn: boolean } |
   return null
 }
 
+/**
+ * A pegada de cada arma das variantes assadas, com a chave do JSON do skin do par (SPEC-0711): no do player, `ARMA` =
+ * a do player resolvida; no dos NPCs, `ARMA` (do grupo) ou `ARMA#CÓDIGO`.
+ */
+export function jobGrips(store: PoseStore, jobs: readonly BakeJob[], npc: CharactersConfig | null, player: string): Map<string, Grip> {
+  const out = new Map<string, Grip>()
+  for (const j of jobs) {
+    const { weapon, target } = splitKey(j.name)
+    if (!weapon) continue
+    if (!npc) out.set(weapon, store.gripOf(gripKey(weapon, player || null)))
+    else out.set(target === npc.group ? weapon : gripKey(weapon, target), store.gripOf(gripKey(weapon, target)))
+  }
+  return out
+}
+
 /** Grava um par GLB + JSON do skin (backup e troca atômica no main, ADR-0705). */
 async function writePair(projectDir: string, glbRel: string, jsonRel: string, glb: Uint8Array, sidecar: JsonObject): Promise<void> {
   await window.electronAPI.characterRigWriteBake(projectDir, glbRel, jsonRel, bytesToBase64(glb), JSON.stringify(sidecar, null, SIDECAR_INDENT) + '\n')
@@ -96,8 +112,10 @@ export async function runBake(input: BakeRunInput): Promise<BakeOutcome> {
   // pegada salva que o JSON do skin não tem igual vai mesmo sem clipe a assar (SPEC-0709)
   const npcSkinPath = chars ? resolveProjectPath(input.projectDir, chars.clips) : null
   const npcSkin = npcSkinPath ? await readSkinJson(npcSkinPath) : null
-  const playerGrips = character ? new Map<string, Grip>() : gripsToWrite(store.savedGripMap, input.skin)
-  const npcGrips = chars ? gripsToWrite(store.savedGripMap, npcSkin) : new Map<string, Grip>()
+  const player = input.player ?? ''
+  // cada JSON leva as pegadas do esqueleto dele: a do player não vai para os NPCs nem a deles para o player (SPEC-0711)
+  const playerGrips = character ? new Map<string, Grip>() : gripsToWrite(store.skinGrips(false, player), input.skin)
+  const npcGrips = chars ? gripsToWrite(store.skinGrips(true, player), npcSkin) : new Map<string, Grip>()
   const writePlayer = !character && (jobs.length > 0 || playerGrips.size > 0)
   const npcPair = chars && (character || toNpc.length || npcGrips.size) ? chars : null
   if (!writePlayer && !npcPair) return { kind: 'none' }
@@ -109,16 +127,11 @@ export async function runBake(input: BakeRunInput): Promise<BakeOutcome> {
   if (!(await window.electronAPI.confirmDialog(ask))) return { kind: 'cancelled' }
   const ctx = { sk: pose.skeleton, arm, store, clips: input.gltfClips, limits: pose.limits }
   const baked = jobs.map((j) => bakeJob(ctx, j))
-  const jobGrips = new Map<string, Grip>()
-  for (const j of all) {
-    const w = splitVariant(j.name).weapon
-    if (w) jobGrips.set(w, store.grip(w))
-  }
   // sem clipe a assar o GLB vai igual: o par inteiro passa pelo backup e pela troca atômica (ADR-0705)
   const withClips = (glb: Uint8Array, clips: Parameters<typeof replaceAnimations>[1]): Uint8Array => (clips.length ? replaceAnimations(glb, clips) : glb)
   if (writePlayer) {
     const glb = base64ToBytes(await window.electronAPI.readFileBase64(resolveProjectPath(input.projectDir, input.glb)))
-    const grips = new Map([...playerGrips, ...jobGrips])
+    const grips = new Map([...playerGrips, ...jobGrips(store, jobs, null, player)])
     await writePair(input.projectDir, input.glb, input.clips, withClips(glb, baked.map((b) => b.clip)), bakedSidecar(input.skin, baked.map((b) => b.entry), grips))
   }
   if (npcPair) {
@@ -134,7 +147,7 @@ export async function runBake(input: BakeRunInput): Promise<BakeOutcome> {
       entries = fromPlayer.map(({ b }) => b.entry)
     }
     const glb = base64ToBytes(await window.electronAPI.readFileBase64(glbPath))
-    const grips = new Map([...npcGrips, ...jobGrips])
+    const grips = new Map([...npcGrips, ...jobGrips(store, character ? jobs : toNpc, npcPair, player)])
     await writePair(input.projectDir, npcPair.glb, npcPair.clips, withClips(glb, clips), bakedSidecar(isObject(npcSkin) ? npcSkin : { clips: {} }, entries, grips))
   }
   debug(SCOPE, 'assado gravado', file, all.map((j) => j.name))

@@ -154,15 +154,18 @@ export function gripsFromConfig(cfg: JsonObject): Map<string, Grip> {
   return out
 }
 
-/** Grava as pegadas numa cópia da config; igual ao padrão remove a entrada, sem entradas remove o campo. */
+/**
+ * Grava as pegadas (chave `ARMA` ou `ARMA#ALVO`, SPEC-0711) numa cópia da config; a sem alvo igual ao padrão remove a
+ * entrada (a com alvo fica: sem ela herdaria outra), sem entradas remove o campo.
+ */
 export function applyGrips(cfg: JsonObject, grips: ReadonlyMap<string, Grip>): JsonObject {
   const out = structuredClone(cfg)
   const skinned = out['skinned']
   if (!isObject(skinned)) return out
   const all = isObject(skinned['weaponGrips']) ? skinned['weaponGrips'] : {}
-  for (const [weapon, g] of grips) {
-    if (sameGrip(g, DEFAULT_GRIP)) delete all[weapon]
-    else all[weapon] = gripToJson(g)
+  for (const [key, g] of grips) {
+    if (!key.includes(TARGET_SEP) && sameGrip(g, DEFAULT_GRIP)) delete all[key]
+    else all[key] = gripToJson(g)
   }
   if (Object.keys(all).length) skinned['weaponGrips'] = all
   else delete skinned['weaponGrips']
