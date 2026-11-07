@@ -1,3 +1,16 @@
+# [0.113.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.112.0...v0.113.0) (2026-11-07)
+
+
+### Bug Fixes
+
+* **studio:** readAnimations devolve o nome do nó como o replaceAnimations casa (review do PR 74) ([ca4f7c2](https://github.com/BuuhV-Projects/cortex-game-engine/commit/ca4f7c26e1f68f2d18c5cfd3acf2dc538d79c33e))
+* **studio:** replaceAnimations recusa canal sem path/interpolação suportados e animação repetida no GLB (review do PR 74) ([0755025](https://github.com/BuuhV-Projects/cortex-game-engine/commit/07550253d59ff921ef0032ac60df3924fff2376f))
+
+
+### Features
+
+* **studio:** troca só o bloco de animação de um GLB, sem tocar na malha (ADR-0705) ([7e25f99](https://github.com/BuuhV-Projects/cortex-game-engine/commit/7e25f9937ea221e1aa6a17a451cfb2f6bda31ffa))
+
 # [0.112.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.111.0...v0.112.0) (2026-11-07)
 
 
