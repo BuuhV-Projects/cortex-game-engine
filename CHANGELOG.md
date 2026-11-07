@@ -1,3 +1,11 @@
+## [0.115.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.115.0...v0.115.1) (2026-11-07)
+
+
+### Bug Fixes
+
+* **studio:** Gravar no GLB leva a pegada da arma mesmo sem clipe a assar (SPEC-0709) ([b01c412](https://github.com/BuuhV-Projects/cortex-game-engine/commit/b01c412bec9dc46506315132ef058a7662e308a2))
+* **studio:** texto próprio para só pegada, hint com a pegada, comparação sem ordem de chaves e teste do runBake (review do PR 79) ([15a2234](https://github.com/BuuhV-Projects/cortex-game-engine/commit/15a223465d969c8b8d75a2dd8ab7a7ed7e8aa567))
+
 # [0.115.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.114.0...v0.115.0) (2026-11-07)
 
 
