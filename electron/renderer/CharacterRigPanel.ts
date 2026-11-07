@@ -9,6 +9,7 @@ import {
   listCharacterConfigs,
   loadRigRegistry,
   rigPanelMode,
+  resolveTab,
   type ConfigEntry,
   type RigPanelMode,
   type RigTab,
@@ -85,7 +86,8 @@ class CharacterRigPanel {
   private readonly tabBtns = new Map<RigTab, HTMLButtonElement>()
   private readonly tabBodies = new Map<RigTab, HTMLElement>()
   private readonly animNotice: HTMLElement
-  private readonly markerView: RigMarkerView
+  /** Aba Marcadores (com o WebGL dela); sem o pipeline não é criada. */
+  private readonly markerView: RigMarkerView | null
   private readonly preview: RigAnimationPreview
   private readonly selection: RigFbxSelection
   private readonly folderRunBtn: HTMLButtonElement
@@ -141,12 +143,12 @@ class CharacterRigPanel {
     )
 
     // ── Aba Marcadores ──────────────────────────────────────────────────────
-    this.saveBtn = h('button', { class: 'export-modal__btn export-modal__btn--secondary', type: 'button', onClick: () => void this.markerView.save(this.entry) }, t('characterRig.save')) as HTMLButtonElement
+    this.saveBtn = h('button', { class: 'export-modal__btn export-modal__btn--secondary', type: 'button', onClick: () => void this.markerView?.save(this.entry) }, t('characterRig.save')) as HTMLButtonElement
     this.runBtn = h('button', { class: 'export-modal__btn export-modal__btn--primary', type: 'button', onClick: () => void this.generate() }, t('characterRig.generate')) as HTMLButtonElement
     this.stopBtn = h('button', { class: 'export-modal__btn export-modal__btn--secondary', type: 'button', onClick: () => void window.electronAPI.characterRigStop() }, t('characterRig.stop')) as HTMLButtonElement
     this.stopBtn.hidden = true
     this.runBtn.hidden = !mode.canGenerate
-    this.markerView = new RigMarkerView(this.dialog, h('div', { class: 'rig-actions' }, this.saveBtn, this.runBtn, this.stopBtn))
+    this.markerView = mode.canGenerate ? new RigMarkerView(this.dialog, h('div', { class: 'rig-actions' }, this.saveBtn, this.runBtn, this.stopBtn)) : null
 
     // ── Log / folha ─────────────────────────────────────────────────────────
     this.outcomeEl = h('div', { class: 'rig-outcome' })
@@ -184,7 +186,7 @@ class CharacterRigPanel {
     this.folderRunBtn.hidden = !mode.canGenerate
     this.selection.footer.append(this.folderRunBtn)
 
-    this.tabBodies.set('markers', this.markerView.el)
+    this.tabBodies.set('markers', this.markerView?.el ?? h('div'))
     this.tabBodies.set('animations', this.preview.el)
     this.tabBodies.set('folder', this.selection.el)
     const main = h('div', { class: 'rig-main' }, h('div', { class: 'rig-tabbody' }, ...this.tabBodies.values()), this.logCol)
@@ -210,9 +212,8 @@ class CharacterRigPanel {
   }
 
   private setTab(wanted: RigTab): void {
-    const tab = this.mode.tabs.includes(wanted) ? wanted : this.fallbackTab
-    // Animações sem rig fica bloqueada, a não ser que seja a única aba (aviso no topo).
-    if (tab === 'animations' && !this.animationsEnabled && tab !== this.fallbackTab) return
+    const tab = resolveTab(this.mode, wanted, this.animationsEnabled)
+    if (!tab) return
     this.tab = tab
     for (const [k, btn] of this.tabBtns) {
       btn.classList.toggle('on', k === tab)
@@ -220,7 +221,7 @@ class CharacterRigPanel {
     }
     for (const [k, body] of this.tabBodies) body.hidden = k !== tab
     this.preview.setActive(tab === 'animations')
-    if (tab === 'markers') this.markerView.draw()
+    if (tab === 'markers') this.markerView?.draw()
   }
 
   /** Relê o registro de rigs e atualiza as abas Animações e Pasta. */
@@ -261,7 +262,7 @@ class CharacterRigPanel {
     this.tabBtns.get('animations')!.disabled = true // até reler o registro
     void this.selection.load(this.projectDir, this.entry.path, null).then(() => this.loadRig())
     // só o GLB publicado: não há fonte para marcar (SPEC-0704)
-    if (this.mode.canGenerate) void this.markerView.load(this.projectDir, this.entry)
+    void this.markerView?.load(this.projectDir, this.entry)
   }
 
   // ── Gerar / revisar ──────────────────────────────────────────────────────
@@ -284,10 +285,12 @@ class CharacterRigPanel {
 
   /** Aprovar/recusar só com uma folha aguardando revisão; desfazer só com rig publicado. */
   private updateReviewBar(): void {
-    const reviewing = this.awaitingReview && !this.running
+    // sem o pipeline não há o que aprovar nem desfazer (o CSS da barra vence o `hidden` dela)
+    const can = this.mode.canGenerate && !this.running
+    const reviewing = can && this.awaitingReview
     this.approveBtn.hidden = !reviewing
     this.rejectBtn.hidden = !reviewing
-    this.revertBtn.hidden = this.running || !this.rig?.published
+    this.revertBtn.hidden = !can || !this.rig?.published
   }
 
   /** Recusar não roda nada: o staging fica, nada é publicado; ajustar os marcadores e gerar de novo. */
@@ -307,7 +310,7 @@ class CharacterRigPanel {
   /** Salva e roda `bash tools/prepare-character.sh --config tools/characters/<arquivo>`. */
   private async generate(): Promise<void> {
     if (this.running || !this.mode.canGenerate) return
-    if (!(await this.markerView.save(this.entry))) {
+    if (!(await this.markerView?.save(this.entry))) {
       this.setTab('markers') // os erros dos marcadores aparecem lá
       return
     }
@@ -365,7 +368,7 @@ class CharacterRigPanel {
     if (this.running) void window.electronAPI.characterRigStop()
     this.unsubscribeOutput?.()
     this.preview.dispose()
-    this.markerView.dispose()
+    this.markerView?.dispose()
     this.dialog.remove()
   }
 }

@@ -46,6 +46,16 @@ export function rigPanelMode({ hasPipeline }: { hasPipeline: boolean }): RigPane
     : { tabs: ['animations'], canGenerate: false }
 }
 
+/**
+ * Aba a mostrar quando o usuário pede `wanted`: fora do modo cai na primeira do modo; Animações sem rig
+ * fica bloqueada (`null`), a não ser que seja a única aba (o aviso fica no topo).
+ */
+export function resolveTab(mode: RigPanelMode, wanted: RigTab, animationsEnabled: boolean): RigTab | null {
+  const fallback = mode.tabs[0]!
+  const tab = mode.tabs.includes(wanted) ? wanted : fallback
+  return tab === 'animations' && !animationsEnabled && tab !== fallback ? null : tab
+}
+
 function trimDir(projectDir: string): string {
   return projectDir.replace(/[\\/]+$/, '')
 }
@@ -55,7 +65,9 @@ export async function hasRigPipeline(projectDir: string): Promise<boolean> {
   try {
     const files = await window.electronAPI.readDir(`${trimDir(projectDir)}/tools`)
     return files.some((f) => !f.isDir && f.name === PIPELINE_SCRIPT)
-  } catch {
+  } catch (err) {
+    // sem `tools/` (ou ilegível): modo só publicado; o log diferencia falha de leitura de pasta ausente
+    debug(SCOPE, 'tools/ ilegível: painel sem pipeline', projectDir, err)
     return false
   }
 }
