@@ -435,6 +435,22 @@
       "revert": "Undo publication",
       "rejected": "Rejected: nothing was published. Adjust the markers (or the selection) and generate again.",
       "revert_confirm": "Undo the last publication? The game goes back to the files from before it."
+    },
+    "apply": {
+      "label": "Apply to",
+      "hint": "Who the adjustment applies to when saving (the same turn deforms differently on different bodies)",
+      "player_everyone": "Player and every NPC",
+      "player_only": "Only the player",
+      "player_selected": "Selected",
+      "npc_only": "Only this one",
+      "npc_selected": "Selected NPCs",
+      "npc_allNpcs": "Every NPC"
+    },
+    "character": {
+      "label": "Character",
+      "hint": "Who the preview shows: the player or an NPC (on its skeleton, with the player clips)",
+      "player": "Player ({code})",
+      "no_preview": "No preview mesh for {code}: run the game preview script"
     }
   }
 }

@@ -3,8 +3,8 @@
  * está na config do disco, a edição não salva, o que o build gerou, o desfazer da
  * sessão e a gravação. Sem DOM e sem three.js.
  *
- * Chave = clipe (`idle`) ou variante por arma (`idle@ARM-02`). A variante sem nada
- * salvo nem editado parte do clipe base. A pegada é por arma (vale para todos os
+ * Chave = clipe (`idle`), variante por arma (`idle@ARM-02`) ou por personagem (`idle@ARM-02#npc-001`,
+ * SPEC-0708). A chave sem nada salvo nem editado herda pela cadeia da `inheritChain`. A pegada é por arma (vale para todos os
  * clipes dela) e entra no desfazer da chave editada.
  */
 
@@ -25,6 +25,8 @@ import {
   variantPosesFromConfig,
   type Grip,
 } from './characterRigWeapon.js'
+import { charactersOf, inheritChain, isNpcTarget, splitKey, type CharactersConfig } from './characterRigCharacters.js'
+import { applyCharacterVariants, characterFollowsFromConfig, characterPosesFromConfig, characterSpacesFromConfig, type EditSpace } from './characterRigCharacterConfig.js'
 
 /**
  * O que o Ctrl+Z devolve: a edição crua de pose e ligações da chave (`undefined` =
@@ -60,6 +62,10 @@ export class PoseStore {
   private savedGrips = new Map<string, Grip>()
   private editedGrips = new Map<string, Grip>()
   private readonly undo = new Map<string, UndoEntry[]>()
+  /** Personagens da config (`null` = um só, como antes) e o espaço das chaves de NPC (salvo e pendente). */
+  private chars: CharactersConfig | null = null
+  private spaces = new Map<string, EditSpace>()
+  private editedSpaces = new Map<string, EditSpace>()
 
   constructor(private readonly io: ConfigIO) {}
 
@@ -70,6 +76,7 @@ export class PoseStore {
       this.edited = new Map()
       this.editedFollow = new Map()
       this.editedGrips = new Map()
+      this.editedSpaces = new Map()
       this.undo.clear()
     } else {
       for (const k of [...this.edited.keys()]) if (!this.poseUnsaved(k)) this.edited.delete(k)
@@ -80,9 +87,21 @@ export class PoseStore {
   }
 
   private readSaved(cfg: JsonObject | null): void {
-    this.saved = cfg ? new Map([...posesFromConfig(cfg), ...variantPosesFromConfig(cfg)]) : new Map()
-    this.savedFollow = cfg ? new Map([...followsFromConfig(cfg), ...variantFollowsFromConfig(cfg)]) : new Map()
+    this.saved = cfg ? new Map([...posesFromConfig(cfg), ...variantPosesFromConfig(cfg), ...characterPosesFromConfig(cfg)]) : new Map()
+    this.savedFollow = cfg ? new Map([...followsFromConfig(cfg), ...variantFollowsFromConfig(cfg), ...characterFollowsFromConfig(cfg)]) : new Map()
     this.savedGrips = cfg ? gripsFromConfig(cfg) : new Map()
+    this.chars = charactersOf(cfg)
+    this.spaces = cfg ? characterSpacesFromConfig(cfg) : new Map()
+  }
+
+  /** Os personagens da config (SPEC-0708; `null` = só o da config). */
+  get characters(): CharactersConfig | null {
+    return this.chars
+  }
+
+  /** Espaço da edição da chave de NPC (`player` = veio do player; o assado retargeta). */
+  spaceOf(key: string): EditSpace {
+    return this.editedSpaces.get(key) ?? this.spaces.get(key) ?? 'own'
   }
 
   /** `poseOffsets` e `follow` por animação do JSON do skin do build (`null` = vazio). */
@@ -96,42 +115,73 @@ export class PoseStore {
     return this.saved.has(splitVariant(key).clip)
   }
 
-  /** Clipes base da config. */
+  /** Clipes base da config (sem arma nem personagem). */
   baseClips(): string[] {
-    return [...this.saved.keys()].filter((k) => !splitVariant(k).weapon)
+    return [...this.saved.keys()].filter((k) => {
+      const p = splitKey(k)
+      return !p.weapon && !p.target
+    })
   }
 
-  /** Variantes `clipe@ARMA` salvas na config (pose ou ligações próprias). */
+  /** Variantes salvas na config (por arma e/ou por personagem; pose ou ligações próprias). */
   variantKeys(): string[] {
-    return [...new Set([...this.saved.keys(), ...this.savedFollow.keys()])].filter((k) => !!splitVariant(k).weapon && this.editable(k))
+    return [...new Set([...this.saved.keys(), ...this.savedFollow.keys()])].filter((k) => {
+      const p = splitKey(k)
+      return (!!p.weapon || !!p.target) && this.editable(k)
+    })
   }
 
   /** Clipes base na config (para "aplicar a todos"). */
   get clipCount(): number {
-    return [...this.saved.keys()].filter((k) => !splitVariant(k).weapon).length
+    return this.baseClips().length
+  }
+
+  /** O primeiro da cadeia de herança da chave que `get` tem (a própria, a da arma, a do clipe…). */
+  private inherited<T>(key: string, get: (k: string) => T | undefined): T | undefined {
+    for (const k of inheritChain(key, this.chars)) {
+      const v = get(k)
+      if (v !== undefined) return v
+    }
+    return undefined
   }
 
   private savedPose(key: string): ReadonlyMap<string, Quat> {
-    const { clip, weapon } = splitVariant(key)
-    return this.saved.get(key) ?? (weapon ? this.saved.get(clip) : undefined) ?? EMPTY
+    return this.inherited(key, (k) => this.saved.get(k)) ?? EMPTY
   }
 
   private savedLinks(key: string): readonly FollowLink[] {
-    const { clip, weapon } = splitVariant(key)
-    return this.savedFollow.get(key) ?? (weapon ? this.savedFollow.get(clip) : undefined) ?? []
+    return this.inherited(key, (k) => this.savedFollow.get(k)) ?? []
   }
 
-  /** Pose desejada: a edição, a salva ou (variante sem nada) a do clipe base. */
+  /** Pose desejada: a edição ou a salva da chave, ou a primeira da cadeia de herança. */
   wanted(key: string): Map<string, Quat> {
-    const { clip, weapon } = splitVariant(key)
-    const own = this.edited.get(key) ?? this.saved.get(key)
-    return new Map(own ?? (weapon ? this.wanted(clip) : EMPTY))
+    return new Map(this.inherited(key, (k) => this.edited.get(k) ?? this.saved.get(k)) ?? EMPTY)
   }
 
   wantedFollow(key: string): FollowLink[] {
-    const { clip, weapon } = splitVariant(key)
-    const own = this.editedFollow.get(key) ?? this.savedFollow.get(key)
-    return [...(own ?? (weapon ? this.wantedFollow(clip) : []))]
+    return [...(this.inherited(key, (k) => this.editedFollow.get(k) ?? this.savedFollow.get(k)) ?? [])]
+  }
+
+  /** Descarta a edição não salva da chave (o "aplicar a" levou para outras chaves). */
+  discardEdit(key: string): void {
+    this.edited.delete(key)
+    this.editedFollow.delete(key)
+  }
+
+  /**
+   * "Aplicar a" (SPEC-0708): a pose e as ligações desejadas de `from` viram a edição de cada chave de `to`, com o espaço
+   * de onde vieram (`player` = editado no player, para um NPC). Grava no próximo `save`.
+   */
+  applyEditTo(from: string, to: readonly string[], space: EditSpace): void {
+    const pose = this.wanted(from)
+    const links = this.wantedFollow(from)
+    for (const k of to) {
+      // a própria chave também leva o espaço (reeditada num NPC, deixa de ser "do player")
+      if (isNpcTarget(this.chars, splitKey(k).target)) this.editedSpaces.set(k, space)
+      if (k === from) continue
+      this.edited.set(k, new Map(pose))
+      this.editedFollow.set(k, [...links])
+    }
   }
 
   generatedPose(anim: string): ReadonlyMap<string, Quat> {
@@ -242,16 +292,23 @@ export class PoseStore {
     const pendingFollow = new Map([...this.editedFollow].filter(([k]) => this.followUnsaved(k)))
     const pendingGrips = new Map([...this.editedGrips].filter(([w]) => this.gripUnsaved(w)))
     if (!this.path || (!pending.size && !pendingFollow.size && !pendingGrips.size)) return 0
-    const base = <T>(m: Map<string, T>, variant: boolean): Map<string, T> => new Map([...m].filter(([k]) => !!splitVariant(k).weapon === variant))
+    // base (sem arma nem alvo), variante por arma, variante por personagem (SPEC-0708)
+    const kindOf = (k: string): 'base' | 'weapon' | 'character' => {
+      const p = splitKey(k)
+      return p.target ? 'character' : p.weapon ? 'weapon' : 'base'
+    }
+    const part = <T>(m: Map<string, T>, kind: ReturnType<typeof kindOf>): Map<string, T> => new Map([...m].filter(([k]) => kindOf(k) === kind))
     const before = stripBom(await this.io.read(this.path))
-    let next = applyFollows(applyPoses(parseConfigObject(before), base(pending, false)), base(pendingFollow, false))
-    next = applyGrips(applyVariants(next, base(pending, true), base(pendingFollow, true)), pendingGrips)
+    let next = applyFollows(applyPoses(parseConfigObject(before), part(pending, 'base')), part(pendingFollow, 'base'))
+    next = applyGrips(applyVariants(next, part(pending, 'weapon'), part(pendingFollow, 'weapon')), pendingGrips)
+    next = applyCharacterVariants(next, part(pending, 'character'), part(pendingFollow, 'character'), this.editedSpaces)
     const text = serializeConfig(next)
     if (text !== before) await this.io.write(this.path, text)
     this.readSaved(next)
     this.edited = new Map()
     this.editedFollow = new Map()
     this.editedGrips = new Map()
+    this.editedSpaces = new Map()
     return pending.size + pendingFollow.size + pendingGrips.size
   }
 

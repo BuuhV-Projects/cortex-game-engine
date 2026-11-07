@@ -8,6 +8,7 @@ import { POSE_BONES, POSE_PARENTS, moveKind, poseDelta, poseOffsets, samePose } 
 import { FOLLOW_BONES, captureFollow, followProblem, withFollow } from './characterRigFollow'
 import { moveJointPose, rotateJointPose, wristTarget, type Snapshot } from './characterRigPoseEdit'
 import { DEFAULT_GRIP, GRIP_BONE, PALM, variantKey } from './characterRigWeapon'
+import { fullKey } from './characterRigCharacters'
 import { PoseStore } from './rigPoseStore'
 import { RigPoseOverlay } from './RigPoseOverlay'
 import { RigPoseInput, type PoseInputTarget } from './RigPoseInput'
@@ -145,9 +146,12 @@ export class RigPoseEditor implements PoseInputTarget {
     this.refresh()
   }
 
-  /** Chave da pose editada: o clipe ou `clipe@ARMA`. */
+  /** Personagem mostrado (`null` = o da config, o player; SPEC-0708): a chave leva o `#código` dele. */
+  target: string | null = null
+
+  /** Chave da pose editada: o clipe, `clipe@ARMA` e, num NPC, `#código`. */
   get key(): string | null {
-    return this.clip ? variantKey(this.clip, this.weapon.weapon) : null
+    return this.clip ? fullKey(this.clip, this.weapon.weapon, this.target) : null
   }
 
   /** Ossos do GLB mostrado (o assado usa os mesmos). */

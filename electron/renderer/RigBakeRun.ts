@@ -8,7 +8,10 @@ import { splitVariant } from './characterRigWeapon'
 import { bakedSidecar } from './characterRigBake'
 import { replaceAnimations } from './glbAnimations'
 import { stripBom } from './rigPoseStore'
-import { bakeJob, bakeJobs, lostLinks } from './RigBake'
+import { bakeJob, bakeJobs, lostLinks, type BakeJob } from './RigBake'
+import { keysForView, retargetBaked } from './RigBakeCharacters'
+import { retargetRig } from './characterRigRetarget'
+import { loadGlb } from './RigCharacterSource'
 import type { RigArmAdjust } from './RigArmAdjust'
 import type { RigPoseEditor } from './RigPoseEditor'
 
@@ -31,6 +34,9 @@ export interface BakeRunInput {
   arm: RigArmAdjust
   gltfClips: ReadonlyMap<string, THREE.AnimationClip>
   skin: unknown
+  /** O NPC mostrado (`null` = o player) e o código do player (SPEC-0708). */
+  character?: string | null
+  player?: string
 }
 
 /** Resultado para a linha de estado. */
@@ -61,31 +67,64 @@ export function bakeMessage(out: BakeOutcome): { text: string; warn: boolean } |
   return null
 }
 
-/** Assa e grava. Lança se não gravou (a mensagem vai para o estado). */
+/** Grava um par GLB + JSON do skin (backup e troca atômica no main, ADR-0705). */
+async function writePair(projectDir: string, glbRel: string, jsonRel: string, glb: Uint8Array, sidecar: JsonObject): Promise<void> {
+  await window.electronAPI.characterRigWriteBake(projectDir, glbRel, jsonRel, bytesToBase64(glb), JSON.stringify(sidecar, null, SIDECAR_INDENT) + '\n')
+}
+
+/**
+ * Assa e grava. Lança se não gravou (a mensagem vai para o estado). Com personagens (SPEC-0708): no player, as chaves
+ * dele vão para o GLB dele e as de NPC editadas nele, retargetadas, para o GLB dos NPCs; num NPC, as dele vão para o
+ * GLB dos NPCs.
+ */
 export async function runBake(input: BakeRunInput): Promise<BakeOutcome> {
   // sem o JSON do skin não há como gravar o par: o JSON novo perderia o que o jogo lê (stride, marks…)
   if (!isObject(input.skin)) throw new Error(t('characterRig.bake.skin_unreadable'))
   const { pose, arm } = input
   const store = pose.store
-  const jobs = bakeJobs(store, arm, store.baseClips(), store.variantKeys(), new Set(input.gltfClips.keys()))
-  if (!jobs.length) return { kind: 'none' }
-  const refused = jobs.find((j) => lostLinks(store, j))
+  const character = input.character ?? null
+  const chars = store.characters
+  const view = keysForView(store, store.variantKeys(), character, input.player ?? '')
+  const anims = new Set(input.gltfClips.keys())
+  const jobs = bakeJobs(store, arm, character ? [] : store.baseClips(), view.own, anims)
+  const toNpc: BakeJob[] = character || !chars ? [] : bakeJobs(store, arm, [], view.toNpc, anims)
+  if (view.skipped.length) debug(SCOPE, 'chaves para a outra visão (player × NPC)', view.skipped)
+  const all = [...jobs, ...toNpc]
+  if (!all.length) return { kind: 'none' }
+  const refused = all.find((j) => lostLinks(store, j))
   if (refused) return { kind: 'refused', name: refused.name }
-  const file = splitPath(input.glb).name
-  if (!(await window.electronAPI.confirmDialog(t('characterRig.bake.confirm', { count: jobs.length, file })))) return { kind: 'cancelled' }
+  const npcPair = character || toNpc.length ? chars : null
+  const file = [character ? null : splitPath(input.glb).name, npcPair ? splitPath(npcPair.glb).name : null].filter(Boolean).join(' + ')
+  if (!(await window.electronAPI.confirmDialog(t('characterRig.bake.confirm', { count: all.length, file })))) return { kind: 'cancelled' }
   const ctx = { sk: pose.skeleton, arm, store, clips: input.gltfClips, limits: pose.limits }
   const baked = jobs.map((j) => bakeJob(ctx, j))
-  const glb = base64ToBytes(await window.electronAPI.readFileBase64(resolveProjectPath(input.projectDir, input.glb)))
-  const next = replaceAnimations(glb, baked.map((b) => b.clip))
   const grips = new Map<string, Grip>()
-  for (const j of jobs) {
+  for (const j of all) {
     const w = splitVariant(j.name).weapon
     if (w) grips.set(w, store.grip(w))
   }
-  const sidecar = bakedSidecar(input.skin, baked.map((b) => b.entry), grips)
-  await window.electronAPI.characterRigWriteBake(input.projectDir, input.glb, input.clips, bytesToBase64(next), JSON.stringify(sidecar, null, SIDECAR_INDENT) + '\n')
-  debug(SCOPE, 'assado gravado no GLB', input.glb, jobs.map((j) => j.name))
-  return { kind: 'done', count: jobs.length, file }
+  if (!character && baked.length) {
+    const glb = base64ToBytes(await window.electronAPI.readFileBase64(resolveProjectPath(input.projectDir, input.glb)))
+    await writePair(input.projectDir, input.glb, input.clips, replaceAnimations(glb, baked.map((b) => b.clip)), bakedSidecar(input.skin, baked.map((b) => b.entry), grips))
+  }
+  if (npcPair) {
+    const glbPath = resolveProjectPath(input.projectDir, npcPair.glb)
+    const npcSkin = await readSkinJson(resolveProjectPath(input.projectDir, npcPair.clips))
+    let clips = character ? baked.map((b) => b.clip) : []
+    let entries = character ? baked.map((b) => b.entry) : []
+    if (toNpc.length && pose.skeleton.model) {
+      // editadas no player: assadas no player e levadas para o esqueleto dos NPCs (a conta do jogo)
+      const from = retargetRig(pose.skeleton.model)
+      const to = retargetRig((await loadGlb(glbPath)).scene)
+      const fromPlayer = toNpc.map((j) => ({ j, b: bakeJob(ctx, j) }))
+      clips = fromPlayer.map(({ j, b }) => retargetBaked(b.clip, input.gltfClips.get(j.anim)!.duration, from, to))
+      entries = fromPlayer.map(({ b }) => b.entry)
+    }
+    const glb = base64ToBytes(await window.electronAPI.readFileBase64(glbPath))
+    await writePair(input.projectDir, npcPair.glb, npcPair.clips, replaceAnimations(glb, clips), bakedSidecar(isObject(npcSkin) ? npcSkin : { clips: {} }, entries, grips))
+  }
+  debug(SCOPE, 'assado gravado', file, all.map((j) => j.name))
+  return { kind: 'done', count: all.length, file }
 }
 
 /**

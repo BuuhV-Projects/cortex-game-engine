@@ -1,3 +1,4 @@
+import { RigApplyTo } from './RigApplyTo'
 import { h } from './ui'
 import { t } from './i18n'
 import { debug } from '../../src/core/debug'
@@ -39,6 +40,8 @@ export class RigPosePanel {
   private readonly resetClipBtn: HTMLButtonElement
   private readonly stateEl: HTMLElement
   private readonly saveBtn: HTMLButtonElement
+  /** "Aplicar a" (SPEC-0708): o painel mostra quando a config tem personagens. */
+  readonly applyTo = new RigApplyTo()
   private readonly allBtn: HTMLButtonElement
   private readonly followBtn: HTMLButtonElement
   private readonly followHintEl: HTMLElement
@@ -86,6 +89,7 @@ export class RigPosePanel {
       this.followHintEl,
       this.followsEl,
       this.stateEl,
+      this.applyTo.el,
       h('div', { class: 'rig-pose__row' }, this.allBtn, this.saveBtn))
   }
 
@@ -223,6 +227,8 @@ export class RigPosePanel {
   async save(): Promise<boolean> {
     const path = this.ed.store.path
     try {
+      const key = this.ed.key
+      if (key) this.applyTo.commit(this.ed.store, key)
       const count = await this.ed.store.save()
       if (!count) return true
       debug(SCOPE, 'pose gravada', path, { count })
