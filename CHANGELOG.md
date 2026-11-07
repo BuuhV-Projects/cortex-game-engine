@@ -1,3 +1,15 @@
+# [0.117.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.116.0...v0.117.0) (2026-11-07)
+
+
+### Bug Fixes
+
+* **studio:** reaproveita TARGET_SEP, jobGrips sem asserção e teste do NPC que herda a pegada do grupo (review do PR 80) ([c6fe2bf](https://github.com/BuuhV-Projects/cortex-game-engine/commit/c6fe2bfc1f9dd7a5d5b43574c444a10fa0d92eb0))
+
+
+### Features
+
+* **studio:** pegada da arma por personagem — a do NPC não sobrescreve a do player (SPEC-0711, ADR-0710) ([d5dd414](https://github.com/BuuhV-Projects/cortex-game-engine/commit/d5dd4145942744a1e58a3f2fc7adc2f9ada3d95e))
+
 # [0.116.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.115.1...v0.116.0) (2026-11-07)
 
 
