@@ -1,3 +1,10 @@
+# [0.112.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.111.0...v0.112.0) (2026-11-07)
+
+
+### Features
+
+* **studio:** limite de junta e auxiliares de cotovelo/joelho na prévia do ajuste de pose (SPEC-0704) ([935dceb](https://github.com/BuuhV-Projects/cortex-game-engine/commit/935dcebbf49dab4033eff10b5bd69715f8ac6070))
+
 # [0.111.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.110.2...v0.111.0) (2026-11-07)
 
 
