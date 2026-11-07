@@ -6,7 +6,7 @@
 
 # Interface: ModelLookEntry
 
-Defined in: src/scene/modelHotRegistry.ts:14
+Defined in: [src/scene/modelHotRegistry.ts:14](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/modelHotRegistry.ts#L14)
 
 Entrada de `userData.cortexLook`: o helper aplicado e os argumentos dele (sem o objeto).
 
@@ -16,7 +16,7 @@ Entrada de `userData.cortexLook`: o helper aplicado e os argumentos dele (sem o 
 
 > **args**: `unknown`[]
 
-Defined in: src/scene/modelHotRegistry.ts:16
+Defined in: [src/scene/modelHotRegistry.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/modelHotRegistry.ts#L16)
 
 ***
 
@@ -24,4 +24,4 @@ Defined in: src/scene/modelHotRegistry.ts:16
 
 > **kind**: [`ModelLookKind`](../type-aliases/ModelLookKind.md)
 
-Defined in: src/scene/modelHotRegistry.ts:15
+Defined in: [src/scene/modelHotRegistry.ts:15](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/modelHotRegistry.ts#L15)

@@ -8,7 +8,7 @@
 
 > **hotReloadModel**(`url`): `Promise`\<[`ModelHotReloadResult`](../interfaces/ModelHotReloadResult.md)\>
 
-Defined in: src/scene/ModelHotReload.ts:93
+Defined in: [src/scene/ModelHotReload.ts:93](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/ModelHotReload.ts#L93)
 
 **Hot reload de GLB** (SPEC-0697 §3): recarrega `url` e troca os filhos de toda raiz
 viva criada por `instance(await loadGLB(url))` com o registro ligado

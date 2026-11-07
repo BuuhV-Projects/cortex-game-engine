@@ -8,7 +8,7 @@
 
 > **hotReplaceScripts**(`path`, `mod`): `boolean`
 
-Defined in: src/scripts/ScriptHotReload.ts:35
+Defined in: [src/scripts/ScriptHotReload.ts:35](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptHotReload.ts#L35)
 
 **Hot reload de um módulo de script** (SPEC-0697, ADR-0698) — chamado pelo `accept`
 que o `createHotReloadPlugin` injeta em `scripts/*.ts`.

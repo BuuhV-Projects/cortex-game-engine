@@ -8,7 +8,7 @@
 
 > **onModelHotReload**(`cb`): () => `void`
 
-Defined in: src/scene/ModelHotReload.ts:76
+Defined in: [src/scene/ModelHotReload.ts:76](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/ModelHotReload.ts#L76)
 
 Avisa quando o [hotReloadModel](hotReloadModel.md) troca os filhos de uma raiz — para o jogo religar
 referências a filhos (rig de carro, rodas, sockets).
