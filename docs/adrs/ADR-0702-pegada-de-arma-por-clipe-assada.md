@@ -67,8 +67,7 @@ Escolhas do usuário entre as alternativas apresentadas:
 | F1 | engine (Studio) | Seletor de arma na aba Animações, arma na mão pela pegada, `Grip_L` como alvo, pose/ligações por arma × clipe gravadas na config (SPEC-0703) |
 | F2 | engine (Studio) | Gravar no GLB do jogo: corrige os clipes ajustados e cria as variantes `clipe@ARMA` no GLB e no JSON do skin, com `weaponGrips` (SPEC-0704) |
 | F3 | jogo (Port Hollow) | Player toca `clipe@ARMA` quando segura a arma e prende a arma pela pegada |
-| F4 | jogo + engine | NPC com ossos (ADR próprio): rig compartilhado, skin no lote, clipes por osso, editável no Studio como o player |
-| F5 | jogo | NPCs tocando os clipes ajustados e as variantes de arma |
+| F4 | jogo + engine | NPC com ossos (ADR próprio) no esqueleto e nos clipes do player (no lugar dos clipes de NPC de hoje): editar o player no Studio já edita os NPCs, e as variantes de arma da F3 valem para eles |
 
 **Revisão (2026-11-06).** O usuário esclareceu que queria só editar no Studio as animações que o jogo já
 tem, com a arma escolhida na mão, para o player e para os NPCs. A F2 deixou de ser levar o pipeline do
@@ -82,4 +81,6 @@ ajuste no GLB existente. O `prepare-character` do DDD 61 continua lá, para gera
 - Mais clipes no GLB (um por arma × clipe ajustado); só existem as variantes salvas.
 - Até a F3, o Port Hollow segue com a pegada atual (postura calculada); a F1 já serve para
   ver e ajustar, e a config fica pronta para a F2 assar.
+- A antiga F5 (NPCs tocando as variantes) entrou na F4: com o mesmo esqueleto e os mesmos clipes do player, a
+  escolha da variante da F3 serve aos dois.
 - A F4 mexe no render da multidão: é decidida e medida no ADR dela, não aqui.
