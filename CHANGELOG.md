@@ -1,3 +1,13 @@
+## [0.113.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.113.0...v0.113.1) (2026-11-07)
+
+
+### Bug Fixes
+
+* **studio:** desconecta o ResizeObserver da vista dos marcadores e testa hasRigPipeline (review do PR 73) ([646e30f](https://github.com/BuuhV-Projects/cortex-game-engine/commit/646e30fee3f25aff5b42be2535b0599b837024c5))
+* **studio:** registra no debug a falha ao listar tools/ do projeto (review do PR 73) ([f49d829](https://github.com/BuuhV-Projects/cortex-game-engine/commit/f49d829bd70629c11b3ac1ed05e682aa587d34ab))
+* **studio:** sem o pipeline Desfazer/Aprovar/Recusar ficam escondidos (o CSS da barra vencia o hidden; review do PR 73) ([8bb3c8e](https://github.com/BuuhV-Projects/cortex-game-engine/commit/8bb3c8ec9f11fa63a1b397ed6f663321d036d409))
+* **studio:** sem o pipeline o painel não cria a aba Marcadores nem o WebGL dela (review do PR 73) ([5991cea](https://github.com/BuuhV-Projects/cortex-game-engine/commit/5991ceadf4f4e06d44468db4921b23bc9b430110))
+
 # [0.113.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.112.0...v0.113.0) (2026-11-07)
 
 
