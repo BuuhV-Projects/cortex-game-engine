@@ -2,7 +2,7 @@
  * "Gravar no GLB do jogo" (SPEC-0704): sem o JSON do skin do build, nada é assado nem gravado.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { bakeFlow, runBake, type BakeRunInput } from '../../electron/renderer/RigBakeRun'
+import { bakeFlow, runBake, type BakeRunInput } from '../../electron/renderer/RigBakeRun.js'
 
 function input(skin: unknown): BakeRunInput {
   return { projectDir: 'P', glb: 'a.glb', clips: 'a.json', pose: {} as BakeRunInput['pose'], arm: {} as BakeRunInput['arm'], gltfClips: new Map(), skin }

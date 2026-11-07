@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { BAKE_BACKUP_SUFFIX, BAKE_TMP_SUFFIX, insideProject, writeBakePair } from '../../electron/main/characterRigBakeWrite'
+import { BAKE_BACKUP_SUFFIX, BAKE_TMP_SUFFIX, insideProject, writeBakePair } from '../../electron/main/characterRigBakeWrite.js'
 
 let dir = ''
 const GLB = 'assets/p/LUC-01-skinned.glb'

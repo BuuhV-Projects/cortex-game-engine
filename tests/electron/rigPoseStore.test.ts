@@ -5,10 +5,10 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { parseConfigObject, type JsonObject } from '../../electron/renderer/characterRigSelection'
-import type { Quat } from '../../electron/renderer/characterRigArmSpace'
-import { DEFAULT_GRIP } from '../../electron/renderer/characterRigWeapon'
-import { PoseStore } from '../../electron/renderer/rigPoseStore'
+import { parseConfigObject, type JsonObject } from '../../electron/renderer/characterRigSelection.js'
+import type { Quat } from '../../electron/renderer/characterRigArmSpace.js'
+import { DEFAULT_GRIP } from '../../electron/renderer/characterRigWeapon.js'
+import { PoseStore } from '../../electron/renderer/rigPoseStore.js'
 
 const TURN: Quat = [0, 0.707107, 0, 0.707107]
 const TILT: Quat = [0.707107, 0, 0, 0.707107]

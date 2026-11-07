@@ -13,10 +13,10 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import type { JsonObject } from '../../electron/renderer/characterRigSelection'
-import { ZERO_OFFSETS, quatFromAxisAngle, quatInv, quatMul, type Quat } from '../../electron/renderer/characterRigArmSpace'
-import { quatAngleDeg, quatDistance } from '../../electron/renderer/characterRigPose'
-import { DEFAULT_GRIP } from '../../electron/renderer/characterRigWeapon'
+import type { JsonObject } from '../../electron/renderer/characterRigSelection.js'
+import { ZERO_OFFSETS, quatFromAxisAngle, quatInv, quatMul, type Quat } from '../../electron/renderer/characterRigArmSpace.js'
+import { quatAngleDeg, quatDistance } from '../../electron/renderer/characterRigPose.js'
+import { DEFAULT_GRIP } from '../../electron/renderer/characterRigWeapon.js'
 import {
   HELPER_PAIRS,
   bakedSidecar,
@@ -26,7 +26,7 @@ import {
   keepContinuous,
   partOf,
   type BakeEntry,
-} from '../../electron/renderer/characterRigBake'
+} from '../../electron/renderer/characterRigBake.js'
 
 const TOL = 1e-6
 const DEG_TOL = 1e-6

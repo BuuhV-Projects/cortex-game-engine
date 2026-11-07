@@ -4,8 +4,8 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { parseConfigObject, serializeConfig, type JsonObject } from '../../electron/renderer/characterRigSelection'
-import type { Quat } from '../../electron/renderer/characterRigArmSpace'
+import { parseConfigObject, serializeConfig, type JsonObject } from '../../electron/renderer/characterRigSelection.js'
+import type { Quat } from '../../electron/renderer/characterRigArmSpace.js'
 import {
   DEFAULT_GRIP,
   DEFAULT_WEAPONS_GLB,
@@ -18,7 +18,7 @@ import {
   variantPosesFromConfig,
   weaponsFromNodes,
   weaponsGlbOf,
-} from '../../electron/renderer/characterRigWeapon'
+} from '../../electron/renderer/characterRigWeapon.js'
 
 const TURN: Quat = [0, 0.7071068, 0, 0.7071068]
 const LINK = { bone: 'LeftHand', target: 'RightHand', offset: [0.1, 0, 0.2] as [number, number, number], rotation: [0, 0, 0, 1] as Quat }
