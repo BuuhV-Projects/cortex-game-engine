@@ -1,7 +1,9 @@
-// Raster de texto nativo (stb_truetype) pro RendererUiBackend (ADR-0102):
-// __cortexRasterText(texto, alturaPx) → { width, height, rgba } — glifos
-// BRANCOS com alpha (o material tinge a cor). Fonte: Roboto-Regular.ttf ao
-// lado do exe (ou do jogo).
+// Raster de texto nativo (stb_truetype) pro RendererUiBackend (ADR-0102) e o
+// canvas 2D: __cortexRasterText(texto, alturaPx, origem?, família?) →
+// { width, height, rgba } — glifos BRANCOS com alpha (o material tinge a cor).
+// Fonte padrão: Roboto-Medium.ttf ao lado do exe (ou do jogo). Fontes do jogo:
+// __cortexLoadFont(família, url) lê do assets.pak; __cortexFontMetrics(família)
+// dá ascent/descent em EM (ADR-0715, registro em font_registry.h).
 #pragma once
 
 #include <node_api.h>

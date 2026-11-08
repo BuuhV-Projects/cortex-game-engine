@@ -15,7 +15,8 @@
  *   são aliases legados de `<div>`/`<span>`.
  * - `<stack direction="column|row" gap="N">` — empilha os filhos (layout
  *   estático calculado na compilação; alturas de label ≈ fontSize).
- * - `<style>` — CSS do subset ({@link parseUiCss}) embutido no template.
+ * - `<style>` — CSS do subset ({@link parseUiCss}) embutido no template,
+ *   inclusive `@font-face` (o {@link loadUiTemplate} espera a fonte carregar).
  * - Atributos: `class`, `id`, `anchor`, `x`, `y`, `width`, `height`,
  *   `onpress="acao"` (button), `fill` (panel do tamanho do viewport),
  *   `src="url"` (imagem do `<img>`) / `image="url"` (imagem de fundo do
@@ -42,7 +43,8 @@
  * menu.destroy();
  */
 import { anchorFraction, type UiAnchor } from './layout.js';
-import { parseUiCss, UiStylesheet } from './UiStylesheet.js';
+import { parseUiCss, UiStylesheet, type UiFontFace } from './UiStylesheet.js';
+import { loadUiFont } from './uiFont.js';
 import { UiButton, UiCanvas, UiLabel, UiPanel, type UiWidget } from './widgets.js';
 import type { UiLayer } from './UiLayer.js';
 
@@ -63,6 +65,11 @@ export class UiTemplate {
     private readonly roots: TemplateNode[],
     private readonly sheet: UiStylesheet | null,
   ) {}
+
+  /** `@font-face` do `<style>` (registre com `loadUiFont` antes do `build`). */
+  get fontFaces(): ReadonlyArray<UiFontFace> {
+    return this.sheet?.fontFaces ?? [];
+  }
 
   /** Instancia os widgets na camada. */
   build(ui: UiLayer, options: UiTemplateBuildOptions = {}): UiTemplateInstance {
@@ -279,5 +286,8 @@ export async function loadUiTemplate(
 ): Promise<UiTemplateInstance> {
   const response = await fetch(url);
   if (!response.ok) throw new Error(`loadUiTemplate: não achei "${url}" (${response.status})`);
-  return parseUiTemplate(await response.text()).build(ui, options);
+  const template = parseUiTemplate(await response.text());
+  // A medida do texto tem que sair com a fonte certa (ADR-0715).
+  await Promise.all(template.fontFaces.map((face) => loadUiFont(face.family, face.url)));
+  return template.build(ui, options);
 }

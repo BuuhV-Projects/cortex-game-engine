@@ -63,6 +63,7 @@ add_executable(cortex_host
   src/physics/raycast/raycast_world.cpp
   src/shims/steam_api.cpp
   src/shims/text_raster.cpp
+  src/shims/font_registry.cpp
   src/shims/canvas_blit.cpp
   src/canvas2d/blit.cpp
   src/shims/timers.cpp
@@ -352,6 +353,8 @@ add_executable(cortex_host_tests
   tests/window_size_test.cpp
   tests/inflate_test.cpp
   tests/audio_decode_test.cpp
+  tests/font_registry_test.cpp
+  src/shims/font_registry.cpp
   src/shims/inflate.cpp
   src/shims/audio_decode.cpp
   src/shims/stb_image_impl.cpp
@@ -383,4 +386,6 @@ target_include_directories(cortex_host_tests PRIVATE
 )
 # Fixtures binárias dos testes (ex.: .ogg do audio_decode_test, SPEC-0700).
 target_compile_definitions(cortex_host_tests PRIVATE
-  CORTEX_TEST_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures")
+  CORTEX_TEST_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures"
+  CORTEX_DEFAULT_UI_FONT="${TP}/fonts/Roboto-Medium.ttf"
+  CORTEX_UI_FONT_FIXTURE="${CMAKE_CURRENT_SOURCE_DIR}/fixtures/ui-font/assets/ui/fonts/BebasNeue-Regular.ttf")

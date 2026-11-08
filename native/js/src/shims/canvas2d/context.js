@@ -23,8 +23,6 @@ import { defaultState, cloneState, PROPERTIES } from './state.js';
 import * as text from './text.js';
 
 const MAX_BYTE = 255;
-/** Direções da dilatação do strokeText (8 vizinhos + centro). */
-const STROKE_TEXT_DIRECTIONS = 8;
 /** Teto da fila de um canvas que nunca é lido nem limpo por inteiro (rasteriza ao passar). */
 const MAX_PENDING_OPS = 20000;
 
@@ -66,29 +64,6 @@ function normalizeRect(x, y, w, h) {
 /** Cópia profunda dos subcaminhos (o caminho vivo continua crescendo depois da chamada). */
 function copySubpaths(subpaths) {
   return subpaths.map((sp) => ({ pts: sp.pts.slice(), closed: sp.closed }));
-}
-
-/** Máscara do texto engordada em `radius` px (contorno do strokeText). */
-function dilateMask(mask, radius) {
-  const r = Math.max(1, Math.round(radius));
-  const width = mask.width + 2 * r;
-  const height = mask.height + 2 * r;
-  const data = new Uint8Array(width * height * 4);
-  const offsets = [[0, 0]];
-  for (let k = 0; k < STROKE_TEXT_DIRECTIONS; k++) {
-    const t = (k * Math.PI * 2) / STROKE_TEXT_DIRECTIONS;
-    offsets.push([Math.round(Math.cos(t) * r), Math.round(Math.sin(t) * r)]);
-  }
-  for (const [ox, oy] of offsets) {
-    for (let y = 0; y < mask.height; y++) {
-      for (let x = 0; x < mask.width; x++) {
-        const a = mask.data[(y * mask.width + x) * 4 + 3];
-        const j = ((y + r + oy) * width + (x + r + ox)) * 4 + 3;
-        if (a > data[j]) data[j] = a;
-      }
-    }
-  }
-  return { data, width, height, pad: r };
 }
 
 /** Retângulo de dispositivo [x0,y0,x1,y1] de um rect com matriz sem rotação. */
@@ -444,11 +419,11 @@ export class CanvasRenderingContext2D {
     const squeeze = maxWidth !== undefined && advance > maxWidth ? Math.max(0, maxWidth) / advance : 1;
     if (squeeze === 0) return null;
     const startX = x + text.alignShift(s.textAlign, advance * squeeze);
-    const baselineY = y + text.baselineShift(s.textBaseline, s.fontPx);
+    const baselineY = y + text.baselineShift(s.textBaseline, s.fontPx, s.fontFamily);
     const kx = squeeze / scaleDev;
     const ky = 1 / scaleDev;
     const matrix = s.matrix.slice();
-    mat.multiply(matrix, kx, 0, 0, ky, startX - text.maskPadLeft() * kx, baselineY - text.maskBaseline(devPx) * ky);
+    mat.multiply(matrix, kx, 0, 0, ky, startX - text.maskPadLeft() * kx, baselineY - text.maskBaseline(devPx, s.fontFamily) * ky);
     return matrix;
   }
 
@@ -459,14 +434,14 @@ export class CanvasRenderingContext2D {
     if (!isFinite(x + y) || !(devPx > 0)) return;
     const str = String(value);
     this._enqueue((surface) => {
-      const mask = text.rasterText(str, devPx);
+      const mask = text.rasterText(str, devPx, s.fontFamily);
       if (!mask) return;
       const matrix = this._textMatrix(s, mask, devPx, scaleDev, x, y, maxWidth);
       const paint = resolvePaint(outline ? s.strokeStyle : s.fillStyle, s.matrix);
       if (!matrix || !paint) return;
       let drawn = mask;
       if (outline) {
-        drawn = dilateMask(mask, (s.lineWidth * scaleDev) / 2);
+        drawn = text.dilateMask(mask, (s.lineWidth * scaleDev) / 2);
         mat.translate(matrix, -drawn.pad, -drawn.pad);
       }
       this._draw(surface, s, (target, clip) => {
@@ -486,7 +461,7 @@ export class CanvasRenderingContext2D {
 
   measureText(value) {
     const s = this._state;
-    return text.measure(value, s.fontPx, s.textAlign, s.textBaseline);
+    return text.measure(value, s.fontPx, s.textAlign, s.textBaseline, s.fontFamily);
   }
 }
 

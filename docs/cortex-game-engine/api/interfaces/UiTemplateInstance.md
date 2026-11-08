@@ -6,7 +6,7 @@
 
 # Interface: UiTemplateInstance
 
-Defined in: [src/ui/runtime/UiTemplate.ts:213](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiTemplate.ts#L213)
+Defined in: [src/ui/runtime/UiTemplate.ts:220](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiTemplate.ts#L220)
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: [src/ui/runtime/UiTemplate.ts:213](https://github.com/BuuhV-Projects
 
 > `readonly` **widgets**: [`UiWidget`](../classes/UiWidget.md)[]
 
-Defined in: [src/ui/runtime/UiTemplate.ts:214](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiTemplate.ts#L214)
+Defined in: [src/ui/runtime/UiTemplate.ts:221](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiTemplate.ts#L221)
 
 ## Methods
 
@@ -22,7 +22,7 @@ Defined in: [src/ui/runtime/UiTemplate.ts:214](https://github.com/BuuhV-Projects
 
 > **destroy**(): `void`
 
-Defined in: [src/ui/runtime/UiTemplate.ts:217](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiTemplate.ts#L217)
+Defined in: [src/ui/runtime/UiTemplate.ts:224](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiTemplate.ts#L224)
 
 #### Returns
 
@@ -34,7 +34,7 @@ Defined in: [src/ui/runtime/UiTemplate.ts:217](https://github.com/BuuhV-Projects
 
 > **get**(`id`): [`UiWidget`](../classes/UiWidget.md) \| `null`
 
-Defined in: [src/ui/runtime/UiTemplate.ts:216](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiTemplate.ts#L216)
+Defined in: [src/ui/runtime/UiTemplate.ts:223](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiTemplate.ts#L223)
 
 Widget por `id=""` (ex.: atualizar um placar do HUD).
 

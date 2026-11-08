@@ -8,6 +8,7 @@
     "dev": "vite",
     "dev:perf-kart": "vite --config vite.perf-kart.config.ts",
     "dev:vehicle-driver": "vite --config vite.vehicle-driver.config.ts",
+    "dev:ui-font": "vite --config vite.ui-font.config.ts",
     "build": "tsc",
     "build:engine": "tsc -p tsconfig.engine.json && vite build --config vite.engine.config.ts && vite build --config vite.engine.dev.config.ts && vite build --config vite.engine.rapier.config.ts && yarn glyphs:publish",
     "docs:engine": "typedoc",

@@ -858,7 +858,18 @@ level.json (nó)  ──buildScene──▶  Object3D (mesh)  + Entidade ECS (co
   `✦ ★ ← → ✓ ✗ ⚙ ● ○ ■ ◆ ♪ ♥` não. Ícone figurativo se faz com
   `backgroundImage`/painéis, não com glifo. O lint que trava isso está em
   `tests/native/font-glyphs.test.ts` (engine) e no `tests/uiGlyphs.test.ts` de
-  cada jogo.
+  cada jogo. Com **fonte de arquivo do jogo** (`loadUiFont`/`@font-face`,
+  ADR-0715) vale a mesma regra para ela: o contrato é por fonte
+  (`font-glyphs.mjs emit <fonte.ttf> <saida.json>`).
+- **Fonte de arquivo por widget (ADR-0715/SPEC-0716).** Família registrada uma vez
+  (`loadUiFont(família, url)` ou `@font-face` no template) e usada por
+  `fontFamily`/`font-family`/`ctx.font`. DOM: `FontFace` + `document.fonts`. Nativo:
+  `__cortexLoadFont` lê pelo `readAssetBytes` (pak ou solto) e guarda em
+  `native/src/shims/font_registry.cpp` (família → `stbtt_fontinfo`, "" = Roboto);
+  `__cortexRasterText` recebe a família no 4º argumento e `__cortexFontMetrics` dá
+  ascent/descent em EM pro canvas 2D. **Armadilha:** os caches do canvas 2D
+  (máscara, medida, métrica) guardam por família o que acharam na 1ª consulta —
+  desenhar com a família ANTES do `loadUiFont` deixa a Roboto presa no cache.
 - **Host nativo: glb INTERLEAVED renderiza esticado (espeto de mesh).** O
   `WebGPURenderer` no host (wgpu-native) renderiza ERRADO geometria com atributos
   interleaved (POSITION/NORMAL/UV num bufferView com byteStride) — triângulos

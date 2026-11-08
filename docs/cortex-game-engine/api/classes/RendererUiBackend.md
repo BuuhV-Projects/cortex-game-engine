@@ -6,7 +6,7 @@
 
 # Class: RendererUiBackend
 
-Defined in: [src/ui/runtime/RendererUiBackend.ts:58](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/RendererUiBackend.ts#L58)
+Defined in: [src/ui/runtime/RendererUiBackend.ts:60](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/RendererUiBackend.ts#L60)
 
 ## Implements
 
@@ -18,7 +18,7 @@ Defined in: [src/ui/runtime/RendererUiBackend.ts:58](https://github.com/BuuhV-Pr
 
 > **new RendererUiBackend**(`target`): `RendererUiBackend`
 
-Defined in: [src/ui/runtime/RendererUiBackend.ts:91](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/RendererUiBackend.ts#L91)
+Defined in: [src/ui/runtime/RendererUiBackend.ts:93](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/RendererUiBackend.ts#L93)
 
 #### Parameters
 
@@ -36,7 +36,7 @@ Defined in: [src/ui/runtime/RendererUiBackend.ts:91](https://github.com/BuuhV-Pr
 
 > **dispose**(): `void`
 
-Defined in: [src/ui/runtime/RendererUiBackend.ts:156](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/RendererUiBackend.ts#L156)
+Defined in: [src/ui/runtime/RendererUiBackend.ts:158](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/RendererUiBackend.ts#L158)
 
 Remove tudo (troca de cena/shutdown).
 
@@ -54,7 +54,7 @@ Remove tudo (troca de cena/shutdown).
 
 > **render**(): `void`
 
-Defined in: [src/ui/runtime/RendererUiBackend.ts:121](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/RendererUiBackend.ts#L121)
+Defined in: [src/ui/runtime/RendererUiBackend.ts:123](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/RendererUiBackend.ts#L123)
 
 Desenha o frame de UI (no DOM é no-op — o browser pinta sozinho).
 
@@ -72,7 +72,7 @@ Desenha o frame de UI (no DOM é no-op — o browser pinta sozinho).
 
 > **sync**(`widgets`, `viewport`, `scale?`): `void`
 
-Defined in: [src/ui/runtime/RendererUiBackend.ts:95](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/RendererUiBackend.ts#L95)
+Defined in: [src/ui/runtime/RendererUiBackend.ts:97](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/RendererUiBackend.ts#L97)
 
 Sincroniza visuais com a lista de widgets (cria/atualiza/remove). O
 `viewport` é o de DESIGN (espaço lógico do layout, ver `layout.ts`); o

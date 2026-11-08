@@ -24,13 +24,13 @@ Texto de uma linha (contador, título, banner).
 
 > **new UiLabel**(`props?`): `UiLabel`
 
-Defined in: [src/ui/runtime/widgets.ts:127](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L127)
+Defined in: [src/ui/runtime/widgets.ts:133](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L133)
 
 #### Parameters
 
 ##### props?
 
-[`UiWidgetProps`](../interfaces/UiWidgetProps.md) & `Partial`\<`Pick`\<`UiLabel`, `"color"` \| `"text"` \| `"fontSize"`\>\> = `{}`
+[`UiWidgetProps`](../interfaces/UiWidgetProps.md) & `Partial`\<`Pick`\<`UiLabel`, `"color"` \| `"text"` \| `"fontSize"` \| `"fontFamily"`\>\> = `{}`
 
 #### Returns
 
@@ -75,6 +75,18 @@ Sujo = backend precisa re-sincronizar este widget.
 #### Inherited from
 
 [`UiWidget`](UiWidget.md).[`dirty`](UiWidget.md#dirty)
+
+***
+
+### fontFamily
+
+> **fontFamily**: `string` \| `null` = `null`
+
+Defined in: [src/ui/runtime/widgets.ts:132](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L132)
+
+`font-family` do CSS: família registrada por `loadUiFont` (ou `@font-face`
+no template). `null` = Roboto Medium da UI. Família não registrada também
+cai na Roboto. ADR-0715.
 
 ***
 

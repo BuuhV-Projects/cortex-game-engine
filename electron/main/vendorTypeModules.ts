@@ -144,6 +144,7 @@ export const VENDOR_TYPE_MODULES = {
     'createUiLayer',
     'UiStylesheet',
     'UiTemplate',
+    'uiFont',
   ],
   dialogue: ['DialogueGraph', 'DialogueRunner', 'DialogueUI', 'startDialogue'],
   narrative: ['StoryState'],

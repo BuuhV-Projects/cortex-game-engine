@@ -1,8 +1,5 @@
 #include "text_raster.h"
 
-#define STB_TRUETYPE_IMPLEMENTATION
-#include <stb_truetype.h>
-
 #include <atomic>
 #include <cmath>
 #include <cstdio>
@@ -11,14 +8,12 @@
 #include <vector>
 
 #include "../napi/napi_util.h"
+#include "files.h"
+#include "font_registry.h"
 #include "perf_arraybuffer.h"
 
 namespace shims {
 namespace {
-
-std::vector<unsigned char> g_fontData;
-stbtt_fontinfo g_font;
-bool g_fontReady = false;
 
 // Telemetria (SPEC-0321): rasters VIVOS por origem. Conta na criação e
 // desconta no finalizador do ArrayBuffer (GC) — o contador `text` do
@@ -57,56 +52,72 @@ void trackLiveRaster(napi_env env, napi_value buffer, RasterOrigin origin, size_
   napi_add_finalizer(env, buffer, reinterpret_cast<void*>(packed), onRasterCollected, nullptr, nullptr);
 }
 
-bool loadFontFile(const std::string& path) {
+// Fonte padrão (Roboto, ao lado do exe/jogo, fora do pak — ADR-0103).
+bool loadDefaultFont(const std::string& path) {
   FILE* file = std::fopen(path.c_str(), "rb");
   if (!file) return false;
   std::fseek(file, 0, SEEK_END);
-  long size = std::ftell(file);
+  const long size = std::ftell(file);
   std::fseek(file, 0, SEEK_SET);
-  g_fontData.resize(static_cast<size_t>(size));
-  std::fread(g_fontData.data(), 1, g_fontData.size(), file);
+  std::vector<unsigned char> bytes(size > 0 ? static_cast<size_t>(size) : 0);
+  if (!bytes.empty()) std::fread(bytes.data(), 1, bytes.size(), file);
   std::fclose(file);
-  return stbtt_InitFont(&g_font, g_fontData.data(),
-                        stbtt_GetFontOffsetForIndex(g_fontData.data(), 0)) != 0;
+  return registerUiFont(std::string(), std::move(bytes));
 }
 
-// Decodifica o próximo codepoint UTF-8 (suficiente pra PT-BR e símbolos).
-uint32_t nextCodepoint(const std::string& text, size_t* i) {
-  const unsigned char b0 = text[*i];
-  if (b0 < 0x80) {
-    *i += 1;
-    return b0;
+// __cortexLoadFont(família, url) → boolean. Bytes pelo leitor de assets do host
+// (assets.pak no export, arquivo solto em dev) — ADR-0715.
+napi_value jsLoadFont(napi_env env, napi_callback_info info) {
+  size_t argc = 2;
+  napi_value args[2];
+  napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
+  bool ok = false;
+  if (argc >= 2) {
+    const std::string family = njs::toString(env, args[0]);
+    const std::string url = njs::toString(env, args[1]);
+    std::vector<uint8_t> bytes;
+    ok = !family.empty() && readAssetBytes(url, bytes) && registerUiFont(family, std::move(bytes));
+    if (!ok) std::fprintf(stderr, "[ui] fonte \"%s\" não carregou de \"%s\"\n", family.c_str(), url.c_str());
   }
-  if (b0 < 0xe0 && *i + 1 < text.size()) {
-    uint32_t cp = ((b0 & 0x1f) << 6) | (text[*i + 1] & 0x3f);
-    *i += 2;
-    return cp;
-  }
-  if (b0 < 0xf0 && *i + 2 < text.size()) {
-    uint32_t cp = ((b0 & 0x0f) << 12) | ((text[*i + 1] & 0x3f) << 6) |
-                  (text[*i + 2] & 0x3f);
-    *i += 3;
-    return cp;
-  }
-  if (*i + 3 < text.size()) {
-    uint32_t cp = ((b0 & 0x07) << 18) | ((text[*i + 1] & 0x3f) << 12) |
-                  ((text[*i + 2] & 0x3f) << 6) | (text[*i + 3] & 0x3f);
-    *i += 4;
-    return cp;
-  }
-  *i += 1;
-  return '?';
+  napi_value result = nullptr;
+  napi_get_boolean(env, ok, &result);
+  return result;
 }
 
-// __cortexRasterText(texto, alturaPx, origem?) → {width, height, rgba}|null
-// `origem` ("ui" | "canvas") só alimenta a telemetria (SPEC-0321).
-napi_value jsRasterText(napi_env env, napi_callback_info info) {
-  size_t argc = 3;
-  napi_value args[3];
+// __cortexFontMetrics(família) → { ascent, descent } em EM (descent positivo),
+// ou null se a família não está registrada. O canvas 2D põe a linha de base com isto.
+napi_value jsFontMetrics(napi_env env, napi_callback_info info) {
+  size_t argc = 1;
+  napi_value args[1];
   napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
   napi_value nullValue = nullptr;
   napi_get_null(env, &nullValue);
-  if (!g_fontReady || argc < 2) return nullValue;
+  const UiFont* font = findExactUiFont(argc >= 1 ? njs::toString(env, args[0]) : std::string());
+  if (!font) return nullValue;
+  const float perEm = stbtt_ScaleForMappingEmToPixels(&font->info, 1.0f);
+  int ascent = 0, descent = 0, lineGap = 0;
+  stbtt_GetFontVMetrics(&font->info, &ascent, &descent, &lineGap);
+  napi_value result = njs::makeObject(env);
+  napi_value v = nullptr;
+  napi_create_double(env, ascent * perEm, &v);
+  napi_set_named_property(env, result, "ascent", v);
+  napi_create_double(env, -descent * perEm, &v);
+  napi_set_named_property(env, result, "descent", v);
+  return result;
+}
+
+// __cortexRasterText(texto, alturaPx, origem?, família?) → {width, height, rgba}|null
+// `origem` ("ui" | "canvas") só alimenta a telemetria (SPEC-0321). `família`
+// vazia ou não registrada = Roboto (ADR-0715).
+napi_value jsRasterText(napi_env env, napi_callback_info info) {
+  size_t argc = 4;
+  napi_value args[4];
+  napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
+  napi_value nullValue = nullptr;
+  napi_get_null(env, &nullValue);
+  const UiFont* font = findUiFont(argc >= 4 ? njs::toString(env, args[3]) : std::string());
+  if (!font || argc < 2) return nullValue;
+  const stbtt_fontinfo& face = font->info;
 
   std::string text = njs::toString(env, args[0]);
   double sizePx = 16;
@@ -121,43 +132,29 @@ napi_value jsRasterText(napi_env env, napi_callback_info info) {
   // glifos ~15% MENORES que o DOM do Studio pro mesmo fontSize — texto do
   // export sairia menor. `ScaleForMappingEmToPixels` casa com o CSS/DOM.
   const float scale =
-      stbtt_ScaleForMappingEmToPixels(&g_font, static_cast<float>(sizePx));
+      stbtt_ScaleForMappingEmToPixels(&face, static_cast<float>(sizePx));
   int ascent = 0, descent = 0, lineGap = 0;
-  stbtt_GetFontVMetrics(&g_font, &ascent, &descent, &lineGap);
+  stbtt_GetFontVMetrics(&face, &ascent, &descent, &lineGap);
   const int baseline = static_cast<int>(std::ceil(ascent * scale));
   const int height =
       static_cast<int>(std::ceil((ascent - descent) * scale)) + 2;
 
   // 1º passo: largura total (advance + kerning)
-  float widthF = 0;
-  uint32_t previous = 0;
-  for (size_t i = 0; i < text.size();) {
-    uint32_t cp = nextCodepoint(text, &i);
-    int advance = 0, bearing = 0;
-    stbtt_GetCodepointHMetrics(&g_font, static_cast<int>(cp), &advance,
-                               &bearing);
-    if (previous)
-      widthF += scale * stbtt_GetCodepointKernAdvance(
-                            &g_font, static_cast<int>(previous),
-                            static_cast<int>(cp));
-    widthF += advance * scale;
-    previous = cp;
-  }
-  const int width = static_cast<int>(std::ceil(widthF)) + 2;
+  const int width = static_cast<int>(std::ceil(uiTextAdvance(*font, text, static_cast<float>(sizePx)))) + 2;
 
   // 2º passo: rasteriza em coverage (1 canal) e converte pra RGBA branco
   std::vector<unsigned char> coverage(
       static_cast<size_t>(width) * height, 0);
   float penX = 1;
-  previous = 0;
+  uint32_t previous = 0;
   for (size_t i = 0; i < text.size();) {
     uint32_t cp = nextCodepoint(text, &i);
     if (previous)
       penX += scale * stbtt_GetCodepointKernAdvance(
-                          &g_font, static_cast<int>(previous),
+                          &face, static_cast<int>(previous),
                           static_cast<int>(cp));
     int x0, y0, x1, y1;
-    stbtt_GetCodepointBitmapBox(&g_font, static_cast<int>(cp), scale, scale,
+    stbtt_GetCodepointBitmapBox(&face, static_cast<int>(cp), scale, scale,
                                 &x0, &y0, &x1, &y1);
     const int gw = x1 - x0, gh = y1 - y0;
     const int destX = static_cast<int>(penX) + x0;
@@ -165,11 +162,11 @@ napi_value jsRasterText(napi_env env, napi_callback_info info) {
     if (gw > 0 && gh > 0 && destX >= 0 && destY >= 0 &&
         destX + gw <= width && destY + gh <= height) {
       stbtt_MakeCodepointBitmap(
-          &g_font, coverage.data() + destY * width + destX, gw, gh, width,
+          &face, coverage.data() + destY * width + destX, gw, gh, width,
           scale, scale, static_cast<int>(cp));
     }
     int advance = 0, bearing = 0;
-    stbtt_GetCodepointHMetrics(&g_font, static_cast<int>(cp), &advance,
+    stbtt_GetCodepointHMetrics(&face, static_cast<int>(cp), &advance,
                                &bearing);
     penX += advance * scale;
     previous = cp;
@@ -205,11 +202,11 @@ void registerTextRaster(napi_env env, const std::string& baseDir,
   // Roboto MEDIUM = fonte oficial da UI (ADR-0103): o Studio (DOM) usa a mesma
   // via @font-face, então o preview bate com o export. Fallback pra Regular só
   // se a Medium faltar (build antigo).
-  g_fontReady = loadFontFile(baseDir + "Roboto-Medium.ttf") ||
-                loadFontFile(exeDir + "Roboto-Medium.ttf") ||
-                loadFontFile(baseDir + "Roboto-Regular.ttf") ||
-                loadFontFile(exeDir + "Roboto-Regular.ttf");
-  if (!g_fontReady) {
+  const bool ready = loadDefaultFont(baseDir + "Roboto-Medium.ttf") ||
+                     loadDefaultFont(exeDir + "Roboto-Medium.ttf") ||
+                     loadDefaultFont(baseDir + "Roboto-Regular.ttf") ||
+                     loadDefaultFont(exeDir + "Roboto-Regular.ttf");
+  if (!ready) {
     std::fprintf(stderr,
                  "[ui] Roboto-Medium.ttf não encontrada (%s | %s) — "
                  "UI de runtime sem texto\n",
@@ -218,6 +215,8 @@ void registerTextRaster(napi_env env, const std::string& baseDir,
   napi_value global = nullptr;
   napi_get_global(env, &global);
   njs::setMethod(env, global, "__cortexRasterText", jsRasterText);
+  njs::setMethod(env, global, "__cortexLoadFont", jsLoadFont);
+  njs::setMethod(env, global, "__cortexFontMetrics", jsFontMetrics);
 }
 
 int dumpTextRasterLive(char* buf, size_t bufSize) {

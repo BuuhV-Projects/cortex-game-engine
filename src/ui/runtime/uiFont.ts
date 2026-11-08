@@ -33,3 +33,68 @@ export function installUiFont(): void {
     'src:url(data:font/woff2;base64,' + ROBOTO_MEDIUM_WOFF2_BASE64 + ') format("woff2");}';
   document.head.appendChild(style);
 }
+
+/** Pesos aceitos pela face registrada: o backend pede 500 e o browser não sintetiza negrito. */
+const FONT_FACE_WEIGHT_RANGE = '100 900';
+
+/** Família registrada → URL e carga (uma por família; ADR-0715). */
+const registeredFonts = new Map<string, { url: string; ready: Promise<void> }>();
+
+type LoadFontFn = (family: string, url: string) => boolean;
+
+function nativeLoadFont(): LoadFontFn | null {
+  const fn = (globalThis as Record<string, unknown>)['__cortexLoadFont'];
+  return typeof fn === 'function' ? (fn as LoadFontFn) : null;
+}
+
+async function loadFontFace(family: string, url: string): Promise<void> {
+  const native = nativeLoadFont();
+  if (native) {
+    if (!native(family, url)) throw new Error(`loadUiFont: não carregou "${url}" (família "${family}")`);
+    return;
+  }
+  // Fora do browser e sem host (testes em node): nada a registrar.
+  if (typeof FontFace === 'undefined' || typeof document === 'undefined') return;
+  const face = new FontFace(family, `url("${url}")`, { weight: FONT_FACE_WEIGHT_RANGE });
+  await face.load();
+  document.fonts.add(face);
+}
+
+/**
+ * Registra uma **fonte de arquivo** (TTF/OTF/woff2 em `assets/`) com o nome de
+ * família que os widgets usam em `fontFamily`, o CSS em `font-family` e o
+ * `<canvas>` em `ctx.font`. É o `new FontFace(...).load()` do HTML5, igual no
+ * Studio (DOM) e no export nativo (lida do `assets.pak`). ADR-0715.
+ *
+ * Espere a promessa antes de montar a UI: widget medido antes da carga sai com
+ * a fonte padrão. Rejeita se o arquivo não carrega. Mesma família com a mesma
+ * URL não recarrega; com outra URL é erro.
+ *
+ * @example
+ * await loadUiFont('Barlow', 'assets/ui/fonts/BarlowSemiCondensed-SemiBold.ttf');
+ * new UiLabel({ text: 'OBJETIVO', fontFamily: 'Barlow', fontSize: 22 });
+ */
+export function loadUiFont(family: string, url: string): Promise<void> {
+  const known = registeredFonts.get(family);
+  if (known) {
+    if (known.url === url) return known.ready;
+    return Promise.reject(
+      new Error(`loadUiFont: família "${family}" já registrada com "${known.url}"`),
+    );
+  }
+  const ready = loadFontFace(family, url).catch((error: unknown) => {
+    registeredFonts.delete(family); // deixa tentar de novo
+    throw error;
+  });
+  registeredFonts.set(family, { url, ready });
+  return ready;
+}
+
+/**
+ * Valor de `font` do CSS pro backend DOM: a família pedida (se houver) e a
+ * Roboto da UI de reserva enquanto carrega. Peso 500 casa com a Roboto Medium.
+ */
+export function uiFontShorthand(px: number, family: string | null = null): string {
+  const custom = family ? `'${family}', ` : '';
+  return `500 ${px}px ${custom}'${UI_FONT_FAMILY}', system-ui, 'Segoe UI', sans-serif`;
+}

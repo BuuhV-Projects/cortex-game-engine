@@ -4,7 +4,7 @@
 import { parseColor, serializeColor } from './color.js';
 import { identity } from './matrix.js';
 import { CanvasGradient } from './paint.js';
-import { parseFontSize, defaultFontPx } from './text.js';
+import { parseFontSize, parseFontFamily, defaultFontPx } from './text.js';
 
 const BLACK = [0, 0, 0, 1];
 const TRANSPARENT_BLACK = [0, 0, 0, 0];
@@ -26,6 +26,7 @@ export function defaultState() {
     lineDashOffset: 0,
     font: DEFAULT_FONT,
     fontPx: defaultFontPx(),
+    fontFamily: '',
     textAlign: 'start',
     textBaseline: 'alphabetic',
     direction: 'inherit',
@@ -127,6 +128,7 @@ export const PROPERTIES = {
       if (px === null) return;
       this._state.font = String(value);
       this._state.fontPx = px;
+      this._state.fontFamily = parseFontFamily(value);
     },
   },
 };

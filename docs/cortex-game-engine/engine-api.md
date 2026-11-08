@@ -418,8 +418,18 @@ game.ui.add(new UiPanel({ anchor: 'center', width: 900, height: 460,
   canvas DOM; no export nativo os pixels sobem pra uma textura SÓ quando o
   canvas muda (cada redesenho = rasterizar + subir; controle a frequência).
   Ponteiro no canvas só funciona no browser.
+- **Fonte de arquivo** (ADR-0715/SPEC-0716): registre a TTF com
+  `await loadUiFont('Barlow', 'assets/ui/fonts/Barlow.ttf')` (ou
+  `@font-face { font-family: 'Barlow'; src: url('assets/ui/fonts/Barlow.ttf'); }`
+  no `<style>` do template — o `loadUiTemplate` espera carregar) e use em
+  `fontFamily: 'Barlow'` (Label/Button), `font-family: 'Barlow'` (CSS) ou
+  `ctx.font = "22px 'Barlow'"` (canvas). Igual no Studio e no export (lida do
+  `assets.pak`). Sem família = Roboto. Registre ANTES de montar a UI (medida).
+  Cada arquivo é uma família (dois pesos = duas famílias).
 - Fora do subset (use composição de widgets): radial-gradient, blur,
-  transições, SVG. Glifos no console: só o que a Roboto tem (evite emoji).
+  transições, SVG. Glifos no console: só o que a fonte do texto tem (Roboto:
+  `ui-font-glyphs.json`; fonte do jogo: gere o contrato com
+  `node native/scripts/font-glyphs.mjs emit <fonte.ttf> <saida.json>`). Evite emoji.
 
 ## Diálogo + UI in-game (narrativa) — ADR-0070
 
