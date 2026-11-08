@@ -1,3 +1,16 @@
+# [0.118.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.117.0...v0.118.0) (2026-11-08)
+
+
+### Bug Fixes
+
+* **achievements:** storeStats que falha deixa a conquista pendente e o envio e refeito no proximo unlock/has ([567ed90](https://github.com/BuuhV-Projects/cortex-game-engine/commit/567ed90fe122b874ee2350861ee8f29fcdf63588))
+
+
+### Features
+
+* **achievements:** conquistas multiplataforma com factory por gamePlatform e envio unico (SPEC-0713, ADR-0714) ([27ef7ab](https://github.com/BuuhV-Projects/cortex-game-engine/commit/27ef7ab3e8c02a8fc0b4b3c8bff79e419cd6af37))
+* **achievements:** NullAchievements e o padrao da factory (valor desconhecido, ponte que lanca e falha ao ler a plataforma) ([49801df](https://github.com/BuuhV-Projects/cortex-game-engine/commit/49801dfd0f98a2827259a68d8f142eedc4ad8de8))
+
 # [0.117.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.116.0...v0.117.0) (2026-11-07)
 
 
