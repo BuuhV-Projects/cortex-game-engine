@@ -49,12 +49,17 @@ export interface AchievementSteamPort {
 }
 
 /**
- * Conquistas na Steam. Guarda na sessão o que já está desbloqueado: o segundo
- * `unlock` do mesmo id não chama o Steamworks.
+ * Conquistas na Steam. Guarda na sessão o que já foi enviado: o segundo
+ * `unlock` do mesmo id não chama o Steamworks. Conquista marcada cujo
+ * `storeStats` falhou fica pendente e o envio é refeito no próximo
+ * `unlock`/`has`, até dar certo.
  */
 export class SteamAchievements implements Achievements {
   readonly backend = 'steam';
+  /** Enviadas à Steam (ou que o jogador já tinha). */
   private readonly unlocked = new Set<string>();
+  /** Marcadas, com o `storeStats` ainda por dar certo. */
+  private readonly pending = new Set<string>();
 
   constructor(private readonly steam: AchievementSteamPort = Steam) {}
 
@@ -64,17 +69,29 @@ export class SteamAchievements implements Achievements {
       debug('achievements', `a Steam recusou "${id}" (API Name fora do app?)`);
       return false;
     }
-    this.unlocked.add(id);
-    if (!this.steam.storeStats()) debug('achievements', `storeStats falhou; a Steam envia "${id}" no próximo envio`);
+    this.pending.add(id);
+    this.flush();
     debug('achievements', `conquista desbloqueada na Steam: ${id}`);
     return true;
   }
 
   has(id: string): boolean {
-    if (this.unlocked.has(id)) return true;
+    this.flush();
+    if (this.unlocked.has(id) || this.pending.has(id)) return true;
     if (!this.steam.hasAchievement(id)) return false;
     this.unlocked.add(id);
     return true;
+  }
+
+  /** Reenvia as pendentes; só entram no cache depois de um `storeStats` que deu certo. */
+  private flush(): void {
+    if (this.pending.size === 0) return;
+    if (!this.steam.storeStats()) {
+      debug('achievements', `storeStats falhou; reenvio no próximo unlock/has: ${[...this.pending].join(', ')}`);
+      return;
+    }
+    for (const id of this.pending) this.unlocked.add(id);
+    this.pending.clear();
   }
 }
 

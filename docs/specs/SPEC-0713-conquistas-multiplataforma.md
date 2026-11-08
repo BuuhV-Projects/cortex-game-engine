@@ -37,7 +37,7 @@ interface Achievements {
 
 | Classe | Quando | `unlock(id)` |
 |---|---|---|
-| `SteamAchievements` | plataforma `steam` e `Steam.isAvailable()` | se o id está no cache da sessão: `true` sem chamada. Senão `hasAchievement(id)` (já tinha: guarda no cache). Senão `unlockAchievement(id)` + `storeStats()` uma vez, e guarda no cache. Recusada pela Steam (id fora do app): `false`, nada é enviado e o id não entra no cache. |
+| `SteamAchievements` | plataforma `steam` e `Steam.isAvailable()` | se o id está no cache da sessão: `true` sem chamada. Senão `hasAchievement(id)` (já tinha: guarda no cache). Senão `unlockAchievement(id)` + `storeStats()`; só entra no cache quando o `storeStats` dá certo. Se falhar, o id fica **pendente** (`has` = `true`) e o `storeStats` é refeito no próximo `unlock`/`has`, sem marcar de novo, até dar certo. Recusada pela Steam (id fora do app): `false`, nada é enviado e o id não entra no cache. |
 | `NullAchievements` | `pc`, navegador, Studio, `steam` sem cliente, `xbox` (ainda sem implementação) | guarda em memória na sessão e registra no `debug`; não persiste |
 
 `SteamAchievements` recebe uma `AchievementSteamPort` (o recorte da fachada que usa: `isAvailable`, `unlockAchievement`,
@@ -74,4 +74,4 @@ achievements.unlock('intro_completed');
 `tests/core/achievements.test.ts`, com uma Steam falsa: escolha da factory por plataforma; a nula como padrão (valor
 desconhecido, ponte que lança, falha ao ler a plataforma); um `unlock` chama
 `unlockAchievement` + `storeStats` uma vez e o segundo não chama nada; conquista que o jogador já tinha não é
-reenviada; id recusado não envia e pode ser tentado de novo; a nula; e a memorização de `loadAchievements`.
+reenviada; `storeStats` que falha é refeito no próximo `unlock` e depois para; id recusado não envia e pode ser tentado de novo; a nula; e a memorização de `loadAchievements`.

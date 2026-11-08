@@ -19,6 +19,8 @@ const ID = 'intro_completed';
 class FakeSteam implements AchievementSteamPort {
   readonly marked = new Set<string>();
   calls = { unlock: 0, has: 0, store: 0 };
+  /** O que o próximo `storeStats` devolve (falha de rede/servidor da Steam). */
+  storeOk = true;
   constructor(
     private readonly available = true,
     private readonly known: readonly string[] = [ID],
@@ -38,7 +40,7 @@ class FakeSteam implements AchievementSteamPort {
   }
   storeStats(): boolean {
     this.calls.store++;
-    return true;
+    return this.storeOk;
   }
 }
 
@@ -80,6 +82,21 @@ describe('SteamAchievements', () => {
     expect(achievements.unlock(ID)).toBe(true);
     expect(achievements.has(ID)).toBe(true);
     expect(steam.calls).toEqual(before);
+  });
+
+  it('storeStats que falha fica pendente e é refeito no próximo unlock, sem marcar de novo', () => {
+    const steam = new FakeSteam();
+    steam.storeOk = false;
+    const achievements = new SteamAchievements(steam);
+    expect(achievements.unlock(ID)).toBe(true);
+    expect(achievements.unlock(ID)).toBe(true);
+    expect([steam.calls.unlock, steam.calls.store]).toEqual([1, 2]);
+    steam.storeOk = true;
+    expect(achievements.unlock(ID)).toBe(true);
+    expect([steam.calls.unlock, steam.calls.store]).toEqual([1, 3]);
+    expect(achievements.unlock(ID)).toBe(true);
+    expect(achievements.has(ID)).toBe(true);
+    expect([steam.calls.unlock, steam.calls.store]).toEqual([1, 3]);
   });
 
   it('conquista que o jogador já tinha não é reenviada', () => {
