@@ -32,6 +32,7 @@ export const VENDOR_TYPE_MODULES = {
     'debug',
     'gamePlatform',
     'steamworks',
+    'achievements',
   ],
   // Ações de input remapeáveis + tela de Controles (ADR-0164 / SPEC-0165).
   input: [

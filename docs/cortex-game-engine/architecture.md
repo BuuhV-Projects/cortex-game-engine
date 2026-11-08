@@ -1197,6 +1197,9 @@ então não afeta o jogo publicado.
 - **Gate de plataforma**: `export-game.mjs` grava `platform` no `cortex.json`
   (`steam`/`xbox`/`pc`); `gamePlatform()` lê por fetch e `canRebindInput()`
   decide. Campo ausente = `pc` (Studio/browser mostram a tela pra teste).
+- **Conquistas** (SPEC-0713/ADR-0714): `core/achievements.ts` usa o mesmo `gamePlatform()` para escolher a
+  implementação (`steam` + cliente aberto → fachada `Steam`; o resto → nula). A idempotência é dela: cache por sessão
+  + `hasAchievement` antes de `unlockAchievement`/`storeStats`. O Xbox entra como outra classe na factory.
 
 ⚠️ **Armadilha (fase 2)**: controle genérico que o **host nativo não reconhece**
 não aparece como gamepad nenhum — `SDL_OpenGamepad` só abre dispositivo do banco
