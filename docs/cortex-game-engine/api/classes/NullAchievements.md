@@ -6,7 +6,7 @@
 
 # Class: NullAchievements
 
-Defined in: src/core/achievements.ts:82
+Defined in: [src/core/achievements.ts:82](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/achievements.ts#L82)
 
 Sem plataforma: guarda na sessão e registra no `debug`. Não persiste.
 
@@ -30,7 +30,7 @@ Sem plataforma: guarda na sessão e registra no `debug`. Não persiste.
 
 > `readonly` **backend**: `"null"` = `'null'`
 
-Defined in: src/core/achievements.ts:83
+Defined in: [src/core/achievements.ts:83](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/achievements.ts#L83)
 
 Implementação ligada (log, testes, UI que só faz sentido com plataforma).
 
@@ -44,7 +44,7 @@ Implementação ligada (log, testes, UI que só faz sentido com plataforma).
 
 > **has**(`id`): `boolean`
 
-Defined in: src/core/achievements.ts:93
+Defined in: [src/core/achievements.ts:93](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/achievements.ts#L93)
 
 `true` se a conquista já está desbloqueada.
 
@@ -68,7 +68,7 @@ Defined in: src/core/achievements.ts:93
 
 > **unlock**(`id`): `boolean`
 
-Defined in: src/core/achievements.ts:86
+Defined in: [src/core/achievements.ts:86](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/achievements.ts#L86)
 
 Desbloqueia a conquista. Idempotente: se ela já foi desbloqueada, não chama
 a plataforma de novo.

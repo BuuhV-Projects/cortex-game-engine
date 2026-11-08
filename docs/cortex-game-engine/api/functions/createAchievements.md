@@ -8,10 +8,12 @@
 
 > **createAchievements**(`platform`, `steam?`): [`Achievements`](../interfaces/Achievements.md)
 
-Defined in: src/core/achievements.ts:102
+Defined in: [src/core/achievements.ts:114](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/achievements.ts#L114)
 
-Escolhe a implementação pela plataforma do export. O ramo `xbox` existe para
-a implementação do GDK entrar só aqui.
+Escolhe a implementação pela plataforma do export. **O padrão é sempre a
+[NullAchievements](../classes/NullAchievements.md)**: plataforma sem implementação (hoje `pc` e
+`xbox`), valor desconhecido ou Steam indisponível caem nela, e nunca lança.
+O Xbox entra com um `case 'xbox'` novo.
 
 ## Parameters
 

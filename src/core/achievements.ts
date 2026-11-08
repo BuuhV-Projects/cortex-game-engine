@@ -95,20 +95,30 @@ export class NullAchievements implements Achievements {
   }
 }
 
+/** A Steam responde que está pronta; ponte que lança conta como indisponível. */
+function steamReady(steam: AchievementSteamPort): boolean {
+  try {
+    return steam.isAvailable();
+  } catch (err) {
+    debug('achievements', 'a ponte da Steam falhou ao responder:', err);
+    return false;
+  }
+}
+
 /**
- * Escolhe a implementação pela plataforma do export. O ramo `xbox` existe para
- * a implementação do GDK entrar só aqui.
+ * Escolhe a implementação pela plataforma do export. **O padrão é sempre a
+ * {@link NullAchievements}**: plataforma sem implementação (hoje `pc` e
+ * `xbox`), valor desconhecido ou Steam indisponível caem nela, e nunca lança.
+ * O Xbox entra com um `case 'xbox'` novo.
  */
 export function createAchievements(platform: GamePlatform, steam: AchievementSteamPort = Steam): Achievements {
   switch (platform) {
     case 'steam':
-      if (steam.isAvailable()) return new SteamAchievements(steam);
+      if (steamReady(steam)) return new SteamAchievements(steam);
       debug('achievements', 'export da Steam sem Steam (cliente fechado?): conquistas só na sessão');
       return new NullAchievements();
-    case 'xbox':
-      debug('achievements', 'Xbox ainda sem implementação de conquistas: só na sessão');
-      return new NullAchievements();
-    case 'pc':
+    default:
+      debug('achievements', `plataforma ${String(platform)} sem implementação de conquistas: só na sessão`);
       return new NullAchievements();
   }
 }
@@ -121,11 +131,17 @@ let cached: Promise<Achievements> | null = null;
  * (chamadas seguintes devolvem a mesma instância).
  */
 export function loadAchievements(file?: string): Promise<Achievements> {
-  cached ??= gamePlatform(file).then((platform) => {
-    const achievements = createAchievements(platform);
-    debug('achievements', `plataforma ${platform} → ${achievements.backend}`);
-    return achievements;
-  });
+  cached ??= gamePlatform(file).then(
+    (platform) => {
+      const achievements = createAchievements(platform);
+      debug('achievements', `plataforma ${platform} → ${achievements.backend}`);
+      return achievements;
+    },
+    (err: unknown) => {
+      debug('achievements', 'plataforma não lida; conquistas só na sessão:', err);
+      return new NullAchievements();
+    },
+  );
   return cached;
 }
 

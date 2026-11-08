@@ -27,8 +27,11 @@ jogador ganhou a conquista, e a engine garante que ela seja registrada uma vez s
   `NullAchievements`, `createAchievements(platform, steam?)` e `loadAchievements()` memorizado.
 - `SteamAchievements.unlock` consulta o cache da sessão e o `hasAchievement` antes de chamar `unlockAchievement` e
   `storeStats`; o envio acontece uma vez por conquista.
-- O Xbox fica previsto na factory (ramo `xbox` → nula com aviso). Quando houver o GDK, ele entra como outra classe que
-  implementa `Achievements`, pela ponte nativa da engine, como a Steam.
+- **O padrão é sempre a `NullAchievements`** (decisão do usuário): qualquer plataforma sem implementação, valor
+  desconhecido, falha ao ler a plataforma ou Steam indisponível cai nela, e nunca lança. Assim uma plataforma nova ou um
+  `cortex.json` estranho nunca derruba o jogo; no pior caso, a conquista fica só na sessão.
+- O Xbox fica previsto: hoje cai no padrão (nula). Quando houver o GDK, ele entra como outra classe que implementa
+  `Achievements`, pela ponte nativa da engine, como a Steam, com um `case` próprio na factory.
 
 ## Consequências
 

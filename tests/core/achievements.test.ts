@@ -11,7 +11,7 @@ import {
   resetAchievementsCache,
   type AchievementSteamPort,
 } from '../../src/core/achievements.js';
-import { resetGamePlatformCache } from '../../src/core/gamePlatform.js';
+import { resetGamePlatformCache, type GamePlatform } from '../../src/core/gamePlatform.js';
 
 const ID = 'intro_completed';
 
@@ -58,6 +58,15 @@ describe('createAchievements', () => {
     expect(createAchievements('steam', new FakeSteam(false)).backend).toBe('null');
     expect(createAchievements('pc', new FakeSteam(true)).backend).toBe('null');
     expect(createAchievements('xbox', new FakeSteam(true)).backend).toBe('null');
+  });
+
+  it('o padrão é a nula: valor desconhecido e ponte da Steam que lança não derrubam', () => {
+    expect(createAchievements('switch' as GamePlatform, new FakeSteam(true)).backend).toBe('null');
+    const broken = new FakeSteam(true);
+    broken.isAvailable = () => {
+      throw new Error('ponte quebrada');
+    };
+    expect(createAchievements('steam', broken).backend).toBe('null');
   });
 });
 
@@ -111,6 +120,17 @@ describe('loadAchievements', () => {
 
   it('no export da Steam sem a ponte nativa cai na nula, sem lançar', async () => {
     mockPlatform('steam');
+    expect((await loadAchievements()).backend).toBe('null');
+  });
+
+  it('falha ao ler a plataforma (fetch que lança ou valor desconhecido) cai na nula', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => {
+      throw new Error('sem cortex.json');
+    }));
+    expect((await loadAchievements()).backend).toBe('null');
+    resetGamePlatformCache();
+    resetAchievementsCache();
+    mockPlatform('playstation');
     expect((await loadAchievements()).backend).toBe('null');
   });
 });

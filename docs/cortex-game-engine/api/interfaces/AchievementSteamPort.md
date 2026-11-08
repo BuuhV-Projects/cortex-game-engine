@@ -6,7 +6,7 @@
 
 # Interface: AchievementSteamPort
 
-Defined in: src/core/achievements.ts:44
+Defined in: [src/core/achievements.ts:44](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/achievements.ts#L44)
 
 Recorte da fachada [Steam](../variables/Steam.md) que as conquistas usam (injetÃ¡vel nos testes).
 
@@ -16,7 +16,7 @@ Recorte da fachada [Steam](../variables/Steam.md) que as conquistas usam (injetÃ
 
 > **hasAchievement**(`id`): `boolean`
 
-Defined in: src/core/achievements.ts:47
+Defined in: [src/core/achievements.ts:47](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/achievements.ts#L47)
 
 #### Parameters
 
@@ -34,7 +34,7 @@ Defined in: src/core/achievements.ts:47
 
 > **isAvailable**(): `boolean`
 
-Defined in: src/core/achievements.ts:45
+Defined in: [src/core/achievements.ts:45](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/achievements.ts#L45)
 
 #### Returns
 
@@ -46,7 +46,7 @@ Defined in: src/core/achievements.ts:45
 
 > **storeStats**(): `boolean`
 
-Defined in: src/core/achievements.ts:48
+Defined in: [src/core/achievements.ts:48](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/achievements.ts#L48)
 
 #### Returns
 
@@ -58,7 +58,7 @@ Defined in: src/core/achievements.ts:48
 
 > **unlockAchievement**(`id`): `boolean`
 
-Defined in: src/core/achievements.ts:46
+Defined in: [src/core/achievements.ts:46](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/achievements.ts#L46)
 
 #### Parameters
 

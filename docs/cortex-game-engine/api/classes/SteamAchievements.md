@@ -6,7 +6,7 @@
 
 # Class: SteamAchievements
 
-Defined in: src/core/achievements.ts:55
+Defined in: [src/core/achievements.ts:55](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/achievements.ts#L55)
 
 Conquistas na Steam. Guarda na sessão o que já está desbloqueado: o segundo
 `unlock` do mesmo id não chama o Steamworks.
@@ -21,7 +21,7 @@ Conquistas na Steam. Guarda na sessão o que já está desbloqueado: o segundo
 
 > **new SteamAchievements**(`steam?`): `SteamAchievements`
 
-Defined in: src/core/achievements.ts:59
+Defined in: [src/core/achievements.ts:59](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/achievements.ts#L59)
 
 #### Parameters
 
@@ -39,7 +39,7 @@ Defined in: src/core/achievements.ts:59
 
 > `readonly` **backend**: `"steam"` = `'steam'`
 
-Defined in: src/core/achievements.ts:56
+Defined in: [src/core/achievements.ts:56](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/achievements.ts#L56)
 
 Implementação ligada (log, testes, UI que só faz sentido com plataforma).
 
@@ -53,7 +53,7 @@ Implementação ligada (log, testes, UI que só faz sentido com plataforma).
 
 > **has**(`id`): `boolean`
 
-Defined in: src/core/achievements.ts:73
+Defined in: [src/core/achievements.ts:73](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/achievements.ts#L73)
 
 `true` se a conquista já está desbloqueada.
 
@@ -77,7 +77,7 @@ Defined in: src/core/achievements.ts:73
 
 > **unlock**(`id`): `boolean`
 
-Defined in: src/core/achievements.ts:61
+Defined in: [src/core/achievements.ts:61](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/achievements.ts#L61)
 
 Desbloqueia a conquista. Idempotente: se ela já foi desbloqueada, não chama
 a plataforma de novo.

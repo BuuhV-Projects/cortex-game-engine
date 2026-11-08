@@ -45,9 +45,13 @@ interface Achievements {
 
 ### Factory
 
-- `createAchievements(platform, steam = Steam)`: `steam` + `isAvailable()` → `SteamAchievements`; `steam` sem cliente →
-  `NullAchievements` com aviso; `xbox` → `NullAchievements` com aviso de "sem implementação" (o ramo existe para o Xbox
-  entrar só aqui); `pc` → `NullAchievements`.
+- **O padrão da engine é sempre a `NullAchievements`.** Só a Steam pronta escolhe outra coisa; todo o resto cai na nula,
+  com aviso no `debug`, e nada lança:
+  - plataforma sem implementação (hoje `pc` e `xbox`) e valor desconhecido: o `default` do `switch`;
+  - `steam` com a Steam indisponível (cliente fechado, sem ponte nativa) ou com a ponte lançando erro no `isAvailable`;
+  - falha ao ler a plataforma no `loadAchievements`.
+- `createAchievements(platform, steam = Steam)`: `steam` + `isAvailable()` → `SteamAchievements`; o resto → nula. O Xbox
+  entra com um `case 'xbox'` novo quando houver a implementação.
 - `loadAchievements(file?)`: lê a plataforma com `gamePlatform(file)` e cria uma vez por sessão (memorizado, como o
   `gamePlatform`). `resetAchievementsCache()` esquece (testes e hot-reload do Studio).
 
@@ -67,6 +71,7 @@ achievements.unlock('intro_completed');
 
 ## Testes
 
-`tests/core/achievements.test.ts`, com uma Steam falsa: escolha da factory por plataforma; um `unlock` chama
+`tests/core/achievements.test.ts`, com uma Steam falsa: escolha da factory por plataforma; a nula como padrão (valor
+desconhecido, ponte que lança, falha ao ler a plataforma); um `unlock` chama
 `unlockAchievement` + `storeStats` uma vez e o segundo não chama nada; conquista que o jogador já tinha não é
 reenviada; id recusado não envia e pode ser tentado de novo; a nula; e a memorização de `loadAchievements`.

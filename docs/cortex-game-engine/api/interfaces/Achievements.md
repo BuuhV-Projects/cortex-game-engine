@@ -6,7 +6,7 @@
 
 # Interface: Achievements
 
-Defined in: src/core/achievements.ts:29
+Defined in: [src/core/achievements.ts:29](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/achievements.ts#L29)
 
 Conquistas do jogo, independentes da plataforma.
 
@@ -16,7 +16,7 @@ Conquistas do jogo, independentes da plataforma.
 
 > `readonly` **backend**: [`AchievementBackend`](../type-aliases/AchievementBackend.md)
 
-Defined in: src/core/achievements.ts:31
+Defined in: [src/core/achievements.ts:31](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/achievements.ts#L31)
 
 Implementação ligada (log, testes, UI que só faz sentido com plataforma).
 
@@ -26,7 +26,7 @@ Implementação ligada (log, testes, UI que só faz sentido com plataforma).
 
 > **has**(`id`): `boolean`
 
-Defined in: src/core/achievements.ts:40
+Defined in: [src/core/achievements.ts:40](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/achievements.ts#L40)
 
 `true` se a conquista já está desbloqueada.
 
@@ -46,7 +46,7 @@ Defined in: src/core/achievements.ts:40
 
 > **unlock**(`id`): `boolean`
 
-Defined in: src/core/achievements.ts:38
+Defined in: [src/core/achievements.ts:38](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/achievements.ts#L38)
 
 Desbloqueia a conquista. Idempotente: se ela já foi desbloqueada, não chama
 a plataforma de novo.
