@@ -1,3 +1,10 @@
+# [0.119.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.118.0...v0.119.0) (2026-11-08)
+
+
+### Features
+
+* **ui:** fonte de arquivo por widget nos backends DOM e nativo (fontFamily, loadUiFont, [@font-face](https://github.com/font-face)) ([1187e36](https://github.com/BuuhV-Projects/cortex-game-engine/commit/1187e36b12f7ecbeb2cdbe143ba6aa0b4100c951))
+
 # [0.118.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.117.0...v0.118.0) (2026-11-08)
 
 
