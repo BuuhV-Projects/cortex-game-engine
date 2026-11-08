@@ -6,7 +6,7 @@
 
 # Interface: UiRenderTarget
 
-Defined in: [src/ui/runtime/RendererUiBackend.ts:29](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/RendererUiBackend.ts#L29)
+Defined in: [src/ui/runtime/RendererUiBackend.ts:31](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/RendererUiBackend.ts#L31)
 
 Só o que precisamos do Renderer do engine (evita acoplamento).
 
@@ -16,7 +16,7 @@ Só o que precisamos do Renderer do engine (evita acoplamento).
 
 > `optional` **renderUiLayer**(`scene`, `camera`, `width`, `height`): `unknown`
 
-Defined in: [src/ui/runtime/RendererUiBackend.ts:40](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/RendererUiBackend.ts#L40)
+Defined in: [src/ui/runtime/RendererUiBackend.ts:42](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/RendererUiBackend.ts#L42)
 
 Caminho de composição em gama (ADR-0105): renderiza a UI numa RenderTarget
 própria (linear) e devolve o GPUTexture do backend pro host compor sobre o
@@ -50,7 +50,7 @@ jogo. Opcional (mock de teste / hosts antigos não têm).
 
 > **renderViewport**(`scene`, `camera`, `viewport`): `void`
 
-Defined in: [src/ui/runtime/RendererUiBackend.ts:30](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/RendererUiBackend.ts#L30)
+Defined in: [src/ui/runtime/RendererUiBackend.ts:32](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/RendererUiBackend.ts#L32)
 
 #### Parameters
 

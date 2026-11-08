@@ -69,6 +69,7 @@ export interface WidgetVisual {
   texture?: THREE.DataTexture;
   lastText?: string;
   lastFontSize?: number;
+  lastFontFamily?: string | null;
   /** Imagem de fundo do Panel (quad texturizado, "cover", clipada no raio). */
   image?: THREE.Mesh;
   imageUniforms?: ImageUniforms;

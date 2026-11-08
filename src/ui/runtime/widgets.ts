@@ -124,7 +124,15 @@ export class UiLabel extends UiWidget {
   fontSize = 18;
   /** Cor CSS do texto. */
   color = '#ffffff';
-  constructor(props: UiWidgetProps & Partial<Pick<UiLabel, 'text' | 'fontSize' | 'color'>> = {}) {
+  /**
+   * `font-family` do CSS: família registrada por `loadUiFont` (ou `@font-face`
+   * no template). `null` = Roboto Medium da UI. Família não registrada também
+   * cai na Roboto. ADR-0715.
+   */
+  fontFamily: string | null = null;
+  constructor(
+    props: UiWidgetProps & Partial<Pick<UiLabel, 'text' | 'fontSize' | 'color' | 'fontFamily'>> = {},
+  ) {
     super();
     Object.assign(this, props);
   }
@@ -175,6 +183,7 @@ export class UiButton extends UiLabel {
           | 'text'
           | 'fontSize'
           | 'color'
+          | 'fontFamily'
           | 'background'
           | 'focusBackground'
           | 'cornerRadius'

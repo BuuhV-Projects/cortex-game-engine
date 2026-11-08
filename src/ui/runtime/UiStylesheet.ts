@@ -8,12 +8,15 @@
  * Suportado por seletor `.classe` (e `.classe:focus` em botões):
  * - `background`: cor (`#rrggbb`, `#rrggbbaa`, `rgba(...)`) ou
  *   `linear-gradient(180deg|90deg, c1, c2)` (`to bottom`/`to right` também)
- * - `color`, `font-size: Npx`, `opacity`
+ * - `color`, `font-size: Npx`, `font-family: 'Família'`, `opacity`
  * - `border-radius: Npx`, `border: Npx solid <cor>` (em botão = borda constante)
  * - `box-shadow: 0 Npx 0 <cor>` (sombra DURA, sem blur) ou `none`
  * - `text-align: left|center|right` (botão)
  * - `padding: Ypx Xpx`, `width: Npx`, `height: Npx`
  * - `pointer-events: auto|none` (só `<canvas>`, ADR-0315)
+ *
+ * E `@font-face { font-family: 'X'; src: url('assets/....ttf'); }` (ADR-0715):
+ * fica em {@link UiStylesheet.fontFaces}; o `loadUiTemplate` registra e espera.
  *
  * @example
  * const sheet = parseUiCss(`
@@ -28,8 +31,18 @@ import { UiButton, UiCanvas, UiLabel, UiPanel, type UiWidget } from './widgets.j
 
 type StyleProps = Record<string, string>;
 
+/** Uma `@font-face` do CSS: família e URL do arquivo (ADR-0715). */
+export interface UiFontFace {
+  family: string;
+  url: string;
+}
+
 export class UiStylesheet {
-  constructor(private readonly rules: Map<string, StyleProps>) {}
+  constructor(
+    private readonly rules: Map<string, StyleProps>,
+    /** `@font-face` declaradas no CSS, na ordem. */
+    readonly fontFaces: ReadonlyArray<UiFontFace> = [],
+  ) {}
 
   /** Aplica a classe (e `:focus`, se houver) ao widget. Erro se não existir. */
   apply<T extends UiWidget>(widget: T, className: string): T {
@@ -46,7 +59,13 @@ export class UiStylesheet {
 /** Compila o CSS (subset) — lança erro descritivo pra qualquer coisa fora dele. */
 export function parseUiCss(css: string): UiStylesheet {
   const rules = new Map<string, StyleProps>();
-  const clean = css.replace(/\/\*[^]*?\*\//g, '');
+  const fontFaces: UiFontFace[] = [];
+  const clean = css
+    .replace(/\/\*[^]*?\*\//g, '')
+    .replace(/@font-face\s*\{([^}]*)\}/g, (_m, body: string) => {
+      fontFaces.push(parseFontFace(body));
+      return '';
+    });
   const ruleRegex = /([^{}]+)\{([^}]*)\}/g;
   for (const [, rawSelector, body] of clean.matchAll(ruleRegex)) {
     const selector = rawSelector!.trim();
@@ -104,13 +123,39 @@ export function parseUiCss(css: string): UiStylesheet {
       }
     }
   }
-  return new UiStylesheet(rules);
+  return new UiStylesheet(rules, fontFaces);
+}
+
+/** Primeira família de uma lista do CSS, sem aspas (`'Barlow', sans-serif` → `Barlow`). */
+export function firstFontFamily(value: string): string {
+  return value.split(',')[0]!.trim().replace(/^(['"])(.*)\1$/, '$2');
+}
+
+/** Corpo de `@font-face`: só `font-family` e `src: url(...)` (ADR-0715). */
+function parseFontFace(body: string): UiFontFace {
+  let family = '';
+  let url = '';
+  for (const declaration of body.split(';')) {
+    const decl = declaration.trim();
+    if (!decl) continue;
+    const colon = decl.indexOf(':');
+    const prop = decl.slice(0, colon).trim().toLowerCase();
+    const value = decl.slice(colon + 1).trim();
+    if (prop === 'font-family') family = firstFontFamily(value);
+    else if (prop === 'src') url = value.match(/^url\(\s*(['"]?)([^'")]+)\1\s*\)/)?.[2] ?? '';
+    else throw new Error(`UiStylesheet: "@font-face" só aceita font-family e src (veio "${prop}")`);
+  }
+  if (!family || !url) {
+    throw new Error('UiStylesheet: "@font-face" precisa de font-family e src: url(...)');
+  }
+  return { family, url };
 }
 
 const SUPPORTED = new Set([
   'background',
   'color',
   'font-size',
+  'font-family',
   'opacity',
   'border-radius',
   'border',
@@ -149,6 +194,9 @@ function applyProps(widget: UiWidget, props: StyleProps, isFocusState: boolean):
         break;
       case 'font-size':
         if (widget instanceof UiLabel) widget.fontSize = px(value, prop);
+        break;
+      case 'font-family':
+        if (widget instanceof UiLabel) widget.fontFamily = firstFontFamily(value);
         break;
       case 'opacity':
         widget.opacity = Number(value);

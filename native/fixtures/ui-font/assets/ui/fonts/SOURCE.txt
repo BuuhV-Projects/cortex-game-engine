@@ -1,0 +1,7 @@
+Nome: Bebas Neue Regular
+Autor: Ryoichi Tsunekawa
+Versão: 2.000
+URL de origem: https://raw.githubusercontent.com/google/fonts/main/ofl/bebasneue/BebasNeue-Regular.ttf
+SHA-256: 08e4623805102d819f58601e46e345648846075e363b2ceb23313c2d1c83ec73
+Licença: SIL Open Font License 1.1 (https://openfontlicense.org)
+Data: 2026-11-08

@@ -23,6 +23,8 @@ type RasterTextFn = (
   fontSizePx: number,
   /** Só telemetria do host (SPEC-0321): de onde veio o raster. */
   origin?: 'ui' | 'canvas',
+  /** Família registrada por `__cortexLoadFont` (vazia = Roboto; ADR-0715). */
+  fontFamily?: string,
 ) => { width: number; height: number; rgba: ArrayBuffer } | null;
 
 /** Só o que precisamos do Renderer do engine (evita acoplamento). */
@@ -168,7 +170,8 @@ export class RendererUiBackend implements UiBackend {
 
     // ── texto (Label/Button): re-rasteriza só se text/fontSize mudou ──
     if (widget instanceof UiLabel) {
-      if (visual.lastText !== widget.text || visual.lastFontSize !== widget.fontSize) {
+      if (visual.lastText !== widget.text || visual.lastFontSize !== widget.fontSize
+          || visual.lastFontFamily !== widget.fontFamily) {
         this._rasterInto(visual, widget);
       }
       widget.measuredWidth = widget.width || this._textWidth(visual, widget);
@@ -297,9 +300,10 @@ export class RendererUiBackend implements UiBackend {
 
   private _rasterInto(visual: WidgetVisual, label: UiLabel): void {
     const raster = (globalThis as Record<string, unknown>)['__cortexRasterText'] as RasterTextFn;
-    const bitmap = label.text.length > 0 ? raster(label.text, label.fontSize, 'ui') : null;
+    const bitmap = label.text.length > 0 ? raster(label.text, label.fontSize, 'ui', label.fontFamily ?? '') : null;
     visual.lastText = label.text;
     visual.lastFontSize = label.fontSize;
+    visual.lastFontFamily = label.fontFamily;
 
     // Mesmas dimensões: reescreve os pixels no lugar (SPEC-0248). É o caso
     // DOMINANTE num HUD — cronômetro e velocímetro mudam de valor, não de

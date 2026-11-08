@@ -6,7 +6,7 @@
 
 # Class: UiCanvas
 
-Defined in: [src/ui/runtime/widgets.ts:216](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L216)
+Defined in: [src/ui/runtime/widgets.ts:225](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L225)
 
 `<canvas>` da UI de runtime (ADR-0315): dono de um `HTMLCanvasElement` real
 onde o jogo desenha com `getContext('2d')` — radar, minimapa, minigame. No
@@ -36,7 +36,7 @@ g.fillRect(0, 0, 10, 10); // aparece no Studio e no export nativo
 
 > **new UiCanvas**(`props?`): `UiCanvas`
 
-Defined in: [src/ui/runtime/widgets.ts:221](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L221)
+Defined in: [src/ui/runtime/widgets.ts:230](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L230)
 
 #### Parameters
 
@@ -164,7 +164,7 @@ backends desenham uma cópia da caixa deslocada N px pra baixo.
 
 > `readonly` **canvas**: `HTMLCanvasElement`
 
-Defined in: [src/ui/runtime/widgets.ts:218](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L218)
+Defined in: [src/ui/runtime/widgets.ts:227](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L227)
 
 O elemento canvas (desenhe nele como no browser).
 
@@ -281,7 +281,7 @@ Defined in: [src/ui/runtime/widgets.ts:35](https://github.com/BuuhV-Projects/cor
 
 > **pointerEvents**: `"none"` \| `"auto"` = `'auto'`
 
-Defined in: [src/ui/runtime/widgets.ts:220](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L220)
+Defined in: [src/ui/runtime/widgets.ts:229](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L229)
 
 `pointer-events` do CSS: `none` deixa o clique passar pro jogo (só no DOM).
 

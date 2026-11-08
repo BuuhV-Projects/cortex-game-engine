@@ -8,7 +8,7 @@
 
 > **loadUiTemplate**(`ui`, `url`, `options?`): `Promise`\<[`UiTemplateInstance`](../interfaces/UiTemplateInstance.md)\>
 
-Defined in: [src/ui/runtime/UiTemplate.ts:275](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiTemplate.ts#L275)
+Defined in: [src/ui/runtime/UiTemplate.ts:282](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiTemplate.ts#L282)
 
 Carrega um template `.html` DINAMICAMENTE (fetch — funciona no browser e
 no host, que lê do pacote do jogo) e o instancia na camada.

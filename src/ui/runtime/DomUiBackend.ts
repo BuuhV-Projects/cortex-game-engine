@@ -7,16 +7,8 @@
 import type { UiBackend } from './UiBackend.js';
 import type { UiViewport } from './layout.js';
 import { resolveRect } from './layout.js';
-import { installUiFont, UI_FONT_FAMILY } from './uiFont.js';
+import { installUiFont, uiFontShorthand } from './uiFont.js';
 import { UiButton, UiCanvas, UiLabel, UiPanel, type UiWidget } from './widgets.js';
-
-/**
- * Fonte da UI = Roboto Medium (`UI_FONT_FAMILY`, embutida via {@link installUiFont}),
- * a MESMA do export nativo — o `system-ui`/Segoe é só fallback até o woff2 carregar.
- * Peso 500 pra casar com o Roboto-Medium.ttf que o renderer nativo rasteriza.
- */
-const uiFont = (px: number): string =>
-  `500 ${px}px '${UI_FONT_FAMILY}', system-ui, 'Segoe UI', sans-serif`;
 
 export class DomUiBackend implements UiBackend {
   private readonly _root: HTMLElement;
@@ -29,7 +21,7 @@ export class DomUiBackend implements UiBackend {
     this._root = document.createElement('div');
     this._root.style.cssText =
       'position:fixed;inset:0;pointer-events:none;z-index:40;transform-origin:0 0;font:' +
-      uiFont(16);
+      uiFontShorthand(16);
     (container ?? document.body).appendChild(this._root);
   }
 
@@ -89,7 +81,7 @@ export class DomUiBackend implements UiBackend {
     if (widget instanceof UiButton) {
       node.style.display = widget.visible ? 'flex' : 'none';
       node.textContent = widget.text;
-      node.style.font = uiFont(widget.fontSize);
+      node.style.font = uiFontShorthand(widget.fontSize, widget.fontFamily);
       node.style.color = widget.color;
       // Alinhamento IGUAL ao backend renderer do export (WYSIWYG): centro por
       // default; `left` encosta no paddingX (botões com ícone à esquerda).
@@ -124,7 +116,7 @@ export class DomUiBackend implements UiBackend {
     } else if (widget instanceof UiLabel) {
       node.style.display = widget.visible ? 'block' : 'none';
       node.textContent = widget.text;
-      node.style.font = uiFont(widget.fontSize);
+      node.style.font = uiFontShorthand(widget.fontSize, widget.fontFamily);
       node.style.color = widget.color;
       node.style.background = 'transparent';
       node.style.whiteSpace = 'nowrap';

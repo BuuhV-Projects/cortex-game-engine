@@ -6,7 +6,7 @@
 
 # Interface: UiTemplateBuildOptions
 
-Defined in: [src/ui/runtime/UiTemplate.ts:206](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiTemplate.ts#L206)
+Defined in: [src/ui/runtime/UiTemplate.ts:213](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiTemplate.ts#L213)
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: [src/ui/runtime/UiTemplate.ts:206](https://github.com/BuuhV-Projects
 
 > `optional` **data?**: `Record`\<`string`, `string` \| `number`\>
 
-Defined in: [src/ui/runtime/UiTemplate.ts:208](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiTemplate.ts#L208)
+Defined in: [src/ui/runtime/UiTemplate.ts:215](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiTemplate.ts#L215)
 
 Valores pra `{{chave}}` nos textos.
 
@@ -24,7 +24,7 @@ Valores pra `{{chave}}` nos textos.
 
 > `optional` **onAction?**: (`action`, `button`) => `void`
 
-Defined in: [src/ui/runtime/UiTemplate.ts:210](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiTemplate.ts#L210)
+Defined in: [src/ui/runtime/UiTemplate.ts:217](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiTemplate.ts#L217)
 
 Recebe `onpress="acao"` dos botões.
 
