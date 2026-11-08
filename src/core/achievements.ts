@@ -1,0 +1,168 @@
+/**
+ * **Conquistas multiplataforma** (SPEC-0713, ADR-0714) — o jogo chama
+ * `unlock(id)` quando o jogador ganha a conquista; a engine escolhe a
+ * plataforma pelo {@link gamePlatform} e garante que cada conquista seja
+ * enviada **uma vez só**.
+ *
+ * - `steam` com o cliente aberto → {@link SteamAchievements} (fachada
+ *   {@link Steam}, SPEC-0175).
+ * - `pc`, navegador, Studio, `steam` sem cliente e `xbox` (ainda sem
+ *   implementação) → {@link NullAchievements}: só na sessão e no `debug`.
+ *
+ * Nada aqui lança: sem plataforma, o jogo segue normalmente.
+ *
+ * @example
+ * ```ts
+ * const achievements = await loadAchievements();
+ * // no momento em que o jogador ganha (pode repetir: não reenvia)
+ * achievements.unlock('intro_completed');
+ * ```
+ */
+import { debug } from './debug.js';
+import { gamePlatform, type GamePlatform } from './gamePlatform.js';
+import { Steam } from './steamworks.js';
+
+/** Qual implementação está ligada. */
+export type AchievementBackend = 'steam' | 'null';
+
+/** Conquistas do jogo, independentes da plataforma. */
+export interface Achievements {
+  /** Implementação ligada (log, testes, UI que só faz sentido com plataforma). */
+  readonly backend: AchievementBackend;
+  /**
+   * Desbloqueia a conquista. Idempotente: se ela já foi desbloqueada, não chama
+   * a plataforma de novo.
+   * @param id o *API Name* cadastrado na plataforma (Steamworks: Stats & Achievements).
+   * @returns `true` quando a conquista ficou (ou já estava) desbloqueada.
+   */
+  unlock(id: string): boolean;
+  /** `true` se a conquista já está desbloqueada. */
+  has(id: string): boolean;
+}
+
+/** Recorte da fachada {@link Steam} que as conquistas usam (injetável nos testes). */
+export interface AchievementSteamPort {
+  isAvailable(): boolean;
+  unlockAchievement(id: string): boolean;
+  hasAchievement(id: string): boolean;
+  storeStats(): boolean;
+}
+
+/**
+ * Conquistas na Steam. Guarda na sessão o que já foi enviado: o segundo
+ * `unlock` do mesmo id não chama o Steamworks. Conquista marcada cujo
+ * `storeStats` falhou fica pendente e o envio é refeito no próximo
+ * `unlock`/`has`, até dar certo.
+ */
+export class SteamAchievements implements Achievements {
+  readonly backend = 'steam';
+  /** Enviadas à Steam (ou que o jogador já tinha). */
+  private readonly unlocked = new Set<string>();
+  /** Marcadas, com o `storeStats` ainda por dar certo. */
+  private readonly pending = new Set<string>();
+
+  constructor(private readonly steam: AchievementSteamPort = Steam) {}
+
+  unlock(id: string): boolean {
+    if (this.has(id)) return true;
+    if (!this.steam.unlockAchievement(id)) {
+      debug('achievements', `a Steam recusou "${id}" (API Name fora do app?)`);
+      return false;
+    }
+    this.pending.add(id);
+    this.flush();
+    debug('achievements', `conquista desbloqueada na Steam: ${id}`);
+    return true;
+  }
+
+  has(id: string): boolean {
+    this.flush();
+    if (this.unlocked.has(id) || this.pending.has(id)) return true;
+    if (!this.steam.hasAchievement(id)) return false;
+    this.unlocked.add(id);
+    return true;
+  }
+
+  /** Reenvia as pendentes; só entram no cache depois de um `storeStats` que deu certo. */
+  private flush(): void {
+    if (this.pending.size === 0) return;
+    if (!this.steam.storeStats()) {
+      debug('achievements', `storeStats falhou; reenvio no próximo unlock/has: ${[...this.pending].join(', ')}`);
+      return;
+    }
+    for (const id of this.pending) this.unlocked.add(id);
+    this.pending.clear();
+  }
+}
+
+/** Sem plataforma: guarda na sessão e registra no `debug`. Não persiste. */
+export class NullAchievements implements Achievements {
+  readonly backend = 'null';
+  private readonly unlocked = new Set<string>();
+
+  unlock(id: string): boolean {
+    if (this.unlocked.has(id)) return true;
+    this.unlocked.add(id);
+    debug('achievements', `conquista sem plataforma (só na sessão): ${id}`);
+    return true;
+  }
+
+  has(id: string): boolean {
+    return this.unlocked.has(id);
+  }
+}
+
+/** A Steam responde que está pronta; ponte que lança conta como indisponível. */
+function steamReady(steam: AchievementSteamPort): boolean {
+  try {
+    return steam.isAvailable();
+  } catch (err) {
+    debug('achievements', 'a ponte da Steam falhou ao responder:', err);
+    return false;
+  }
+}
+
+/**
+ * Escolhe a implementação pela plataforma do export. **O padrão é sempre a
+ * {@link NullAchievements}**: plataforma sem implementação (hoje `pc` e
+ * `xbox`), valor desconhecido ou Steam indisponível caem nela, e nunca lança.
+ * O Xbox entra com um `case 'xbox'` novo.
+ */
+export function createAchievements(platform: GamePlatform, steam: AchievementSteamPort = Steam): Achievements {
+  switch (platform) {
+    case 'steam':
+      if (steamReady(steam)) return new SteamAchievements(steam);
+      debug('achievements', 'export da Steam sem Steam (cliente fechado?): conquistas só na sessão');
+      return new NullAchievements();
+    default:
+      debug('achievements', `plataforma ${String(platform)} sem implementação de conquistas: só na sessão`);
+      return new NullAchievements();
+  }
+}
+
+/** Resultado memorizado: a plataforma não muda em runtime. */
+let cached: Promise<Achievements> | null = null;
+
+/**
+ * Conquistas desta sessão: lê a plataforma do `cortex.json` e cria uma vez
+ * (chamadas seguintes devolvem a mesma instância).
+ */
+export function loadAchievements(file?: string): Promise<Achievements> {
+  cached ??= gamePlatform(file).then(
+    (platform) => {
+      const achievements = createAchievements(platform);
+      debug('achievements', `plataforma ${platform} → ${achievements.backend}`);
+      return achievements;
+    },
+    (err: unknown) => {
+      debug('achievements', 'plataforma não lida; conquistas só na sessão:', err);
+      return new NullAchievements();
+    },
+  );
+  return cached;
+}
+
+/** Esquece a instância memorizada (testes e hot-reload do Studio). */
+export function resetAchievementsCache(): void {
+  cached = null;
+}

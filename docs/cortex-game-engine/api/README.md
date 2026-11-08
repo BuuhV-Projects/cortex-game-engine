@@ -42,6 +42,7 @@
 - [InteractionComponent](classes/InteractionComponent.md)
 - [InteractionSystem](classes/InteractionSystem.md)
 - [KinematicBodyComponent](classes/KinematicBodyComponent.md)
+- [NullAchievements](classes/NullAchievements.md)
 - [Object3DComponent](classes/Object3DComponent.md)
 - [Object3DSyncSystem](classes/Object3DSyncSystem.md)
 - [ParticleEmitter](classes/ParticleEmitter.md)
@@ -75,6 +76,7 @@
 - [SpriteAnimationComponent](classes/SpriteAnimationComponent.md)
 - [SpriteAnimationSystem](classes/SpriteAnimationSystem.md)
 - [Spritesheet](classes/Spritesheet.md)
+- [SteamAchievements](classes/SteamAchievements.md)
 - [StoryState](classes/StoryState.md)
 - [System](classes/System.md)
 - [TauriSceneFileWriter](classes/TauriSceneFileWriter.md)
@@ -106,6 +108,8 @@
 
 ## Interfaces
 
+- [Achievements](interfaces/Achievements.md)
+- [AchievementSteamPort](interfaces/AchievementSteamPort.md)
 - [ActionConfigStore](interfaces/ActionConfigStore.md)
 - [ActionDef](interfaces/ActionDef.md)
 - [AllocSample](interfaces/AllocSample.md)
@@ -282,6 +286,7 @@
 
 ## Type Aliases
 
+- [AchievementBackend](type-aliases/AchievementBackend.md)
 - [ActionGroup](type-aliases/ActionGroup.md)
 - [AnimationConfig](type-aliases/AnimationConfig.md)
 - [AttachConfig](type-aliases/AttachConfig.md)
@@ -452,6 +457,7 @@
 - [composeModularCharacter](functions/composeModularCharacter.md)
 - [countNodes](functions/countNodes.md)
 - [countUnchangedMatrices](functions/countUnchangedMatrices.md)
+- [createAchievements](functions/createAchievements.md)
 - [createAnimatedSprite](functions/createAnimatedSprite.md)
 - [createBindingCapture](functions/createBindingCapture.md)
 - [createDialogueUI](functions/createDialogueUI.md)
@@ -515,6 +521,7 @@
 - [isSplashActive](functions/isSplashActive.md)
 - [kitAssetFor](functions/kitAssetFor.md)
 - [listScripts](functions/listScripts.md)
+- [loadAchievements](functions/loadAchievements.md)
 - [loadGLB](functions/loadGLB.md)
 - [loadKtx2](functions/loadKtx2.md)
 - [loadKtx2Native](functions/loadKtx2Native.md)
@@ -574,6 +581,7 @@
 - [registerScript](functions/registerScript.md)
 - [registerScripts](functions/registerScripts.md)
 - [releaseKtx2DataAfterUpload](functions/releaseKtx2DataAfterUpload.md)
+- [resetAchievementsCache](functions/resetAchievementsCache.md)
 - [resetFrameBudget](functions/resetFrameBudget.md)
 - [resetGamePlatformCache](functions/resetGamePlatformCache.md)
 - [resetSteamWarning](functions/resetSteamWarning.md)
