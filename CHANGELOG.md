@@ -1,3 +1,10 @@
+## [0.121.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.121.0...v0.121.1) (2026-11-09)
+
+
+### Bug Fixes
+
+* **physics:** CharacterBodyComponent.teleported() pula a varredura do passo no próximo tick (SPEC-0718) ([4d6dfd4](https://github.com/BuuhV-Projects/cortex-game-engine/commit/4d6dfd4ec6c5b1f9c5f5574b24a776a8f5f9d940))
+
 # [0.121.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.120.0...v0.121.0) (2026-11-09)
 
 
