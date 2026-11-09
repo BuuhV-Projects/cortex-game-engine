@@ -23,6 +23,8 @@ void testPassTimingConvertsTicksByPeriod();
 void testFormatToStringRoundtrip();
 void testBc7Math();
 void testAppendPerfLog();
+void testRelaunchOnlyWhenRequested();
+void testRelaunchFailureOnlyQuits();
 void testDescribeCurrentException();
 void testGameConfig();
 void testResolveRenderScale();
@@ -144,6 +146,8 @@ int main() {
   tests::testFormatToStringRoundtrip();
   tests::testBc7Math();
   tests::testAppendPerfLog();
+  tests::testRelaunchOnlyWhenRequested();
+  tests::testRelaunchFailureOnlyQuits();
   tests::testDescribeCurrentException();
   tests::testGameConfig();
   tests::testResolveRenderScale();

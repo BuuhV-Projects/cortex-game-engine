@@ -68,6 +68,14 @@ export function installGlobals() {
     search,
     hash: '',
   };
+  // location.reload() reinicia o jogo (SPEC-0717): o host injeta __cortexRestart
+  // só onde sabe relançar o exe (PC Windows). Sem a bridge (console, bundle fora
+  // do host) não há reload, e o jogo detecta com typeof location.reload.
+  if (typeof globalThis.__cortexRestart === 'function') {
+    globalThis.location.reload = function () {
+      globalThis.__cortexRestart();
+    };
+  }
   globalThis.URLSearchParams = function URLSearchParams(init) {
     const map = {};
     const query = String(init || '').replace(/^\?/, '');

@@ -33,6 +33,7 @@ add_executable(cortex_host
   src/core/steam_stats.cpp
   src/core/steam_user.cpp
   src/core/js_runtime.cpp
+  src/core/relaunch.cpp
   src/napi/napi_util.cpp
   src/shims/animation_frame.cpp
   src/shims/clock.cpp
@@ -354,6 +355,7 @@ add_executable(cortex_host_tests
   tests/inflate_test.cpp
   tests/audio_decode_test.cpp
   tests/font_registry_test.cpp
+  tests/relaunch_test.cpp
   src/shims/font_registry.cpp
   src/shims/inflate.cpp
   src/shims/audio_decode.cpp
@@ -363,6 +365,7 @@ add_executable(cortex_host_tests
   src/physics/raycast/raycast_world.cpp
   src/webgpu/enums.cpp
   src/core/crash_handler.cpp
+  src/core/relaunch.cpp
   src/core/gc_stats.cpp
   src/webgpu/napi_frame_stats.cpp
   src/core/game_config.cpp
