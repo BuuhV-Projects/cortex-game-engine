@@ -448,7 +448,13 @@
       "player_selected": "Selected",
       "npc_only": "Only this one",
       "npc_selected": "Selected NPCs",
-      "npc_allNpcs": "Every NPC"
+      "npc_allNpcs": "Every NPC",
+      "search": "Search code (e.g. 110, npc-13)",
+      "count": "{n} checked",
+      "check_visible": "Check visible",
+      "clear": "Clear",
+      "only_checked": "Only checked",
+      "empty": "No code matches this filter"
     },
     "character": {
       "label": "Character",
