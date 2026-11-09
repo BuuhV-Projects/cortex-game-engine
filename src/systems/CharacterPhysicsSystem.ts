@@ -184,7 +184,9 @@ export class CharacterPhysicsSystem extends System {
 
       // Passo horizontal de quadro longo (SPEC-0648): maior que o raio, o centro passaria da face de
       // um sólido — e de dentro dele nem o empurrão de parede nem o raio de chão o veem. Antes do chão.
-      const last = this.lastXZ.get(e);
+      // Posição posta de fora (SPEC-0720): vale inteira, sem varrer desde a do quadro anterior.
+      const last = c.teleportQueued ? undefined : this.lastXZ.get(e);
+      c.teleportQueued = false;
       if (last && scene.solidMeshes.length > 0) {
         const ys = capsuleHeights(feet, c, this.ys);
         t.x = last.x + this.sweptStep(last.x, last.z, t.x - last.x, 1, 0, c.radius, ys, skip);

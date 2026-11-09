@@ -33,7 +33,7 @@ player.getComponent(CharacterBodyComponent)!.jump()
 
 > **new CharacterBodyComponent**(`options?`): `CharacterBodyComponent`
 
-Defined in: [src/components/CharacterBodyComponent.ts:71](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L71)
+Defined in: [src/components/CharacterBodyComponent.ts:73](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L73)
 
 #### Parameters
 
@@ -171,6 +171,16 @@ Defined in: [src/components/CharacterBodyComponent.ts:53](https://github.com/Buu
 
 ***
 
+### teleportQueued
+
+> **teleportQueued**: `boolean` = `false`
+
+Defined in: [src/components/CharacterBodyComponent.ts:71](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L71)
+
+Teletransporte pendente: o próximo tick não varre o passo desde a posição anterior (SPEC-0720).
+
+***
+
 ### velocityY
 
 > **velocityY**: `number` = `0`
@@ -207,10 +217,34 @@ Usado por Entity para indexar componentes no Map<string, Component>.
 
 > **jump**(): `void`
 
-Defined in: [src/components/CharacterBodyComponent.ts:85](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L85)
+Defined in: [src/components/CharacterBodyComponent.ts:87](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L87)
 
 Pede um pulo — aplicado no próximo tick se ainda houver pulos disponíveis.
 
 #### Returns
 
 `void`
+
+***
+
+### teleported()
+
+> **teleported**(): `void`
+
+Defined in: [src/components/CharacterBodyComponent.ts:101](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L101)
+
+Avisa que a posição foi posta de fora (teletransporte): no próximo tick, o [CharacterPhysicsSystem](CharacterPhysicsSystem.md) não varre o
+passo desde a posição do quadro anterior, e a posição escrita no transform vale inteira mesmo com parede entre os dois
+pontos (SPEC-0720). Sem o aviso, só um salto acima de 8 m conta como teletransporte (SPEC-0648).
+
+#### Returns
+
+`void`
+
+#### Example
+
+```ts
+transform.x = spawn.x;
+transform.z = spawn.z;
+body.teleported();
+```
