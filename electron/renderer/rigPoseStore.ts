@@ -162,19 +162,20 @@ export class PoseStore {
     return [...(this.inherited(key, (k) => this.editedFollow.get(k) ?? this.savedFollow.get(k)) ?? [])]
   }
 
-  /** Descarta a edição não salva da chave (o "aplicar a" levou para outras chaves). */
-  discardEdit(key: string): void {
+  /** Descarta a edição não salva da chave (o "aplicar a" levou para outras chaves); `keepGrip` = a pegada fica. */
+  discardEdit(key: string, keepGrip = false): void {
     this.edited.delete(key)
     this.editedFollow.delete(key)
     const g = gripKeyOf(key)
-    if (g) this.editedGrips.delete(g)
+    if (g && !keepGrip) this.editedGrips.delete(g)
   }
 
   /**
    * "Aplicar a" (SPEC-0708): a pose e as ligações desejadas de `from` viram a edição de cada chave de `to`, com o espaço
-   * de onde vieram (`player` = editado no player, para um NPC). Grava no próximo `save`.
+   * de onde vieram (`player` = editado no player, para um NPC). Grava no próximo `save`. A pegada do alvo que é o
+   * próprio player (`player`) vai para `ARMA`, a que a prévia dele mostra, nunca para `ARMA#player` (SPEC-0719).
    */
-  applyEditTo(from: string, to: readonly string[], space: EditSpace): void {
+  applyEditTo(from: string, to: readonly string[], space: EditSpace, player = ''): void {
     const pose = this.wanted(from)
     const links = this.wantedFollow(from)
     // a pegada vai junto só se foi editada, como está (SPEC-0711)
@@ -183,7 +184,8 @@ export class PoseStore {
     for (const k of to) {
       // a própria chave também leva o espaço (reeditada num NPC, deixa de ser "do player")
       if (isNpcTarget(this.chars, splitKey(k).target)) this.editedSpaces.set(k, space)
-      const g = gripKeyOf(k)
+      const { weapon, target } = splitKey(k)
+      const g = weapon && player && target === player ? weapon : gripKeyOf(k)
       if (grip && g && g !== fromGrip) this.editedGrips.set(g, { ...grip })
       if (k === from) continue
       this.edited.set(k, new Map(pose))
@@ -343,7 +345,7 @@ export class PoseStore {
     let next = applyFollows(applyPoses(parseConfigObject(before), part(pending, 'base')), part(pendingFollow, 'base'))
     next = applyGrips(applyVariants(next, part(pending, 'weapon'), part(pendingFollow, 'weapon')), pendingGrips)
     next = applyCharacterVariants(next, part(pending, 'character'), part(pendingFollow, 'character'), this.editedSpaces)
-    const text = serializeConfig(next)
+    const text = serializeConfig(next, before)
     if (text !== before) await this.io.write(this.path, text)
     this.readSaved(next)
     this.edited = new Map()
@@ -369,7 +371,7 @@ export class PoseStore {
     const next = weapon
       ? applyVariants(cfg, new Map(clips.map((c) => [variantKey(c, weapon), pose])), new Map())
       : applyPoseToAll(cfg, pose)
-    const text = serializeConfig(next)
+    const text = serializeConfig(next, before)
     if (text !== before) await this.io.write(this.path, text)
     this.readSaved(next)
     this.edited = new Map()

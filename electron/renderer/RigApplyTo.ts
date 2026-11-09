@@ -109,7 +109,8 @@ export class RigApplyTo {
     const targets = applyTargets(this.editing, this.choice.value as ApplyTo, selected, this.chars, this.player)
     // o alvo "todos" do player é a chave sem personagem; o do próprio player e o dos NPCs, com
     const keys = targets.map((tg) => fullKey(clip, weapon, tg))
-    store.applyEditTo(key, keys, this.editingNpc ? 'own' : 'player')
-    if (!keys.includes(key)) store.discardEdit(key)
+    store.applyEditTo(key, keys, this.editingNpc ? 'own' : 'player', this.player)
+    // a pegada do player é a de `ARMA`, a da chave mostrada no player: com ele entre os alvos, ela fica (SPEC-0719)
+    if (!keys.includes(key)) store.discardEdit(key, !this.editingNpc && targets.includes(this.player))
   }
 }

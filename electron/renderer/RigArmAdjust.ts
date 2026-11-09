@@ -219,7 +219,7 @@ export class RigArmAdjust {
       const before = stripBom(await window.electronAPI.readFile(path))
       const next = await edit(parseConfigObject(before))
       if (!next) return false
-      const text = serializeConfig(next)
+      const text = serializeConfig(next, before)
       if (text !== before) await window.electronAPI.writeFile(path, text)
       this.saved = armOffsetsFromConfig(next)
       this.edited = new Map()
