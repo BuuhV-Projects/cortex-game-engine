@@ -123,3 +123,19 @@ describe('prévia da pegada do NPC (SPEC-0721)', () => {
     expect(s.previewGrip('idle@ARM-01#npc-001')).toEqual(NPC)
   })
 })
+
+describe('clique na arma sem mover (SPEC-0721)', () => {
+  it('o fim do arrasto sem mudança desfaz a edição: nada pendente e o salvar não grava pegada', async () => {
+    const { s, disk } = store()
+    const key = 'idle@ARM-01'
+    s.pushUndo(key, true) // começo do arrasto da arma (RigPoseEditor.beginDrag)
+    s.setGrip(key, { ...s.previewGrip(key) }) // o arrasto relativo parado devolve a mesma pegada
+    s.undoLast(key) // RigPoseEditor.endDrag: pegada igual à do começo
+    expect(s.anyUnsaved()).toBe(false)
+    s.setPose(key, new Map([['LeftArm', [0, 0, 0.1, 0.995]]]))
+    s.applyEditTo(key, ['idle@ARM-01#LUC-01', 'idle@ARM-01#npc-001'], 'player', PLAYER)
+    s.discardEdit(key, true)
+    await s.save()
+    expect(savedGrips(disk.text)).toEqual({ 'ARM-01': LUCAS })
+  })
+})
