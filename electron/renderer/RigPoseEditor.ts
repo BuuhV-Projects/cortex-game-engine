@@ -7,13 +7,13 @@ import type { Quat } from './characterRigArmSpace'
 import { POSE_BONES, POSE_PARENTS, moveKind, poseDelta, poseOffsets, samePose } from './characterRigPose'
 import { FOLLOW_BONES, captureFollow, followProblem, withFollow } from './characterRigFollow'
 import { moveJointPose, rotateJointPose, wristTarget, type Snapshot } from './characterRigPoseEdit'
-import { DEFAULT_GRIP, GRIP_BONE, PALM, variantKey } from './characterRigWeapon'
+import { DEFAULT_GRIP, GRIP_BONE, PALM, sameGrip, variantKey, type Grip } from './characterRigWeapon'
 import { fullKey } from './characterRigCharacters'
 import { PoseStore } from './rigPoseStore'
 import { RigPoseOverlay } from './RigPoseOverlay'
 import { RigPoseInput, type PoseInputTarget } from './RigPoseInput'
 import { RigSkeleton, type UndoStack } from './RigSkeleton'
-import { RigWeapon } from './RigWeapon'
+import { RigWeapon, type GripPose } from './RigWeapon'
 import { RigPosePanel, WEAPON_SELECTION, boneLabel } from './RigPosePanel'
 
 /**
@@ -83,7 +83,8 @@ export class RigPoseEditor implements PoseInputTarget {
   private hovered: string | null = null
   private snap: Snapshot | null = null
   private drag: Drag | null = null
-  private gripDrag = false
+  /** Arrasto da arma: a chave, a pegada e o proxy do começo (SPEC-0721). */
+  private gripDrag: { key: string; start: Grip; from: GripPose } | null = null
 
   private readonly overlay = new RigPoseOverlay()
   private readonly input: RigPoseInput
@@ -218,7 +219,7 @@ export class RigPoseEditor implements PoseInputTarget {
     const frame = sk.readFrame()
     sk.applyPose(frame, delta, follows, undoStack)
     sk.applyLimitsAndHelpers(this.limits, undoStack)
-    if (code) this.weapon.attach(sk.bones.get(GRIP_BONE) ?? null, this.store.grip(key))
+    if (code) this.weapon.attach(sk.bones.get(GRIP_BONE) ?? null, this.store.previewGrip(key))
     if (this.captureSupport) {
       this.captureSupport = false
       this.linkSupport()
@@ -327,7 +328,8 @@ export class RigPoseEditor implements PoseInputTarget {
     if (!key || !bone || !this.editable) return
     if (bone === WEAPON_SELECTION) {
       this.store.pushUndo(key, !!this.weapon.weapon)
-      this.gripDrag = true
+      const proxy = this.input.proxy
+      this.gripDrag = { key, start: this.store.previewGrip(key), from: { pos: proxy.position.clone(), quat: proxy.quaternion.clone() } }
       return
     }
     if (!this.snap || this.isFollower(bone)) return
@@ -340,10 +342,10 @@ export class RigPoseEditor implements PoseInputTarget {
   updateDrag(target: THREE.Vector3 | null): void {
     const model = this.sk.model
     const proxy = this.input.proxy
-    if (this.gripDrag) {
+    const gd = this.gripDrag
+    if (gd) {
       const hand = this.sk.bones.get(GRIP_BONE)
-      const code = this.weapon.weapon
-      if (hand && code && this.key) this.store.setGrip(this.key, this.weapon.gripFor(hand, proxy.position, proxy.quaternion))
+      if (hand && this.weapon.weapon) this.store.setGrip(gd.key, this.weapon.dragGrip(hand, gd.start, gd.from, { pos: proxy.position, quat: proxy.quaternion }))
       this.host.onChange()
       this.ui.render()
       return
@@ -367,8 +369,14 @@ export class RigPoseEditor implements PoseInputTarget {
   }
 
   endDrag(): void {
-    if (this.gripDrag) {
-      this.gripDrag = false
+    const gd = this.gripDrag
+    if (gd) {
+      this.gripDrag = null
+      // sem mudança (um clique na arma): desfaz a edição que o começo empilhou, nada fica pendente
+      if (sameGrip(this.store.previewGrip(gd.key), gd.start)) {
+        this.store.undoLast(gd.key)
+        this.host.onChange()
+      }
       this.followProxy()
       this.ui.render()
     }

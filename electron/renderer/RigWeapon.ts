@@ -15,6 +15,12 @@ const SCOPE = 'characterRig'
 const GRIP_L_RADIUS = 0.018
 const COLOR_GRIP_L = 0x84cc16
 
+/** Posição e giro de mundo do proxy do gizmo. */
+export interface GripPose {
+  pos: THREE.Vector3
+  quat: THREE.Quaternion
+}
+
 interface LoadedWeapon {
   node: THREE.Object3D
   /** `Grip_L` no espaço da arma (origem no `Grip_R`). */
@@ -120,6 +126,18 @@ export class RigWeapon {
     const local = hand.worldToLocal(pos.clone())
     const q = hand.getWorldQuaternion(new THREE.Quaternion()).invert().multiply(quat).normalize()
     return { offset: [local.x, local.y, local.z], rotation: [q.x, q.y, q.z, q.w] }
+  }
+
+  /**
+   * Pegada do arrasto (SPEC-0721): a do começo (`start`) mais o quanto o proxy andou e girou de `from` a `to`. Só o
+   * deslocamento do proxy conta, não onde ele está: um proxy fora de lugar parado devolve `start`.
+   */
+  dragGrip(hand: THREE.Object3D, start: Grip, from: GripPose, to: GripPose): Grip {
+    hand.updateWorldMatrix(true, false)
+    const pos = hand.localToWorld(new THREE.Vector3(...start.offset)).add(to.pos).sub(from.pos)
+    const q0 = hand.getWorldQuaternion(new THREE.Quaternion()).multiply(new THREE.Quaternion(...start.rotation))
+    const quat = to.quat.clone().multiply(from.quat.clone().invert()).multiply(q0)
+    return this.gripFor(hand, pos, quat)
   }
 
   /** `Grip_L` no mundo (`null` sem arma). */
