@@ -67,7 +67,7 @@ export class CharacterBodyComponent extends Component {
   jumpsUsed = 0;
   /** Pedido de pulo pendente (consumido pelo {@link CharacterPhysicsSystem}). */
   jumpQueued = false;
-  /** Teletransporte pendente: o próximo tick não varre o passo desde a posição anterior (SPEC-0718). */
+  /** Teletransporte pendente: o próximo tick não varre o passo desde a posição anterior (SPEC-0720). */
   teleportQueued = false;
 
   constructor(options: CharacterBodyOptions = {}) {
@@ -91,7 +91,7 @@ export class CharacterBodyComponent extends Component {
   /**
    * Avisa que a posição foi posta de fora (teletransporte): no próximo tick, o {@link CharacterPhysicsSystem} não varre o
    * passo desde a posição do quadro anterior, e a posição escrita no transform vale inteira mesmo com parede entre os dois
-   * pontos (SPEC-0718). Sem o aviso, só um salto acima de 8 m conta como teletransporte (SPEC-0648).
+   * pontos (SPEC-0720). Sem o aviso, só um salto acima de 8 m conta como teletransporte (SPEC-0648).
    *
    * @example
    * transform.x = spawn.x;

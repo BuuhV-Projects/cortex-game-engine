@@ -1337,7 +1337,7 @@ Props (UPBGE): `stepHeight` (degrau que sobe andando), `jumpForce` (vel. do pulo
 `fallSpeedMax` (queda máx.), `maxJumps` (nº de pulos antes de tocar o chão),
 `groundY` (piso plano de fallback se não houver geometria embaixo).
 
-**Teletransporte (SPEC-0718):** o passo de cada quadro é varrido contra as paredes a partir da posição do quadro
+**Teletransporte (SPEC-0720):** o passo de cada quadro é varrido contra as paredes a partir da posição do quadro
 anterior (SPEC-0648), e só um salto acima de 8 m escapa disso. Ao pôr o personagem em outro lugar (renascer, entrar num
 interior, ponto preso de cutscene), escreva no transform e chame `body.teleported()`: no próximo tick a posição vale
 inteira, mesmo com parede entre os dois pontos.

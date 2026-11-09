@@ -1,4 +1,4 @@
-# SPEC-0718 - Teletransporte curto do personagem não é varrido contra parede
+# SPEC-0720 - Teletransporte curto do personagem não é varrido contra parede
 
 **Data:** 2026-11-09
 **Status:** implementado

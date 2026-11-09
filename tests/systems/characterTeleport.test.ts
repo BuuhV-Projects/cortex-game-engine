@@ -1,5 +1,5 @@
 /**
- * SPEC-0718: com `teleported()`, a posição posta de fora vale inteira no próximo tick, sem a varredura do passo desde a
+ * SPEC-0720: com `teleported()`, a posição posta de fora vale inteira no próximo tick, sem a varredura do passo desde a
  * posição anterior (SPEC-0648), mesmo com parede entre os dois pontos e a menos de 8 m.
  */
 import { describe, it, expect } from 'vitest';
@@ -40,7 +40,7 @@ function setup(): { world: World; t: TransformComponent; body: CharacterBodyComp
   return { world, t, body };
 }
 
-describe('SPEC-0718: teletransporte curto', () => {
+describe('SPEC-0720: teletransporte curto', () => {
   it('sem aviso, o salto curto para antes da parede (SPEC-0648)', () => {
     const { world, t } = setup();
     t.x = BEYOND;

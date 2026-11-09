@@ -177,7 +177,7 @@ Defined in: [src/components/CharacterBodyComponent.ts:53](https://github.com/Buu
 
 Defined in: [src/components/CharacterBodyComponent.ts:71](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L71)
 
-Teletransporte pendente: o próximo tick não varre o passo desde a posição anterior (SPEC-0718).
+Teletransporte pendente: o próximo tick não varre o passo desde a posição anterior (SPEC-0720).
 
 ***
 
@@ -235,7 +235,7 @@ Defined in: [src/components/CharacterBodyComponent.ts:101](https://github.com/Bu
 
 Avisa que a posição foi posta de fora (teletransporte): no próximo tick, o [CharacterPhysicsSystem](CharacterPhysicsSystem.md) não varre o
 passo desde a posição do quadro anterior, e a posição escrita no transform vale inteira mesmo com parede entre os dois
-pontos (SPEC-0718). Sem o aviso, só um salto acima de 8 m conta como teletransporte (SPEC-0648).
+pontos (SPEC-0720). Sem o aviso, só um salto acima de 8 m conta como teletransporte (SPEC-0648).
 
 #### Returns
 
