@@ -19,6 +19,7 @@
 #include "core/gdk.h"
 #include "core/host_gpu.h"
 #include "core/js_runtime.h"
+#include "core/relaunch.h"
 #include "core/steam.h"
 #include "napi/napi_util.h"
 #include "shims/animation_frame.h"
@@ -411,6 +412,9 @@ int main(int argc, char** argv) {
   SDL_Quit();
   core::shutdownGameRuntime();  // no-op sem CORTEX_GDK
   core::shutdownSteam();        // no-op sem CORTEX_STEAM
+  // Reinício pedido pelo jogo (SPEC-0717): só depois de TODO o teardown, pra
+  // nunca haver duas janelas nem disputa de GPU/áudio entre os processos.
+  core::relaunchIfRequested();
   std::printf("cortex-native encerrou\n");
   return 0;
 }
