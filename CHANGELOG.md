@@ -1,3 +1,10 @@
+## [0.121.2](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.121.1...v0.121.2) (2026-11-09)
+
+
+### Bug Fixes
+
+* **studio:** arrasto da pegada relativo ao começo e prévia do NPC com a pegada do player (SPEC-0721) ([e4fab14](https://github.com/BuuhV-Projects/cortex-game-engine/commit/e4fab1443aab0a4479366e424d810e340ed7a806))
+
 ## [0.121.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.121.0...v0.121.1) (2026-11-09)
 
 
