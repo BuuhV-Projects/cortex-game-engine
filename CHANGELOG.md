@@ -1,3 +1,10 @@
+# [0.120.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.119.0...v0.120.0) (2026-11-09)
+
+
+### Features
+
+* **native:** location.reload() reinicia o jogo no host (SPEC-0717) ([#84](https://github.com/BuuhV-Projects/cortex-game-engine/issues/84)) ([bcfa2f4](https://github.com/BuuhV-Projects/cortex-game-engine/commit/bcfa2f4aaaa24ffe509126a433743c35295d7b3f))
+
 # [0.119.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.118.0...v0.119.0) (2026-11-08)
 
 
