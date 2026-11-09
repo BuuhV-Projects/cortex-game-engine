@@ -448,7 +448,13 @@
       "player_selected": "Selecionados",
       "npc_only": "Só este",
       "npc_selected": "NPCs selecionados",
-      "npc_allNpcs": "Todos os NPCs"
+      "npc_allNpcs": "Todos os NPCs",
+      "search": "Buscar código (ex.: 110, npc-13)",
+      "count": "{n} marcados",
+      "check_visible": "Marcar visíveis",
+      "clear": "Limpar",
+      "only_checked": "Só marcados",
+      "empty": "Nenhum código com esse filtro"
     },
     "character": {
       "label": "Personagem",

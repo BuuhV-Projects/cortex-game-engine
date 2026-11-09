@@ -252,7 +252,7 @@ export class RigFbxSelection {
       const lost = removedGameClips(fresh, this.selection).filter((c) => !removedGameClips(this.config!, this.selection).some((o) => o.name === c.name))
       if (lost.length && !(await this.confirmRemove(lost.map((c) => c.name)))) return false
       const next = applySelection(fresh, this.selection)
-      const text = serializeConfig(next)
+      const text = serializeConfig(next, before)
       if (text !== before.replace(/^﻿/, '')) {
         await window.electronAPI.writeFile(this.configPath, text)
         debug(SCOPE, 'seleção gravada', this.configPath, [...this.selection.values()].map((s) => s.file))

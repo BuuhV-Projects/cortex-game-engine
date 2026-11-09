@@ -75,9 +75,13 @@ export function parseConfigObject(text: string): JsonObject {
   return raw
 }
 
-/** `JSON.stringify(cfg, null, 1) + '\n'` — o formato das configs do jogo. */
-export function serializeConfig(cfg: JsonObject): string {
-  return `${JSON.stringify(cfg, null, 1)}\n`
+/**
+ * `JSON.stringify(cfg, null, indent) + '\n'`, com a indentação do texto `like` (o arquivo lido: a da primeira chave),
+ * para regravar sem reindentar o arquivo inteiro (SPEC-0719); sem `like`, 1 espaço.
+ */
+export function serializeConfig(cfg: JsonObject, like = ''): string {
+  const indent = /^﻿?\{\r?\n([ \t]+)"/.exec(like)?.[1] ?? 1
+  return `${JSON.stringify(cfg, null, indent)}\n`
 }
 
 /** `skinned.fbx` (raiz dos pacotes de FBX), ou `null`. */

@@ -1,3 +1,15 @@
+# [0.121.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.120.0...v0.121.0) (2026-11-09)
+
+
+### Bug Fixes
+
+* **studio:** salvar pose não cria a pegada ARMA#player e mantém a indentação da config (SPEC-0719) ([84a4790](https://github.com/BuuhV-Projects/cortex-game-engine/commit/84a47900779eb7ca077b3f1a0467b3930b0d6e73))
+
+
+### Features
+
+* **studio:** lista pesquisável no "Aplicar a: Selecionados" do ajuste de pose (SPEC-0718) ([140fb14](https://github.com/BuuhV-Projects/cortex-game-engine/commit/140fb14c9823af353667e03d44b1ffa5b69445e0))
+
 # [0.120.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.119.0...v0.120.0) (2026-11-09)
 
 

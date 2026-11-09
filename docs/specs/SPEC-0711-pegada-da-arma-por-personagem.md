@@ -24,6 +24,8 @@ Na gravação, a pegada da chave mostrada vai para as chaves dos alvos escolhido
 editada). Editada no player e levada a NPCs selecionados, a pegada vai como está.
 Se a chave mostrada não é um dos alvos, a edição dela é descartada — inclusive a pegada, que é a da arma e do alvo
 dela e vale para todos os clipes: a pegada editada em `idle@ARMA` e levada só para `#LUC-01` deixa `ARMA` como estava.
+**Adendo (SPEC-0719):** o alvo que é o próprio player não cria `ARMA#<player>`: a pegada do player é a de `ARMA`
+(a que a prévia mostra), e ela fica editada quando o player está entre os alvos.
 
 ## Gravar no GLB do jogo
 

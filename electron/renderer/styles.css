@@ -2765,6 +2765,54 @@ body.app-preview-fullscreen #preview-container {
   gap: 6px;
   min-width: 0;
 }
+/* "Aplicar a: Selecionados" (SPEC-0718): busca + um item por linha, rolagem própria */
+.rig-apply,
+.rig-apply__picker {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.rig-apply__picker[hidden] {
+  display: none;
+}
+.rig-apply__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+.rig-apply__count {
+  color: var(--od-fg-muted);
+}
+.rig-apply__list {
+  display: flex;
+  flex-direction: column;
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 2px;
+  border: 1px solid var(--od-border-soft);
+  border-radius: 6px;
+  background: var(--od-bg-deep);
+}
+.rig-apply__item {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+  color: var(--od-fg-bright);
+  cursor: pointer;
+}
+.rig-apply__item:hover {
+  background: var(--od-border-soft);
+}
+.rig-apply__item:has(input:checked) {
+  font-weight: 700;
+}
 .rig-pose__mode {
   flex: 1;
   padding: 4px 8px;
