@@ -111,3 +111,15 @@ describe('salvar pose com o player entre os alvos (SPEC-0719)', () => {
     expect(serializeConfig({ a: 1 })).toBe('{\n "a": 1\n}\n')
   })
 })
+
+describe('prévia da pegada do NPC (SPEC-0721)', () => {
+  it('NPC sem pegada própria mostra a do player; com a dele, a dele; a cadeia gravada não muda', () => {
+    const { s } = store({ 'ARM-01': LUCAS, 'ARM-01#npc-002': NPC })
+    expect(s.previewGrip('idle@ARM-01#npc-001')).toEqual(LUCAS)
+    expect(s.grip('idle@ARM-01#npc-001')).toEqual(DEFAULT_GRIP)
+    expect(s.previewGrip('idle@ARM-01#npc-002')).toEqual(NPC)
+    expect(s.previewGrip('idle@ARM-01')).toEqual(LUCAS)
+    s.setGrip('idle@ARM-01#npc-001', NPC)
+    expect(s.previewGrip('idle@ARM-01#npc-001')).toEqual(NPC)
+  })
+})

@@ -255,6 +255,18 @@ export class PoseStore {
     return this.inheritedGrip(grip, (k) => this.editedGrips.get(k) ?? this.savedGrips.get(k))
   }
 
+  /**
+   * Pegada que a prévia mostra (SPEC-0721): a da chave; num NPC sem pegada própria na cadeia (editada ou salva), a do
+   * player (`ARMA`) em vez da padrão. Só a prévia: a cadeia gravada do NPC não chega na do player (ADR-0710).
+   */
+  previewGrip(key: string): Grip {
+    const g = gripKeyOf(key)
+    if (!g) return DEFAULT_GRIP
+    const { clip: weapon, target } = splitKey(g)
+    const own = gripChain(g, this.chars).some((k) => this.editedGrips.has(k) || this.savedGrips.has(k))
+    return own || !isNpcTarget(this.chars, target) ? this.gripOf(g) : this.gripOf(weapon)
+  }
+
   /** Pegada da arma da chave da pose (`clipe@ARMA#ALVO`); sem arma, o padrão. */
   grip(key: string): Grip {
     const g = gripKeyOf(key)
