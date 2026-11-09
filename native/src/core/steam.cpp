@@ -1,6 +1,8 @@
 #include "steam.h"
 
 #include <cstdio>
+#include <cstdlib>
+#include <string>
 
 #include "game_config.h"  // kNoSteamAppId — o sentinela de "não declarado"
 
@@ -61,6 +63,13 @@ bool initSteam(std::uint32_t appId) {
     std::fprintf(stderr, "[steam] relançando via Steam (app %u)...\n", appId);
     return false;
   }
+#ifdef _WIN32
+  // O `location.reload()` relança este exe (SPEC-0717). Sem `SteamAppId` no
+  // ambiente herdado, o filho chamaria o RestartAppIfNecessary e voltaria pela
+  // Steam. A Steam já define a variável ao lançar, mas em dev (steam_appid.txt)
+  // não: exportar aqui garante a herança nos dois casos.
+  _putenv_s("SteamAppId", std::to_string(appId).c_str());
+#endif
   if (SteamAPI_Init()) {
     g_available = true;
     g_overlay = new OverlayWatcher();

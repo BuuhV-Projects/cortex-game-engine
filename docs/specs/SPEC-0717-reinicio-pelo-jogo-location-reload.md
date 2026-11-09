@@ -21,7 +21,8 @@ mão. O primeiro caso é a troca de idioma do DDD 00 (SPEC-0238 do jogo).
    abre **o próprio exe** com a **mesma linha de comando** e a mesma pasta corrente (`CreateProcessW` com
    `GetModuleFileNameW` + `GetCommandLineW`), e só então sai com 0. Depois do teardown porque assim não há duas janelas
    ao mesmo tempo, o processo novo não disputa o dispositivo de áudio ou a GPU com o velho, e a Steam já foi desligada
-   (o filho herda o ambiente, então `SteamAppId` vem junto e o `RestartAppIfNecessary` não relança pela Steam). Se
+   (o filho herda o ambiente; o `initSteam` exporta `SteamAppId` logo depois do `RestartAppIfNecessary`, então a variável
+   vem junto mesmo quando a Steam não a definiu, como em dev com `steam_appid.txt`, e o filho não relança pela Steam). Se
    o `CreateProcessW` falhar, o host só sai (o mesmo resultado de um quit) e registra o erro no log.
 3. **Onde existe**: só no PC Windows sem GDK (`_WIN32 && !CORTEX_GDK`). No console (GDK) um app não abre outra cópia de si
    mesmo: lá o `__cortexRestart` **não é registrado**.
