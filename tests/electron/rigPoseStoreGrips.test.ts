@@ -1,7 +1,7 @@
 /** Pegada da arma por personagem (SPEC-0711, ADR-0710): a do NPC não toca a do player; cada JSON leva a do seu espaço. */
 import { describe, expect, it } from 'vitest'
 import { PoseStore } from '../../electron/renderer/rigPoseStore.js'
-import { parseConfigObject } from '../../electron/renderer/characterRigSelection.js'
+import { parseConfigObject, serializeConfig } from '../../electron/renderer/characterRigSelection.js'
 import { DEFAULT_GRIP, gripToJson, type Grip } from '../../electron/renderer/characterRigWeapon.js'
 import { gripChain, gripKeyOf } from '../../electron/renderer/characterRigCharacters.js'
 
@@ -77,5 +77,37 @@ describe('pegada por personagem (SPEC-0711)', () => {
     s.setGrip('idle@ARM-01#npc-001', { ...DEFAULT_GRIP })
     await s.save()
     expect(savedGrips(disk.text)).toEqual({ 'ARM-01#NPC': NPC, 'ARM-01#npc-001': gripToJson(DEFAULT_GRIP) })
+  })
+})
+
+describe('salvar pose com o player entre os alvos (SPEC-0719)', () => {
+  const SEL = ['idle@ARM-01#LUC-01', 'idle@ARM-01#npc-001', 'idle@ARM-01#npc-002']
+  const commit = (s: PoseStore, from: string, to: string[]): void => {
+    s.applyEditTo(from, to, 'player', PLAYER)
+    s.discardEdit(from, to.some((k) => k.endsWith(`#${PLAYER}`)))
+  }
+
+  it('sem mexer na pegada, salvar a pose não cria nem muda pegada', async () => {
+    const { s, disk } = store()
+    s.setPose('idle@ARM-01', new Map([['LeftArm', [0, 0, 0.1, 0.995]]]))
+    commit(s, 'idle@ARM-01', SEL)
+    await s.save()
+    expect(savedGrips(disk.text)).toEqual({ 'ARM-01': LUCAS })
+  })
+
+  it('a pegada editada no player fica em ARMA (nunca ARMA#player) e vai como está para os NPCs', async () => {
+    const { s, disk } = store()
+    s.setGrip('idle@ARM-01', NPC)
+    commit(s, 'idle@ARM-01', SEL)
+    await s.save()
+    const npc = gripToJson(NPC)
+    expect(savedGrips(disk.text)).toEqual({ 'ARM-01': npc, 'ARM-01#npc-001': npc, 'ARM-01#npc-002': npc })
+    expect(s.grip('idle@ARM-01')).toEqual(NPC) // o que a prévia do player mostra é o que foi gravado
+  })
+
+  it('regravar a config mantém a indentação do arquivo', () => {
+    const two = JSON.stringify({ code: PLAYER, skinned: { clips: {} } }, null, 2) + '\n'
+    expect(serializeConfig(parseConfigObject(two), two)).toBe(two)
+    expect(serializeConfig({ a: 1 })).toBe('{\n "a": 1\n}\n')
   })
 })

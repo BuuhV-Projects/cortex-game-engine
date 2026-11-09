@@ -117,3 +117,13 @@ export function applyTargets(editing: string, choice: ApplyTo, selected: readonl
 
 /** As opções de "aplicar a" para quem se edita. */
 export const applyChoices = (editingNpc: boolean): ApplyTo[] => (editingNpc ? ['only', 'selected', 'allNpcs'] : ['everyone', 'only', 'selected'])
+
+/**
+ * Os códigos que a lista de "Selecionados" mostra (SPEC-0718): os que contêm `query` (sem caixa), os marcados primeiro
+ * (cada grupo na ordem de `codes`); com `onlyChecked`, só os marcados.
+ */
+export function visibleApplyCodes(codes: readonly string[], query: string, checked: ReadonlySet<string>, onlyChecked: boolean): string[] {
+  const q = query.trim().toLowerCase()
+  const hit = codes.filter((c) => c.toLowerCase().includes(q) && (!onlyChecked || checked.has(c)))
+  return [...hit.filter((c) => checked.has(c)), ...hit.filter((c) => !checked.has(c))]
+}
