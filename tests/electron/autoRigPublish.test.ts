@@ -2,7 +2,7 @@
  * Aprovar, Desfazer e registro de rigs do auto-rig do Studio (SPEC-0724).
  */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { approve, clipDurations, detectIndent, registerRig, revert, safeCopy } from '../../electron/main/autoRig/autoRigPublish.js'
 import type { RigState } from '../../electron/main/autoRig/autoRigState.js'
@@ -47,6 +47,20 @@ describe('approve', () => {
     expect(entry['published']).toEqual({ glb: 'assets/npc/npc-110-skinned.glb', clips: 'assets/npc/npc-110-skinned.json', at: NOW.toISOString() })
     expect(entry['config']).toBe(CONFIG_REL)
   })
+
+  it('falha na segunda cópia: volta o que já tinha copiado, sem backup órfão (2)', () => {
+    mkdirSync(join(f.dir, 'assets/npc'), { recursive: true })
+    writeFileSync(glbOut(), 'antigo')
+    rmSync(join(f.config.work, 'staging/npc-110-skinned.json'))
+    const st = passed()
+    const out = approve(f.config, CONFIG_REL, st, HASHES, NOW)
+    expect(out.code).toBe(2)
+    expect(out.lines[0]).toMatch(/não publicado/)
+    expect(readFileSync(glbOut(), 'utf8')).toBe('antigo')
+    expect(existsSync(join(f.dir, 'assets/npc/npc-110-skinned.json'))).toBe(false)
+    expect(st.published).toBeUndefined()
+    expect(readdirSync(join(f.config.work, 'backup'))).toEqual([])
+  })
 })
 
 describe('revert', () => {
@@ -88,6 +102,15 @@ describe('registerRig', () => {
     expect(text).toMatch(/\n "rigs"/)
     expect(registry().rigs['LUC-01']).toEqual({ config: 'x' })
     expect(registry().rigs['npc-110']!['animations']).toBe('assets/npc')
+  })
+
+  it('registro ilegível: devolve o aviso e não sobrescreve o arquivo', () => {
+    const path = join(f.dir, 'tools/characters/rigs.json')
+    writeFileSync(path, '{ "rigs": ')
+    expect(registerRig(f.config, CONFIG_REL, 'staging', { at: 'T' }, {})).toMatch(/ilegível/)
+    expect(readFileSync(path, 'utf8')).toBe('{ "rigs": ')
+    writeFileSync(path, 'null')
+    expect(registerRig(f.config, CONFIG_REL, 'staging', { at: 'T' }, {})).toMatch(/ilegível/)
   })
 })
 

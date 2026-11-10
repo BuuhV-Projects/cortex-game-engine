@@ -120,7 +120,8 @@ async function generate(o: AutoRigRunOptions, config: ResolvedRigConfig, state: 
     }
     const status = await runStage(o, config, stage, state, hashes[stage])
     if (stage === 'skin' && status === 'pass') {
-      registerRig(config, o.configRel, 'staging', { at: state.stages.skin!.at }, clipDurations(stagingFiles(config).clips))
+      const warn = registerRig(config, o.configRel, 'staging', { at: state.stages.skin!.at }, clipDurations(stagingFiles(config).clips))
+      if (warn) o.send(`${warn}\n`)
       todo.add('preview') // o .blend da prévia foi regravado
     }
     if (status !== 'pass') {

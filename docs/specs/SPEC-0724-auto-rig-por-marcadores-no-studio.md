@@ -130,7 +130,8 @@ script dela e o hash da `skin`.
   infraestrutura (sem Blender, Blender caiu, etapa sem resultado), `64` config inválida.
 - **Aprovar** (`--approve`): exige as duas etapas aprovadas com os hashes de agora (senão `1`). Copia o GLB e o JSON
   de staging para `skinned.publish` com cópia segura (grava ao lado, confere o hash, troca), guardando o que existia
-  em `<work>/backup/<data>/` com `manifest.json`. Sai com `0`.
+  em `<work>/backup/<data>/` com `manifest.json`. O backup e o manifest são gravados **antes** de tocar no projeto; se
+  uma cópia falha no meio, o que já foi copiado volta ao backup, a pasta do backup é apagada e sai com `2`. Senão, `0`.
 - **Desfazer** (`--revert`): restaura a última publicação do `backup` (sem backup = o arquivo não existia antes e é
   apagado; o `published` sai do registro) e apaga a pasta desse backup, para o próximo Desfazer voltar à publicação
   anterior. `1` se não há publicação para desfazer.
@@ -139,7 +140,8 @@ script dela e o hash da `skin`.
 
 Mesmo formato da SPEC-0349 (adendo 1). A `skin` aprovada grava `staging`; o Aprovar grava `published`. `animations`
 = `skinned.fbx` ou, sem ele, a pasta do `publish.glb`. `clips` = os clipes do Studio com a duração do JSON do skin.
-O arquivo existente mantém a indentação dele (1 ou 2 espaços); arquivo novo usa 2.
+O arquivo existente mantém a indentação dele (1 ou 2 espaços); arquivo novo usa 2. Registro existente ilegível (JSON
+quebrado ou sem `rigs`) não é sobrescrito: a etapa segue e o painel mostra o aviso para corrigir o arquivo.
 
 ## Painel
 

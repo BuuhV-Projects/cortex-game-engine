@@ -47,14 +47,29 @@ export function detectIndent(text: string): number {
 
 const projectRel = (config: ResolvedRigConfig, abs: string): string => relative(config.project, abs).replace(/\\/g, '/')
 
+type RigRegistry = { version: 1; rigs: Record<string, Record<string, unknown>> }
+
+/** Lê o registro; `null` se o arquivo existe mas não é um registro legível (nunca é sobrescrito nesse caso). */
+function readRegistry(text: string | null): RigRegistry | null {
+  if (text === null) return { version: 1, rigs: {} }
+  try {
+    const parsed = JSON.parse(text.replace(/^﻿/, '')) as Partial<RigRegistry> | null
+    return parsed && typeof parsed.rigs === 'object' && parsed.rigs !== null ? (parsed as RigRegistry) : null
+  } catch {
+    return null
+  }
+}
+
 /**
  * Grava o build (`staging` na `skin` aprovada, `published` no Aprovar; `null` tira o `published`) do personagem no
- * registro. `durations` = duração de cada clipe, do JSON do skin.
+ * registro. `durations` = duração de cada clipe, do JSON do skin. Se o registro existente está ilegível, não mexe
+ * nele e devolve o aviso; `null` = gravou.
  */
-export function registerRig(config: ResolvedRigConfig, configRel: string, kind: 'staging' | 'published', build: { at: string } | null, durations: Record<string, number>): void {
+export function registerRig(config: ResolvedRigConfig, configRel: string, kind: 'staging' | 'published', build: { at: string } | null, durations: Record<string, number>): string | null {
   const path = join(config.project, RIG_REGISTRY_REL)
   const text = existsSync(path) ? readFileSync(path, 'utf8') : null
-  const registry = text ? (JSON.parse(text.replace(/^﻿/, '')) as { version: 1; rigs: Record<string, Record<string, unknown>> }) : { version: 1 as const, rigs: {} }
+  const registry = readRegistry(text)
+  if (!registry) return `aviso: ${RIG_REGISTRY_REL} ilegível; o registro de rigs não foi atualizado (corrija o JSON e gere de novo)`
   const entry = registry.rigs[config.code] ?? {}
   const files = kind === 'staging' ? stagingFiles(config) : { glb: publishTarget(config, config.skinned.publish.glb), clips: publishTarget(config, config.skinned.publish.clips) }
   entry['config'] = configRel
@@ -69,6 +84,7 @@ export function registerRig(config: ResolvedRigConfig, configRel: string, kind: 
   registry.rigs[config.code] = entry
   mkdirSync(dirname(path), { recursive: true })
   writeFileSync(path, JSON.stringify(registry, null, text ? detectIndent(text) : DEFAULT_INDENT) + '\n')
+  return null
 }
 
 /** Duração de cada clipe no JSON do skin (vazio se não existe). */
@@ -92,21 +108,39 @@ export function approve(config: ResolvedRigConfig, configRel: string, state: Rig
   ]
   const dir = join(config.work, 'backup', now.toISOString().replace(/[:.]/g, '-'))
   mkdirSync(dir, { recursive: true })
-  const manifest: ManifestItem[] = []
-  for (const [from, to] of pairs) {
-    mkdirSync(dirname(to), { recursive: true })
+  // Backup de tudo e o manifest ANTES de tocar no projeto: uma falha no meio sempre tem volta.
+  const manifest: ManifestItem[] = pairs.map(([, to]) => {
     const keep = join(dir, basename(to))
     const had = existsSync(to)
     if (had) safeCopy(to, keep)
-    manifest.push({ to, backup: had ? keep : null })
-    safeCopy(from, to)
-  }
+    return { to, backup: had ? keep : null }
+  })
   writeFileSync(join(dir, 'manifest.json'), JSON.stringify(manifest, null, 1) + '\n')
+  const touched: ManifestItem[] = []
+  try {
+    pairs.forEach(([from, to], i) => {
+      mkdirSync(dirname(to), { recursive: true })
+      touched.push(manifest[i]!)
+      safeCopy(from, to)
+    })
+  } catch (err) {
+    restore(touched)
+    rmSync(dir, { recursive: true, force: true })
+    return { code: AUTO_RIG_EXIT.infra, lines: [`não publicado: ${(err as Error).message}; o projeto voltou ao que era`] }
+  }
   const at = now.toISOString()
   state.published = { at, backup: dir }
   writeState(config.work, state)
-  registerRig(config, configRel, 'published', { at }, clipDurations(staging.clips))
-  return { code: AUTO_RIG_EXIT.pass, lines: [`publicado no projeto (${manifest.length} arquivos); backup em ${dir}`] }
+  const warn = registerRig(config, configRel, 'published', { at }, clipDurations(staging.clips))
+  return { code: AUTO_RIG_EXIT.pass, lines: [`publicado no projeto (${manifest.length} arquivos); backup em ${dir}`, ...(warn ? [warn] : [])] }
+}
+
+/** Volta cada destino ao backup (sem backup = o arquivo não existia e é apagado). */
+function restore(items: ManifestItem[]): void {
+  for (const { to, backup } of items) {
+    if (backup) safeCopy(backup, to)
+    else rmSync(to, { force: true })
+  }
 }
 
 /** Desfazer: restaura a última publicação (sem backup = o arquivo não existia e é apagado). */
@@ -117,14 +151,11 @@ export function revert(config: ResolvedRigConfig, configRel: string, state: RigS
   if (!last) return { code: AUTO_RIG_EXIT.fail, lines: ['nenhuma publicação para desfazer'] }
   const dir = join(root, last)
   const manifest = JSON.parse(readFileSync(join(dir, 'manifest.json'), 'utf8')) as ManifestItem[]
-  for (const { to, backup } of manifest) {
-    if (backup) safeCopy(backup, to)
-    else rmSync(to, { force: true })
-  }
+  restore(manifest)
   rmSync(dir, { recursive: true, force: true })
   delete state.published
   writeState(config.work, state)
   const restored = manifest.every((m) => m.backup)
-  if (!restored) registerRig(config, configRel, 'published', null, {})
-  return { code: AUTO_RIG_EXIT.pass, lines: [`restaurado o que existia antes da publicação de ${last}`] }
+  const warn = restored ? null : registerRig(config, configRel, 'published', null, {})
+  return { code: AUTO_RIG_EXIT.pass, lines: [`restaurado o que existia antes da publicação de ${last}`, ...(warn ? [warn] : [])] }
 }
