@@ -168,6 +168,8 @@ function readSkinned(sk: Obj, projectDir: string, configRel: string, errors: str
   if (!fbx && Object.values(clips).some((c) => isText(c['file']))) errors.push('skinned.fbx faltando (há clipe com "file")')
   const hooksRaw = sk['hooks'] ?? []
   if (!Array.isArray(hooksRaw) || !hooksRaw.every(isText)) errors.push('skinned.hooks precisa ser uma lista de caminhos')
+  // Gancho é código que roda no Blender: só do próprio projeto, como o prepare-character.sh.
+  else if (!hooksRaw.every(isProjectRelative)) errors.push('skinned.hooks tem de ser relativo ao projeto, sem ".."')
   const publish = sk['publish'] as Obj
   for (const k of ['glb', 'clips'] as const) {
     if (!isText(publish[k]) || !isProjectRelative(publish[k])) errors.push(`skinned.publish.${k} tem de ser relativo ao projeto, sem ".."`)
@@ -197,6 +199,8 @@ export function resolveRigConfig(text: string, projectDir: string, configRel: st
   const errors: string[] = []
   if (!isText(r['code']) || !CODE_RE.test(r['code'])) errors.push('code ausente ou com caractere fora de [A-Za-z0-9._-]')
   if (!isText(r['source'])) errors.push('source ausente')
+  // `work` recebe gravação (staging, backup, estado): nunca fora do projeto. `source`, `fbx` e `markers` só são lidos.
+  if (!isProjectRelative(r['work'] as string)) errors.push('work tem de ser relativo ao projeto, sem ".."')
   const project = resolve(projectDir)
   const config: ResolvedRigConfig = {
     code: String(r['code'] ?? ''),

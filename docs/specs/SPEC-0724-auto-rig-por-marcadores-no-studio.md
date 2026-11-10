@@ -49,7 +49,7 @@ naquela config, com as abas do modo novo.
 |---|---|---|---|
 | `code` | sim | | `[A-Za-z0-9._-]+`; nomeia a malha e os arquivos de staging |
 | `source` | sim | | GLB do corpo (absoluto ou relativo ao projeto); as malhas são juntadas numa só |
-| `work` | sim | | pasta de trabalho (absoluta ou relativa ao projeto) |
+| `work` | sim | | pasta de trabalho, **relativa ao projeto** e sem `..` (recebe gravação: staging, backup, estado) |
 | `transform.rotateZDeg` | não | 0 | o giro da SPEC-0349 (frente para a câmera) |
 | `transform.height` | não | 1,8 | altura do personagem em metros, dos pés ao topo |
 | `transform.weld` | não | 0,00001 | `remove_doubles` antes do bone heat (m) |
@@ -61,8 +61,12 @@ naquela config, com as abas do modo novo.
 | `skinned.jointLimitsDeg` | não | `{ "ForeArm": 115 }` | limite de giro por osso (sem o lado), em graus |
 | `skinned.jointBands` | não | os do LUC-01 (acima) | faixas do auxiliar de meia-rotação (m) |
 | `skinned.preview` | não | `[]` | poses da folha (`label`, `clip`, `mark` opcional) além do repouso |
-| `skinned.hooks` | não | `[]` | ganchos do projeto (ver abaixo), relativos ao projeto |
+| `skinned.hooks` | não | `[]` | ganchos do projeto (ver abaixo), **relativos ao projeto** e sem `..`: são código que roda no Blender, com a mesma confiança do `prepare-character.sh` do projeto |
 | `skinned.publish.glb`, `.clips` | sim | | destino no projeto do `--approve`; **relativos ao projeto**, sem `..` |
+
+`source`, `skinned.fbx` e `skinned.markers` só são lidos e podem apontar para fora do projeto (a fonte do Tripo e os FBX
+do Mixamo costumam ficar em outra pasta). Tudo o que o Studio grava (`work` e `skinned.publish`) e o que ele executa
+(`skinned.hooks`) fica dentro do projeto.
 
 Config inválida sai com código **64** e a lista dos problemas. Clipe sem `file` (de outra fonte, como o `gta` do
 DDD 61) não é do Studio: fica de fora, com um aviso, para um gancho tratar.

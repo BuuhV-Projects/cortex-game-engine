@@ -99,6 +99,17 @@ describe('resolveRigConfig', () => {
     expect(r.errors.join('\n')).toMatch(/publish.clips/)
   })
 
+  it('reprova work e hooks fora do projeto; source, fbx e markers podem estar fora (só leitura)', () => {
+    for (const work of ['../fora', 'C:/fora', '/fora']) {
+      const r = run({ ...base, work })
+      expect(r.ok ? [] : r.errors).toContain('work tem de ser relativo ao projeto, sem ".."')
+    }
+    const hooks = run({ ...base, skinned: { ...base.skinned, hooks: ['tools/h.py', '../../x.py'] } })
+    expect(hooks.ok ? [] : hooks.errors).toContain('skinned.hooks tem de ser relativo ao projeto, sem ".."')
+    const reads = run({ ...base, source: 'D:/fontes/model.glb', skinned: { ...base.skinned, fbx: 'D:/anim', markers: 'D:/m.json' } })
+    expect(reads.ok).toBe(true)
+  })
+
   it('JSON inválido e config que não é do Studio', () => {
     const broken = resolveRigConfig('{', PROJECT, REL)
     expect(broken.ok).toBe(false)
