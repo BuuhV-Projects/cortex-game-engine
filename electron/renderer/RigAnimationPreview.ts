@@ -262,7 +262,9 @@ export class RigAnimationPreview {
       this.skin = skin
       this.arm.setModel(this.chars.character ? null : this.model, skin) // braços: só no player
       this.arm.el.hidden = !!this.chars.character
-      this.pose.target = this.chars.character
+      // o player com personagens na config é o personagem `player`: a chave e a animação dele (SPEC-0722)
+      this.pose.store.player = this.chars.characters ? this.chars.player : ''
+      this.pose.target = this.chars.character ?? (this.chars.characters ? this.chars.player || null : null)
       this.pose.ui.applyTo.setContext(this.chars.characters, this.chars.player, this.chars.character)
       this.pose.setGenerated(view.skin)
       this.setStatus('')

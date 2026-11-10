@@ -1,6 +1,6 @@
 import { h } from './ui'
 import { t } from './i18n'
-import { applyChoices, applyTargets, fullKey, isNpcTarget, splitKey, visibleApplyCodes, type ApplyTo, type CharactersConfig } from './characterRigCharacters'
+import { applyChoices, applyKeys, applyTargets, isNpcTarget, visibleApplyCodes, type ApplyTo, type CharactersConfig } from './characterRigCharacters'
 import type { PoseStore } from './rigPoseStore'
 
 const BTN = 'export-modal__btn export-modal__btn--secondary'
@@ -104,13 +104,12 @@ export class RigApplyTo {
   /** Antes de gravar: leva a edição da chave `key` (a mostrada) para as chaves dos alvos escolhidos. */
   commit(store: PoseStore, key: string): void {
     if (!this.chars) return
-    const { clip, weapon } = splitKey(key)
     const selected = this.codes.filter((c) => this.checked.has(c))
     const targets = applyTargets(this.editing, this.choice.value as ApplyTo, selected, this.chars, this.player)
-    // o alvo "todos" do player é a chave sem personagem; o do próprio player e o dos NPCs, com
-    const keys = targets.map((tg) => fullKey(clip, weapon, tg))
+    // o alvo "todos" do player é a chave sem personagem; o do próprio player, a mostrada (SPEC-0722)
+    const { keys, keepGrip } = applyKeys(key, targets, this.editingNpc, this.player, store.hasOwnVariant(key))
     store.applyEditTo(key, keys, this.editingNpc ? 'own' : 'player', this.player)
-    // a pegada do player é a de `ARMA`, a da chave mostrada no player: com ele entre os alvos, ela fica (SPEC-0719)
-    if (!keys.includes(key)) store.discardEdit(key, !this.editingNpc && targets.includes(this.player))
+    // a pegada do player é a de `ARMA`: com ele entre os alvos (ou em "todos"), ela fica (SPEC-0719)
+    if (!keys.includes(key)) store.discardEdit(key, keepGrip)
   }
 }

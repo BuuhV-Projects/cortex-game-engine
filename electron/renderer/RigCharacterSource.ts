@@ -4,7 +4,7 @@ import { h } from './ui'
 import { t } from './i18n'
 import { debug } from '../../src/core/debug'
 import { resolveProjectPath } from './characterRigRegistry'
-import { fullKey, type CharactersConfig } from './characterRigCharacters'
+import { animOrder, type CharactersConfig } from './characterRigCharacters'
 import { retargetAnimation, retargetRig } from './characterRigRetarget'
 import { readSkinJson } from './RigBakeRun'
 
@@ -91,12 +91,12 @@ export class RigCharacterSource {
     return { gltf: npc, clips, skin }
   }
 
-  /** Animação a tocar do clipe: num NPC, a variante mais específica que existir; no player, a da arma ou a base. */
+  /**
+   * Animação a tocar do clipe: a variante mais específica que existir, na ordem do jogo. Num NPC: a dele, a do grupo, a
+   * da arma, a base; no player com personagens: a dele (`#player`, SPEC-0722), a da arma, a base.
+   */
   anim(clips: ReadonlyMap<string, THREE.AnimationClip>, clip: string, weapon: string | null): string {
-    const code = this.character
-    const g = this.chars?.group ?? null
-    const order = code ? [fullKey(clip, weapon, code), fullKey(clip, weapon, g), fullKey(clip, null, code), fullKey(clip, null, g)] : []
-    order.push(fullKey(clip, weapon, null), clip)
+    const order = animOrder(clip, weapon, this.character, this.chars?.group ?? null, this.chars ? this.player || null : null)
     return order.find((n) => clips.has(n)) ?? clip
   }
 }
