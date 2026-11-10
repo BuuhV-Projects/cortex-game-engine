@@ -107,10 +107,10 @@ export function approve(config: ResolvedRigConfig, configRel: string, state: Rig
     [staging.clips, publishTarget(config, config.skinned.publish.clips)],
   ]
   const dir = join(config.work, 'backup', now.toISOString().replace(/[:.]/g, '-'))
-  mkdirSync(dir, { recursive: true })
   const touched: ManifestItem[] = []
   let manifest: ManifestItem[] = []
   try {
+    mkdirSync(dir, { recursive: true })
     // Backup de tudo e o manifest ANTES de tocar no projeto: uma falha no meio sempre tem volta.
     manifest = pairs.map(([, to]) => {
       const keep = join(dir, basename(to))
