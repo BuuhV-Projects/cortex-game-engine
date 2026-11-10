@@ -48,8 +48,8 @@ O assado não muda: a chave `#<player>` já ia para o GLB do player (SPEC-0708),
 
 - `rigPoseStore.ts`: `player` (código do player da config) e `gripKeyFor(key)` (a chave de pegada da chave da pose:
   a do player vira `ARMA`), usado no lugar de `gripKeyOf` dentro da store; `hasOwnVariant(key)`.
-- `RigAnimationPreview.ts`: no player com personagens, `pose.target` = o código do player; passa o player à store.
-- `RigCharacterSource.ts`: `anim` no player procura `#<player>` antes.
+- `RigCharacterSource.ts`: `poseTarget` (no player com personagens, o código dele) e `storePlayer`, que o
+  `RigAnimationPreview.ts` passa ao editor e à store; `anim` procura `#<player>` antes (`animOrder`).
 - `RigApplyTo.ts`: "Player e todos os NPCs" inclui a chave do player quando ela tem variante salva; a pegada fica
   também em "todos".
 

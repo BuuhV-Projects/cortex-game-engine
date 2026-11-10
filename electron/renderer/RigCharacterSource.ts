@@ -58,6 +58,19 @@ export class RigCharacterSource {
     return this.chars
   }
 
+  /** O código do player para a store da pose (vazio sem personagens na config, SPEC-0722). */
+  get storePlayer(): string {
+    return this.chars ? this.player : ''
+  }
+
+  /**
+   * O alvo da chave da pose mostrada: o NPC escolhido; o player, com personagens na config, é o personagem `player`
+   * (a chave e a animação dele, SPEC-0722); sem personagens, `null` (a chave sem alvo).
+   */
+  get poseTarget(): string | null {
+    return this.character ?? (this.chars ? this.player || null : null)
+  }
+
   /** Lista o player (`code`) e os NPCs da config; sem personagens na config, o seletor some. */
   setContext(chars: CharactersConfig | null, code: string): void {
     const prev = this.select.value
