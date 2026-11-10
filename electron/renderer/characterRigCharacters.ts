@@ -115,6 +115,31 @@ export function applyTargets(editing: string, choice: ApplyTo, selected: readonl
   return npc ? [editing] : [null]
 }
 
+/**
+ * As chaves que o "aplicar a" grava a partir da chave mostrada `key` (os `targets` da `applyTargets`) e se a pegada
+ * editada dela fica. No player, "todos" leva também à variante própria dele já salva (`hasOwn`), que senão esconderia o
+ * ajuste; a pegada do player (`ARMA`) fica com ele entre os alvos ou em "todos" (SPEC-0719, SPEC-0722).
+ */
+export function applyKeys(key: string, targets: ReadonlyArray<string | null>, editingNpc: boolean, player: string, hasOwn: boolean): { keys: string[]; keepGrip: boolean } {
+  const { clip, weapon } = splitKey(key)
+  const keys = targets.map((tg) => fullKey(clip, weapon, tg))
+  const everyone = !editingNpc && targets.includes(null)
+  if (everyone && hasOwn && !keys.includes(key)) keys.push(key)
+  return { keys, keepGrip: !editingNpc && (everyone || targets.includes(player)) }
+}
+
+/**
+ * A ordem das animações a procurar no GLB para o clipe, a do jogo: num NPC (`code`), a dele, a do grupo, só dele, só
+ * do grupo; no player com personagens (`player`), a dele e só dele (SPEC-0722); depois a da arma e a base.
+ */
+export function animOrder(clip: string, weapon: string | null, code: string | null, group: string | null, player: string | null): string[] {
+  const who = code ? [code, group] : [player]
+  const order: string[] = []
+  for (const w of [weapon, null]) for (const t of who) if (t) order.push(fullKey(clip, w, t))
+  order.push(fullKey(clip, weapon, null), clip)
+  return [...new Set(order)]
+}
+
 /** As opções de "aplicar a" para quem se edita. */
 export const applyChoices = (editingNpc: boolean): ApplyTo[] => (editingNpc ? ['only', 'selected', 'allNpcs'] : ['everyone', 'only', 'selected'])
 

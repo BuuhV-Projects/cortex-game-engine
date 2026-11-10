@@ -66,6 +66,11 @@ export class PoseStore {
   private chars: CharactersConfig | null = null
   private spaces = new Map<string, EditSpace>()
   private editedSpaces = new Map<string, EditSpace>()
+  /**
+   * Código do player da config (SPEC-0722): a chave dele (`clipe@ARMA#player`) é a que a prévia do player mostra, e a
+   * pegada dela é a de `ARMA` (SPEC-0719), nunca `ARMA#player`. Vazio = sem personagens.
+   */
+  player = ''
 
   constructor(private readonly io: ConfigIO) {}
 
@@ -97,6 +102,17 @@ export class PoseStore {
   /** Os personagens da config (SPEC-0708; `null` = só o da config). */
   get characters(): CharactersConfig | null {
     return this.chars
+  }
+
+  /** Chave da pegada da chave da pose: a do player é `ARMA` (SPEC-0719, SPEC-0722); as outras, `ARMA#ALVO`. */
+  gripKeyFor(key: string): string | null {
+    const { weapon, target } = splitKey(key)
+    return weapon && this.player && target === this.player ? weapon : gripKeyOf(key)
+  }
+
+  /** A chave tem pose ou ligações próprias salvas (não só herdadas). */
+  hasOwnVariant(key: string): boolean {
+    return this.saved.has(key) || this.savedFollow.has(key)
   }
 
   /** Espaço da edição da chave de NPC (`player` = veio do player; o assado retargeta). */
@@ -166,7 +182,7 @@ export class PoseStore {
   discardEdit(key: string, keepGrip = false): void {
     this.edited.delete(key)
     this.editedFollow.delete(key)
-    const g = gripKeyOf(key)
+    const g = this.gripKeyFor(key)
     if (g && !keepGrip) this.editedGrips.delete(g)
   }
 
@@ -175,11 +191,11 @@ export class PoseStore {
    * de onde vieram (`player` = editado no player, para um NPC). Grava no próximo `save`. A pegada do alvo que é o
    * próprio player (`player`) vai para `ARMA`, a que a prévia dele mostra, nunca para `ARMA#player` (SPEC-0719).
    */
-  applyEditTo(from: string, to: readonly string[], space: EditSpace, player = ''): void {
+  applyEditTo(from: string, to: readonly string[], space: EditSpace, player = this.player): void {
     const pose = this.wanted(from)
     const links = this.wantedFollow(from)
     // a pegada vai junto só se foi editada, como está (SPEC-0711)
-    const fromGrip = gripKeyOf(from)
+    const fromGrip = this.gripKeyFor(from)
     const grip = fromGrip && this.editedGrips.has(fromGrip) ? this.grip(from) : null
     for (const k of to) {
       // a própria chave também leva o espaço (reeditada num NPC, deixa de ser "do player")
@@ -240,7 +256,7 @@ export class PoseStore {
 
   /** Pose ou ligações da chave (ou a pegada da arma dela) ainda não gravadas. */
   isUnsaved(key: string): boolean {
-    const g = gripKeyOf(key)
+    const g = this.gripKeyFor(key)
     return this.poseUnsaved(key) || this.followUnsaved(key) || (!!g && this.gripUnsaved(g))
   }
 
@@ -260,7 +276,7 @@ export class PoseStore {
    * player (`ARMA`) em vez da padrão. Só a prévia: a cadeia gravada do NPC não chega na do player (ADR-0710).
    */
   previewGrip(key: string): Grip {
-    const g = gripKeyOf(key)
+    const g = this.gripKeyFor(key)
     if (!g) return DEFAULT_GRIP
     const { clip: weapon, target } = splitKey(g)
     const own = gripChain(g, this.chars).some((k) => this.editedGrips.has(k) || this.savedGrips.has(k))
@@ -269,7 +285,7 @@ export class PoseStore {
 
   /** Pegada da arma da chave da pose (`clipe@ARMA#ALVO`); sem arma, o padrão. */
   grip(key: string): Grip {
-    const g = gripKeyOf(key)
+    const g = this.gripKeyFor(key)
     return g ? this.gripOf(g) : DEFAULT_GRIP
   }
 
@@ -300,14 +316,14 @@ export class PoseStore {
 
   /** Edita a pegada da arma da chave da pose (a do alvo dela; sem arma, nada). */
   setGrip(key: string, grip: Grip): void {
-    const g = gripKeyOf(key)
+    const g = this.gripKeyFor(key)
     if (g) this.editedGrips.set(g, grip)
   }
 
   /** Empilha o estado atual da chave (antes de uma edição); `withGrip` = a edição é na pegada. */
   pushUndo(key: string, withGrip = false): void {
     const stack = this.undo.get(key) ?? []
-    const g = withGrip ? gripKeyOf(key) : null
+    const g = withGrip ? this.gripKeyFor(key) : null
     stack.push({
       pose: this.edited.get(key),
       follow: this.editedFollow.get(key),
