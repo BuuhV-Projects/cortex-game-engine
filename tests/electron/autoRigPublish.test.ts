@@ -41,8 +41,9 @@ describe('approve', () => {
     expect(st.published?.at).toBe(NOW.toISOString())
     const backup = st.published!.backup
     expect(readFileSync(join(backup, 'npc-110-skinned.glb'), 'utf8')).toBe('antigo')
-    const manifest = JSON.parse(readFileSync(join(backup, 'manifest.json'), 'utf8')) as Array<{ backup: string | null }>
-    expect(manifest.map((m) => m.backup === null)).toEqual([false, true]) // o JSON não existia antes
+    const manifest = JSON.parse(readFileSync(join(backup, 'manifest.json'), 'utf8')) as { files: Array<{ backup: string | null }>; previous: unknown }
+    expect(manifest.files.map((m) => m.backup === null)).toEqual([false, true]) // o JSON não existia antes
+    expect(manifest.previous).toBeNull()
     const entry = registry().rigs['npc-110']!
     expect(entry['published']).toEqual({ glb: 'assets/npc/npc-110-skinned.glb', clips: 'assets/npc/npc-110-skinned.json', at: NOW.toISOString() })
     expect(entry['config']).toBe(CONFIG_REL)
@@ -75,6 +76,20 @@ describe('approve', () => {
 describe('revert', () => {
   it('sem publicação: código 1', () => {
     expect(revert(f.config, CONFIG_REL, { stages: {} }).code).toBe(1)
+  })
+
+  it('republicação desfeita: o estado e o registro voltam à publicação anterior', () => {
+    const st = passed()
+    approve(f.config, CONFIG_REL, st, HASHES, NOW)
+    const first = st.published!
+    writeFileSync(join(f.config.work, 'staging/npc-110-skinned.glb'), 'segundo')
+    const LATER = new Date('2026-11-11T12:00:00.000Z')
+    approve(f.config, CONFIG_REL, st, HASHES, LATER)
+    expect(registry().rigs['npc-110']!['published']).toMatchObject({ at: LATER.toISOString() })
+    expect(revert(f.config, CONFIG_REL, st).code).toBe(0)
+    expect(readFileSync(glbOut(), 'utf8')).toBe('novo')
+    expect(st.published).toEqual(first)
+    expect(registry().rigs['npc-110']!['published']).toMatchObject({ at: NOW.toISOString() })
   })
 
   it('restaura o que existia, apaga o que não existia e tira o published do registro', () => {

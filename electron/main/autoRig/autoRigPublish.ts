@@ -21,6 +21,12 @@ interface ManifestItem {
   backup: string | null
 }
 
+/** `<work>/backup/<data>/manifest.json`: os arquivos trocados e a publicação que valia antes (o Desfazer a restaura). */
+interface BackupManifest {
+  files: ManifestItem[]
+  previous: RigState['published'] | null
+}
+
 /** GLB e JSON de staging gerados pela etapa `skin`. */
 export function stagingFiles(config: ResolvedRigConfig): { glb: string; clips: string } {
   const dir = join(config.work, 'staging')
@@ -118,7 +124,8 @@ export function approve(config: ResolvedRigConfig, configRel: string, state: Rig
       if (had) safeCopy(to, keep)
       return { to, backup: had ? keep : null }
     })
-    writeFileSync(join(dir, 'manifest.json'), JSON.stringify(manifest, null, 1) + '\n')
+    const backup: BackupManifest = { files: manifest, previous: state.published ?? null }
+    writeFileSync(join(dir, 'manifest.json'), JSON.stringify(backup, null, 1) + '\n')
     pairs.forEach(([from, to], i) => {
       mkdirSync(dirname(to), { recursive: true })
       touched.push(manifest[i]!)
@@ -151,12 +158,13 @@ export function revert(config: ResolvedRigConfig, configRel: string, state: RigS
   const last = dirs.at(-1)
   if (!last) return { code: AUTO_RIG_EXIT.fail, lines: ['nenhuma publicação para desfazer'] }
   const dir = join(root, last)
-  const manifest = JSON.parse(readFileSync(join(dir, 'manifest.json'), 'utf8')) as ManifestItem[]
-  restore(manifest)
+  const { files, previous } = JSON.parse(readFileSync(join(dir, 'manifest.json'), 'utf8')) as BackupManifest
+  restore(files)
   rmSync(dir, { recursive: true, force: true })
-  delete state.published
+  // O projeto voltou à publicação anterior (ou a nenhuma): o estado e o registro voltam junto.
+  if (previous) state.published = previous
+  else delete state.published
   writeState(config.work, state)
-  const restored = manifest.every((m) => m.backup)
-  const warn = restored ? null : registerRig(config, configRel, 'published', null, {})
+  const warn = registerRig(config, configRel, 'published', previous ? { at: previous.at } : null, {})
   return { code: AUTO_RIG_EXIT.pass, lines: [`restaurado o que existia antes da publicação de ${last}`, ...(warn ? [warn] : [])] }
 }

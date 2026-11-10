@@ -137,7 +137,8 @@ script dela e o hash da `skin`.
   em `<work>/backup/<data>/` com `manifest.json`. O backup e o manifest são gravados **antes** de tocar no projeto; se
   o backup ou uma cópia falha no meio, o que já foi copiado volta ao backup, a pasta do backup é apagada e sai com `2`. Senão, `0`.
 - **Desfazer** (`--revert`): restaura a última publicação do `backup` (sem backup = o arquivo não existia antes e é
-  apagado; o `published` sai do registro) e apaga a pasta desse backup, para o próximo Desfazer voltar à publicação
+  apagado), volta o `published` do registro e do `state.json` ao que valia antes dessa publicação (o `manifest.json`
+  guarda `{ files, previous }`; sem publicação anterior, o `published` sai) e apaga a pasta desse backup, para o próximo Desfazer voltar à publicação
   anterior. `1` se não há publicação para desfazer.
 - **Cancelar:** o Parar do painel, ou uma execução nova (uma por vez), cancela a execução em andamento: mata o Blender
   com os filhos (o mesmo vale para o timeout de 15 min da etapa) e a execução cancelada não abre a próxima etapa nem
