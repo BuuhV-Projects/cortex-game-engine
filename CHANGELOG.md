@@ -1,3 +1,15 @@
+# [0.123.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.122.0...v0.123.0) (2026-11-10)
+
+
+### Bug Fixes
+
+* **studio:** roda a cópia confirmada dos ganchos e nega sem confirmação (SPEC-0724, adendo 1) ([b4ad46c](https://github.com/BuuhV-Projects/cortex-game-engine/commit/b4ad46c9f95e84d11c2e687c16b7daf5202cfeb3))
+
+
+### Features
+
+* **studio:** confirma os ganchos do projeto antes de rodar no Blender (SPEC-0724, adendo 1) ([c644326](https://github.com/BuuhV-Projects/cortex-game-engine/commit/c6443262e6d8f3960297017dd7f5975a16af0381))
+
 # [0.122.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.121.3...v0.122.0) (2026-11-10)
 
 
