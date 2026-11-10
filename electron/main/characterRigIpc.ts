@@ -78,10 +78,13 @@ async function currentBlender(): Promise<BlenderLocation | null> {
   return locateBlender({ preference: prefs.blenderPath, env: process.env, platform: process.platform, exists: existsSync, listDirs })
 }
 
-/** Ganchos do projeto: já aceitos com este conteúdo, ou o usuário confirma agora no diálogo nativo (adendo 1). */
-async function confirmRigHooks(projectDir: string, hooks: string[]): Promise<boolean> {
+/**
+ * Ganchos do projeto: já aceitos com este conteúdo, ou o usuário confirma agora no diálogo nativo (adendo 1). A
+ * impressão é das cópias que vão rodar (`copies`), com os caminhos da config (`hooks`).
+ */
+async function confirmRigHooks(projectDir: string, hooks: string[], copies: string[]): Promise<boolean> {
   const prefs = await loadPreferences()
-  const fingerprint = hooksFingerprint(projectDir, hooks)
+  const fingerprint = hooksFingerprint(projectDir, hooks, copies)
   if (isHookTrusted(prefs.trustedRigHooks, projectDir, fingerprint)) return true
   const text = hookDialogText(prefs.locale, projectDir, hooks)
   const opts = { type: 'warning' as const, buttons: text.buttons, defaultId: 1, cancelId: 1, noLink: true, message: text.message, detail: text.detail }
@@ -110,7 +113,7 @@ async function runBuiltin(projectDir: string, configRel: string, action: AutoRig
       characterRigProcess = trackChild(characterRigProcess, child, active)
     },
     kill: (child) => killProcessTree(child),
-    confirmHooks: (hooks) => confirmRigHooks(projectDir, hooks),
+    confirmHooks: (hooks, copies) => confirmRigHooks(projectDir, hooks, copies),
   })
   if (characterRigAbort === abort) characterRigAbort = null
   return { code }

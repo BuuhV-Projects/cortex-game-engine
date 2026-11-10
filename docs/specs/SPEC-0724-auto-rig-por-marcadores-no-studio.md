@@ -141,6 +141,14 @@ confirmação antes de rodar um gancho que ainda não foi aceito:
 - **Diálogo nativo:** lista os arquivos e tem os botões **Rodar os ganchos** e **Cancelar** (no idioma das
   preferências, pt ou en). Rodar grava a impressão e segue. Cancelar não roda a etapa, não grava o estado e sai com
   `2` (`ganchos não autorizados`).
+- **Roda o que foi confirmado:** antes de perguntar, o Studio copia os ganchos para `<work>/hooks/<n>-<nome>`; a
+  impressão é dessas cópias e a `skin` carrega as cópias (o `config.resolved.json` aponta para elas). Trocar o arquivo
+  do projeto depois da confirmação não muda o que roda; muda a impressão da próxima vez. Gancho que acha arquivo
+  vizinho pelo próprio `__file__` deve usar `ctx['cfg']['project']`.
+- **Sem quem pergunte, não roda:** o runner chamado sem `confirmHooks` recusa os ganchos (`ganchos sem
+  confirmação`, código `2`).
+- **Chave do projeto:** caminho absoluto com `/`; no Windows, em minúsculas (o mesmo projeto com outra capitalização
+  não pergunta de novo).
 - **Só o processo principal grava** `trustedRigHooks`: o `prefs:set` do renderer descarta o campo, como faz com o
   `blenderPath`.
 

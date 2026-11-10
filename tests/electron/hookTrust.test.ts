@@ -3,7 +3,7 @@
  * runner, que pergunta antes da `skin` e não roda nada se a resposta for não.
  */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { mkdirSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { hookDialogText, hooksFingerprint, isHookTrusted, trustKey } from '../../electron/main/autoRig/hookTrust.js'
 import { runAutoRig } from '../../electron/main/autoRig/autoRigRunner.js'
@@ -34,11 +34,13 @@ describe('hooksFingerprint', () => {
 })
 
 describe('confiança e diálogo', () => {
-  it('isHookTrusted confere a impressão da pasta do projeto, com \\ ou /', () => {
+  it('isHookTrusted confere a impressão do projeto; no Windows a chave ignora maiúsculas', () => {
     const fp = hooksFingerprint(f.dir, abs)
     expect(isHookTrusted(undefined, f.dir, fp)).toBe(false)
-    expect(isHookTrusted({ [trustKey(f.dir)]: fp }, f.dir.replace(/\//g, '\\'), fp)).toBe(true)
+    expect(isHookTrusted({ [trustKey(f.dir)]: fp }, join(f.dir, '.'), fp)).toBe(true)
     expect(isHookTrusted({ [trustKey(f.dir)]: 'outra' }, f.dir, fp)).toBe(false)
+    expect(trustKey('C:/Jogos/Port', 'win32')).toBe(trustKey('c:/jogos/port', 'win32'))
+    expect(trustKey('/jogos/Port', 'linux')).not.toBe(trustKey('/jogos/port', 'linux'))
   })
 
   it('o diálogo lista os ganchos relativos ao projeto, em pt por padrão e em en', () => {
@@ -73,6 +75,36 @@ describe('runner', () => {
     expect(started).toBe(0)
     expect(readState(f.config.work).stages.skin).toBeUndefined()
     expect(out).toMatch(/ganchos não autorizados/)
+  })
+
+  it('sem quem pergunte, os ganchos não rodam (2)', async () => {
+    let out = ''
+    const base = { projectDir: f.dir, configRel: CONFIG_REL, action: 'generate' as const, scriptsDir: f.scriptsDir, onChild: () => {} }
+    expect(await runAutoRig({ ...base, blender: process.execPath, send: (t) => (out += t) })).toBe(2)
+    expect(out).toMatch(/ganchos sem confirmação/)
+  })
+
+  it('aceito: roda a cópia confirmada, não o arquivo trocado durante a pergunta', async () => {
+    let copies: string[] = []
+    await runAutoRig({
+      projectDir: f.dir,
+      configRel: CONFIG_REL,
+      action: 'generate',
+      blender: process.execPath,
+      scriptsDir: f.scriptsDir,
+      send: () => {},
+      onChild: () => {},
+      confirmHooks: async (_hooks, c) => {
+        copies = c
+        writeFileSync(abs[0]!, '# trocado depois de confirmar')
+        return true
+      },
+    })
+    const resolved = JSON.parse(readFileSync(join(f.config.work, 'config.resolved.json'), 'utf8')) as { skinned: { hooks: string[] } }
+    expect(resolved.skinned.hooks).toEqual(copies)
+    expect(copies.every((c) => c.startsWith(join(f.config.work, 'hooks')))).toBe(true)
+    expect(readFileSync(copies[0]!, 'utf8')).toBe('# gancho 0')
+    expect(hooksFingerprint(f.dir, abs, copies)).not.toBe(hooksFingerprint(f.dir, abs)) // a confiança vale para a cópia
   })
 
   it('skin reaproveitada não roda gancho e não pergunta', async () => {

@@ -34,15 +34,19 @@ const TEXT: Record<HookLocale, { message: string; intro: string; outro: string; 
 
 const toRel = (project: string, abs: string): string => relative(project, abs).replace(/\\/g, '/')
 
-/** Chave do projeto em `trustedRigHooks`: o caminho absoluto, com `/`. */
-export function trustKey(project: string): string {
-  return resolve(project).replace(/\\/g, '/')
+/** Chave do projeto em `trustedRigHooks`: o caminho absoluto, com `/` (no Windows, sem diferença de maiúsculas). */
+export function trustKey(project: string, platform: NodeJS.Platform = process.platform): string {
+  const key = resolve(project).replace(/\\/g, '/')
+  return platform === 'win32' ? key.toLowerCase() : key
 }
 
-/** SHA-256 da lista de ganchos: caminho relativo e SHA-256 do conteúdo de cada um, na ordem da config. */
-export function hooksFingerprint(project: string, hooks: string[]): string {
+/**
+ * SHA-256 da lista de ganchos: caminho relativo (de `hooks`) e SHA-256 do conteúdo de cada um, na ordem da config.
+ * `contents` = os arquivos que vão rodar (as cópias em `<work>/hooks/`); padrão, os próprios `hooks`.
+ */
+export function hooksFingerprint(project: string, hooks: string[], contents: string[] = hooks): string {
   const h = createHash('sha256')
-  for (const abs of hooks) h.update(`${toRel(project, abs)}\0${fileSha(abs)}\n`)
+  hooks.forEach((abs, i) => h.update(`${toRel(project, abs)}\0${fileSha(contents[i] ?? abs)}\n`))
   return h.digest('hex')
 }
 

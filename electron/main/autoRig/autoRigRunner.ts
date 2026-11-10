@@ -4,8 +4,8 @@
  * revisão visual, 64 config inválida). A saída vai para o painel por `send`.
  */
 import { spawn, type ChildProcess } from 'child_process'
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
-import { join } from 'path'
+import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs'
+import { basename, join } from 'path'
 import { AUTO_RIG_EXIT, resolveRigConfig, type ResolvedRigConfig } from './autoRigConfig.js'
 import { approve, clipDurations, registerRig, revert, stagingFiles } from './autoRigPublish.js'
 import { readState, STAGE_SCRIPTS, stageHashes, stagesToRun, writeState, type RigState, type StageName, type StageStatus } from './autoRigState.js'
@@ -28,8 +28,11 @@ export interface AutoRigRunOptions {
   kill?: (child: ChildProcess) => void
   /** Cancelada pelo Parar ou por uma execução nova: não abre a próxima etapa nem grava o estado. */
   signal?: AbortSignal
-  /** Pergunta antes de rodar os ganchos do projeto (SPEC-0724, adendo 1); `false` = não autorizados. */
-  confirmHooks?: (hooks: string[]) => Promise<boolean>
+  /**
+   * Pergunta antes de rodar os ganchos do projeto (SPEC-0724, adendo 1): `hooks` como estão na config, `copies` o que
+   * vai rodar (`<work>/hooks/`). `false` = não autorizados. Sem a função, ganchos não rodam.
+   */
+  confirmHooks?: (hooks: string[], copies: string[]) => Promise<boolean>
   now?: () => Date
 }
 
@@ -124,17 +127,44 @@ async function runStage(o: AutoRigRunOptions, config: ResolvedRigConfig, stage: 
   return status
 }
 
-/** Sem ganchos, ou aceitos: a `skin` pode rodar. Recusa ou cancelamento durante a pergunta: não roda nada. */
+const writeResolved = (config: ResolvedRigConfig): void => writeFileSync(join(config.work, 'config.resolved.json'), JSON.stringify(config, null, 1) + '\n')
+
+/** Copia os ganchos para `<work>/hooks/`: o Blender roda o que foi confirmado, não o arquivo de depois. */
+function snapshotHooks(config: ResolvedRigConfig): string[] {
+  const dir = join(config.work, 'hooks')
+  rmSync(dir, { recursive: true, force: true })
+  mkdirSync(dir, { recursive: true })
+  return config.skinned.hooks.map((src, i) => {
+    const to = join(dir, `${i}-${basename(src)}`)
+    copyFileSync(src, to)
+    return to
+  })
+}
+
+/**
+ * Sem ganchos, ou aceitos: a `skin` pode rodar, com as cópias confirmadas no lugar dos ganchos. Sem quem pergunte,
+ * recusa, gancho ausente ou cancelamento durante a pergunta: não roda nada.
+ */
 async function hooksAllowed(o: AutoRigRunOptions, config: ResolvedRigConfig): Promise<boolean> {
   const hooks = config.skinned.hooks
-  if (!hooks.length || !o.confirmHooks) return true
-  const ok = await o.confirmHooks(hooks)
-  if (o.signal?.aborted) {
-    o.send('cancelado: nada foi publicado no projeto\n')
+  if (!hooks.length) return true
+  const refuse = (why: string): false => {
+    o.send(`${why}: a etapa skin não rodou e nada foi publicado no projeto\n`)
     return false
   }
-  if (!ok) o.send('ganchos não autorizados: a etapa skin não rodou e nada foi publicado no projeto\n')
-  return ok
+  if (!o.confirmHooks) return refuse('ganchos sem confirmação')
+  let copies: string[]
+  try {
+    copies = snapshotHooks(config)
+  } catch (err) {
+    return refuse(`gancho ilegível (${(err as Error).message})`)
+  }
+  const ok = await o.confirmHooks(hooks, copies)
+  if (o.signal?.aborted) return refuse('cancelado')
+  if (!ok) return refuse('ganchos não autorizados')
+  config.skinned.hooks = copies
+  writeResolved(config)
+  return true
 }
 
 async function generate(o: AutoRigRunOptions, config: ResolvedRigConfig, state: RigState, hashes: Record<StageName, string>): Promise<number> {
@@ -189,7 +219,7 @@ export async function runAutoRig(o: AutoRigRunOptions): Promise<number> {
   }
   const config = resolved.config
   for (const d of WORK_DIRS) mkdirSync(join(config.work, d), { recursive: true })
-  writeFileSync(join(config.work, 'config.resolved.json'), JSON.stringify(config, null, 1) + '\n')
+  writeResolved(config)
   const state = readState(config.work)
   const hashes = stageHashes(config, o.scriptsDir)
   o.send(`# auto-rig ${config.code} (Studio)\nwork: ${config.work}\n`)
