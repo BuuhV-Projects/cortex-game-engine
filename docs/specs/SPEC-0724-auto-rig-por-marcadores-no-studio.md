@@ -128,6 +128,30 @@ e aprovada é reaproveitada. Hash da `skin`: as seções da config que ela lê, 
 cada FBX e de cada gancho, e o dos scripts `native/scripts/autorig/*.py`. Hash da `preview`: `skinned.preview`, o
 script dela e o hash da `skin`.
 
+## Confiança nos ganchos (adendo 1)
+
+Gancho é código do projeto que roda no Blender. Um projeto aberto pode vir de terceiros, então o Studio pede
+confirmação antes de rodar um gancho que ainda não foi aceito:
+
+- **Impressão:** SHA-256 da lista de ganchos (caminho relativo ao projeto e SHA-256 do conteúdo de cada arquivo, na
+  ordem da config). Fica nas preferências do Studio, em `trustedRigHooks[<pasta do projeto>]`.
+- **Quando pergunta:** antes da etapa `skin`, se a config tem `skinned.hooks` e a impressão de agora não é a
+  aceita para o projeto (primeira vez, gancho novo, alterado ou tirado da lista). Etapa `skin` reaproveitada não roda
+  gancho e não pergunta.
+- **Diálogo nativo:** lista os arquivos e tem os botões **Rodar os ganchos** e **Cancelar** (no idioma das
+  preferências, pt ou en). Rodar grava a impressão e segue. Cancelar não roda a etapa, não grava o estado e sai com
+  `2` (`ganchos não autorizados`).
+- **Roda o que foi confirmado:** antes de perguntar, o Studio copia os ganchos para `<work>/hooks/<n>-<nome>`; a
+  impressão é dessas cópias e a `skin` carrega as cópias (o `config.resolved.json` aponta para elas). Trocar o arquivo
+  do projeto depois da confirmação não muda o que roda; muda a impressão da próxima vez. Gancho que acha arquivo
+  vizinho pelo próprio `__file__` deve usar `ctx['cfg']['project']`.
+- **Sem quem pergunte, não roda:** o runner chamado sem `confirmHooks` recusa os ganchos (`ganchos sem
+  confirmação`, código `2`).
+- **Chave do projeto:** caminho absoluto com `/`; no Windows, em minúsculas (o mesmo projeto com outra capitalização
+  não pergunta de novo).
+- **Só o processo principal grava** `trustedRigHooks`: o `prefs:set` do renderer descarta o campo, como faz com o
+  `blenderPath`.
+
 ## Códigos de saída e ações (os mesmos do `prepare-character.sh`)
 
 - **Gerar**: `3` com as duas etapas aprovadas (aguardando revisão; o painel mostra a folha), `1` reprovado, `2`
@@ -177,6 +201,7 @@ quebrado ou sem `rigs`) não é sobrescrito: a etapa segue e o painel mostra o a
 | `electron/main/autoRig/autoRigPublish.ts` | aprovar, desfazer, registro de rigs |
 | `electron/main/autoRig/autoRigRunner.ts` | roda as etapas no Blender, resumo e código de saída |
 | `electron/main/autoRig/blenderLocate.ts` | acha o Blender (preferência, `BLENDER_PATH`, instalações) |
+| `electron/main/autoRig/hookTrust.ts` | impressão dos ganchos, confiança por projeto e texto do diálogo (adendo 1) |
 | `electron/main/characterRigIpc.ts` | escolhe entre o script do projeto e o pipeline do Studio |
 
 Logs do Studio com `debug('characterRig', …)` no renderer; o processo principal manda a saída pelo
@@ -186,7 +211,9 @@ Logs do Studio com `debug('characterRig', …)` no renderer; o processo principa
 
 `tests/electron/autoRigConfig.test.ts`, `autoRigState.test.ts`, `autoRigPublish.test.ts`, `blenderLocate.test.ts` e
 `autoRigMarkersPy.test.ts` (roda o `--selftest` do `autorig_markers.py` com o Python do sistema e confere que os
-scripts não citam GTA). O `characterRigProject.test.ts` ganha o modo do pipeline do Studio.
+scripts não citam GTA). O `characterRigProject.test.ts` ganha o modo do pipeline do Studio. O `hookTrust.test.ts`
+cobre a impressão dos ganchos, a confiança por projeto, o diálogo e o runner que não roda nada sem a confirmação
+(adendo 1).
 
 ## Verificação
 
