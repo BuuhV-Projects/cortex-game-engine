@@ -24,6 +24,8 @@ export interface AutoRigRunOptions {
   send: (text: string) => void
   /** O Blender desta etapa começou (`active`) ou terminou (o Parar do painel mata o que está ativo). */
   onChild: (child: ChildProcess, active: boolean) => void
+  /** Mata o Blender que estourou o tempo da etapa, com os filhos (o IPC passa o `killProcessTree`); padrão `kill()`. */
+  kill?: (child: ChildProcess) => void
   now?: () => Date
 }
 
@@ -64,7 +66,7 @@ function spawnStage(o: AutoRigRunOptions, config: ResolvedRigConfig, stage: Stag
     let settled = false
     const child = spawn(o.blender!, args, { cwd: config.project, windowsHide: true })
     o.onChild(child, true)
-    const timer = setTimeout(() => child.kill(), STAGE_TIMEOUT_MS)
+    const timer = setTimeout(() => (o.kill ? o.kill(child) : child.kill()), STAGE_TIMEOUT_MS)
     const onData = (d: Buffer): void => {
       const text = d.toString()
       log += text

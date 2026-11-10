@@ -80,6 +80,7 @@ async function runBuiltin(projectDir: string, configRel: string, action: AutoRig
     onChild: (child, active) => {
       characterRigProcess = trackChild(characterRigProcess, child, active)
     },
+    kill: (child) => killProcessTree(child),
   })
   return { code }
 }
