@@ -11,7 +11,7 @@ import { envForSpawn, getMainWindow, validatePath } from './shared.js'
 import { killProcessTree } from './projectRunner.js'
 import { writeBakePair } from './characterRigBakeWrite.js'
 import { loadPreferences, savePreferences } from './prefsDialogsIpc.js'
-import { runAutoRig, type AutoRigAction } from './autoRig/autoRigRunner.js'
+import { runAutoRig, trackChild, type AutoRigAction } from './autoRig/autoRigRunner.js'
 import { locateBlender, type BlenderLocation } from './autoRig/blenderLocate.js'
 
 /** Processo do auto-rig em andamento (um por vez, separado do terminal). */
@@ -77,8 +77,8 @@ async function runBuiltin(projectDir: string, configRel: string, action: AutoRig
     blender: blender?.path ?? null,
     scriptsDir: autoRigScriptsDir(),
     send,
-    onChild: (child) => {
-      characterRigProcess = child
+    onChild: (child, active) => {
+      characterRigProcess = trackChild(characterRigProcess, child, active)
     },
   })
   return { code }

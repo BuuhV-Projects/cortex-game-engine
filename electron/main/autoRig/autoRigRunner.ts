@@ -22,9 +22,18 @@ export interface AutoRigRunOptions {
   /** `native/scripts/autorig` do Studio. */
   scriptsDir: string
   send: (text: string) => void
-  /** O processo do Blender em andamento (o Parar do painel o mata). */
-  onChild: (child: ChildProcess | null) => void
+  /** O Blender desta etapa começou (`active`) ou terminou (o Parar do painel mata o que está ativo). */
+  onChild: (child: ChildProcess, active: boolean) => void
   now?: () => Date
+}
+
+/**
+ * Processo que o Parar deve matar depois do aviso `onChild`. O fim de um processo só limpa a referência se ela ainda é
+ * dele: o `close` atrasado do Blender que uma nova execução matou não pode esquecer o Blender novo.
+ */
+export function trackChild<T>(current: T | null, child: T, active: boolean): T | null {
+  if (active) return child
+  return current === child ? null : current
 }
 
 interface StageResult {
@@ -54,7 +63,7 @@ function spawnStage(o: AutoRigRunOptions, config: ResolvedRigConfig, stage: Stag
     let pending = ''
     let settled = false
     const child = spawn(o.blender!, args, { cwd: config.project, windowsHide: true })
-    o.onChild(child)
+    o.onChild(child, true)
     const timer = setTimeout(() => child.kill(), STAGE_TIMEOUT_MS)
     const onData = (d: Buffer): void => {
       const text = d.toString()
@@ -69,7 +78,7 @@ function spawnStage(o: AutoRigRunOptions, config: ResolvedRigConfig, stage: Stag
       if (settled) return
       settled = true
       clearTimeout(timer)
-      o.onChild(null)
+      o.onChild(child, false)
       writeFileSync(logPath, log)
       resolvePromise(error)
     }

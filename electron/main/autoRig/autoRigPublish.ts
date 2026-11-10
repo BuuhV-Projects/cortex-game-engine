@@ -108,16 +108,17 @@ export function approve(config: ResolvedRigConfig, configRel: string, state: Rig
   ]
   const dir = join(config.work, 'backup', now.toISOString().replace(/[:.]/g, '-'))
   mkdirSync(dir, { recursive: true })
-  // Backup de tudo e o manifest ANTES de tocar no projeto: uma falha no meio sempre tem volta.
-  const manifest: ManifestItem[] = pairs.map(([, to]) => {
-    const keep = join(dir, basename(to))
-    const had = existsSync(to)
-    if (had) safeCopy(to, keep)
-    return { to, backup: had ? keep : null }
-  })
-  writeFileSync(join(dir, 'manifest.json'), JSON.stringify(manifest, null, 1) + '\n')
   const touched: ManifestItem[] = []
+  let manifest: ManifestItem[] = []
   try {
+    // Backup de tudo e o manifest ANTES de tocar no projeto: uma falha no meio sempre tem volta.
+    manifest = pairs.map(([, to]) => {
+      const keep = join(dir, basename(to))
+      const had = existsSync(to)
+      if (had) safeCopy(to, keep)
+      return { to, backup: had ? keep : null }
+    })
+    writeFileSync(join(dir, 'manifest.json'), JSON.stringify(manifest, null, 1) + '\n')
     pairs.forEach(([from, to], i) => {
       mkdirSync(dirname(to), { recursive: true })
       touched.push(manifest[i]!)

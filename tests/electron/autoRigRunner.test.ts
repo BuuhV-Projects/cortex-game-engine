@@ -4,7 +4,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { relevantLines, runAutoRig, type AutoRigRunOptions } from '../../electron/main/autoRig/autoRigRunner.js'
+import { relevantLines, runAutoRig, trackChild, type AutoRigRunOptions } from '../../electron/main/autoRig/autoRigRunner.js'
 import { readState, stageHashes, writeState } from '../../electron/main/autoRig/autoRigState.js'
 import { CONFIG_REL, makeRigFixture, writeStaging, type RigFixture } from './autoRigFixture.mjs'
 
@@ -34,6 +34,17 @@ describe('relevantLines', () => {
   it('passa só as linhas [autorig] e guarda a linha incompleta', () => {
     expect(relevantLines('Blender 5.1\n[autorig] corpo: 10\nRead blend\n[autorig] me')).toEqual({ lines: ['[autorig] corpo: 10'], rest: '[autorig] me' })
     expect(relevantLines('[autorig] a\r\n')).toEqual({ lines: ['[autorig] a'], rest: '' })
+  })
+})
+
+describe('trackChild', () => {
+  it('o close atrasado do Blender morto não esquece o Blender da execução nova', () => {
+    const [velho, novo] = [{ id: 1 }, { id: 2 }]
+    let atual = trackChild(null, velho, true)
+    atual = trackChild(atual, novo, true) // nova execução matou o velho e começou o novo
+    atual = trackChild(atual, velho, false) // close do velho chega depois
+    expect(atual).toBe(novo) // o Parar ainda mata o novo
+    expect(trackChild(atual, novo, false)).toBeNull()
   })
 })
 

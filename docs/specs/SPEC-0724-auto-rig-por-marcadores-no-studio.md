@@ -131,7 +131,7 @@ script dela e o hash da `skin`.
 - **Aprovar** (`--approve`): exige as duas etapas aprovadas com os hashes de agora (senão `1`). Copia o GLB e o JSON
   de staging para `skinned.publish` com cópia segura (grava ao lado, confere o hash, troca), guardando o que existia
   em `<work>/backup/<data>/` com `manifest.json`. O backup e o manifest são gravados **antes** de tocar no projeto; se
-  uma cópia falha no meio, o que já foi copiado volta ao backup, a pasta do backup é apagada e sai com `2`. Senão, `0`.
+  o backup ou uma cópia falha no meio, o que já foi copiado volta ao backup, a pasta do backup é apagada e sai com `2`. Senão, `0`.
 - **Desfazer** (`--revert`): restaura a última publicação do `backup` (sem backup = o arquivo não existia antes e é
   apagado; o `published` sai do registro) e apaga a pasta desse backup, para o próximo Desfazer voltar à publicação
   anterior. `1` se não há publicação para desfazer.

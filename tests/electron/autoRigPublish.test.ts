@@ -61,6 +61,15 @@ describe('approve', () => {
     expect(st.published).toBeUndefined()
     expect(readdirSync(join(f.config.work, 'backup'))).toEqual([])
   })
+
+  it('falha no backup: código 2, projeto intocado, sem backup órfão', () => {
+    mkdirSync(join(f.dir, 'assets/npc/npc-110-skinned.json'), { recursive: true }) // o backup de uma pasta falha
+    writeFileSync(glbOut(), 'antigo')
+    const out = approve(f.config, CONFIG_REL, passed(), HASHES, NOW)
+    expect(out.code).toBe(2)
+    expect(readFileSync(glbOut(), 'utf8')).toBe('antigo')
+    expect(readdirSync(join(f.config.work, 'backup'))).toEqual([])
+  })
 })
 
 describe('revert', () => {
