@@ -10,6 +10,7 @@ import {
   loadRigRegistry,
   rigPanelMode,
   resolveTab,
+  sameRigPanelMode,
   type ConfigEntry,
   type RigPanelMode,
   type RigTab,
@@ -25,8 +26,9 @@ import { RigMarkerView } from './RigMarkerView'
  *
  * Abas (adendo 1): **Marcadores** (`RigMarkerView`), **Animações** (prévia do GLB
  * do registro de rigs, `RigAnimationPreview`) e **Pasta** (seleção dos FBX,
- * `RigFbxSelection`). Sem o `prepare-character.sh` no projeto (só o GLB
- * publicado, SPEC-0704) fica só a aba Animações, sem gerar nem revisar.
+ * `RigFbxSelection`). Sem o `prepare-character.sh` no projeto, a config com
+ * `work` e `skinned.publish` gera pelo pipeline do Studio (SPEC-0724); sem os
+ * dois (só o GLB publicado, SPEC-0704) fica só a aba Animações.
  */
 
 export type { RigTab } from './characterRigProject'
@@ -65,9 +67,10 @@ async function openCharacterRig(configPath?: string, tab: RigTab = 'markers'): P
     void window.electronAPI.infoDialog(t('characterRig.not_skinned'))
     return
   }
-  const mode = rigPanelMode({ hasPipeline: await hasRigPipeline(projectDir) })
+  const hasPipeline = await hasRigPipeline(projectDir)
+  const mode = rigPanelMode({ hasPipeline, builtinRig: entries[initial]!.config.builtinRig })
   debug(SCOPE, 'modo do painel', mode)
-  new CharacterRigPanel(projectDir, entries, initial, tab, mode)
+  new CharacterRigPanel(projectDir, entries, initial, tab, mode, hasPipeline)
 }
 
 class CharacterRigPanel {
@@ -108,6 +111,7 @@ class CharacterRigPanel {
     initial: number,
     initialTab: RigTab,
     private readonly mode: RigPanelMode,
+    private readonly hasPipeline: boolean,
   ) {
     this.entry = entries[initial]!
 
@@ -119,7 +123,14 @@ class CharacterRigPanel {
     entries.forEach((e, i) => select.append(h('option', { value: String(i) }, `${e.config.code} — ${e.fileName}`)))
     select.value = String(initial)
     select.addEventListener('change', () => {
-      this.entry = this.entries[Number(select.value)]!
+      const next = this.entries[Number(select.value)]!
+      // config de outro modo (pipeline do Studio × só publicado, SPEC-0724): reabre com as abas dele
+      if (!sameRigPanelMode(this.mode, rigPanelMode({ hasPipeline: this.hasPipeline, builtinRig: next.config.builtinRig }))) {
+        this.dialog.close()
+        void openCharacterRig(next.path)
+        return
+      }
+      this.entry = next
       this.loadEntry()
     })
     const closeBtn = h('button', { class: 'export-modal__btn export-modal__btn--secondary', type: 'button', onClick: () => this.dialog.close() }, t('characterRig.close'))
@@ -148,7 +159,11 @@ class CharacterRigPanel {
     this.stopBtn = h('button', { class: 'export-modal__btn export-modal__btn--secondary', type: 'button', onClick: () => void window.electronAPI.characterRigStop() }, t('characterRig.stop')) as HTMLButtonElement
     this.stopBtn.hidden = true
     this.runBtn.hidden = !mode.canGenerate
-    this.markerView = mode.canGenerate ? new RigMarkerView(this.dialog, h('div', { class: 'rig-actions' }, this.saveBtn, this.runBtn, this.stopBtn)) : null
+    // pipeline do Studio (SPEC-0724): o Blender vem da preferência do Studio
+    const blenderBtn = h('button', { class: 'export-modal__btn export-modal__btn--secondary', type: 'button', onClick: () => void this.pickBlender(blenderBtn) }, t('characterRig.blender')) as HTMLButtonElement
+    blenderBtn.hidden = !mode.builtin
+    if (mode.builtin) void window.electronAPI.characterRigBlenderInfo().then((b) => this.showBlender(blenderBtn, b))
+    this.markerView = mode.canGenerate ? new RigMarkerView(this.dialog, h('div', { class: 'rig-actions' }, this.saveBtn, this.runBtn, this.stopBtn, blenderBtn)) : null
 
     // ── Log / folha ─────────────────────────────────────────────────────────
     this.outcomeEl = h('div', { class: 'rig-outcome' })
@@ -291,6 +306,18 @@ class CharacterRigPanel {
     this.approveBtn.hidden = !reviewing
     this.rejectBtn.hidden = !reviewing
     this.revertBtn.hidden = !can || !this.rig?.published
+  }
+
+  /** Dica do botão Blender…: o executável em uso, ou o aviso de que não foi achado. */
+  private showBlender(btn: HTMLButtonElement, blender: { path: string } | null): void {
+    btn.title = blender ? t('characterRig.blender_current', { path: blender.path }) : t('characterRig.blender_none')
+    btn.classList.toggle('export-modal__btn--primary', !blender)
+  }
+
+  private async pickBlender(btn: HTMLButtonElement): Promise<void> {
+    const picked = await window.electronAPI.characterRigPickBlender()
+    if (picked) this.showBlender(btn, picked)
+    debug(SCOPE, 'Blender escolhido', picked)
   }
 
   /** Recusar não roda nada: o staging fica, nada é publicado; ajustar os marcadores e gerar de novo. */

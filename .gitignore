@@ -56,3 +56,6 @@ dist-native/*
 
 # graft's local graph cache — regenerable, not committed (run `graft build`).
 /graft/
+
+# bytecode do Python (scripts do Blender, SPEC-0724)
+__pycache__/

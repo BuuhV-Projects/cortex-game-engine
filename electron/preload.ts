@@ -68,6 +68,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   /** Mata o auto-rig em andamento. */
   characterRigStop: () => ipcRenderer.invoke('characterRig:stop') as Promise<void>,
 
+  /** Blender do auto-rig do Studio (SPEC-0724): caminho e origem, ou `null`. */
+  characterRigBlenderInfo: () =>
+    ipcRenderer.invoke('characterRig:blenderInfo') as Promise<{ path: string; source: string } | null>,
+
+  /** Escolhe o Blender do auto-rig e grava na preferência do Studio; `null` se cancelou. */
+  characterRigPickBlender: () =>
+    ipcRenderer.invoke('characterRig:pickBlender') as Promise<{ path: string; source: string } | null>,
+
   /** Saída (stdout+stderr) do auto-rig. Retorna a função que remove o listener. */
   onCharacterRigOutput: (callback: (text: string) => void): (() => void) => {
     const handler = (_event: unknown, text: string): void => callback(text)

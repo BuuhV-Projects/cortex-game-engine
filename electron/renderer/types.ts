@@ -123,6 +123,10 @@ export interface ElectronAPI {
   characterRigRun(projectDir: string, configRel: string, action?: 'generate' | 'approve' | 'revert'): Promise<{ code: number }>
   /** Mata o auto-rig em andamento. */
   characterRigStop(): Promise<void>
+  /** Blender do auto-rig do Studio (SPEC-0724): caminho e origem, ou `null`. */
+  characterRigBlenderInfo(): Promise<{ path: string; source: string } | null>
+  /** Escolhe o Blender do auto-rig e grava na preferência do Studio; `null` se cancelou. */
+  characterRigPickBlender(): Promise<{ path: string; source: string } | null>
   characterRigWriteBake(projectDir: string, glbRel: string, jsonRel: string, glbBase64: string, jsonText: string): Promise<void>
   /** Saída do auto-rig. Retorna a função que remove o listener. */
   onCharacterRigOutput(callback: (text: string) => void): () => void
