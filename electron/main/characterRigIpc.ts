@@ -13,6 +13,7 @@ import { writeBakePair } from './characterRigBakeWrite.js'
 import { loadPreferences, savePreferences } from './prefsDialogsIpc.js'
 import { runAutoRig, trackChild, type AutoRigAction } from './autoRig/autoRigRunner.js'
 import { locateBlender, type BlenderLocation } from './autoRig/blenderLocate.js'
+import { hookDialogText, hooksFingerprint, isHookTrusted, trustKey } from './autoRig/hookTrust.js'
 
 /** Processo do auto-rig em andamento (um por vez, separado do terminal). */
 let characterRigProcess: ChildProcess | null = null
@@ -77,6 +78,21 @@ async function currentBlender(): Promise<BlenderLocation | null> {
   return locateBlender({ preference: prefs.blenderPath, env: process.env, platform: process.platform, exists: existsSync, listDirs })
 }
 
+/** Ganchos do projeto: já aceitos com este conteúdo, ou o usuário confirma agora no diálogo nativo (adendo 1). */
+async function confirmRigHooks(projectDir: string, hooks: string[]): Promise<boolean> {
+  const prefs = await loadPreferences()
+  const fingerprint = hooksFingerprint(projectDir, hooks)
+  if (isHookTrusted(prefs.trustedRigHooks, projectDir, fingerprint)) return true
+  const text = hookDialogText(prefs.locale, projectDir, hooks)
+  const opts = { type: 'warning' as const, buttons: text.buttons, defaultId: 1, cancelId: 1, noLink: true, message: text.message, detail: text.detail }
+  const win = getMainWindow()
+  const { response } = await (win ? dialog.showMessageBox(win, opts) : dialog.showMessageBox(opts))
+  if (response !== 0) return false
+  const latest = await loadPreferences()
+  await savePreferences({ trustedRigHooks: { ...latest.trustedRigHooks, [trustKey(projectDir)]: fingerprint } })
+  return true
+}
+
 /** Pipeline do Studio: roda a ação e resolve com o código de saída (SPEC-0724). */
 async function runBuiltin(projectDir: string, configRel: string, action: AutoRigAction, send: (text: string) => void): Promise<{ code: number }> {
   const abort = new AbortController()
@@ -94,6 +110,7 @@ async function runBuiltin(projectDir: string, configRel: string, action: AutoRig
       characterRigProcess = trackChild(characterRigProcess, child, active)
     },
     kill: (child) => killProcessTree(child),
+    confirmHooks: (hooks) => confirmRigHooks(projectDir, hooks),
   })
   if (characterRigAbort === abort) characterRigAbort = null
   return { code }

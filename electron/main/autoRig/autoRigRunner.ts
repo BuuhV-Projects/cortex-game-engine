@@ -28,6 +28,8 @@ export interface AutoRigRunOptions {
   kill?: (child: ChildProcess) => void
   /** Cancelada pelo Parar ou por uma execução nova: não abre a próxima etapa nem grava o estado. */
   signal?: AbortSignal
+  /** Pergunta antes de rodar os ganchos do projeto (SPEC-0724, adendo 1); `false` = não autorizados. */
+  confirmHooks?: (hooks: string[]) => Promise<boolean>
   now?: () => Date
 }
 
@@ -122,6 +124,19 @@ async function runStage(o: AutoRigRunOptions, config: ResolvedRigConfig, stage: 
   return status
 }
 
+/** Sem ganchos, ou aceitos: a `skin` pode rodar. Recusa ou cancelamento durante a pergunta: não roda nada. */
+async function hooksAllowed(o: AutoRigRunOptions, config: ResolvedRigConfig): Promise<boolean> {
+  const hooks = config.skinned.hooks
+  if (!hooks.length || !o.confirmHooks) return true
+  const ok = await o.confirmHooks(hooks)
+  if (o.signal?.aborted) {
+    o.send('cancelado: nada foi publicado no projeto\n')
+    return false
+  }
+  if (!ok) o.send('ganchos não autorizados: a etapa skin não rodou e nada foi publicado no projeto\n')
+  return ok
+}
+
 async function generate(o: AutoRigRunOptions, config: ResolvedRigConfig, state: RigState, hashes: Record<StageName, string>): Promise<number> {
   if (!o.blender) {
     o.send('Blender não encontrado. Use o botão "Blender…" do painel para escolher o executável (ou defina BLENDER_PATH).\n')
@@ -137,6 +152,7 @@ async function generate(o: AutoRigRunOptions, config: ResolvedRigConfig, state: 
       o.send(`${LOG_PREFIX} etapa ${stage}: reaproveitada\n`)
       continue
     }
+    if (stage === 'skin' && !(await hooksAllowed(o, config))) return AUTO_RIG_EXIT.infra
     const status = await runStage(o, config, stage, state, hashes[stage])
     if (o.signal?.aborted) {
       o.send('cancelado: nada foi publicado no projeto\n')

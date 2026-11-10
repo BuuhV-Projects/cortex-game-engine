@@ -20,6 +20,8 @@ export interface Preferences {
   welcomed?: boolean
   /** Blender do auto-rig (SPEC-0724); só o seletor de arquivo do `characterRig:pickBlender` grava. */
   blenderPath?: string
+  /** Ganchos do auto-rig aceitos por projeto (SPEC-0724, adendo 1); só o processo principal grava. */
+  trustedRigHooks?: Record<string, string>
 }
 
 /** Mescla `patch` nas preferências gravadas e devolve o resultado. */
@@ -54,8 +56,9 @@ export function registerPrefsDialogsIpc(): void {
   ipcMain.handle('prefs:set', async (_event, patch: unknown) => {
     if (!patch || typeof patch !== 'object') return
     // o executável do Blender roda no processo principal: o renderer não o troca por aqui (SPEC-0724)
-    const { blenderPath, ...rest } = patch as Preferences
+    const { blenderPath, trustedRigHooks, ...rest } = patch as Preferences
     void blenderPath
+    void trustedRigHooks // a confiança nos ganchos também (adendo 1)
     return savePreferences(rest)
   })
 
