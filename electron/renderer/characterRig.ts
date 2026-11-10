@@ -238,7 +238,11 @@ export interface CharacterConfig {
   work: string | null
   /** A config tem a seção `skinned` (só essas entram no painel). */
   skinned: boolean
+  /** Tem `work` e `skinned.publish.{glb,clips}`: sem `prepare-character.sh`, gera pelo pipeline do Studio (SPEC-0724). */
+  builtinRig: boolean
 }
+
+const isText = (v: unknown): v is string => typeof v === 'string' && v.length > 0
 
 function stripBom(text: string): string {
   return text.replace(/^﻿/, '')
@@ -255,12 +259,16 @@ export function parseCharacterConfig(text: string): CharacterConfig {
   const rot = transform?.['rotateZDeg']
   const work = raw['work']
   const skinned = raw['skinned']
+  const isSkinned = skinned != null && typeof skinned === 'object'
+  const publish = isSkinned ? (skinned as Record<string, unknown>)['publish'] : undefined
+  const pub = publish != null && typeof publish === 'object' ? (publish as Record<string, unknown>) : null
   return {
     code,
     source,
     rotateZDeg: typeof rot === 'number' && Number.isFinite(rot) ? rot : 0,
-    work: typeof work === 'string' && work ? work : null,
-    skinned: skinned != null && typeof skinned === 'object',
+    work: isText(work) ? work : null,
+    skinned: isSkinned,
+    builtinRig: isText(work) && !!pub && isText(pub['glb']) && isText(pub['clips']),
   }
 }
 

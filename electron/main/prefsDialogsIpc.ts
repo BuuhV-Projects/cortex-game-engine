@@ -18,6 +18,23 @@ function prefsPath(): string {
 export interface Preferences {
   locale?: 'en' | 'pt'
   welcomed?: boolean
+  /** Blender do auto-rig (SPEC-0724); só o seletor de arquivo do `characterRig:pickBlender` grava. */
+  blenderPath?: string
+}
+
+/** Mescla `patch` nas preferências gravadas e devolve o resultado. */
+export async function savePreferences(patch: Preferences): Promise<Preferences> {
+  let current: Preferences = {}
+  try {
+    const raw = await readFile(prefsPath(), 'utf-8')
+    current = JSON.parse(raw) as Preferences
+  } catch {
+    /* arquivo novo */
+  }
+  const next = { ...current, ...patch }
+  await mkdir(app.getPath('userData'), { recursive: true })
+  await writeFile(prefsPath(), JSON.stringify(next, null, 2), 'utf-8')
+  return next
 }
 
 /** Lê as preferências persistidas (objeto vazio sem arquivo/inválido). */
@@ -36,17 +53,10 @@ export function registerPrefsDialogsIpc(): void {
 
   ipcMain.handle('prefs:set', async (_event, patch: unknown) => {
     if (!patch || typeof patch !== 'object') return
-    let current: Preferences = {}
-    try {
-      const raw = await readFile(prefsPath(), 'utf-8')
-      current = JSON.parse(raw) as Preferences
-    } catch {
-      /* arquivo novo */
-    }
-    const next = { ...current, ...(patch as Preferences) }
-    await mkdir(app.getPath('userData'), { recursive: true })
-    await writeFile(prefsPath(), JSON.stringify(next, null, 2), 'utf-8')
-    return next
+    // o executável do Blender roda no processo principal: o renderer não o troca por aqui (SPEC-0724)
+    const { blenderPath, ...rest } = patch as Preferences
+    void blenderPath
+    return savePreferences(rest)
   })
 
   // Confirmação nativa via dialog.showMessageBox. O renderer NÃO deve usar

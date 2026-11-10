@@ -37,13 +37,23 @@ export interface RigPanelMode {
   tabs: RigTab[]
   /** Gerar rig e a barra de revisão (Aprovar/Recusar/Desfazer). */
   canGenerate: boolean
+  /** Gera pelo pipeline do Studio (SPEC-0724): mostra o botão Blender…. */
+  builtin: boolean
 }
 
-/** Com o pipeline: tudo; só o GLB publicado: só Animações, sem gerar nem revisar (SPEC-0704). */
-export function rigPanelMode({ hasPipeline }: { hasPipeline: boolean }): RigPanelMode {
-  return hasPipeline
-    ? { tabs: ['markers', 'animations', 'folder'], canGenerate: true }
-    : { tabs: ['animations'], canGenerate: false }
+/**
+ * Com o script do projeto ou com a config do pipeline do Studio (SPEC-0724): tudo; só o GLB publicado: só
+ * Animações, sem gerar nem revisar (SPEC-0704). O script do projeto vence o pipeline do Studio.
+ */
+export function rigPanelMode({ hasPipeline, builtinRig = false }: { hasPipeline: boolean; builtinRig?: boolean }): RigPanelMode {
+  return hasPipeline || builtinRig
+    ? { tabs: ['markers', 'animations', 'folder'], canGenerate: true, builtin: !hasPipeline }
+    : { tabs: ['animations'], canGenerate: false, builtin: false }
+}
+
+/** Dois modos mostram as mesmas abas e ações (trocar de config entre eles não precisa reabrir o painel). */
+export function sameRigPanelMode(a: RigPanelMode, b: RigPanelMode): boolean {
+  return a.canGenerate === b.canGenerate && a.builtin === b.builtin && a.tabs.join() === b.tabs.join()
 }
 
 /**

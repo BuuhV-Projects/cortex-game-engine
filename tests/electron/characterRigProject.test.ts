@@ -1,13 +1,38 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { hasRigPipeline, resolveTab, rigPanelMode } from '../../electron/renderer/characterRigProject.js'
+import { hasRigPipeline, resolveTab, rigPanelMode, sameRigPanelMode } from '../../electron/renderer/characterRigProject.js'
+import { parseCharacterConfig } from '../../electron/renderer/characterRig.js'
 
 describe('rigPanelMode (SPEC-0704)', () => {
   it('com o prepare-character.sh: as três abas e gerar/revisar', () => {
-    expect(rigPanelMode({ hasPipeline: true })).toEqual({ tabs: ['markers', 'animations', 'folder'], canGenerate: true })
+    expect(rigPanelMode({ hasPipeline: true })).toEqual({ tabs: ['markers', 'animations', 'folder'], canGenerate: true, builtin: false })
   })
 
   it('só com o GLB publicado: só Animações, sem gerar nem revisar', () => {
-    expect(rigPanelMode({ hasPipeline: false })).toEqual({ tabs: ['animations'], canGenerate: false })
+    expect(rigPanelMode({ hasPipeline: false })).toEqual({ tabs: ['animations'], canGenerate: false, builtin: false })
+  })
+})
+
+describe('pipeline do Studio (SPEC-0724)', () => {
+  it('config do Studio sem o script: as três abas, gerar e o botão Blender', () => {
+    expect(rigPanelMode({ hasPipeline: false, builtinRig: true })).toEqual({ tabs: ['markers', 'animations', 'folder'], canGenerate: true, builtin: true })
+  })
+
+  it('o script do projeto vence: sem o botão Blender', () => {
+    expect(rigPanelMode({ hasPipeline: true, builtinRig: true }).builtin).toBe(false)
+  })
+
+  it('sameRigPanelMode separa o modo do Studio do só publicado e do script', () => {
+    const studio = rigPanelMode({ hasPipeline: false, builtinRig: true })
+    expect(sameRigPanelMode(studio, rigPanelMode({ hasPipeline: false, builtinRig: true }))).toBe(true)
+    expect(sameRigPanelMode(studio, rigPanelMode({ hasPipeline: false }))).toBe(false)
+    expect(sameRigPanelMode(studio, rigPanelMode({ hasPipeline: true }))).toBe(false)
+  })
+
+  it('parseCharacterConfig marca builtinRig com work e skinned.publish.{glb,clips}', () => {
+    const cfg = { code: 'npc-110', source: 'a.glb', work: 'w', skinned: { publish: { glb: 'a.glb', clips: 'a.json' } } }
+    expect(parseCharacterConfig(JSON.stringify(cfg)).builtinRig).toBe(true)
+    expect(parseCharacterConfig(JSON.stringify({ ...cfg, work: undefined })).builtinRig).toBe(false)
+    expect(parseCharacterConfig(JSON.stringify({ ...cfg, skinned: { publish: { glb: 'a.glb' } } })).builtinRig).toBe(false)
   })
 })
 
