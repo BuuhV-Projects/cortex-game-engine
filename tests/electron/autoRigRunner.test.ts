@@ -93,6 +93,19 @@ describe('runAutoRig', () => {
     expect(existsSync(join(f.dir, 'assets/npc/npc-110-skinned.glb'))).toBe(false)
   })
 
+  it('cancelada durante a skin: não grava o estado nem abre a preview (2)', async () => {
+    const abort = new AbortController()
+    let started = 0
+    const onChild = (_c: unknown, active: boolean): void => {
+      if (active && ++started === 1) abort.abort() // uma execução nova (ou o Parar) chegou
+    }
+    const code = await runAutoRig(opts({ blender: process.execPath, signal: abort.signal, onChild }))
+    expect(code).toBe(2)
+    expect(started).toBe(1)
+    expect(readState(f.config.work).stages.skin).toBeUndefined()
+    expect(out).toMatch(/cancelado/)
+  })
+
   it('Aprovar sem gerar: 1', async () => {
     expect(await runAutoRig(opts({ action: 'approve' }))).toBe(1)
     expect(out).toMatch(/não publicado/)

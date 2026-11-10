@@ -135,6 +135,9 @@ script dela e o hash da `skin`.
 - **Desfazer** (`--revert`): restaura a última publicação do `backup` (sem backup = o arquivo não existia antes e é
   apagado; o `published` sai do registro) e apaga a pasta desse backup, para o próximo Desfazer voltar à publicação
   anterior. `1` se não há publicação para desfazer.
+- **Cancelar:** o Parar do painel, ou uma execução nova (uma por vez), cancela a execução em andamento: mata o Blender
+  com os filhos (o mesmo vale para o timeout de 15 min da etapa) e a execução cancelada não abre a próxima etapa nem
+  grava o `state.json`, que passa a ser da execução nova. Sai com `2`.
 
 ## Registro `tools/characters/rigs.json`
 

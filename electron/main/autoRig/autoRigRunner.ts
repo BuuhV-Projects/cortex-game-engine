@@ -26,6 +26,8 @@ export interface AutoRigRunOptions {
   onChild: (child: ChildProcess, active: boolean) => void
   /** Mata o Blender que estourou o tempo da etapa, com os filhos (o IPC passa o `killProcessTree`); padrão `kill()`. */
   kill?: (child: ChildProcess) => void
+  /** Cancelada pelo Parar ou por uma execução nova: não abre a próxima etapa nem grava o estado. */
+  signal?: AbortSignal
   now?: () => Date
 }
 
@@ -104,7 +106,9 @@ async function runStage(o: AutoRigRunOptions, config: ResolvedRigConfig, stage: 
   writeFileSync(resultPath, '')
   const t0 = Date.now()
   o.send(`${LOG_PREFIX} etapa ${stage}…\n`)
-  const result = readResult(resultPath, await spawnStage(o, config, stage, resultPath, logPath))
+  const spawnError = await spawnStage(o, config, stage, resultPath, logPath)
+  if (o.signal?.aborted) return 'infra' // a execução que cancelou esta é dona da pasta de trabalho agora
+  const result = readResult(resultPath, spawnError)
   const status: StageStatus = result.infra ? 'infra' : result.ok ? 'pass' : 'fail'
   const at = (o.now?.() ?? new Date()).toISOString()
   state.stages[stage] = { hash, status, seconds: Math.round((Date.now() - t0) / MS_PER_S), at, failures: result.failures, infra: result.infra }
@@ -125,11 +129,19 @@ async function generate(o: AutoRigRunOptions, config: ResolvedRigConfig, state: 
   }
   const todo = new Set(stagesToRun(state, hashes))
   for (const stage of ['skin', 'preview'] as const) {
+    if (o.signal?.aborted) {
+      o.send('cancelado: nada foi publicado no projeto\n')
+      return AUTO_RIG_EXIT.infra
+    }
     if (!todo.has(stage)) {
       o.send(`${LOG_PREFIX} etapa ${stage}: reaproveitada\n`)
       continue
     }
     const status = await runStage(o, config, stage, state, hashes[stage])
+    if (o.signal?.aborted) {
+      o.send('cancelado: nada foi publicado no projeto\n')
+      return AUTO_RIG_EXIT.infra
+    }
     if (stage === 'skin' && status === 'pass') {
       const warn = registerRig(config, o.configRel, 'staging', { at: state.stages.skin!.at }, clipDurations(stagingFiles(config).clips))
       if (warn) o.send(`${warn}\n`)

@@ -16,6 +16,16 @@ import { locateBlender, type BlenderLocation } from './autoRig/blenderLocate.js'
 
 /** Processo do auto-rig em andamento (um por vez, separado do terminal). */
 let characterRigProcess: ChildProcess | null = null
+/** Cancela a execução do pipeline do Studio em andamento (também entre uma etapa e outra). */
+let characterRigAbort: AbortController | null = null
+
+/** Para o que está rodando: cancela o pipeline do Studio e mata o processo. */
+function stopCharacterRig(signal?: NodeJS.Signals): void {
+  characterRigAbort?.abort()
+  characterRigAbort = null
+  if (characterRigProcess) killProcessTree(characterRigProcess, signal)
+  characterRigProcess = null
+}
 
 /** Config aceita em `--config`: só `tools/characters/<nome>.json` (sem subir de pasta). */
 const CHARACTER_CONFIG_REL = /^tools\/characters\/[A-Za-z0-9._-]+\.json$/
@@ -69,8 +79,11 @@ async function currentBlender(): Promise<BlenderLocation | null> {
 
 /** Pipeline do Studio: roda a ação e resolve com o código de saída (SPEC-0724). */
 async function runBuiltin(projectDir: string, configRel: string, action: AutoRigAction, send: (text: string) => void): Promise<{ code: number }> {
+  const abort = new AbortController()
+  characterRigAbort = abort
   const blender = await currentBlender()
   const code = await runAutoRig({
+    signal: abort.signal,
     projectDir,
     configRel,
     action,
@@ -82,6 +95,7 @@ async function runBuiltin(projectDir: string, configRel: string, action: AutoRig
     },
     kill: (child) => killProcessTree(child),
   })
+  if (characterRigAbort === abort) characterRigAbort = null
   return { code }
 }
 
@@ -102,10 +116,7 @@ export function registerCharacterRigIpc(): void {
     const send = (text: string): void => {
       if (!event.sender.isDestroyed()) event.sender.send('characterRig:output', text)
     }
-    if (characterRigProcess) {
-      killProcessTree(characterRigProcess)
-      characterRigProcess = null
-    }
+    stopCharacterRig()
     // sem o script do projeto: o pipeline do Studio (config sem `work`/`skinned.publish` sai com 64, SPEC-0724)
     if (!existsSync(join(safeDir, 'tools', 'prepare-character.sh'))) return runBuiltin(safeDir, configRel, action as AutoRigAction, send)
     const bash = resolveScriptBash()
@@ -170,21 +181,15 @@ export function registerCharacterRigIpc(): void {
   })
 
   /** Mata o auto-rig em andamento (botão Parar / painel fechado). */
-  ipcMain.handle('characterRig:stop', () => {
-    if (!characterRigProcess) return
-    killProcessTree(characterRigProcess)
-    characterRigProcess = null
-  })
+  ipcMain.handle('characterRig:stop', () => stopCharacterRig())
 }
 
 /** `before-quit`: mata o auto-rig à força. */
 export function killCharacterRigForQuit(): void {
-  if (characterRigProcess?.pid) {
-    try {
-      killProcessTree(characterRigProcess, 'SIGKILL')
-    } catch {
-      /* best-effort no shutdown */
-    }
+  try {
+    stopCharacterRig('SIGKILL')
+  } catch {
+    /* best-effort no shutdown */
   }
   characterRigProcess = null
 }
