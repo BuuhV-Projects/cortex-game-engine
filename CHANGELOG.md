@@ -1,3 +1,10 @@
+## [0.121.3](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.121.2...v0.121.3) (2026-11-10)
+
+
+### Bug Fixes
+
+* **studio:** prévia do player mostra e edita a variante #player dele (SPEC-0722) ([9d973e4](https://github.com/BuuhV-Projects/cortex-game-engine/commit/9d973e4782ae1bcea3d1ab73df45bc693cda88a3))
+
 ## [0.121.2](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.121.1...v0.121.2) (2026-11-09)
 
 
