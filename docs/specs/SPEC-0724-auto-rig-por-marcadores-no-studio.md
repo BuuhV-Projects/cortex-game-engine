@@ -114,8 +114,8 @@ Abre o `rig-skinned.blend` e renderiza (Workbench) o repouso e cada pose de `ski
 de 3/4 de costas. Por cima de cada imagem vai o **esqueleto**: um octaedro fino por osso e uma esfera em cada
 junta, presos ao osso (seguem a pose), numa segunda passada sem o corpo, com cor chapada por cadeia, aplicada por
 cima do corpo para aparecer através dele. O rótulo vai no canto da imagem. A folha `<work>/skinned/previa/folha.png`
-junta as imagens, três por linha, e `shots.json` lista os rótulos. Roda mesmo com a `skin` reprovada, se o `.blend`
-existir (diagnóstico).
+junta as imagens, três por linha, e `shots.json` lista os rótulos. Só roda com a `skin` aprovada; quando a `skin`
+roda de novo, a `preview` roda junto (o `.blend` mudou).
 
 ### Hash e reaproveitamento
 
@@ -132,7 +132,8 @@ script dela e o hash da `skin`.
   de staging para `skinned.publish` com cópia segura (grava ao lado, confere o hash, troca), guardando o que existia
   em `<work>/backup/<data>/` com `manifest.json`. Sai com `0`.
 - **Desfazer** (`--revert`): restaura a última publicação do `backup` (sem backup = o arquivo não existia antes e é
-  apagado; o `published` sai do registro). `1` se não há publicação para desfazer.
+  apagado; o `published` sai do registro) e apaga a pasta desse backup, para o próximo Desfazer voltar à publicação
+  anterior. `1` se não há publicação para desfazer.
 
 ## Registro `tools/characters/rigs.json`
 
@@ -179,4 +180,18 @@ scripts não citam GTA). O `characterRigProject.test.ts` ganha o modo do pipelin
 
 ## Verificação
 
-Pendente até a geração do rig do npc-110 no Studio aberto no Port Hollow (preenchida no PR).
+2026-11-10, Blender 5.1.2, numa worktree do Port Hollow (sem `prepare-character.sh`), com
+`tools/characters/npc-110.json` (fonte do Tripo do npc-110, 14.379 triângulos, `rotateZDeg` −90, 1,80 m) e os 10
+marcadores. O Gerar foi rodado pelo `runAutoRig` (a função que o IPC `characterRig:run` chama), porque o controle da
+janela do Studio não foi liberado nesta sessão:
+
+- `skin` + `preview` em 6 s, código 3; rodar de novo sem mudar nada reaproveita as duas etapas.
+- 26 ossos com os nomes do LUC-01; nenhum osso com o Z para trás; pesos: nenhum vértice vazio, soma 1, até 4
+  influências, nenhum do lado errado.
+- Eixos de repouso contra o `LUC-01-skinned.glb` do Port Hollow: o Z de cada osso fica a até 7° do do player (o
+  pescoço a 32°, porque segue a postura deste corpo); nenhum osso girado 180°.
+- Com o `walking.fbx` do Mixamo e os ajustes de braço do `walk` do LUC-01: 32 quadros, erro de direção 0°, laço
+  fechado, passada 1,57 m; a folha mostra o repouso e o andar com o esqueleto sobre o corpo nas três vistas.
+- `tools/characters/rigs.json` ganhou o `staging` do npc-110; os outros personagens e a indentação ficaram.
+- Aprovar e Desfazer foram exercitados nos testes (`autoRigPublish.test.ts`, `autoRigRunner.test.ts`), não no Port
+  Hollow.
