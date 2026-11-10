@@ -1,3 +1,21 @@
+# [0.122.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.121.3...v0.122.0) (2026-11-10)
+
+
+### Bug Fixes
+
+* **studio:** Aprovar grava o manifest antes de publicar e registro ilegível vira aviso (SPEC-0724) ([e3dd999](https://github.com/BuuhV-Projects/cortex-game-engine/commit/e3dd9997afbbc89b5caf2722d4274418374bb93a))
+* **studio:** criar a pasta do backup também devolve 2 se falhar (SPEC-0724) ([b4178fb](https://github.com/BuuhV-Projects/cortex-game-engine/commit/b4178fb3b616d323fd305d566e007fe7444becb7))
+* **studio:** Desfazer volta o published à publicação anterior (SPEC-0724) ([84988d3](https://github.com/BuuhV-Projects/cortex-game-engine/commit/84988d34e66e706ed8a234fb257db6c2ca73c3dc))
+* **studio:** o close atrasado do Blender morto não esquece o Blender novo (SPEC-0724) ([4f67c30](https://github.com/BuuhV-Projects/cortex-game-engine/commit/4f67c30803d7f939b83c03fa909defbd2d951190))
+* **studio:** Parar e execução nova cancelam o pipeline entre as etapas (SPEC-0724) ([c4ca0b0](https://github.com/BuuhV-Projects/cortex-game-engine/commit/c4ca0b035a15334e3f392dacdb46ca0dd5d6c236))
+* **studio:** timeout da etapa mata o Blender com os filhos (SPEC-0724) ([43f41c9](https://github.com/BuuhV-Projects/cortex-game-engine/commit/43f41c95f7241d1e8d916aa88ceae532435cce96))
+* **studio:** work e hooks da config do auto-rig só dentro do projeto (SPEC-0724) ([693561d](https://github.com/BuuhV-Projects/cortex-game-engine/commit/693561d3518b18766aacb57eebd6144b7b1df9a6))
+
+
+### Features
+
+* **studio:** auto-rig por marcadores sem prepare-character.sh (SPEC-0724) ([f33f4cc](https://github.com/BuuhV-Projects/cortex-game-engine/commit/f33f4cc471b4750b9f2e5389ef01e2fd564d57a2))
+
 ## [0.121.3](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.121.2...v0.121.3) (2026-11-10)
 
 
