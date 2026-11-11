@@ -113,6 +113,21 @@ def sanity(j):
     return bad
 
 
+def slice_depth(points, edges, z, x, half_width, slab):
+    """Centro em y da malha na altura `z`, a até `half_width` de `x` (SPEC-0725): os vértices a até `slab` da
+    altura e os pontos onde as arestas cruzam `z`. Malha de poucos triângulos tem fatia sem vértice nenhum (o
+    triângulo grande atravessa a fatia); a aresta que cruza a altura sempre dá ponto. None se nada cai na fatia."""
+    ys = [p[1] for p in points if abs(p[2] - z) < slab and abs(p[0] - x) < half_width]
+    for i, k in edges:
+        a, b = points[i], points[k]
+        if (a[2] - z) * (b[2] - z) >= 0:
+            continue
+        t = (z - a[2]) / (b[2] - a[2])
+        if abs(a[0] + t * (b[0] - a[0]) - x) < half_width:
+            ys.append(a[1] + t * (b[1] - a[1]))
+    return (min(ys) + max(ys)) / 2 if ys else None
+
+
 def _selftest():
     """LUC-01 (medido em 2026-10-19): as frações reproduzem o esqueleto do player."""
     f = {'chin': (0.0, 1.53), 'groin': (0.0, 0.8158), 'elbow': (0.345, 1.045), 'wrist': (0.416, 0.85), 'knee': (0.132, 0.46)}
@@ -136,6 +151,11 @@ def _selftest():
     side = {'chin': (0, 1.5, 0), 'groin': (0, 0.8, 0), **{k + s: ((1 if s == 'L' else -1) * x, 0, z) for k, (x, z) in
             {'wrist': (0.4, 0.85), 'elbow': (0.34, 1.05), 'knee': (0.13, 0.46), 'shoulder': (0.21, 1.39)}.items() for s in 'LR'}}
     assert frontal(side)['shoulder'] == (0.21, 1.39)
+    # triângulo grande sem vértice na fatia: as arestas que cruzam z = 0.9 dão a profundidade
+    tri = [(0.1, -0.1, 0.5), (0.1, 0.1, 1.3), (0.12, 0.1, 0.5)]
+    assert abs(slice_depth(tri, [(0, 1), (1, 2), (2, 0)], 0.9, 0.107, 0.06, 0.015) - 0.05) < 1e-9
+    assert slice_depth(tri, [(0, 1), (1, 2), (2, 0)], 0.9, 0.4, 0.06, 0.015) is None
+    assert abs(slice_depth([(0, 0.2, 0.9), (0, 0.4, 0.91)], [], 0.9, 0, 0.06, 0.015) - 0.3) < 1e-9
     print('autorig_markers: autoteste ok')
 
 

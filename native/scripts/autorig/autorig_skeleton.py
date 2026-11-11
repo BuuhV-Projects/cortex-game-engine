@@ -53,10 +53,13 @@ def helper_of(name):
 
 
 def mesh_center_y(mesh_obj, z, half_width, x=0.0):
-    ys = [w.y for w in (mesh_obj.matrix_world @ v.co for v in mesh_obj.data.vertices) if abs(w.z - z) < SLICE and abs(w.x - x) < half_width]
-    if not ys:
+    """Profundidade (y) do centro da malha na altura z, pelos vértices e pelas arestas que cruzam z (SPEC-0725)."""
+    points = [tuple(mesh_obj.matrix_world @ v.co) for v in mesh_obj.data.vertices]
+    edges = [tuple(e.vertices) for e in mesh_obj.data.edges]
+    y = markers.slice_depth(points, edges, z, x, half_width, SLICE)
+    if y is None:
         raise ValueError(f'fatia vazia da malha em x={round(x, 3)} z={round(z, 3)}')
-    return (min(ys) + max(ys)) / 2
+    return y
 
 
 def marker_joints(cfg, mesh_obj, frame, result):
