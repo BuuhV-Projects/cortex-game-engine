@@ -1,3 +1,10 @@
+## [0.123.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.123.0...v0.123.1) (2026-11-11)
+
+
+### Bug Fixes
+
+* **auto-rig:** profundidade da junta também pelas arestas que cruzam a altura (SPEC-0725) ([7aa939f](https://github.com/BuuhV-Projects/cortex-game-engine/commit/7aa939f2b313a52956739a1f237b22eea24fdd8b))
+
 # [0.123.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.122.0...v0.123.0) (2026-11-10)
 
 
