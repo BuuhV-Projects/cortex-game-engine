@@ -26,6 +26,8 @@ export * from './core/LoadingScreen.js';
 export * from './core/loadKtx2.js';
 export * from './core/Skybox.js';
 export * from './core/PostFX.js';
+export * from './core/underwater.js';
+export * from './core/UnderwaterPass.js';
 export * from './core/debug.js';
 export * from './core/gamePlatform.js';
 export * from './core/steamworks.js';

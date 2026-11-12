@@ -50,6 +50,8 @@ import { installWriteBufferCensus } from '../render/WriteBufferCensus.js';
 import { UiLayerRender } from '../render/UiLayerRender.js';
 import { installSingleMatrixUpdate, type MatrixRenderer } from '../render/SingleMatrixUpdate.js';
 import { activeSceneMirror } from './NativeSceneMirror.js';
+import { UnderwaterPass } from './UnderwaterPass.js';
+import type { ResolvedUnderwater, UnderwaterState } from './underwater.js';
 
 // ─── Tipos públicos ────────────────────────────────────────────────────────────
 
@@ -114,6 +116,8 @@ export class Renderer {
 
   /** A camada de UI do host (ADR-0105, SPEC-0679): RT própria, composta em gama pelo host. */
   private readonly _uiLayer: UiLayerRender;
+  /** Efeito de tela embaixo d'água (SPEC-0726): estado + pipeline preguiçoso do navegador. */
+  private readonly _underwater = new UnderwaterPass();
 
   /**
    * RenderTarget HDR da CENA pro bloom nativo (ADR-0147/0149). O jogo é desenhado
@@ -276,6 +280,7 @@ export class Renderer {
   render(scene: THREE.Scene, camera: THREE.Camera): void {
     if (!this._initialized || this._width <= 0 || this._height <= 0) return; // canvas 0×0 → WebGPU recusa
     if (renderNativeToneMapped(this, scene, camera)) return; // ACES do outdoorLighting no host (SPEC-0645)
+    if (this._underwater.render(this._renderer, scene, camera)) return; // embaixo d'água (SPEC-0726)
     this._renderer.clear();
     this._renderer.render(scene, camera);
   }
@@ -410,6 +415,32 @@ export class Renderer {
   }
 
   /**
+   * Liga, ajusta ou desliga (`null`, ou `amount` 0) o efeito de tela embaixo
+   * d'água (SPEC-0726): a cena tingida pela cor da água, escurecida pela
+   * profundidade e ondulando em faixas horizontais. A UI não é distorcida. Pode
+   * ser chamado todo quadro; com `amount` 0 não custa nada. No navegador o
+   * efeito é outro caminho de render: force-o no carregamento
+   * (`setUnderwater({ amount: 1 })`, `await game.precompile()`, `setUnderwater(null)`).
+   *
+   * @example
+   * const below = waterY - camera.position.y;
+   * game.renderer.setUnderwater(below > 0 ? { amount: Math.min(1, below / 0.3), depth: below } : null);
+   */
+  setUnderwater(state: UnderwaterState | null): void {
+    this._underwater.set(state);
+  }
+
+  /** Estado embaixo d'água aplicado (`null` = desligado). */
+  get underwater(): Readonly<ResolvedUnderwater> | null {
+    return this._underwater.state;
+  }
+
+  /** O efeito embaixo d'água deste renderer, para montá-lo noutro grafo (o `PostFX`). @internal */
+  get underwaterPass(): UnderwaterPass {
+    return this._underwater;
+  }
+
+  /**
    * Remove o listener de resize e libera os recursos GPU do renderer.
    * Deve ser chamado ao destruir a cena para evitar vazamentos de memória.
    */
@@ -418,6 +449,7 @@ export class Renderer {
       window.removeEventListener('resize', this._resizeHandler);
     }
     this._uiLayer.dispose();
+    this._underwater.dispose();
     this._sceneHdrTarget?.dispose();
     this._sceneHdrTarget = null;
     this._renderer.dispose();

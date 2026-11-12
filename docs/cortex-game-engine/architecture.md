@@ -342,6 +342,12 @@ senão o **editor do Studio** não resolve o tipo (runtime funciona, IntelliSens
   único (`native/shaders/bloom.wgsl`). ⚠️ No caminho nativo, renderize pelo
   `Renderer` do engine — o `threeRenderer` cru pula o `clear()` e a cena sai pela
   metade.
+- **Embaixo d'água é estado do `Renderer`** (`renderer.setUnderwater`, SPEC-0726/ADR-0727): resolução pura em
+  `src/core/underwater.ts` (sem three), aplicação em `src/core/UnderwaterPass.ts`. No navegador, só com `amount > 0`
+  o `Renderer.render` desvia para um `RenderPipeline` próprio (pass → UV ondulada → `renderOutput` → tinta em tela);
+  com 0 é o render direto de sempre. No host o estado vai ao `__cortexUnderwater` (só quando muda) e o blit final
+  (`supersample.cpp`) aplica nos caminhos LDR e HDR, com a UI na UV original. O `UnderwaterPass` usa o namespace `TSL`
+  do `three/webgpu` só na criação preguiçosa: importar `three/tsl` quebraria os testes que mockam o `three/webgpu`.
 - **Gizmo de transform** (`ObjectEditSystem`) — `1`/`2`/`3` trocam mover/girar/escalar
   e **`X` alterna os eixos entre locais (do objeto, DEFAULT) e globais (mundo)**, como
   o Global/Local da Unity (SPEC-0144). O default é local porque cena com peças

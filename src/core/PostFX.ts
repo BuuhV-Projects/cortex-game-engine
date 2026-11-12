@@ -11,6 +11,9 @@
  *   3. vignette       — escurece as bordas (LDR)
  *   4. fxaa           — anti-aliasing de pós (LDR, por último)
  *
+ * Com `underwater` (padrão ligado), a cena é amostrada com a ondulação e tingida depois do
+ * tone mapping pelo estado de `renderer.setUnderwater` (SPEC-0726).
+ *
  * É o caminho de pós-processamento do engine porque ele é WebGPU-only
  * (ADR-0032/0035): o `EffectComposer` clássico é WebGL e não funciona aqui.
  * Para efeitos fora do que o PostFX cobre, use `RenderPipeline`/`pass`/`bloom`/
@@ -28,6 +31,8 @@ import type { Renderer } from './Renderer.js';
 import type { Scene } from './Scene.js';
 import { configureNativePostFX, nativePostFXHost, nativeSceneHdrSink, type NativePostFXConfig } from './nativePostFX.js';
 import { debug } from './debug.js';
+import { underwaterColorize, underwaterSample, type UnderwaterUniforms } from './UnderwaterPass.js';
+import { nativeUnderwaterHost } from './underwater.js';
 
 /** Ajustes do bloom. Alteráveis em runtime via `postfx.bloom`. */
 export interface BloomConfig {
@@ -63,6 +68,16 @@ export interface PostFXOptions {
   toneMapping?: THREE.ToneMapping;
   /** Exposição do tone mapping. Quando omitido, mantém a do renderer. */
   exposure?: number;
+  /**
+   * Monta no grafo o efeito embaixo d'água de `renderer.setUnderwater` (SPEC-0726).
+   * Só vale no navegador: no host o efeito é sempre do composite do C++, com ou sem
+   * esta opção. Por isso vem ligado, para o Studio mostrar o mesmo que o export.
+   * Custo zero com o efeito desligado: o `PostFX` monta dois grafos (com e sem a água) e
+   * só usa o com água enquanto `setUnderwater` está ligado. A primeira troca compila o
+   * shader, então aqueça como o caminho do `Renderer` (ligar, `precompile`, desligar).
+   * `false` nem monta o grafo com água. @default true
+   */
+  underwater?: boolean;
 }
 
 /** Nó de bloom — expõe `strength`/`radius`/`threshold` (UniformNode com `.value`). */
@@ -81,6 +96,9 @@ export class PostFX {
   /** `null` no host nativo: lá o pós-FX roda em C++, não há grafo TSL. */
   private readonly _pipeline: RenderPipeline | null;
   private readonly _bloom: BloomPass | null;
+  /** Nó de saída sem a água e com ela (`null` com `underwater: false` ou no host). */
+  private readonly _dry: unknown = null;
+  private readonly _wet: unknown = null;
   /**
    * Nó do `pass(scene, camera)` (browser). Guardado pro {@link dispose}: o
    * `RenderPipeline.dispose()` do three NÃO desce até ele, e é ele que segura a
@@ -163,16 +181,29 @@ export class PostFX {
     // a cada efeito). A tipagem estrita do TSL não cobre uma cadeia mutável, então
     // usamos `any` localmente — a API pública do PostFX continua tipada.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let node: any = scenePass.getTextureNode();
-
+    const sceneTexture: any = scenePass.getTextureNode();
     // ── HDR ──────────────────────────────────────────────────────────────────
     if (options.bloom) {
       const cfg = options.bloom === true ? {} : options.bloom;
-      this._bloom = bloom(node, cfg.strength ?? 0.8, cfg.radius ?? 0, cfg.threshold ?? 0);
-      node = node.add(this._bloom);
+      // O brilho sai da cena sem a ondulação: o deslocamento é de poucos pixels.
+      this._bloom = bloom(sceneTexture, cfg.strength ?? 0.8, cfg.radius ?? 0, cfg.threshold ?? 0);
     } else {
       this._bloom = null;
     }
+    // os dois grafos dividem o pass da cena e o bloom; o com água só entra com o efeito ligado
+    // com o host nativo o efeito é do blit do C++ (e os uniforms ficam zerados): sem grafo com água
+    const water = options.underwater !== false && !nativeUnderwaterHost() ? renderer.underwaterPass.uniforms() : null;
+    this._dry = this._graph(sceneTexture, options, null);
+    this._wet = water ? this._graph(sceneTexture, options, water) : null;
+    this._pipeline.outputNode = this._dry as never;
+  }
+
+  /** O grafo de saída (bloom, tone map, vinheta, tinta, FXAA), com a água em `water` ou sem ela. */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private _graph(sceneTexture: any, options: PostFXOptions, water: UnderwaterUniforms | null): unknown {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let node: any = water ? underwaterSample(sceneTexture, water) : sceneTexture;
+    if (this._bloom) node = node.add(this._bloom);
 
     // ── HDR → LDR (tone mapping + output color space) ─────────────────────────
     node = renderOutput(node);
@@ -189,11 +220,14 @@ export class PostFX {
       node = node.mul(mix(float(1), factor, float(intensity)));
     }
 
+    // a tinta depois da vinheta, na ordem do composite do host (vinheta → tone map → tinta):
+    // a cor da água cobre a imagem já vinhetada nos dois alvos
+    if (water) node = underwaterColorize(node, water);
+
     if (options.fxaa) {
       node = fxaa(node);
     }
-
-    this._pipeline.outputNode = node;
+    return node;
   }
 
   /**
@@ -229,6 +263,12 @@ export class PostFX {
       if (tex && this._sceneHdr) this._sceneHdr(tex);
       else this._renderer.render(this._scene, this._camera);
       return;
+    }
+    // troca o nó de saída só quando o efeito liga ou desliga (o RenderPipeline remonta o material)
+    const out = this._wet && this._renderer.underwaterPass.state ? this._wet : this._dry;
+    if (this._pipeline.outputNode !== out) {
+      this._pipeline.outputNode = out as never;
+      this._pipeline.needsUpdate = true;
     }
     this._pipeline.render();
   }

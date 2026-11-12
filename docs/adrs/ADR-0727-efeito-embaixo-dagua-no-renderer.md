@@ -59,8 +59,8 @@ Alternativa 4.
 ## Consequências
 
 - O `PostFX` do navegador traz os nós do efeito por padrão (`underwater: false` tira): no nativo o blit aplica o
-  efeito com ou sem `PostFX`, e o Studio tem de mostrar o mesmo que o export. Com `amount = 0` a saída é idêntica, ao
-  custo de um `sin` e um `mix` por pixel num passe que já é de tela cheia.
+  efeito com ou sem `PostFX`, e o Studio tem de mostrar o mesmo que o export. Desligado, o custo é zero: são dois
+  grafos (com e sem a água) e o com água só entra enquanto o efeito está ligado; a primeira troca compila o shader.
 - O jogo liga o efeito com uma chamada por quadro (`game.renderer.setUnderwater({ amount, depth, ... })`). Chamadas
   com o mesmo estado não custam nada no nativo e mudam só uniforms no navegador.
 - **Aquecimento (AGENTS §7.4 dos jogos):** no navegador, o caminho embaixo d'água desenha a cena numa RT HDR, com
