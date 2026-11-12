@@ -6,7 +6,7 @@
 
 # Interface: NativeUnderwaterParams
 
-Defined in: src/core/underwater.ts:170
+Defined in: [src/core/underwater.ts:176](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/underwater.ts#L176)
 
 Campos planos que o host recebe em `__cortexUnderwater` (contrato do C++).
 
@@ -16,7 +16,7 @@ Campos planos que o host recebe em `__cortexUnderwater` (contrato do C++).
 
 > **amount**: `number`
 
-Defined in: src/core/underwater.ts:171
+Defined in: [src/core/underwater.ts:177](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/underwater.ts#L177)
 
 ***
 
@@ -24,7 +24,7 @@ Defined in: src/core/underwater.ts:171
 
 > **amplitude**: `number`
 
-Defined in: src/core/underwater.ts:174
+Defined in: [src/core/underwater.ts:180](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/underwater.ts#L180)
 
 ***
 
@@ -32,7 +32,7 @@ Defined in: src/core/underwater.ts:174
 
 > **b**: `number`
 
-Defined in: src/core/underwater.ts:179
+Defined in: [src/core/underwater.ts:185](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/underwater.ts#L185)
 
 ***
 
@@ -40,7 +40,7 @@ Defined in: src/core/underwater.ts:179
 
 > **brightness**: `number`
 
-Defined in: src/core/underwater.ts:173
+Defined in: [src/core/underwater.ts:179](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/underwater.ts#L179)
 
 ***
 
@@ -48,7 +48,7 @@ Defined in: src/core/underwater.ts:173
 
 > **frequency**: `number`
 
-Defined in: src/core/underwater.ts:175
+Defined in: [src/core/underwater.ts:181](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/underwater.ts#L181)
 
 ***
 
@@ -56,7 +56,7 @@ Defined in: src/core/underwater.ts:175
 
 > **g**: `number`
 
-Defined in: src/core/underwater.ts:178
+Defined in: [src/core/underwater.ts:184](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/underwater.ts#L184)
 
 ***
 
@@ -64,7 +64,7 @@ Defined in: src/core/underwater.ts:178
 
 > **r**: `number`
 
-Defined in: src/core/underwater.ts:177
+Defined in: [src/core/underwater.ts:183](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/underwater.ts#L183)
 
 ***
 
@@ -72,7 +72,7 @@ Defined in: src/core/underwater.ts:177
 
 > **speed**: `number`
 
-Defined in: src/core/underwater.ts:176
+Defined in: [src/core/underwater.ts:182](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/underwater.ts#L182)
 
 ***
 
@@ -80,4 +80,4 @@ Defined in: src/core/underwater.ts:176
 
 > **tint**: `number`
 
-Defined in: src/core/underwater.ts:172
+Defined in: [src/core/underwater.ts:178](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/underwater.ts#L178)

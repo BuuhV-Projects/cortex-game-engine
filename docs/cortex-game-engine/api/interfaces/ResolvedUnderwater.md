@@ -6,7 +6,7 @@
 
 # Interface: ResolvedUnderwater
 
-Defined in: src/core/underwater.ts:38
+Defined in: [src/core/underwater.ts:38](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/underwater.ts#L38)
 
 Estado resolvido: os números que vão aos uniforms (iguais nos dois alvos).
 
@@ -16,7 +16,7 @@ Estado resolvido: os números que vão aos uniforms (iguais nos dois alvos).
 
 > **amount**: `number`
 
-Defined in: src/core/underwater.ts:40
+Defined in: [src/core/underwater.ts:40](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/underwater.ts#L40)
 
 0..1
 
@@ -26,7 +26,7 @@ Defined in: src/core/underwater.ts:40
 
 > **amplitude**: `number`
 
-Defined in: src/core/underwater.ts:48
+Defined in: [src/core/underwater.ts:48](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/underwater.ts#L48)
 
 Fração da largura da tela (0 = sem ondulação).
 
@@ -36,7 +36,7 @@ Fração da largura da tela (0 = sem ondulação).
 
 > **brightness**: `number`
 
-Defined in: src/core/underwater.ts:46
+Defined in: [src/core/underwater.ts:46](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/underwater.ts#L46)
 
 Multiplicador da cor pela profundidade, 1 (raso) a 0 (preto).
 
@@ -46,7 +46,7 @@ Multiplicador da cor pela profundidade, 1 (raso) a 0 (preto).
 
 > **color**: readonly \[`number`, `number`, `number`\]
 
-Defined in: src/core/underwater.ts:42
+Defined in: [src/core/underwater.ts:42](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/underwater.ts#L42)
 
 Cor da água em sRGB, cada canal em 0..1.
 
@@ -56,7 +56,7 @@ Cor da água em sRGB, cada canal em 0..1.
 
 > **frequency**: `number`
 
-Defined in: src/core/underwater.ts:50
+Defined in: [src/core/underwater.ts:50](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/underwater.ts#L50)
 
 Radianos por altura de tela.
 
@@ -66,7 +66,7 @@ Radianos por altura de tela.
 
 > **speed**: `number`
 
-Defined in: src/core/underwater.ts:52
+Defined in: [src/core/underwater.ts:52](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/underwater.ts#L52)
 
 Radianos por segundo.
 
@@ -76,6 +76,6 @@ Radianos por segundo.
 
 > **tint**: `number`
 
-Defined in: src/core/underwater.ts:44
+Defined in: [src/core/underwater.ts:44](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/underwater.ts#L44)
 
 0..1

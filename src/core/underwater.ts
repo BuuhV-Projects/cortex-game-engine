@@ -10,9 +10,9 @@
 
 /** Ondulação da imagem em faixas horizontais. */
 export interface UnderwaterRipple {
-  /** Deslocamento horizontal máximo, em fração da largura da tela. @default 0.006 */
+  /** Deslocamento horizontal máximo, em fração da largura da tela. @default 0.00625 (4 px em 640) */
   amplitude?: number;
-  /** Fase por altura da tela, em radianos por altura de tela. @default 18 */
+  /** Fase por altura da tela, em radianos por altura de tela. @default 17.92 (0,04 rad/px × 448 px) */
   frequency?: number;
   /** Fase por tempo, em radianos por segundo. @default 1.5 */
   speed?: number;
@@ -69,6 +69,12 @@ export const UNDERWATER_DEFAULTS = Object.freeze({
 });
 
 const BYTE_MAX = 255;
+/**
+ * Degraus do `brightness` (a saída é de 8 bits, então 1/256 não se vê). Com a câmera
+ * descendo, `depth` muda todo quadro; quantizado, o estado resolvido só muda a cada
+ * ~0,35 m (90 m / 256) e o host nativo não é chamado em todo quadro.
+ */
+const BRIGHTNESS_STEPS = 256;
 const RED_SHIFT = 16;
 const GREEN_SHIFT = 8;
 const HEX_RADIX = 16;
@@ -117,7 +123,7 @@ export function resolveUnderwater(state: UnderwaterState | null | undefined): Re
     amount,
     color: parseColor(state.color),
     tint: clamp01(finiteOr(state.tint, UNDERWATER_DEFAULTS.tint)),
-    brightness: 1 - clamp01(depth / black),
+    brightness: Math.round((1 - clamp01(depth / black)) * BRIGHTNESS_STEPS) / BRIGHTNESS_STEPS,
     amplitude: ripple ? Math.max(0, finiteOr(ripple.amplitude, UNDERWATER_DEFAULTS.amplitude)) : 0,
     frequency: ripple ? finiteOr(ripple.frequency, UNDERWATER_DEFAULTS.frequency) : 0,
     speed: ripple ? finiteOr(ripple.speed, UNDERWATER_DEFAULTS.speed) : 0,

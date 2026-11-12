@@ -8,7 +8,7 @@
 
 > **underwaterColorize**(`color`, `uniforms`): `any`
 
-Defined in: src/core/UnderwaterPass.ts:161
+Defined in: [src/core/UnderwaterPass.ts:179](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/UnderwaterPass.ts#L179)
 
 Tinta e escurecimento em espaço de tela: `mix(c, mix(c, cor, tint)·brightness, amount)`.
 

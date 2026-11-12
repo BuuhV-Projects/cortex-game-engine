@@ -6,9 +6,9 @@
 
 # Interface: UnderwaterUniforms
 
-Defined in: src/core/UnderwaterPass.ts:32
+Defined in: [src/core/UnderwaterPass.ts:34](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/UnderwaterPass.ts#L34)
 
-Uniforms do efeito, compartilhados entre o pipeline próprio e um `PostFX` com `underwater: true`.
+Uniforms do efeito, compartilhados entre o pipeline próprio e o grafo do `PostFX` (opção `underwater`).
 
 ## Properties
 
@@ -16,7 +16,7 @@ Uniforms do efeito, compartilhados entre o pipeline próprio e um `PostFX` com `
 
 > **amount**: `object`
 
-Defined in: src/core/UnderwaterPass.ts:33
+Defined in: [src/core/UnderwaterPass.ts:35](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/UnderwaterPass.ts#L35)
 
 #### value
 
@@ -28,7 +28,7 @@ Defined in: src/core/UnderwaterPass.ts:33
 
 > **amplitude**: `object`
 
-Defined in: src/core/UnderwaterPass.ts:36
+Defined in: [src/core/UnderwaterPass.ts:38](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/UnderwaterPass.ts#L38)
 
 #### value
 
@@ -40,7 +40,7 @@ Defined in: src/core/UnderwaterPass.ts:36
 
 > **brightness**: `object`
 
-Defined in: src/core/UnderwaterPass.ts:35
+Defined in: [src/core/UnderwaterPass.ts:37](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/UnderwaterPass.ts#L37)
 
 #### value
 
@@ -52,7 +52,7 @@ Defined in: src/core/UnderwaterPass.ts:35
 
 > **color**: `object`
 
-Defined in: src/core/UnderwaterPass.ts:39
+Defined in: [src/core/UnderwaterPass.ts:41](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/UnderwaterPass.ts#L41)
 
 #### value
 
@@ -64,7 +64,7 @@ Defined in: src/core/UnderwaterPass.ts:39
 
 > **frequency**: `object`
 
-Defined in: src/core/UnderwaterPass.ts:37
+Defined in: [src/core/UnderwaterPass.ts:39](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/UnderwaterPass.ts#L39)
 
 #### value
 
@@ -76,7 +76,7 @@ Defined in: src/core/UnderwaterPass.ts:37
 
 > **speed**: `object`
 
-Defined in: src/core/UnderwaterPass.ts:38
+Defined in: [src/core/UnderwaterPass.ts:40](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/UnderwaterPass.ts#L40)
 
 #### value
 
@@ -88,7 +88,7 @@ Defined in: src/core/UnderwaterPass.ts:38
 
 > **tint**: `object`
 
-Defined in: src/core/UnderwaterPass.ts:34
+Defined in: [src/core/UnderwaterPass.ts:36](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/UnderwaterPass.ts#L36)
 
 #### value
 

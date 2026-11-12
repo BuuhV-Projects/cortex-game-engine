@@ -13,6 +13,8 @@ const POLE_COUNT = 9;
 const POLE_SPACING = 3;
 const POLE_HEIGHT = 9;
 const POLE_WIDTH = 0.5;
+/** Escala do amount (0..1) para o percentual da HUD. */
+const PERCENT = 100;
 const STRIPE_COLORS = [0xf2f2f2, 0x1f2a44] as const;
 const canvas = document.getElementById('canvas') as HTMLCanvasElement;
 const game = new Game({ canvas, far: 250 });
@@ -48,6 +50,8 @@ const label = game.ui.add(new UiLabel({ anchor: 'top-left', x: 44, y: 44, text: 
 const query = typeof location !== 'undefined' ? location.search : '';
 const forced = query.includes('on') ? 1 : query.includes('off') ? 0 : null;
 let elapsed = 0;
+/** Último percentual escrito na HUD: só redesenha a UI quando ele muda. */
+let shownPercent = -1;
 
 game.onUpdate((dt) => {
   elapsed += dt;
@@ -57,7 +61,11 @@ game.onUpdate((dt) => {
     : Math.max(0, 1 - (inCycle - CYCLE_SECONDS) / RAMP_SECONDS);
   const amount = forced ?? ramp;
   game.renderer.setUnderwater(amount > 0 ? { amount, depth: DEPTH_METERS } : null);
-  label.set({ text: `HUD fixa - embaixo d'água ${Math.round(amount * 100)}%` });
+  const percent = Math.round(amount * PERCENT);
+  if (percent !== shownPercent) {
+    shownPercent = percent;
+    label.set({ text: `HUD fixa - embaixo d'água ${percent}%` });
+  }
 });
 
 // Os dois caminhos de render aquecidos no carregamento (SPEC-0726).

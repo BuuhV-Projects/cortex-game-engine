@@ -33,7 +33,7 @@ Hoje:
    dá tinta e escurecimento, não a ondulação.
 4. **Estado do `Renderer` (`renderer.setUnderwater(state | null)`), aplicado onde a cena já é composta.** No
    navegador, o `Renderer.render` desvia para um `RenderPipeline` próprio só enquanto `amount > 0`. Com 0, segue
-   o render direto de sempre. Um `PostFX` com `underwater: true` lê os mesmos uniforms dentro do grafo dele. No
+   o render direto de sempre. Um `PostFX` (opção `underwater`, ligada por padrão) lê os mesmos uniforms dentro do grafo dele. No
    nativo, o estado vai ao host por `__cortexUnderwater` e é aplicado no `blitToSwapchain`, nos dois caminhos (LDR e
    HDR), com a UI amostrada na UV sem distorção.
 
@@ -48,8 +48,9 @@ Alternativa 4.
   (sRGB). Com `amount = 0`, o `Renderer.render` nem olha o pipeline.
 - O **nativo** aplica o efeito no blit final que já roda. Ele ganha um uniform de 48 B com um ramo uniforme: com
   `amount = 0`, o shader devolve a cor e a UV sem tocar nelas. É um pipeline só, aquecido no primeiro quadro como hoje,
-  sem variante nova. O JS só chama o host quando o estado muda. A fase da onda é contada pelo relógio do host, e o JS
-  não atravessa a ponte a cada quadro.
+  sem variante nova. O JS só chama o host quando o estado muda (o `brightness` é quantizado em 1/256, então descer
+  devagar não muda o estado todo quadro; a rampa do `amount` muda, só pelos quadros dela). A fase da onda é contada
+  pelo relógio do host. A primeira chamada e o `dispose` sempre mandam o estado, porque o do C++ é global.
 - A **cor e a mistura** são aplicadas em espaço de tela (depois do tone mapping), nos dois alvos e nos dois caminhos
   do nativo. A cor da água é a cor que se vê (como `rgb(90,170,170)` do GTA San Andreas), e o resultado é igual no
   LDR e no HDR do host.
@@ -57,6 +58,9 @@ Alternativa 4.
 
 ## Consequências
 
+- O `PostFX` do navegador traz os nós do efeito por padrão (`underwater: false` tira): no nativo o blit aplica o
+  efeito com ou sem `PostFX`, e o Studio tem de mostrar o mesmo que o export. Com `amount = 0` a saída é idêntica, ao
+  custo de um `sin` e um `mix` por pixel num passe que já é de tela cheia.
 - O jogo liga o efeito com uma chamada por quadro (`game.renderer.setUnderwater({ amount, depth, ... })`). Chamadas
   com o mesmo estado não custam nada no nativo e mudam só uniforms no navegador.
 - **Aquecimento (AGENTS §7.4 dos jogos):** no navegador, o caminho embaixo d'água desenha a cena numa RT HDR, com

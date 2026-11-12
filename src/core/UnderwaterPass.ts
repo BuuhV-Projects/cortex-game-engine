@@ -2,8 +2,10 @@
  * Efeito de tela embaixo d'água do `Renderer` (SPEC-0726, ADR-0727).
  *
  * Guarda o estado resolvido e o aplica no alvo certo:
- * - **host nativo**: manda o estado ao `__cortexUnderwater` só quando ele muda; o
- *   blit final do host desloca a cena, tinge e escurece (a UI fica de fora);
+ * - **host nativo**: manda o estado ao `__cortexUnderwater` só quando ele muda (e
+ *   sempre na primeira chamada e no `dispose`, porque o estado do C++ é global e
+ *   sobrevive a um `Renderer` novo); o blit final do host desloca a cena, tinge e
+ *   escurece (a UI fica de fora);
  * - **navegador**: enquanto `amount > 0`, desenha por um `RenderPipeline` próprio
  *   (cena numa RT → amostra deslocada → `renderOutput` → tinta). Com 0 o
  *   `Renderer.render` segue o render direto, sem pipeline.
@@ -28,7 +30,7 @@ import {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Node = any;
 
-/** Uniforms do efeito, compartilhados entre o pipeline próprio e um `PostFX` com `underwater: true`. */
+/** Uniforms do efeito, compartilhados entre o pipeline próprio e o grafo do `PostFX` (opção `underwater`). */
 export interface UnderwaterUniforms {
   amount: { value: number };
   tint: { value: number };
@@ -49,8 +51,11 @@ interface ScenePass {
 
 export class UnderwaterPass {
   private _state: ResolvedUnderwater | null = null;
-  /** Último estado entregue ao host (o host só é chamado quando muda). */
-  private _sentNative: ResolvedUnderwater | null = null;
+  /**
+   * Último estado entregue ao host (o host só é chamado quando muda). Começa
+   * desconhecido (`undefined`): o estado do C++ é global e pode ter sobrado de outro `Renderer`.
+   */
+  private _sentNative: ResolvedUnderwater | null | undefined = undefined;
   private _uniforms: UnderwaterUniforms | null = null;
   private _pipeline: RenderPipeline | null = null;
   private _scenePass: ScenePass | null = null;
@@ -65,13 +70,15 @@ export class UnderwaterPass {
     this._state = resolveUnderwater(state);
     const host = nativeUnderwaterHost();
     if (host) {
-      if (!sameUnderwater(this._state, this._sentNative)) {
+      if (this._sentNative === undefined || !sameUnderwater(this._state, this._sentNative)) {
         host(this._state ? toNativeUnderwater(this._state) : null);
         this._sentNative = this._state;
       }
       return;
     }
-    if (this._state && this._uniforms) this._writeUniforms(this._state);
+    // Desligado, o `amount` vai a 0: o grafo de um `PostFX` lê os uniforms direto
+    // (sem passar pelo `render` daqui) e continuaria tingindo com o último valor.
+    if (this._uniforms) this._writeUniforms(this._state);
   }
 
   /**
@@ -105,21 +112,32 @@ export class UnderwaterPass {
         speed: u(0),
         color: u(new THREE.Vector3()),
       } as unknown as UnderwaterUniforms;
-      if (this._state) this._writeUniforms(this._state);
+      this._writeUniforms(this._state);
     }
     return this._uniforms;
   }
 
-  /** Libera o pipeline e a RT da cena. O estado continua (volta a criar no próximo uso). */
+  /**
+   * Libera o pipeline e a RT da cena e desliga o efeito no host (o estado do C++ é
+   * global e tingiria o próximo `Renderer`). O estado do navegador continua (volta
+   * a criar o pipeline no próximo uso).
+   */
   dispose(): void {
+    const host = nativeUnderwaterHost();
+    if (host && this._sentNative !== null) host(null);
+    this._sentNative = undefined;
     this._scenePass?.dispose();
     this._pipeline?.dispose();
     this._scenePass = null;
     this._pipeline = null;
   }
 
-  private _writeUniforms(s: ResolvedUnderwater): void {
+  private _writeUniforms(s: ResolvedUnderwater | null): void {
     const u = this._uniforms as UnderwaterUniforms;
+    if (!s) {
+      u.amount.value = 0;
+      return;
+    }
     u.amount.value = s.amount;
     u.tint.value = s.tint;
     u.brightness.value = s.brightness;

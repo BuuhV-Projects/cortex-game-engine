@@ -8,7 +8,7 @@
 
 > **sameUnderwater**(`a`, `b`): `boolean`
 
-Defined in: src/core/underwater.ts:128
+Defined in: [src/core/underwater.ts:134](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/underwater.ts#L134)
 
 Dois estados resolvidos dão o mesmo quadro? (`null` = desligado.)
 

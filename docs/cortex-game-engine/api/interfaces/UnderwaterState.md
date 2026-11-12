@@ -6,7 +6,7 @@
 
 # Interface: UnderwaterState
 
-Defined in: src/core/underwater.ts:22
+Defined in: [src/core/underwater.ts:22](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/underwater.ts#L22)
 
 O que o jogo pede a cada quadro em que a câmera está (ou está entrando) na água.
 
@@ -16,7 +16,7 @@ O que o jogo pede a cada quadro em que a câmera está (ou está entrando) na á
 
 > **amount**: `number`
 
-Defined in: src/core/underwater.ts:24
+Defined in: [src/core/underwater.ts:24](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/underwater.ts#L24)
 
 Intensidade 0..1. Com 0 o efeito desliga e não custa nada.
 
@@ -26,7 +26,7 @@ Intensidade 0..1. Com 0 o efeito desliga e não custa nada.
 
 > `optional` **blackDepth?**: `number`
 
-Defined in: src/core/underwater.ts:32
+Defined in: [src/core/underwater.ts:32](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/underwater.ts#L32)
 
 Profundidade em que a tela fica preta, em metros.
 
@@ -42,7 +42,7 @@ Profundidade em que a tela fica preta, em metros.
 
 > `optional` **color?**: `string` \| `number`
 
-Defined in: src/core/underwater.ts:26
+Defined in: [src/core/underwater.ts:26](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/underwater.ts#L26)
 
 Cor da água em tela (sRGB), `0x5aaaaa` ou `'#5aaaaa'`.
 
@@ -58,7 +58,7 @@ Cor da água em tela (sRGB), `0x5aaaaa` ou `'#5aaaaa'`.
 
 > `optional` **depth?**: `number`
 
-Defined in: src/core/underwater.ts:30
+Defined in: [src/core/underwater.ts:30](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/underwater.ts#L30)
 
 Metros da câmera abaixo da lâmina.
 
@@ -74,7 +74,7 @@ Metros da câmera abaixo da lâmina.
 
 > `optional` **ripple?**: `false` \| [`UnderwaterRipple`](UnderwaterRipple.md)
 
-Defined in: src/core/underwater.ts:34
+Defined in: [src/core/underwater.ts:34](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/underwater.ts#L34)
 
 Ondulação; `false` desliga.
 
@@ -88,7 +88,7 @@ os valores de [UNDERWATER\_DEFAULTS](../variables/UNDERWATER_DEFAULTS.md)
 
 > `optional` **tint?**: `number`
 
-Defined in: src/core/underwater.ts:28
+Defined in: [src/core/underwater.ts:28](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/underwater.ts#L28)
 
 Quanto a cor da água cobre a imagem, 0..1.
 

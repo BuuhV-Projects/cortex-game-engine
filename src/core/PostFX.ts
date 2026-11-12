@@ -11,7 +11,7 @@
  *   3. vignette       — escurece as bordas (LDR)
  *   4. fxaa           — anti-aliasing de pós (LDR, por último)
  *
- * Com `underwater: true`, a cena é amostrada com a ondulação e tingida depois do
+ * Com `underwater` (padrão ligado), a cena é amostrada com a ondulação e tingida depois do
  * tone mapping pelo estado de `renderer.setUnderwater` (SPEC-0726).
  *
  * É o caminho de pós-processamento do engine porque ele é WebGPU-only
@@ -69,8 +69,10 @@ export interface PostFXOptions {
   exposure?: number;
   /**
    * Monta no grafo o efeito embaixo d'água de `renderer.setUnderwater` (SPEC-0726).
-   * Só no navegador: no host o efeito é sempre do composite do C++. Ligado, custa
-   * um pouco de ALU por pixel mesmo com `amount` 0. @default false
+   * Só vale no navegador: no host o efeito é sempre do composite do C++, com ou sem
+   * esta opção. Por isso vem ligado, para o Studio mostrar o mesmo que o export.
+   * Com `amount` 0 a saída é idêntica, ao custo de um `sin` e um `mix` por pixel num
+   * passe que já é de tela cheia; `false` tira os nós do grafo. @default true
    */
   underwater?: boolean;
 }
@@ -174,7 +176,7 @@ export class PostFX {
     // usamos `any` localmente — a API pública do PostFX continua tipada.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const sceneTexture: any = scenePass.getTextureNode();
-    const water = options.underwater ? renderer.underwaterPass.uniforms() : null;
+    const water = options.underwater !== false ? renderer.underwaterPass.uniforms() : null;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let node: any = water ? underwaterSample(sceneTexture, water) : sceneTexture;
 
