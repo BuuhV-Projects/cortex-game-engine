@@ -1,3 +1,10 @@
+# [0.124.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.123.1...v0.124.0) (2026-11-12)
+
+
+### Features
+
+* **native:** efeito de tela embaixo d'água no blit do host (SPEC-0726) ([6921c46](https://github.com/BuuhV-Projects/cortex-game-engine/commit/6921c46da6643fd6b04bb5d66a33d68e9962f300))
+
 ## [0.123.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.123.0...v0.123.1) (2026-11-11)
 
 
