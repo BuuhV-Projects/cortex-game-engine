@@ -29,6 +29,8 @@ export const VENDOR_TYPE_MODULES = {
     'loadKtx2',
     'Skybox',
     'PostFX',
+    'underwater',
+    'UnderwaterPass',
     'debug',
     'gamePlatform',
     'steamworks',

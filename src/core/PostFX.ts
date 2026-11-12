@@ -11,6 +11,9 @@
  *   3. vignette       — escurece as bordas (LDR)
  *   4. fxaa           — anti-aliasing de pós (LDR, por último)
  *
+ * Com `underwater: true`, a cena é amostrada com a ondulação e tingida depois do
+ * tone mapping pelo estado de `renderer.setUnderwater` (SPEC-0726).
+ *
  * É o caminho de pós-processamento do engine porque ele é WebGPU-only
  * (ADR-0032/0035): o `EffectComposer` clássico é WebGL e não funciona aqui.
  * Para efeitos fora do que o PostFX cobre, use `RenderPipeline`/`pass`/`bloom`/
@@ -28,6 +31,7 @@ import type { Renderer } from './Renderer.js';
 import type { Scene } from './Scene.js';
 import { configureNativePostFX, nativePostFXHost, nativeSceneHdrSink, type NativePostFXConfig } from './nativePostFX.js';
 import { debug } from './debug.js';
+import { underwaterColorize, underwaterSample } from './UnderwaterPass.js';
 
 /** Ajustes do bloom. Alteráveis em runtime via `postfx.bloom`. */
 export interface BloomConfig {
@@ -63,6 +67,12 @@ export interface PostFXOptions {
   toneMapping?: THREE.ToneMapping;
   /** Exposição do tone mapping. Quando omitido, mantém a do renderer. */
   exposure?: number;
+  /**
+   * Monta no grafo o efeito embaixo d'água de `renderer.setUnderwater` (SPEC-0726).
+   * Só no navegador: no host o efeito é sempre do composite do C++. Ligado, custa
+   * um pouco de ALU por pixel mesmo com `amount` 0. @default false
+   */
+  underwater?: boolean;
 }
 
 /** Nó de bloom — expõe `strength`/`radius`/`threshold` (UniformNode com `.value`). */
@@ -163,12 +173,16 @@ export class PostFX {
     // a cada efeito). A tipagem estrita do TSL não cobre uma cadeia mutável, então
     // usamos `any` localmente — a API pública do PostFX continua tipada.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let node: any = scenePass.getTextureNode();
+    const sceneTexture: any = scenePass.getTextureNode();
+    const water = options.underwater ? renderer.underwaterPass.uniforms() : null;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let node: any = water ? underwaterSample(sceneTexture, water) : sceneTexture;
 
     // ── HDR ──────────────────────────────────────────────────────────────────
     if (options.bloom) {
       const cfg = options.bloom === true ? {} : options.bloom;
-      this._bloom = bloom(node, cfg.strength ?? 0.8, cfg.radius ?? 0, cfg.threshold ?? 0);
+      // O brilho sai da cena sem a ondulação: o deslocamento é de poucos pixels.
+      this._bloom = bloom(sceneTexture, cfg.strength ?? 0.8, cfg.radius ?? 0, cfg.threshold ?? 0);
       node = node.add(this._bloom);
     } else {
       this._bloom = null;
@@ -176,6 +190,7 @@ export class PostFX {
 
     // ── HDR → LDR (tone mapping + output color space) ─────────────────────────
     node = renderOutput(node);
+    if (water) node = underwaterColorize(node, water);
 
     // ── LDR ──────────────────────────────────────────────────────────────────
     if (options.vignette) {
