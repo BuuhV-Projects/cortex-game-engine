@@ -55,6 +55,7 @@
 #include "webgpu/render_parity_capture.h"
 #include "webgpu/bloom.h"
 #include "webgpu/splash.h"
+#include "webgpu/underwater.h"
 
 // Janela do modo de desenvolvimento quando CORTEX_WINDOW_SIZE não diz outra coisa:
 // 1920×1080, a resolução do jogo (SPEC-0515).
@@ -305,6 +306,7 @@ int main(int argc, char** argv) {
     webgpu::registerBindings(js.env(), &gpu);
     webgpu::registerSplash(js.env());  // __cortexSplashActive() (ADR-0138)
     webgpu::registerBloom(js.env());   // __cortexBloom() — pós-FX nativo (ADR-0147)
+    webgpu::registerUnderwater(js.env());  // __cortexUnderwater() — embaixo d'água (SPEC-0726)
 
     // SSAA (supersampling): o engine renderiza numa canvas MAIOR (nativo ×
     // renderScale) num alvo offscreen; o host faz downscale bilinear no
