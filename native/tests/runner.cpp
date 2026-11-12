@@ -5,6 +5,9 @@
 namespace tests {
 void testBlitBateComOGoldenDoJs();
 void testBlitRecusaArgumentosForaDoBuffer();
+void testUnderwaterSanitizeLimitaAFaixa();
+void testUnderwaterPackDaFaseEmUmaVolta();
+void testUnderwaterDesligadoEZerado();
 void testRaycastLadoDaFace();
 void testRaycastMatrizComEscalaNaoUniforme();
 void testRaycastBvhIgualForcaBruta();
@@ -264,6 +267,9 @@ int main() {
   tests::testPassTimingConvertsTicksByPeriod();
   tests::testBlitBateComOGoldenDoJs();
   tests::testBlitRecusaArgumentosForaDoBuffer();
+  tests::testUnderwaterSanitizeLimitaAFaixa();
+  tests::testUnderwaterPackDaFaseEmUmaVolta();
+  tests::testUnderwaterDesligadoEZerado();
   tests::testRaycastLadoDaFace();
   tests::testRaycastMatrizComEscalaNaoUniforme();
   tests::testRaycastBvhIgualForcaBruta();

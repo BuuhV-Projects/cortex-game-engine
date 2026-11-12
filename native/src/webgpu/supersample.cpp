@@ -2,9 +2,12 @@
 
 #include <cstddef>
 #include <cstdio>
+#include <string>
 
+#include "blit_shaders.h"
 #include "bloom.h"
 #include "pass_timing.h"
+#include "underwater.h"
 
 namespace webgpu {
 namespace {
@@ -35,164 +38,15 @@ struct HdrParams {
   float pad1;
   float pad2;
 };
+// Uniform do efeito embaixo d'água (SPEC-0726), no binding 5 dos DOIS pipelines.
+// Escrito só com o efeito ligado e uma vez ao desligar (zera o `amount`).
+constexpr uint32_t kUnderwaterBinding = 5;
+WGPUBuffer g_underwaterUniform = nullptr;
+bool g_underwaterWritten = false;
 // Textura 1×1 transparente pra o binding da UI quando NÃO há UI neste frame
 // (WebGPU exige o binding preenchido; a=0 → composição passa o jogo direto).
 WGPUTexture g_emptyUi = nullptr;
 WGPUTextureView g_emptyUiView = nullptr;
-
-// Fullscreen triangle que amostra o offscreen (sampler linear = box filter no
-// downscale) e COMPÕE a UI EM GAMA por cima (ADR-0105). O offscreen guarda bytes
-// sRGB (formato non-srgb); a UI vem de uma RenderTarget do three em LINEAR
-// premultiplicado. Compor no espaço sRGB do jogo = blend em gama, igual ao DOM:
-//   out = game_srgb·(1−a) + OETF(ui_rgb / a)·a
-// OETF(ui/a) recupera a cor sRGB autorada (opaco fica bit-exato). UV com Y
-// invertido (espaço de textura); os dois alvos são RTs do three → mesma orientação.
-const char* kBlitShader = R"WGSL(
-@group(0) @binding(0) var src: texture_2d<f32>;
-@group(0) @binding(1) var samp: sampler;
-@group(0) @binding(2) var uiTex: texture_2d<f32>;
-
-struct VOut {
-  @builtin(position) pos : vec4f,
-  @location(0) uv : vec2f,
-};
-
-@vertex
-fn vs(@builtin(vertex_index) i : u32) -> VOut {
-  var p = array<vec2f, 3>(vec2f(-1.0, -1.0), vec2f(3.0, -1.0), vec2f(-1.0, 3.0));
-  var out : VOut;
-  out.pos = vec4f(p[i], 0.0, 1.0);
-  out.uv = vec2f((p[i].x + 1.0) * 0.5, 1.0 - (p[i].y + 1.0) * 0.5);
-  return out;
-}
-
-// linear → sRGB (OETF), por canal.
-fn oetf(c : vec3f) -> vec3f {
-  let cl = max(c, vec3f(0.0));
-  let lo = cl * 12.92;
-  let hi = 1.055 * pow(cl, vec3f(1.0 / 2.4)) - 0.055;
-  return select(hi, lo, cl < vec3f(0.0031308));
-}
-
-@fragment
-fn fs(in : VOut) -> @location(0) vec4f {
-  let game = textureSample(src, samp, in.uv).rgb;   // bytes sRGB do jogo
-  let ui = textureSample(uiTex, samp, in.uv);       // linear premultiplicado + alpha
-  var outc = game;
-  if (ui.a > 0.0) {
-    let ui_srgb = oetf(ui.rgb / ui.a);              // unpremult → OETF → cor sRGB
-    outc = game * (1.0 - ui.a) + ui_srgb * ui.a;    // blend em gama (= CSS)
-  }
-  return vec4f(outc, 1.0);
-}
-)WGSL";
-
-// Composite HDR (ADR-0147) — usado quando o bloom nativo está ligado. Aqui o
-// offscreen guarda a cena em LINEAR HDR (o JS renderiza com `NoToneMapping`), e
-// este passe faz TUDO que o `PostFX` do JS fazia, sem passada extra:
-//   cena + bloom·strength → vinheta → exposição+ACES → OETF → compõe a UI em gama
-//
-// O ACES é a MESMA aproximação do three (`ACESFilmicToneMapping`: matrizes de
-// entrada/saída + RRTAndODTFit, com o `/0.6` na exposição). Copiar a fórmula é o
-// que mantém a cor idêntica entre o Studio e o export — se o three mudar a dele,
-// esta precisa acompanhar.
-const char* kHdrBlitShader = R"WGSL(
-@group(0) @binding(0) var src: texture_2d<f32>;
-@group(0) @binding(1) var samp: sampler;
-@group(0) @binding(2) var uiTex: texture_2d<f32>;
-@group(0) @binding(3) var bloomTex: texture_2d<f32>;
-
-struct Params {
-  strength : f32,
-  exposure : f32,
-  vigIntensity : f32,
-  vigInner : f32,
-  vigOuter : f32,
-  pad0 : f32,
-  pad1 : f32,
-  pad2 : f32,
-};
-@group(0) @binding(4) var<uniform> params : Params;
-
-struct VOut {
-  @builtin(position) pos : vec4f,
-  @location(0) uv : vec2f,
-};
-
-@vertex
-fn vs(@builtin(vertex_index) i : u32) -> VOut {
-  var p = array<vec2f, 3>(vec2f(-1.0, -1.0), vec2f(3.0, -1.0), vec2f(-1.0, 3.0));
-  var out : VOut;
-  out.pos = vec4f(p[i], 0.0, 1.0);
-  out.uv = vec2f((p[i].x + 1.0) * 0.5, 1.0 - (p[i].y + 1.0) * 0.5);
-  return out;
-}
-
-fn oetf(c : vec3f) -> vec3f {
-  let cl = max(c, vec3f(0.0));
-  let lo = cl * 12.92;
-  let hi = 1.055 * pow(cl, vec3f(1.0 / 2.4)) - 0.055;
-  return select(hi, lo, cl < vec3f(0.0031308));
-}
-
-// ACES filmic — a MESMA aproximação do three (`ACESFilmicToneMapping`): matrizes
-// de entrada/saída + RRTAndODTFit, com o `/0.6` na exposição. Copiar a fórmula é
-// o que mantém a cor idêntica entre o Studio e o export.
-fn rrtAndOdtFit(v : vec3f) -> vec3f {
-  let a = v * (v + 0.0245786) - 0.000090537;
-  let b = v * (0.983729 * v + 0.4329510) + 0.238081;
-  return a / b;
-}
-fn acesFilmic(colorIn : vec3f, exposure : f32) -> vec3f {
-  let inMat = mat3x3f(
-    vec3f(0.59719, 0.07600, 0.02840),
-    vec3f(0.35458, 0.90834, 0.13383),
-    vec3f(0.04823, 0.01566, 0.83777));
-  let outMat = mat3x3f(
-    vec3f( 1.60475, -0.10208, -0.00327),
-    vec3f(-0.53108,  1.10813, -0.07276),
-    vec3f(-0.07367, -0.00605,  1.07602));
-  var c = colorIn * (exposure / 0.6);
-  c = inMat * c;
-  c = rrtAndOdtFit(c);
-  c = outMat * c;
-  return clamp(c, vec3f(0.0), vec3f(1.0));
-}
-
-@fragment
-fn fs(in : VOut) -> @location(0) vec4f {
-  // A cena vem em LINEAR HDR (RenderTarget do JS, ADR-0149): soma o bloom AINDA em
-  // HDR (é por isso que o brilho bate com o Studio), aplica vinheta, depois ACES +
-  // exposição e OETF. Tudo num passe só — o bloom LDR anterior saía fraco porque o
-  // ACES já tinha comprimido a cena antes de ele morder.
-  let scene = textureSample(src, samp, in.uv).rgb;
-  // Ganho de composição da pirâmide dual-filter (o three soma 5 mips ponderados;
-  // o dual-filter tem ganho ~1). Calibrado com o bloom no PADRÃO DE MERCADO —
-  // threshold ~1.0, só o que é HDR de propósito (material.intensity > 1) vira
-  // glow, ver ADR-0149. Enquanto o Studio usa o BloomNode do three e o export
-  // usa este dual-filter, este ganho aproxima os dois; quando o Studio passar a
-  // usar o MESMO dual-filter, ele deixa de precisar existir.
-  const BLOOM_GAIN : f32 = 0.75;
-  let bloomC = textureSample(bloomTex, samp, in.uv).rgb * BLOOM_GAIN;
-  var hdr = scene + bloomC * params.strength;
-
-  if (params.vigIntensity > 0.0) {
-    let d = length(in.uv - vec2f(0.5, 0.5));
-    let t = clamp((d - params.vigInner) / max(params.vigOuter - params.vigInner, 1e-4), 0.0, 1.0);
-    let falloff = 1.0 - t * t * (3.0 - 2.0 * t);  // smoothstep invertido
-    hdr = hdr * mix(1.0, falloff, params.vigIntensity);
-  }
-
-  let game = oetf(acesFilmic(hdr, params.exposure));      // HDR → sRGB (bytes)
-  let ui = textureSample(uiTex, samp, in.uv);
-  var outc = game;
-  if (ui.a > 0.0) {
-    let ui_srgb = oetf(ui.rgb / ui.a);
-    outc = game * (1.0 - ui.a) + ui_srgb * ui.a;          // blend em gama (= CSS)
-  }
-  return vec4f(outc, 1.0);
-}
-)WGSL";
 
 // Textura 1×1 transparente (a=0), criada uma vez, pro binding da UI "vazia".
 WGPUTextureView ensureEmptyUi(HostGpu* gpu) {
@@ -228,6 +82,47 @@ void ensureSampler(HostGpu* gpu) {
   g_sampler = wgpuDeviceCreateSampler(gpu->device, &sd);
 }
 
+/** Buffer do uniform embaixo d'água (zerado na criação = efeito desligado). */
+void ensureUnderwaterUniform(HostGpu* gpu) {
+  if (g_underwaterUniform) return;
+  WGPUBufferDescriptor bd = WGPU_BUFFER_DESCRIPTOR_INIT;
+  bd.size = sizeof(UnderwaterUniform);
+  bd.usage = WGPUBufferUsage_Uniform | WGPUBufferUsage_CopyDst;
+  g_underwaterUniform = wgpuDeviceCreateBuffer(gpu->device, &bd);
+  const UnderwaterUniform off{};
+  wgpuQueueWriteBuffer(gpu->queue, g_underwaterUniform, 0, &off, sizeof(off));
+}
+
+/** Escreve o uniform do quadro: todo quadro com o efeito ligado (a fase anda), uma vez ao desligar. */
+void writeUnderwaterUniform(HostGpu* gpu) {
+  ensureUnderwaterUniform(gpu);
+  const bool active = underwaterActive(underwaterState());
+  if (!active && !g_underwaterWritten) return;
+  const UnderwaterUniform u = active ? underwaterUniformNow() : UnderwaterUniform{};
+  wgpuQueueWriteBuffer(gpu->queue, g_underwaterUniform, 0, &u, sizeof(u));
+  g_underwaterWritten = active;
+}
+
+/** Entrada do layout para o uniform embaixo d'água. */
+WGPUBindGroupLayoutEntry underwaterLayoutEntry() {
+  WGPUBindGroupLayoutEntry e = WGPU_BIND_GROUP_LAYOUT_ENTRY_INIT;
+  e.binding = kUnderwaterBinding;
+  e.visibility = WGPUShaderStage_Fragment;
+  e.buffer.type = WGPUBufferBindingType_Uniform;
+  e.buffer.minBindingSize = sizeof(UnderwaterUniform);
+  return e;
+}
+
+/** Módulo WGSL `kUnderwaterWgsl + shader` (o trecho comum vem antes). */
+WGPUShaderModule createBlitModule(HostGpu* gpu, const char* shader) {
+  const std::string code = std::string(kUnderwaterWgsl) + shader;
+  WGPUShaderSourceWGSL wgsl = WGPU_SHADER_SOURCE_WGSL_INIT;
+  wgsl.code = {code.c_str(), code.size()};
+  WGPUShaderModuleDescriptor smd = WGPU_SHADER_MODULE_DESCRIPTOR_INIT;
+  smd.nextInChain = &wgsl.chain;
+  return wgpuDeviceCreateShaderModule(gpu->device, &smd);
+}
+
 void ensurePipeline(HostGpu* gpu, WGPUTextureFormat targetFormat) {
   if (g_pipeline && g_pipelineFormat == targetFormat) return;
   if (g_pipeline) {
@@ -236,7 +131,7 @@ void ensurePipeline(HostGpu* gpu, WGPUTextureFormat targetFormat) {
   }
   ensureSampler(gpu);
   if (!g_bindLayout) {
-    WGPUBindGroupLayoutEntry entries[3] = {};
+    WGPUBindGroupLayoutEntry entries[4] = {};
     entries[0] = WGPU_BIND_GROUP_LAYOUT_ENTRY_INIT;
     entries[0].binding = 0;
     entries[0].visibility = WGPUShaderStage_Fragment;
@@ -251,17 +146,14 @@ void ensurePipeline(HostGpu* gpu, WGPUTextureFormat targetFormat) {
     entries[2].visibility = WGPUShaderStage_Fragment;
     entries[2].texture.sampleType = WGPUTextureSampleType_Float;
     entries[2].texture.viewDimension = WGPUTextureViewDimension_2D;
+    entries[3] = underwaterLayoutEntry();  // SPEC-0726
     WGPUBindGroupLayoutDescriptor ld = WGPU_BIND_GROUP_LAYOUT_DESCRIPTOR_INIT;
-    ld.entryCount = 3;
+    ld.entryCount = 4;
     ld.entries = entries;
     g_bindLayout = wgpuDeviceCreateBindGroupLayout(gpu->device, &ld);
   }
 
-  WGPUShaderSourceWGSL wgsl = WGPU_SHADER_SOURCE_WGSL_INIT;
-  wgsl.code = {kBlitShader, WGPU_STRLEN};
-  WGPUShaderModuleDescriptor smd = WGPU_SHADER_MODULE_DESCRIPTOR_INIT;
-  smd.nextInChain = &wgsl.chain;
-  WGPUShaderModule module = wgpuDeviceCreateShaderModule(gpu->device, &smd);
+  WGPUShaderModule module = createBlitModule(gpu, kBlitShader);
 
   WGPUPipelineLayoutDescriptor pld = WGPU_PIPELINE_LAYOUT_DESCRIPTOR_INIT;
   pld.bindGroupLayoutCount = 1;
@@ -306,7 +198,7 @@ void ensureHdrPipeline(HostGpu* gpu, WGPUTextureFormat targetFormat) {
     g_hdrUniform = wgpuDeviceCreateBuffer(gpu->device, &bd);
   }
   if (!g_hdrBindLayout) {
-    WGPUBindGroupLayoutEntry entries[5] = {};
+    WGPUBindGroupLayoutEntry entries[6] = {};
     for (int i = 0; i < 5; i++) {
       entries[i] = WGPU_BIND_GROUP_LAYOUT_ENTRY_INIT;
       entries[i].binding = static_cast<uint32_t>(i);
@@ -321,17 +213,14 @@ void ensureHdrPipeline(HostGpu* gpu, WGPUTextureFormat targetFormat) {
     entries[3].texture.viewDimension = WGPUTextureViewDimension_2D;
     entries[4].buffer.type = WGPUBufferBindingType_Uniform;
     entries[4].buffer.minBindingSize = sizeof(HdrParams);
+    entries[5] = underwaterLayoutEntry();  // SPEC-0726
     WGPUBindGroupLayoutDescriptor ld = WGPU_BIND_GROUP_LAYOUT_DESCRIPTOR_INIT;
-    ld.entryCount = 5;
+    ld.entryCount = 6;
     ld.entries = entries;
     g_hdrBindLayout = wgpuDeviceCreateBindGroupLayout(gpu->device, &ld);
   }
 
-  WGPUShaderSourceWGSL wgsl = WGPU_SHADER_SOURCE_WGSL_INIT;
-  wgsl.code = {kHdrBlitShader, WGPU_STRLEN};
-  WGPUShaderModuleDescriptor smd = WGPU_SHADER_MODULE_DESCRIPTOR_INIT;
-  smd.nextInChain = &wgsl.chain;
-  WGPUShaderModule module = wgpuDeviceCreateShaderModule(gpu->device, &smd);
+  WGPUShaderModule module = createBlitModule(gpu, kHdrBlitShader);
 
   WGPUPipelineLayoutDescriptor pld = WGPU_PIPELINE_LAYOUT_DESCRIPTOR_INIT;
   pld.bindGroupLayoutCount = 1;
@@ -486,14 +375,21 @@ void blitToSwapchain(HostGpu* gpu, WGPUTextureView swapchainView) {
     uiView = ensureEmptyUi(gpu);
   }
 
-  WGPUBindGroupEntry bg[5] = {};
-  for (int i = 0; i < 5; i++) {
+  // Embaixo d'água (SPEC-0726): o uniform entra nos dois caminhos, no binding 5.
+  writeUnderwaterUniform(gpu);
+  WGPUBindGroupEntry bg[6] = {};
+  for (int i = 0; i < 6; i++) {
     bg[i] = WGPU_BIND_GROUP_ENTRY_INIT;
     bg[i].binding = static_cast<uint32_t>(i);
   }
   bg[0].textureView = sceneView;
   bg[1].sampler = g_sampler;
   bg[2].textureView = uiView;
+  // LDR: 0, 1, 2 e o uniform embaixo d'água na 4ª entrada; HDR: 0..5.
+  WGPUBindGroupEntry& water = composite ? bg[5] : bg[3];
+  water.binding = kUnderwaterBinding;
+  water.buffer = g_underwaterUniform;
+  water.size = sizeof(UnderwaterUniform);
   if (composite) {
     bg[3].textureView = bloomView;
     bg[4].buffer = g_hdrUniform;
@@ -501,7 +397,7 @@ void blitToSwapchain(HostGpu* gpu, WGPUTextureView swapchainView) {
   }
   WGPUBindGroupDescriptor bgd = WGPU_BIND_GROUP_DESCRIPTOR_INIT;
   bgd.layout = composite ? g_hdrBindLayout : g_bindLayout;
-  bgd.entryCount = composite ? 5 : 3;
+  bgd.entryCount = composite ? 6 : 4;
   bgd.entries = bg;
   WGPUBindGroup bindGroup = wgpuDeviceCreateBindGroup(gpu->device, &bgd);
 

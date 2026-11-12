@@ -104,7 +104,10 @@ add_executable(cortex_host
   src/render/draw_batch.cpp
   src/scene/shadow_pass_gate.cpp
   src/webgpu/bloom.cpp
+  src/webgpu/blit_shaders.cpp
   src/webgpu/supersample.cpp
+  src/webgpu/underwater.cpp
+  src/webgpu/underwater_params.cpp
   src/webgpu/splash.cpp
   src/webgpu/surface.cpp
   src/webgpu/textures.cpp
@@ -349,6 +352,7 @@ add_executable(cortex_host_tests
   tests/napi_frame_stats_test.cpp
   tests/pass_timing_stats_test.cpp
   tests/blit_test.cpp
+  tests/underwater_test.cpp
   tests/raycast_test.cpp
   tests/raycast_parity_test.cpp
   tests/window_size_test.cpp
@@ -364,6 +368,7 @@ add_executable(cortex_host_tests
   src/physics/raycast/instance_set.cpp
   src/physics/raycast/raycast_world.cpp
   src/webgpu/enums.cpp
+  src/webgpu/underwater_params.cpp
   src/core/crash_handler.cpp
   src/core/relaunch.cpp
   src/core/gc_stats.cpp
