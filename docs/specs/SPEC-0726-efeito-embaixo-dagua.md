@@ -74,7 +74,8 @@ para quem quiser reproduzir o efeito. Também saem as constantes `UNDERWATER_DEF
   mostrar o mesmo que o export. Custo zero desligado: o `PostFX` monta dois grafos (com e sem a água), que dividem o
   pass da cena e o bloom, e usa o com água só enquanto `setUnderwater` está ligado; a troca muda o nó de saída do
   `RenderPipeline` (a primeira compila o shader: aqueça ligando uma vez no carregamento, como no caminho do
-  `Renderer`). `underwater: false` nem monta o grafo com água (e tira o efeito do navegador). Com o `PostFX`
+  `Renderer`). `underwater: false` nem monta o grafo com água (e tira o efeito do navegador); com o host nativo do efeito
+  (`__cortexUnderwater`) ele também não é montado, porque quem aplica a água é o blit do host. Com o `PostFX`
   dono do quadro, o `Renderer.render` não entra no caminho.
 - O `Renderer.dispose` libera o pipeline e a RT do pass e, no host, desliga o efeito.
 

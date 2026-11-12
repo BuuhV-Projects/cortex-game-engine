@@ -6,7 +6,7 @@
 
 # Interface: VignetteConfig
 
-Defined in: [src/core/PostFX.ts:47](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L47)
+Defined in: [src/core/PostFX.ts:48](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L48)
 
 Ajustes da vinheta (escurecimento das bordas).
 
@@ -16,7 +16,7 @@ Ajustes da vinheta (escurecimento das bordas).
 
 > `optional` **inner?**: `number`
 
-Defined in: [src/core/PostFX.ts:51](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L51)
+Defined in: [src/core/PostFX.ts:52](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L52)
 
 Raio (em UV de tela, do centro) onde a vinheta começa.
 
@@ -32,7 +32,7 @@ Raio (em UV de tela, do centro) onde a vinheta começa.
 
 > `optional` **intensity?**: `number`
 
-Defined in: [src/core/PostFX.ts:49](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L49)
+Defined in: [src/core/PostFX.ts:50](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L50)
 
 Força do escurecimento [0..1].
 
@@ -48,7 +48,7 @@ Força do escurecimento [0..1].
 
 > `optional` **outer?**: `number`
 
-Defined in: [src/core/PostFX.ts:53](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L53)
+Defined in: [src/core/PostFX.ts:54](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L54)
 
 Raio onde a vinheta fica no máximo.
 

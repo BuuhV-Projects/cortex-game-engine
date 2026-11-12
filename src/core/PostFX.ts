@@ -32,6 +32,7 @@ import type { Scene } from './Scene.js';
 import { configureNativePostFX, nativePostFXHost, nativeSceneHdrSink, type NativePostFXConfig } from './nativePostFX.js';
 import { debug } from './debug.js';
 import { underwaterColorize, underwaterSample, type UnderwaterUniforms } from './UnderwaterPass.js';
+import { nativeUnderwaterHost } from './underwater.js';
 
 /** Ajustes do bloom. Alteráveis em runtime via `postfx.bloom`. */
 export interface BloomConfig {
@@ -190,7 +191,8 @@ export class PostFX {
       this._bloom = null;
     }
     // os dois grafos dividem o pass da cena e o bloom; o com água só entra com o efeito ligado
-    const water = options.underwater !== false ? renderer.underwaterPass.uniforms() : null;
+    // com o host nativo o efeito é do blit do C++ (e os uniforms ficam zerados): sem grafo com água
+    const water = options.underwater !== false && !nativeUnderwaterHost() ? renderer.underwaterPass.uniforms() : null;
     this._dry = this._graph(sceneTexture, options, null);
     this._wet = water ? this._graph(sceneTexture, options, water) : null;
     this._pipeline.outputNode = this._dry as never;

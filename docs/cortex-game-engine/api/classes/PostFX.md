@@ -6,7 +6,7 @@
 
 # Class: PostFX
 
-Defined in: [src/core/PostFX.ts:93](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L93)
+Defined in: [src/core/PostFX.ts:94](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L94)
 
 ## Constructors
 
@@ -14,7 +14,7 @@ Defined in: [src/core/PostFX.ts:93](https://github.com/BuuhV-Projects/cortex-gam
 
 > **new PostFX**(`renderer`, `scene`, `camera`, `options?`): `PostFX`
 
-Defined in: [src/core/PostFX.ts:132](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L132)
+Defined in: [src/core/PostFX.ts:133](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L133)
 
 #### Parameters
 
@@ -68,7 +68,7 @@ postfx.render();
 
 > **get** **bloom**(): `BloomNode` \| `null`
 
-Defined in: [src/core/PostFX.ts:278](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L278)
+Defined in: [src/core/PostFX.ts:280](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L280)
 
 Nó de bloom (ou `null` se desligado), pra ajuste em runtime:
 `postfx.bloom?.strength.value = 1.2`.
@@ -83,7 +83,7 @@ Nó de bloom (ou `null` se desligado), pra ajuste em runtime:
 
 > **dispose**(): `void`
 
-Defined in: [src/core/PostFX.ts:283](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L283)
+Defined in: [src/core/PostFX.ts:285](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L285)
 
 Libera os recursos GPU do pipeline.
 
@@ -97,7 +97,7 @@ Libera os recursos GPU do pipeline.
 
 > **render**(): `void`
 
-Defined in: [src/core/PostFX.ts:239](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L239)
+Defined in: [src/core/PostFX.ts:241](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L241)
 
 #### Returns
 

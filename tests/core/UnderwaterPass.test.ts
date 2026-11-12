@@ -133,6 +133,7 @@ describe('UnderwaterPass', () => {
 
 describe("PostFX com o efeito embaixo d'água", () => {
   const engineScene = { getThreeScene: () => scene };
+  afterEach(() => vi.unstubAllGlobals());
 
   function fakeRenderer() {
     return { threeRenderer: {}, underwaterPass: new UnderwaterPass(), isReady: true };
@@ -174,6 +175,21 @@ describe("PostFX com o efeito embaixo d'água", () => {
     fx.render();
     expect(pipe.outputNode).toBe(dry);
     expect(pipe.needsUpdate).toBe(true);
+  });
+
+  it('com o host nativo do efeito não monta o grafo com água (o blit do host aplica)', () => {
+    vi.stubGlobal('__cortexUnderwater', vi.fn());
+    FakeRenderPipeline.instances = [];
+    const r = fakeRenderer();
+    const uniforms = vi.spyOn(r.underwaterPass, 'uniforms');
+    const fx = new PostFX(r as never, engineScene as never, camera);
+    const pipe = FakeRenderPipeline.instances.at(-1)! as FakeRenderPipeline & { needsUpdate?: boolean };
+    const dry = pipe.outputNode;
+    r.underwaterPass.set({ amount: 1 });
+    fx.render();
+    expect(uniforms).not.toHaveBeenCalled();
+    expect(pipe.outputNode).toBe(dry);
+    expect(pipe.needsUpdate).toBeUndefined();
   });
 
   it('underwater: false tira os nós do grafo', () => {

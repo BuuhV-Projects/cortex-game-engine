@@ -6,7 +6,7 @@
 
 # Interface: BloomConfig
 
-Defined in: [src/core/PostFX.ts:37](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L37)
+Defined in: [src/core/PostFX.ts:38](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L38)
 
 Ajustes do bloom. Alteráveis em runtime via `postfx.bloom`.
 
@@ -16,7 +16,7 @@ Ajustes do bloom. Alteráveis em runtime via `postfx.bloom`.
 
 > `optional` **radius?**: `number`
 
-Defined in: [src/core/PostFX.ts:41](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L41)
+Defined in: [src/core/PostFX.ts:42](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L42)
 
 Raio de espalhamento [0..1].
 
@@ -32,7 +32,7 @@ Raio de espalhamento [0..1].
 
 > `optional` **strength?**: `number`
 
-Defined in: [src/core/PostFX.ts:39](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L39)
+Defined in: [src/core/PostFX.ts:40](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L40)
 
 Intensidade do brilho.
 
@@ -48,7 +48,7 @@ Intensidade do brilho.
 
 > `optional` **threshold?**: `number`
 
-Defined in: [src/core/PostFX.ts:43](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L43)
+Defined in: [src/core/PostFX.ts:44](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L44)
 
 Luminância mínima pra brilhar [0..1].
 

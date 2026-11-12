@@ -6,7 +6,7 @@
 
 # Interface: PostFXOptions
 
-Defined in: [src/core/PostFX.ts:56](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L56)
+Defined in: [src/core/PostFX.ts:57](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L57)
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: [src/core/PostFX.ts:56](https://github.com/BuuhV-Projects/cortex-gam
 
 > `optional` **bloom?**: `boolean` \| [`BloomConfig`](BloomConfig.md)
 
-Defined in: [src/core/PostFX.ts:58](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L58)
+Defined in: [src/core/PostFX.ts:59](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L59)
 
 Liga o bloom. `true` usa defaults; objeto ajusta os parâmetros.
 
@@ -30,7 +30,7 @@ false
 
 > `optional` **exposure?**: `number`
 
-Defined in: [src/core/PostFX.ts:69](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L69)
+Defined in: [src/core/PostFX.ts:70](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L70)
 
 Exposição do tone mapping. Quando omitido, mantém a do renderer.
 
@@ -40,7 +40,7 @@ Exposição do tone mapping. Quando omitido, mantém a do renderer.
 
 > `optional` **fxaa?**: `boolean`
 
-Defined in: [src/core/PostFX.ts:62](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L62)
+Defined in: [src/core/PostFX.ts:63](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L63)
 
 Liga o FXAA (anti-aliasing de pós-processamento).
 
@@ -56,7 +56,7 @@ false
 
 > `optional` **toneMapping?**: `ToneMapping`
 
-Defined in: [src/core/PostFX.ts:67](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L67)
+Defined in: [src/core/PostFX.ts:68](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L68)
 
 Tone mapping aplicado na saída (ex.: `THREE.ACESFilmicToneMapping`,
 `THREE.AgXToneMapping`). Quando omitido, mantém o do renderer.
@@ -67,7 +67,7 @@ Tone mapping aplicado na saída (ex.: `THREE.ACESFilmicToneMapping`,
 
 > `optional` **underwater?**: `boolean`
 
-Defined in: [src/core/PostFX.ts:79](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L79)
+Defined in: [src/core/PostFX.ts:80](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L80)
 
 Monta no grafo o efeito embaixo d'água de `renderer.setUnderwater` (SPEC-0726).
 Só vale no navegador: no host o efeito é sempre do composite do C++, com ou sem
@@ -89,7 +89,7 @@ true
 
 > `optional` **vignette?**: `boolean` \| [`VignetteConfig`](VignetteConfig.md)
 
-Defined in: [src/core/PostFX.ts:60](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L60)
+Defined in: [src/core/PostFX.ts:61](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L61)
 
 Liga a vinheta. `true` usa defaults; objeto ajusta os parâmetros.
 
