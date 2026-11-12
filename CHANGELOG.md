@@ -1,3 +1,23 @@
+# [0.125.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.124.0...v0.125.0) (2026-11-12)
+
+
+### Bug Fixes
+
+* **render:** efeito embaixo d'água desliga no PostFX e no host (SPEC-0726) ([dc27fbc](https://github.com/BuuhV-Projects/cortex-game-engine/commit/dc27fbc4b9ad0961983c402f0ace7875e2674b23))
+* **render:** tinta da água depois da vinheta no PostFX, como no host (SPEC-0726) ([84d1ea4](https://github.com/BuuhV-Projects/cortex-game-engine/commit/84d1ea4d92195028d9106d59884e7b0dadece9ff))
+* **render:** uniforms do efeito nascem zerados no host nativo (SPEC-0726) ([bb31389](https://github.com/BuuhV-Projects/cortex-game-engine/commit/bb31389acedcdd36e23f47c71044134cdf8d689b))
+
+
+### Features
+
+* **render:** efeito de tela embaixo d'água nos dois alvos (SPEC-0726) ([70a49dd](https://github.com/BuuhV-Projects/cortex-game-engine/commit/70a49dd3440f8183aa550eb435a587112721699a))
+
+
+### Performance Improvements
+
+* **render:** PostFX só usa o grafo com água enquanto o efeito está ligado (SPEC-0726) ([e301016](https://github.com/BuuhV-Projects/cortex-game-engine/commit/e30101611ef4b6652176edf823bc2d3909c3bb5e))
+* **render:** sem grafo com água no PostFX quando o host nativo aplica o efeito (SPEC-0726) ([9fd635d](https://github.com/BuuhV-Projects/cortex-game-engine/commit/9fd635d86eaa8561485a6310cd286fefd178ab6f))
+
 # [0.124.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.123.1...v0.124.0) (2026-11-12)
 
 
