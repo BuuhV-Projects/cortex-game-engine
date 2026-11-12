@@ -67,13 +67,15 @@ Tone mapping aplicado na saída (ex.: `THREE.ACESFilmicToneMapping`,
 
 > `optional` **underwater?**: `boolean`
 
-Defined in: [src/core/PostFX.ts:77](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L77)
+Defined in: [src/core/PostFX.ts:79](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L79)
 
 Monta no grafo o efeito embaixo d'água de `renderer.setUnderwater` (SPEC-0726).
 Só vale no navegador: no host o efeito é sempre do composite do C++, com ou sem
 esta opção. Por isso vem ligado, para o Studio mostrar o mesmo que o export.
-Com `amount` 0 a saída é idêntica, ao custo de um `sin` e um `mix` por pixel num
-passe que já é de tela cheia; `false` tira os nós do grafo.
+Custo zero com o efeito desligado: o `PostFX` monta dois grafos (com e sem a água) e
+só usa o com água enquanto `setUnderwater` está ligado. A primeira troca compila o
+shader, então aqueça como o caminho do `Renderer` (ligar, `precompile`, desligar).
+`false` nem monta o grafo com água.
 
 #### Default
 

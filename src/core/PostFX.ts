@@ -31,7 +31,7 @@ import type { Renderer } from './Renderer.js';
 import type { Scene } from './Scene.js';
 import { configureNativePostFX, nativePostFXHost, nativeSceneHdrSink, type NativePostFXConfig } from './nativePostFX.js';
 import { debug } from './debug.js';
-import { underwaterColorize, underwaterSample } from './UnderwaterPass.js';
+import { underwaterColorize, underwaterSample, type UnderwaterUniforms } from './UnderwaterPass.js';
 
 /** Ajustes do bloom. Alteráveis em runtime via `postfx.bloom`. */
 export interface BloomConfig {
@@ -71,8 +71,10 @@ export interface PostFXOptions {
    * Monta no grafo o efeito embaixo d'água de `renderer.setUnderwater` (SPEC-0726).
    * Só vale no navegador: no host o efeito é sempre do composite do C++, com ou sem
    * esta opção. Por isso vem ligado, para o Studio mostrar o mesmo que o export.
-   * Com `amount` 0 a saída é idêntica, ao custo de um `sin` e um `mix` por pixel num
-   * passe que já é de tela cheia; `false` tira os nós do grafo. @default true
+   * Custo zero com o efeito desligado: o `PostFX` monta dois grafos (com e sem a água) e
+   * só usa o com água enquanto `setUnderwater` está ligado. A primeira troca compila o
+   * shader, então aqueça como o caminho do `Renderer` (ligar, `precompile`, desligar).
+   * `false` nem monta o grafo com água. @default true
    */
   underwater?: boolean;
 }
@@ -93,6 +95,9 @@ export class PostFX {
   /** `null` no host nativo: lá o pós-FX roda em C++, não há grafo TSL. */
   private readonly _pipeline: RenderPipeline | null;
   private readonly _bloom: BloomPass | null;
+  /** Nó de saída sem a água e com ela (`null` com `underwater: false` ou no host). */
+  private readonly _dry: unknown = null;
+  private readonly _wet: unknown = null;
   /**
    * Nó do `pass(scene, camera)` (browser). Guardado pro {@link dispose}: o
    * `RenderPipeline.dispose()` do three NÃO desce até ele, e é ele que segura a
@@ -176,19 +181,27 @@ export class PostFX {
     // usamos `any` localmente — a API pública do PostFX continua tipada.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const sceneTexture: any = scenePass.getTextureNode();
-    const water = options.underwater !== false ? renderer.underwaterPass.uniforms() : null;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let node: any = water ? underwaterSample(sceneTexture, water) : sceneTexture;
-
     // ── HDR ──────────────────────────────────────────────────────────────────
     if (options.bloom) {
       const cfg = options.bloom === true ? {} : options.bloom;
       // O brilho sai da cena sem a ondulação: o deslocamento é de poucos pixels.
       this._bloom = bloom(sceneTexture, cfg.strength ?? 0.8, cfg.radius ?? 0, cfg.threshold ?? 0);
-      node = node.add(this._bloom);
     } else {
       this._bloom = null;
     }
+    // os dois grafos dividem o pass da cena e o bloom; o com água só entra com o efeito ligado
+    const water = options.underwater !== false ? renderer.underwaterPass.uniforms() : null;
+    this._dry = this._graph(sceneTexture, options, null);
+    this._wet = water ? this._graph(sceneTexture, options, water) : null;
+    this._pipeline.outputNode = this._dry as never;
+  }
+
+  /** O grafo de saída (bloom, tone map, vinheta, tinta, FXAA), com a água em `water` ou sem ela. */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private _graph(sceneTexture: any, options: PostFXOptions, water: UnderwaterUniforms | null): unknown {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let node: any = water ? underwaterSample(sceneTexture, water) : sceneTexture;
+    if (this._bloom) node = node.add(this._bloom);
 
     // ── HDR → LDR (tone mapping + output color space) ─────────────────────────
     node = renderOutput(node);
@@ -212,8 +225,7 @@ export class PostFX {
     if (options.fxaa) {
       node = fxaa(node);
     }
-
-    this._pipeline.outputNode = node;
+    return node;
   }
 
   /**
@@ -249,6 +261,12 @@ export class PostFX {
       if (tex && this._sceneHdr) this._sceneHdr(tex);
       else this._renderer.render(this._scene, this._camera);
       return;
+    }
+    // troca o nó de saída só quando o efeito liga ou desliga (o RenderPipeline remonta o material)
+    const out = this._wet && this._renderer.underwaterPass.state ? this._wet : this._dry;
+    if (this._pipeline.outputNode !== out) {
+      this._pipeline.outputNode = out as never;
+      this._pipeline.needsUpdate = true;
     }
     this._pipeline.render();
   }

@@ -40,7 +40,7 @@ Estado aplicado, ou `null` com o efeito desligado.
 
 > **dispose**(): `void`
 
-Defined in: [src/core/UnderwaterPass.ts:125](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/UnderwaterPass.ts#L125)
+Defined in: [src/core/UnderwaterPass.ts:127](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/UnderwaterPass.ts#L127)
 
 Libera o pipeline e a RT da cena e desliga o efeito no host (o estado do C++ é
 global e tingiria o próximo `Renderer`). O estado do navegador continua (volta

@@ -71,8 +71,10 @@ para quem quiser reproduzir o efeito. Também saem as constantes `UNDERWATER_DEF
   depois da vinheta (e antes do FXAA), na ordem do composite do host (vinheta → tone map → tinta): a cor da água cobre
   a imagem já vinhetada nos dois alvos. A opção
   `underwater` vem **ligada por padrão**: no nativo o blit aplica o efeito com ou sem `PostFX`, e o Studio tem de
-  mostrar o mesmo que o export. Com `amount` 0 a saída é idêntica, ao custo de um `sin` e um `mix` por pixel num
-  passe que já é de tela cheia; `underwater: false` tira os nós do grafo (e o efeito do navegador). Com o `PostFX`
+  mostrar o mesmo que o export. Custo zero desligado: o `PostFX` monta dois grafos (com e sem a água), que dividem o
+  pass da cena e o bloom, e usa o com água só enquanto `setUnderwater` está ligado; a troca muda o nó de saída do
+  `RenderPipeline` (a primeira compila o shader: aqueça ligando uma vez no carregamento, como no caminho do
+  `Renderer`). `underwater: false` nem monta o grafo com água (e tira o efeito do navegador). Com o `PostFX`
   dono do quadro, o `Renderer.render` não entra no caminho.
 - O `Renderer.dispose` libera o pipeline e a RT do pass e, no host, desliga o efeito.
 

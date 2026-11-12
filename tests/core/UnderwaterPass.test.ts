@@ -157,6 +157,25 @@ describe("PostFX com o efeito embaixo d'água", () => {
     expect(tintAt).toBeGreaterThan(vignetteAt);
   });
 
+  it('custo zero desligado: o grafo com água só entra com o efeito ligado e volta ao desligar', () => {
+    FakeRenderPipeline.instances = [];
+    const r = fakeRenderer();
+    const fx = new PostFX(r as never, engineScene as never, camera);
+    const pipe = FakeRenderPipeline.instances.at(-1)! as FakeRenderPipeline & { needsUpdate?: boolean };
+    fx.render();
+    const dry = pipe.outputNode;
+    expect(pipe.needsUpdate).toBeUndefined();
+    r.underwaterPass.set({ amount: 1 });
+    fx.render();
+    expect(pipe.outputNode).not.toBe(dry);
+    expect(pipe.needsUpdate).toBe(true);
+    r.underwaterPass.set(null);
+    pipe.needsUpdate = false;
+    fx.render();
+    expect(pipe.outputNode).toBe(dry);
+    expect(pipe.needsUpdate).toBe(true);
+  });
+
   it('underwater: false tira os nós do grafo', () => {
     tslSin.mockClear();
     const r = fakeRenderer();
