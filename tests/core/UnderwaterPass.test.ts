@@ -112,6 +112,13 @@ describe('UnderwaterPass', () => {
     expect(host).toHaveBeenCalledTimes(1); // só o set, primeira chamada depois do dispose
   });
 
+  it('host: setUnderwater antes de um PostFX: os uniforms nascem zerados (o blit do host já aplica)', () => {
+    vi.stubGlobal('__cortexUnderwater', vi.fn());
+    const p = new UnderwaterPass();
+    p.set({ amount: 1 });
+    expect(p.uniforms().amount.value).toBe(0);
+  });
+
   it('host: a profundidade contínua não atravessa a ponte em todo quadro', () => {
     const host = vi.fn();
     vi.stubGlobal('__cortexUnderwater', host);

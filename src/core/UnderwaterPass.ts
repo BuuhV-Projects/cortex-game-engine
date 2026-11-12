@@ -112,7 +112,9 @@ export class UnderwaterPass {
         speed: u(0),
         color: u(new THREE.Vector3()),
       } as unknown as UnderwaterUniforms;
-      this._writeUniforms(this._state);
+      // no host nativo o efeito é do blit do host e o `set` não mexe nos uniforms:
+      // nascem zerados, senão o grafo de um `PostFX` aplicaria a água de novo
+      this._writeUniforms(nativeUnderwaterHost() ? null : this._state);
     }
     return this._uniforms;
   }

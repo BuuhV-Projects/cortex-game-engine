@@ -57,7 +57,9 @@ para quem quiser reproduzir o efeito. Também saem as constantes `UNDERWATER_DEF
   quadros.
 - A primeira chamada de um `UnderwaterPass` sempre atravessa a ponte, e o `Renderer.dispose` manda `null` ao host: o
   estado do C++ é global e sobreviveria a um `Renderer` novo (troca de jogo ou reload no mesmo contexto).
-- Desligado, o uniform `amount` do navegador vai a 0, porque o grafo do `PostFX` lê os uniforms direto.
+- Desligado, o uniform `amount` do navegador vai a 0, porque o grafo do `PostFX` lê os uniforms direto. No host
+  nativo os uniforms ficam sempre zerados (nascem com `amount` 0 mesmo depois de `setUnderwater`): o efeito é do blit
+  do host, e o grafo de um `PostFX` não aplica a água uma segunda vez.
 
 ### Navegador (`src/core/UnderwaterPass.ts`)
 
