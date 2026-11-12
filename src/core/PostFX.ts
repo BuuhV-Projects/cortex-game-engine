@@ -192,7 +192,6 @@ export class PostFX {
 
     // ── HDR → LDR (tone mapping + output color space) ─────────────────────────
     node = renderOutput(node);
-    if (water) node = underwaterColorize(node, water);
 
     // ── LDR ──────────────────────────────────────────────────────────────────
     if (options.vignette) {
@@ -205,6 +204,10 @@ export class PostFX {
       const factor = oneMinus(smoothstep(inner, outer, dist));
       node = node.mul(mix(float(1), factor, float(intensity)));
     }
+
+    // a tinta depois da vinheta, na ordem do composite do host (vinheta → tone map → tinta):
+    // a cor da água cobre a imagem já vinhetada nos dois alvos
+    if (water) node = underwaterColorize(node, water);
 
     if (options.fxaa) {
       node = fxaa(node);

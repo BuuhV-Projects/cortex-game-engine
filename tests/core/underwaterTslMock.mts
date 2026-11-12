@@ -35,6 +35,7 @@ export function fakeTSL(): any {
       (): FakeScenePass => ({ scene: null, camera: null, getTextureNode: () => node, dispose: vi.fn() }),
     ),
     sin: vi.fn(() => node),
+    vec4: vi.fn(() => node),
   };
   return new Proxy(known, { get: (target, key: string) => (key in target ? target[key] : node) });
 }

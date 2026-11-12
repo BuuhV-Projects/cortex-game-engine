@@ -67,7 +67,9 @@ para quem quiser reproduzir o efeito. Também saem as constantes `UNDERWATER_DEF
   o pipeline existe). Se está, cria na primeira vez um `RenderPipeline` com `pass(cena, câmera)`, a amostra deslocada,
   o `renderOutput` e a tinta, com `outputColorTransform = false`, e renderiza por ele. A cena e a câmera do pass são
   trocadas a cada chamada.
-- O `PostFX` monta o mesmo deslocamento e a mesma tinta no grafo dele, com os uniforms do `Renderer`. A opção
+- O `PostFX` monta o mesmo deslocamento e a mesma tinta no grafo dele, com os uniforms do `Renderer`. A tinta entra
+  depois da vinheta (e antes do FXAA), na ordem do composite do host (vinheta → tone map → tinta): a cor da água cobre
+  a imagem já vinhetada nos dois alvos. A opção
   `underwater` vem **ligada por padrão**: no nativo o blit aplica o efeito com ou sem `PostFX`, e o Studio tem de
   mostrar o mesmo que o export. Com `amount` 0 a saída é idêntica, ao custo de um `sin` e um `mix` por pixel num
   passe que já é de tela cheia; `underwater: false` tira os nós do grafo (e o efeito do navegador). Com o `PostFX`

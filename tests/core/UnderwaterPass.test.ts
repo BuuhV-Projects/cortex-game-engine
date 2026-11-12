@@ -20,7 +20,7 @@ vi.mock('three/tsl', async () => {
     screenUV: node,
     vec2: fn,
     length: fn,
-    smoothstep: fn,
+    smoothstep: vi.fn(fn),
     oneMinus: fn,
     mix: fn,
     float: fn,
@@ -30,6 +30,7 @@ vi.mock('three/examples/jsm/tsl/display/BloomNode.js', () => ({ bloom: vi.fn() }
 vi.mock('three/examples/jsm/tsl/display/FXAANode.js', () => ({ fxaa: vi.fn() }));
 
 import { TSL } from 'three/webgpu';
+import { smoothstep } from 'three/tsl';
 import { UnderwaterPass } from '../../src/core/UnderwaterPass.js';
 import { PostFX } from '../../src/core/PostFX.js';
 import { FakeRenderPipeline, type FakeScenePass } from './underwaterTslMock.mjs';
@@ -144,6 +145,16 @@ describe("PostFX com o efeito embaixo d'água", () => {
     new PostFX(r as never, engineScene as never, camera);
     expect(uniforms).toHaveBeenCalledTimes(1);
     expect(tslSin).toHaveBeenCalledTimes(1);
+  });
+
+  it('a tinta entra depois da vinheta (a ordem do composite do host)', () => {
+    const vec4 = vi.mocked(TSL.vec4);
+    vec4.mockClear();
+    vi.mocked(smoothstep).mockClear();
+    new PostFX(fakeRenderer() as never, engineScene as never, camera, { vignette: true });
+    const vignetteAt = vi.mocked(smoothstep).mock.invocationCallOrder[0]!;
+    const tintAt = vec4.mock.invocationCallOrder.at(-1)!;
+    expect(tintAt).toBeGreaterThan(vignetteAt);
   });
 
   it('underwater: false tira os nós do grafo', () => {
