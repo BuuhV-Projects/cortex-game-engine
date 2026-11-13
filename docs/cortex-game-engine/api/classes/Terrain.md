@@ -6,7 +6,7 @@
 
 # Class: Terrain
 
-Defined in: [src/scene/Terrain.ts:75](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L75)
+Defined in: [src/scene/Terrain.ts:77](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L77)
 
 **Terreno** estilo Unity: um plano horizontal (no chão, XZ) subdividido numa
 grade, com um **heightmap** que você **esculpe** ([Terrain.sculpt](#sculpt)) —
@@ -31,7 +31,7 @@ terrain.sculpt(0, 0, 8, 2) // levanta um morro de raio 8 no centro
 
 > **new Terrain**(`options?`): `Terrain`
 
-Defined in: [src/scene/Terrain.ts:106](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L106)
+Defined in: [src/scene/Terrain.ts:108](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L108)
 
 #### Parameters
 
@@ -49,7 +49,7 @@ Defined in: [src/scene/Terrain.ts:106](https://github.com/BuuhV-Projects/cortex-
 
 > `readonly` **depth**: `number`
 
-Defined in: [src/scene/Terrain.ts:83](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L83)
+Defined in: [src/scene/Terrain.ts:85](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L85)
 
 Profundidade (Z) em unidades de mundo.
 
@@ -59,7 +59,7 @@ Profundidade (Z) em unidades de mundo.
 
 > `readonly` **mesh**: `Mesh`
 
-Defined in: [src/scene/Terrain.ts:77](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L77)
+Defined in: [src/scene/Terrain.ts:79](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L79)
 
 O mesh do terreno (adicione à cena).
 
@@ -69,7 +69,7 @@ O mesh do terreno (adicione à cena).
 
 > `readonly` **resolution**: `number`
 
-Defined in: [src/scene/Terrain.ts:79](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L79)
+Defined in: [src/scene/Terrain.ts:81](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L81)
 
 Segmentos por lado (grade `(resolution+1)²`).
 
@@ -79,7 +79,7 @@ Segmentos por lado (grade `(resolution+1)²`).
 
 > `readonly` **width**: `number`
 
-Defined in: [src/scene/Terrain.ts:81](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L81)
+Defined in: [src/scene/Terrain.ts:83](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L83)
 
 Largura (X) em unidades de mundo.
 
@@ -89,7 +89,7 @@ Largura (X) em unidades de mundo.
 
 > **baseHeightAt**(`localX`, `localZ`): `number` \| `null`
 
-Defined in: [src/scene/Terrain.ts:193](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L193)
+Defined in: [src/scene/Terrain.ts:194](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L194)
 
 Altura (Y local) da **base** autorada num ponto, sem o corte das estradas — o greide
 das estradas parte daqui (não realimenta o próprio corte). `null` fora da área.
@@ -250,7 +250,7 @@ pintado). Retorna `true` se algum texel mudou.
 
 > **sculpt**(`localX`, `localZ`, `radius`, `delta`): `boolean`
 
-Defined in: [src/scene/Terrain.ts:203](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L203)
+Defined in: [src/scene/Terrain.ts:204](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L204)
 
 **Esculpe** o terreno: soma `delta` à altura num círculo de `radius` (em
 coordenadas LOCAIS do terreno, no plano XZ centrado), com **falloff suave**
@@ -351,7 +351,7 @@ Restaura uma pintura salva ([Terrain.getPaint](#getpaint)): camadas + splatmap, 
 
 > **setRoadMolding**(`delta`): `void`
 
-Defined in: [src/scene/Terrain.ts:182](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L182)
+Defined in: [src/scene/Terrain.ts:183](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L183)
 
 **Molda o terreno às estradas** (SPEC-0631 §3): aplica `delta` (mesmo tamanho do
 heightmap) por cima da base; `null` remove. A base e a serialização não mudam. O

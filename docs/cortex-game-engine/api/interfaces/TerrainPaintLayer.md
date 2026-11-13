@@ -6,7 +6,7 @@
 
 # Interface: TerrainPaintLayer
 
-Defined in: [src/scene/Terrain.ts:32](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L32)
+Defined in: [src/scene/Terrain.ts:34](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L34)
 
 Uma camada de textura pintável do terreno (splat).
 
@@ -16,7 +16,7 @@ Uma camada de textura pintável do terreno (splat).
 
 > **repeat**: `number`
 
-Defined in: [src/scene/Terrain.ts:36](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L36)
+Defined in: [src/scene/Terrain.ts:38](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L38)
 
 Quantas vezes a textura repete ao longo do terreno inteiro (tiling).
 
@@ -26,6 +26,6 @@ Quantas vezes a textura repete ao longo do terreno inteiro (tiling).
 
 > **url**: `string`
 
-Defined in: [src/scene/Terrain.ts:34](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L34)
+Defined in: [src/scene/Terrain.ts:36](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L36)
 
 Caminho da textura (relativo ao projeto, ex. `assets/textures/grama.png`).
