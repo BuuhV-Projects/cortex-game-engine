@@ -1,4 +1,5 @@
 import type { Object3D } from 'three';
+import { nativeRoutable } from './nativeRaycast.js';
 import { ensureBoundsTree, isSkinned } from './raycastAccel.js';
 
 /** Raio-base do tronco (×escala da instância) pra colisão barata com vegetação. */
@@ -113,9 +114,12 @@ export class CharacterSceneCollector {
     if (hidden) {
       // escondido não colide, mas o BVH sai agora (carga), não no quadro em que o culling o mostrar —
       // senão vira um pico no meio do jogo (SPEC-0307). Já preparada: não desce de novo (SPEC-0320).
+      // A malha que o host reproduz não precisa da árvore em JS: o raio vai pro C++ (SPEC-0729).
       if (this.prepared.has(o)) return false;
       this.prepared.add(o);
-      if (isMesh && !ud['cortexVegetationSub'] && !ud['cortexWater'] && !isSkinned(o)) ensureBoundsTree(o);
+      if (isMesh && !ud['cortexVegetationSub'] && !ud['cortexWater'] && !isSkinned(o) && !nativeRoutable(o)) {
+        ensureBoundsTree(o);
+      }
       return true;
     }
     const skinned = isMesh && isSkinned(o);
@@ -135,7 +139,9 @@ export class CharacterSceneCollector {
     // vértice na CPU a cada raio (ver isSkinned).
     if (skinned) return true;
     // Props detalhados ganham árvore BVH → raycast O(log n) em vez de O(nº de triângulos). Ver raycastAccel.
-    ensureBoundsTree(o);
+    // No host, a malha que o raycast nativo reproduz fica sem a árvore em JS (SPEC-0729); se deixar de ser
+    // roteável, o `jsFirstHit` a monta sob demanda.
+    if (!nativeRoutable(o)) ensureBoundsTree(o);
     if (ud['cortexTerrain']) this.terrainMeshes.push(o);
     else if (solid) this.solidMeshes.push(o);
     this.groundMeshes.push(o); // superfície pisável (terreno/road/solid/modelo), exceto vegetação
