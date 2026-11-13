@@ -1,4 +1,5 @@
 import {
+  BufferAttribute,
   BufferGeometry,
   DataTexture,
   Float32BufferAttribute,
@@ -11,6 +12,7 @@ import {
   type ColorRepresentation,
 } from 'three';
 import { terrainLayerTexture } from './terrainLayerTextures.js';
+import { gridBoundingSphere, gridIndex, gridNormals } from './terrainGrid.js';
 import { buildTerrainSplatMaterial, type TerrainLayerNode, type TerrainRepeatNode } from './terrainSplatMaterial.js';
 
 /** Opções de {@link Terrain}. */
@@ -125,24 +127,14 @@ export class Terrain {
         uvs[idx * 2 + 1] = j / this.resolution;
       }
     }
-    const indices: number[] = [];
-    for (let j = 0; j < this.resolution; j++) {
-      for (let i = 0; i < this.resolution; i++) {
-        const a = j * n + i;
-        const b = j * n + i + 1;
-        const c = (j + 1) * n + i;
-        const d = (j + 1) * n + i + 1;
-        indices.push(a, c, b, b, c, d); // viradas pra cima (+Y)
-      }
-    }
-
+    // índice, normais e esfera em arrays planos, iguais bit a bit aos do three (SPEC-0729 §2)
     const geo = new BufferGeometry();
     geo.setAttribute('position', new Float32BufferAttribute(positions, 3));
     geo.setAttribute('uv', new Float32BufferAttribute(uvs, 2));
-    geo.setIndex(indices);
-    geo.computeVertexNormals();
-    geo.computeBoundingSphere();
+    geo.setAttribute('normal', new BufferAttribute(new Float32Array(positions.length), 3));
+    geo.setIndex(new BufferAttribute(gridIndex(this.resolution), 1));
     this.geometry = geo;
+    this.refreshShading();
 
     const material = new MeshStandardMaterial({
       color: options.color !== undefined ? new Color(options.color) : new Color(0x6ab04c),
@@ -166,12 +158,21 @@ export class Terrain {
 
   /** Reescreve TODO o Y do mesh com a altura efetiva (base+delta) + normais/bounds. */
   private applyHeights(): void {
-    const n = this.resolution + 1;
     const pos = this.geometry.getAttribute('position') as Float32BufferAttribute;
-    for (let k = 0; k < n * n; k++) pos.setY(k, this.effectiveY(k));
+    const array = pos.array as Float32Array;
+    for (let k = 0, o = 1; k < this.heights.length; k++, o += 3) array[o] = this.effectiveY(k);
     pos.needsUpdate = true;
-    this.geometry.computeVertexNormals();
-    this.geometry.computeBoundingSphere();
+    this.refreshShading();
+  }
+
+  /** Normais (no atributo existente, `needsUpdate` como o three) e esfera envolvente a partir das posições. */
+  private refreshShading(): void {
+    const geo = this.geometry;
+    const positions = geo.getAttribute('position').array as Float32Array;
+    const normal = geo.getAttribute('normal') as BufferAttribute;
+    gridNormals(positions, geo.index!.array, normal.array as Float32Array);
+    normal.needsUpdate = true;
+    geo.boundingSphere = gridBoundingSphere(positions, geo.boundingSphere ?? undefined);
   }
 
   /**
@@ -223,8 +224,7 @@ export class Terrain {
     }
     if (changed) {
       pos.needsUpdate = true;
-      this.geometry.computeVertexNormals();
-      this.geometry.computeBoundingSphere();
+      this.refreshShading();
     }
     return changed;
   }
