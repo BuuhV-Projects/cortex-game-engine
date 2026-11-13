@@ -124,6 +124,25 @@ describe('nativeRoutable (SPEC-0729)', () => {
     }
   });
 
+  it('com o espelho de cena no host: a matriz ainda em Array (montagem) não impede, sem espelho impede', () => {
+    setNativeRaycastBridge(fakeBridge().bridge);
+    const building = (): Mesh => new Mesh(new BoxGeometry(1, 1, 1, SEGMENTS, SEGMENTS, SEGMENTS), new MeshBasicMaterial());
+    const g = globalThis as { __cortexSceneMirror?: unknown };
+    expect(nativeRoutable(building())).toBe(false);
+    g.__cortexSceneMirror = { build: () => true };
+    try {
+      const mesh = building();
+      expect(nativeRoutable(mesh)).toBe(true);
+      collect(mesh);
+      expect(hasTree(mesh)).toBe(false);
+      // as outras regras continuam valendo com o espelho
+      const { float64, multi, wrapped } = unroutables();
+      for (const m of [float64, multi, wrapped]) expect(nativeRoutable(m)).toBe(false);
+    } finally {
+      delete g.__cortexSceneMirror;
+    }
+  });
+
   it('InstancedMesh roteável registra as instâncias e fica sem árvore', () => {
     const { bridge, calls } = fakeBridge();
     setNativeRaycastBridge(bridge);

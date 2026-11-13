@@ -12,6 +12,7 @@ import {
   type Raycaster,
 } from 'three';
 import { debug } from '../core/debug.js';
+import { nativeSceneMirrorAvailable } from '../core/sceneMirror/mirrorBridge.js';
 import { CROSSED_MIN_BVH_TRIS, ensureBoundsTree } from './raycastAccel.js';
 
 /**
@@ -233,8 +234,9 @@ let routedInstances = NO_INSTANCES;
 /**
  * As regras do roteamento (SPEC-0347), num lugar só para o `route` e o {@link nativeRoutable} nunca
  * divergirem (SPEC-0729). Com `Route.Native`, deixa os ids em `routedGeometry`/`routedInstances`.
+ * `matrixLater`: não confere o formato da `matrixWorld` agora (ela só precisa ser `Float64Array` na hora do raio).
  */
-function classify(bridge: RaycastBridge, o: Object3D): Route {
+function classify(bridge: RaycastBridge, o: Object3D, matrixLater = false): Route {
   const m = o as Mesh & { isInstancedMesh?: boolean; isBatchedMesh?: boolean };
   if (!m.isMesh || m.isBatchedMesh) return Route.Js;
   const instanced = m.isInstancedMesh === true;
@@ -243,7 +245,7 @@ function classify(bridge: RaycastBridge, o: Object3D): Route {
   const mat = m.material;
   if (mat === undefined) return Route.Nothing;
   if (Array.isArray(mat)) return Route.Js;
-  if (!((m.matrixWorld.elements as unknown) instanceof Float64Array)) return Route.Js;
+  if (!matrixLater && !((m.matrixWorld.elements as unknown) instanceof Float64Array)) return Route.Js;
   const g = geometryId(bridge, m.geometry);
   if (g < 0) return Route.Js;
   const inst = instanced ? instancesId(bridge, o as InstancedMesh) : NO_INSTANCES;
@@ -270,10 +272,15 @@ function route(bridge: RaycastBridge, o: Object3D, n: number, s = slots, mats = 
  * `true` quando o raycast nativo está ativo e o host reproduz `o` (as mesmas regras do `route`), e aí a
  * árvore BVH em JS é redundante (SPEC-0729). Registra a geometria (e as instâncias) no host agora: é o
  * que o 1º raio faria de qualquer jeito. Sem a ponte: `false`.
+ *
+ * A `matrixWorld` só vira `Float64Array` (a memória do C++) quando o espelho de cena do host se instala, DEPOIS
+ * do `buildScene` — e a 1ª coleta da física roda durante ele. Com o espelho no host, toda matriz da cena (e a dos
+ * nós que entram ou saem depois) fica em `Float64Array`, então o formato de agora não decide nada. Se o espelho
+ * não chegar a se instalar, o raio cai no `jsFirstHit`, que monta a árvore sob demanda.
  */
 export function nativeRoutable(o: Object3D): boolean {
   const bridge = nativeRaycastBridge();
-  return bridge !== null && classify(bridge, o) === Route.Native;
+  return bridge !== null && classify(bridge, o, nativeSceneMirrorAvailable()) === Route.Native;
 }
 
 function grow(need: number): void {
