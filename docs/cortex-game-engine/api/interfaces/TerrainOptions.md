@@ -24,11 +24,11 @@ Cor base do material. Default verde-grama.
 
 ### heights?
 
-> `optional` **heights?**: `number`[]
+> `optional` **heights?**: `ArrayLike`\<`number`\>
 
 Defined in: [src/scene/Terrain.ts:26](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L26)
 
-Heightmap inicial (row-major, `(res+1)²` alturas) — restaura a autoria.
+Heightmap inicial (row-major, `(res+1)²` alturas) — restaura a autoria; aceita array tipado (SPEC-0728).
 
 ***
 

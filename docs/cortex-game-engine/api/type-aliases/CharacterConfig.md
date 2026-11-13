@@ -8,6 +8,6 @@
 
 > **CharacterConfig** = `NonNullable`\<`z.infer`\<*typeof* `characterSchema`\>\>
 
-Defined in: [src/scene/SceneDefinition.ts:630](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneDefinition.ts#L630)
+Defined in: [src/scene/SceneDefinition.ts:351](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneDefinition.ts#L351)
 
 Config de Character (campo `character` dos nós; ver characterSchema).

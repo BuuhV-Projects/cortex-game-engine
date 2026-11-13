@@ -22,8 +22,8 @@ export interface TerrainOptions {
    * detalhe mais fino, heightmap maior. Default `64`.
    */
   resolution?: number;
-  /** Heightmap inicial (row-major, `(res+1)²` alturas) — restaura a autoria. */
-  heights?: number[];
+  /** Heightmap inicial (row-major, `(res+1)²` alturas) — restaura a autoria; aceita array tipado (SPEC-0728). */
+  heights?: ArrayLike<number>;
   /** Cor base do material. Default verde-grama. */
   color?: ColorRepresentation;
 }
@@ -35,6 +35,12 @@ export interface TerrainPaintLayer {
   /** Quantas vezes a textura repete ao longo do terreno inteiro (tiling). */
   repeat: number;
 }
+
+/**
+ * Pintura a aplicar com {@link Terrain.setPaint}: a {@link TerrainPaintData} com o splatmap em base64 ou nos bytes
+ * RGBA crus (`size*size*4`), que entram sem base64 (dado assado, SPEC-0728).
+ */
+export type TerrainPaintInput = Omit<TerrainPaintData, 'splat'> & { splat: string | Uint8Array };
 
 /** Pintura do terreno serializável (camadas + splatmap) — persistência do editor. */
 export interface TerrainPaintData {
@@ -105,7 +111,7 @@ export class Terrain {
     const n = this.resolution + 1;
 
     this.heights = new Float32Array(n * n);
-    if (options.heights) this.heights.set(options.heights.slice(0, n * n));
+    if (options.heights) copyHeights(this.heights, options.heights);
 
     const positions = new Float32Array(n * n * 3);
     const uvs = new Float32Array(n * n * 2);
@@ -260,9 +266,8 @@ export class Terrain {
 
   /** Substitui o heightmap **base** inteiro (ex.: restaurar autoria salva) e atualiza
    * o mesh (mantendo o delta de moldagem da estrada por cima, se houver). */
-  setHeights(heights: number[]): void {
-    const n = this.resolution + 1;
-    this.heights.set(heights.slice(0, n * n));
+  setHeights(heights: ArrayLike<number>): void {
+    copyHeights(this.heights, heights);
     this.applyHeights(); // base + delta da estrada
   }
 
@@ -356,9 +361,12 @@ export class Terrain {
     };
   }
 
-  /** Restaura uma pintura salva ({@link Terrain.getPaint}): camadas + splatmap. */
-  setPaint(data: TerrainPaintData): void {
-    if (!data.layers.length || !data.splat) return;
+  /**
+   * Restaura uma pintura salva ({@link Terrain.getPaint}): camadas + splatmap, em base64 ou nos bytes RGBA crus
+   * (copiados; o que passar de `size*size*4` é ignorado).
+   */
+  setPaint(data: TerrainPaintInput): void {
+    if (!data.layers.length || data.splat.length === 0) return;
     if (!this.splatTexture) {
       this.splatSize = data.size;
       this.ensurePaint();
@@ -374,7 +382,7 @@ export class Terrain {
     for (const l of data.layers.slice(0, TERRAIN_MAX_LAYERS)) {
       this.layers.push({ url: l.url, repeat: l.repeat });
     }
-    const bytes = base64ToBytes(data.splat);
+    const bytes = typeof data.splat === 'string' ? base64ToBytes(data.splat) : data.splat;
     this.splatData!.set(bytes.subarray(0, this.splatData!.length));
     this.splatTexture!.needsUpdate = true;
     for (let i = 0; i < this.layers.length; i++) this.loadLayerTexture(i);
@@ -435,6 +443,16 @@ export class Terrain {
       this.repeatNodes[i]!.value = this.layers[i]?.repeat ?? 1;
     }
   }
+}
+
+/**
+ * Copia até `dst.length` alturas de `src` (array ou array tipado) sem criar array intermediário; se vier menos, o
+ * resto de `dst` fica como estava.
+ */
+function copyHeights(dst: Float32Array, src: ArrayLike<number>): void {
+  if (src.length <= dst.length) dst.set(src);
+  else if (ArrayBuffer.isView(src)) dst.set((src as Float32Array | Float64Array).subarray(0, dst.length));
+  else dst.set(Array.prototype.slice.call(src, 0, dst.length) as number[]);
 }
 
 /** Bytes → base64 (Node usa Buffer; browser, btoa em blocos pra não estourar a pilha). */

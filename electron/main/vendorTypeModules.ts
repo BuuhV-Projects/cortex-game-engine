@@ -95,6 +95,7 @@ export const VENDOR_TYPE_MODULES = {
     'SceneFile',
     'SceneLoader',
     'SceneDefinition',
+    'sceneFieldSchemas',
     'SceneBuilder',
     'RoadBuild',
     'Background',
