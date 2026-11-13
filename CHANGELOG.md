@@ -1,3 +1,15 @@
+# [0.126.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.125.0...v0.126.0) (2026-11-13)
+
+
+### Bug Fixes
+
+* **scene:** alturas tipadas do nó terrain aceitam qualquer buffer (SPEC-0728) ([bd32461](https://github.com/BuuhV-Projects/cortex-game-engine/commit/bd32461fc4834ac74e3dd7f6ed8c07808634228f))
+
+
+### Features
+
+* **terrain:** setPaint com bytes e alturas como array tipado (SPEC-0728) ([3000e89](https://github.com/BuuhV-Projects/cortex-game-engine/commit/3000e89a86a8be24e5bddbdca666639162783fbc))
+
 # [0.125.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.124.0...v0.125.0) (2026-11-12)
 
 
