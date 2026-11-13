@@ -197,7 +197,9 @@ const terrainNode = z.object({
    * Heightmap (row-major, `(res+1)²` alturas) — autoria do editor. Cena montada em código pode passar um
    * `Float32Array`/`Float64Array` (dado assado, SPEC-0728); o arquivo JSON fica com `number[]`.
    */
-  heights: z.union([z.array(z.number()), z.instanceof(Float32Array), z.instanceof(Float64Array)]).optional(),
+  heights: z
+    .union([z.array(z.number()), z.custom<Float32Array | Float64Array>((v) => v instanceof Float32Array || v instanceof Float64Array)])
+    .optional(),
   /** Cor base do material. Default verde-grama. */
   color: colorSchema.optional(),
   id: z.string().min(1),

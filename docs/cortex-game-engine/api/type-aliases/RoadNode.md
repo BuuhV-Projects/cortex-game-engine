@@ -8,6 +8,6 @@
 
 > **RoadNode** = `z.infer`\<*typeof* `roadNode`\>
 
-Defined in: [src/scene/SceneDefinition.ts:362](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneDefinition.ts#L362)
+Defined in: [src/scene/SceneDefinition.ts:364](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneDefinition.ts#L364)
 
 Nó de estrada por spline (SPEC-0631).

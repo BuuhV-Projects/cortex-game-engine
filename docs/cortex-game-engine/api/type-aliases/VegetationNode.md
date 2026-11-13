@@ -8,6 +8,6 @@
 
 > **VegetationNode** = `z.infer`\<*typeof* `vegetationNode`\>
 
-Defined in: [src/scene/SceneDefinition.ts:358](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneDefinition.ts#L358)
+Defined in: [src/scene/SceneDefinition.ts:360](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneDefinition.ts#L360)
 
 Nó de vegetação instanciada (ver vegetationNode; SPEC-0077).

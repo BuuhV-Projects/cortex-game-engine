@@ -47,11 +47,21 @@ describe('setPaint com bytes (SPEC-0728)', () => {
     expect(after.subarray(RGBA)).toEqual(pattern(n).subarray(RGBA));
   });
 
-  it('bytes vazios ou sem camada não pintam', () => {
+  it('bytes vazios ou sem camada não mexem na pintura', () => {
     const t = new Terrain({ size: 10, resolution: 4 });
     t.setPaint({ layers: LAYERS, size: SIZE, splat: new Uint8Array(0) });
-    t.setPaint({ layers: [], size: SIZE, splat: pattern(SIZE * SIZE * RGBA) });
     expect(t.getPaint()).toBeNull();
+    t.setPaint({ layers: LAYERS, size: SIZE, splat: pattern(SIZE * SIZE * RGBA) });
+    const before = t.getPaint();
+    t.setPaint({ layers: [], size: SIZE, splat: new Uint8Array(SIZE * SIZE * RGBA) });
+    t.setPaint({ layers: [{ url: 'assets/b.png', repeat: 1 }], size: SIZE, splat: new Uint8Array(0) });
+    expect(t.getPaint()).toEqual(before);
+  });
+
+  it('no tipo do nó, alturas sobre um buffer qualquer (ex.: lido do disco)', () => {
+    const raw: Uint8Array = new Uint8Array(new Float64Array([1, 2, 3, 4]).buffer);
+    const node: SceneDefinition['nodes'][number] = { type: 'terrain', id: 't', resolution: 1, heights: new Float64Array(raw.buffer, 0, 4) };
+    expect(parseSceneNode(node)).not.toBeNull();
   });
 });
 
