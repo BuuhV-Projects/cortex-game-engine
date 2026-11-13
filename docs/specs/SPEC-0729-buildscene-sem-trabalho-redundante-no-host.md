@@ -1,7 +1,7 @@
 # SPEC-0729 - buildScene sem trabalho redundante no host
 
 **Data:** 2026-11-13
-**Status:** em andamento
+**Status:** implementado
 
 ## Contexto
 
@@ -32,10 +32,16 @@ Depois do `buildScene`, um 2º collect ainda monta 1,8–2,3 s de BVH nas malhas
 ### 1. BVH em JS só para a malha que o host não reproduz
 
 - `nativeRoutable(o)` (`src/physics/nativeRaycast.ts`): `true` quando o raycast nativo está ativo e `o` passa pelas
-  mesmas regras do `route`. As regras são: malha não batched, `raycast` padrão, material único, `matrixWorld` em
+  mesmas regras do `route` (as duas usam a mesma `classify`). As regras são: malha não batched, `raycast` padrão, material único, `matrixWorld` em
   `Float64Array` e geometria registrável (posição `Float32Array` não normalizada, sem morph, índice Uint16/Uint32,
   `drawRange` cheio). Para `InstancedMesh`, as instâncias também precisam registrar. Registrar agora a geometria no
   host é o que o 1º raio faria de qualquer jeito.
+- **A matriz não decide na montagem.** A `matrixWorld` só vira `Float64Array` (a memória do C++) quando o espelho de
+  cena do host (`NativeSceneMirror`) se instala, depois do `buildScene`, mas a 1ª coleta da física roda durante ele.
+  A 1ª versão conferia a matriz e não roteava nenhuma das 3.246 malhas. Com o espelho no host
+  (`nativeSceneMirrorAvailable()`), o `nativeRoutable` não confere o formato da matriz: toda matriz da cena, e a dos
+  nós que entram ou saem depois (`appendSubtree`, `removeSubtree`), fica em `Float64Array` antes do 1º raio. Sem
+  espelho, a regra continua. Se o espelho falhar ao instalar, o raio cai no `jsFirstHit`, que monta a árvore sob demanda.
 - O `CharacterSceneCollector.visit` (`src/physics/characterCollect.ts`) só chama `ensureBoundsTree` quando
   `!nativeRoutable(o)`, nos dois lugares: na malha visível pisável e na escondida preparada (SPEC-0307).
 - No navegador, `nativeRaycastActive()` é falso e tudo continua como antes.
@@ -65,6 +71,20 @@ posição. O atributo de normal é reaproveitado e marcado com `needsUpdate`, co
 - `makeVegetation` sem clone (~0,4 s), primitiva de collider com geometria compartilhada (~0,2 s), `mergeStaticScene`
   (~0,2 s).
 - Cook do JPG embutido em GLB para KTX2: não pesa dentro do `buildScene`, só antes dele.
+
+## Medida
+
+Export nativo, Ryzen 5 5600G, `?menu=0&intro=0`. A máquina estava com outros programas pesados abertos (Epic, Docker,
+Chrome), e o total oscilou muito entre rodadas iguais. Por isso o número que compara é o trecho do `buildScene` pelo
+profiler (`?cortexDebug=boot`):
+
+| | Antes | Depois |
+|---|---|---|
+| `buildScene` | 21,2 / 21,2 / 24,5 / 25,9 s (mediana ~22,9) | 8,96 / 10,7 / 15,5 s (mediana 10,7) |
+| 1º collect da física | 7,0–10,5 s (349 árvores JS, 2,26 M tri) | 1,6 s, **0 árvores JS** (3.245 de 3.246 malhas roteáveis) |
+| 2º collect (depois do merge) | 1,8–2,3 s | 1,4 s, 0 árvores JS |
+| `new Terrain` ×203 + estradas | 5,8 s + 2,5 s | dentro dos ~7 s da instanciação (era ~11–14,6 s) |
+| primeiro quadro jogável | 63,7–84,9 s (mediana ~66) | 48,4–86,6 s (mediana ~56; melhor caso 48,4) |
 
 ## Consequências
 
