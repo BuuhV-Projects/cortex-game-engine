@@ -1263,6 +1263,10 @@ const grama = terrain.layerFor('assets/textures/grama.png') // aloca/reusa camad
 terrain.paint(0, 0, 8, 1, grama)  // pinta raio 8 no centro (amount<0 apaga)
 terrain.setLayerRepeat(grama, 16) // tiling (repetições ao longo do terreno)
 const paint = terrain.getPaint()  // serializável; terrain.setPaint(...) restaura
+
+// Dado assado (SPEC-0728): bytes RGBA crus e alturas tipadas, sem base64 nem cópia para number[]
+terrain.setPaint({ layers: paint.layers, size: paint.size, splat: bytes }) // bytes: Uint8Array (size*size*4)
+new Terrain({ size: 260, resolution: 65, heights: float64Heights })      // também no nó `terrain` da cena
 ```
 
 `resolution` = segmentos por lado (grade `(res+1)²`). **Sólido por padrão**: com

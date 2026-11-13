@@ -346,6 +346,7 @@
 - [ScriptFieldType](type-aliases/ScriptFieldType.md)
 - [ShapeKind](type-aliases/ShapeKind.md)
 - [SteamOverlayPage](type-aliases/SteamOverlayPage.md)
+- [TerrainPaintInput](type-aliases/TerrainPaintInput.md)
 - [TraceCounterFields](type-aliases/TraceCounterFields.md)
 - [UiAnchor](type-aliases/UiAnchor.md)
 - [Vec3](type-aliases/Vec3.md)
