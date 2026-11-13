@@ -1,3 +1,16 @@
+## [0.126.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.126.0...v0.126.1) (2026-11-13)
+
+
+### Bug Fixes
+
+* **physics:** roteável sem conferir a matriz enquanto o espelho do host não se instala (SPEC-0729) ([0a5dd93](https://github.com/BuuhV-Projects/cortex-game-engine/commit/0a5dd93d401b6fa3b252cb9ba0637d2bfb875dbe))
+
+
+### Performance Improvements
+
+* **physics:** BVH em JS só para malha que o raycast nativo não reproduz (SPEC-0729) ([b0e43b9](https://github.com/BuuhV-Projects/cortex-game-engine/commit/b0e43b921a784582ccab37982bc1d8ce4e92867a))
+* **terrain:** índice, normais e esfera da grade em arrays planos (SPEC-0729) ([82cf093](https://github.com/BuuhV-Projects/cortex-game-engine/commit/82cf093760e0bff5e0ce5dc1d911f7c6c5bb4286))
+
 # [0.126.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.125.0...v0.126.0) (2026-11-13)
 
 
