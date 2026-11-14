@@ -44,6 +44,7 @@ add_executable(cortex_host
   src/shims/geometry_registry_shim.cpp
   src/shims/shadow_alpha_clip_shim.cpp
   src/shims/audio.cpp
+  src/shims/audio_voices.cpp
   src/shims/audio_decode.cpp
   src/shims/files.cpp
   src/shims/image_decode.cpp
@@ -358,11 +359,13 @@ add_executable(cortex_host_tests
   tests/window_size_test.cpp
   tests/inflate_test.cpp
   tests/audio_decode_test.cpp
+  tests/audio_voices_test.cpp
   tests/font_registry_test.cpp
   tests/relaunch_test.cpp
   src/shims/font_registry.cpp
   src/shims/inflate.cpp
   src/shims/audio_decode.cpp
+  src/shims/audio_voices.cpp
   src/shims/stb_image_impl.cpp
   src/physics/raycast/triangle_bvh.cpp
   src/physics/raycast/instance_set.cpp
@@ -391,7 +394,10 @@ target_include_directories(cortex_host_tests PRIVATE
   ${TP}/wgpu/include
   ${TP}/stb
   ${TP}/miniaudio
+  ${TP}/SDL3/include
 )
+# As vozes de áudio (SPEC-0730) testam com a SDL de verdade, no driver dummy.
+target_link_libraries(cortex_host_tests PRIVATE ${TP}/SDL3/lib/x64/SDL3.lib)
 # Fixtures binárias dos testes (ex.: .ogg do audio_decode_test, SPEC-0700).
 target_compile_definitions(cortex_host_tests PRIVATE
   CORTEX_TEST_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures"
