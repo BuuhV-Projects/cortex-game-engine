@@ -17,7 +17,7 @@ import { prepareDist } from './fs-clean.mjs';
 import { whoLocks } from './who-locks.mjs';
 import { readGameConfig, steamAppIdOf } from './game-config.mjs';
 import { embedIcon } from './embed-icon.mjs';
-import { copyLanguages } from './copy-languages.mjs';
+import { copyLooseDirs, looseDirsOf } from './copy-loose-dirs.mjs';
 import { staleHostBinaries, staleHostMessage } from './host-freshness.mjs';
 
 // Raiz do engine derivada do PRÓPRIO script (roda de qualquer cwd — ex.:
@@ -85,6 +85,15 @@ if (steam) {
   }
   // Normaliza pra número: o cortex.json do dist é o que o host lê em runtime.
   game.steamAppId = appId;
+}
+// Pastas soltas (SPEC-0733): `languages` + `cortex.json.looseDirs`. Valida
+// AQUI, antes do build: nome inválido reprova o export em vez de sumir em silêncio.
+let looseDirs;
+try {
+  looseDirs = looseDirsOf(game);
+} catch (err) {
+  console.error(`[export] ${err.message}`);
+  process.exit(1);
 }
 const EXE_NAME = 'launcher.exe';
 // Saída: `--out <dir>` (resolvido) ou o `dist-native` do projeto.
@@ -302,8 +311,10 @@ guardLocks('assets', () => {
   // sem `id`, e o host cairia no basename do exe (`launcher`) → saves colidindo
   // entre jogos. O `icon` fica fora do runtime (é usado só no export).
   {
-    const { icon, ...rest } = game;
+    // `icon` e `looseDirs` só servem ao export — não vão pro runtime.
+    const { icon, looseDirs: _looseDirs, ...rest } = game;
     void icon;
+    void _looseDirs;
     // O app id só faz sentido no build Steam: no export PC/Xbox ele viraria
     // ruído (o host loga "app ignorado" a cada boot) e sugeriria uma integração
     // que aquele binário não tem.
@@ -319,12 +330,12 @@ guardLocks('assets', () => {
   }
   const iniSrc = path.join(gameDir, 'config.ini');
   if (fs.existsSync(iniSrc)) fs.copyFileSync(iniSrc, path.join(dist, 'config.ini'));
-  // Idiomas (SPEC-0124): a pasta languages/ INTEIRA vai solta pra
-  // dist-native/languages/ — de propósito fora do assets.pak, pra qualquer um
-  // traduzir/editar sem rebuild. Recursivo (ADR-0187) porque conteúdo
-  // localizado também é binário: placas dos portais e dublagem por idioma.
-  const languageFiles = copyLanguages(gameDir, dist);
-  if (languageFiles > 0) console.log(`[export] languages: ${languageFiles} arquivos`);
+  // Pastas soltas (SPEC-0733): languages/ INTEIRA (SPEC-0124, ADR-0187) + as
+  // declaradas em cortex.json.looseDirs (ex.: radios/) vão pro dist fora do
+  // assets.pak, de propósito, pra trocar o conteúdo sem rebuild.
+  for (const { dir, files } of copyLooseDirs(gameDir, dist, looseDirs)) {
+    console.log(`[export] ${dir}: ${files} arquivos`);
+  }
 });
 
 step('done');
