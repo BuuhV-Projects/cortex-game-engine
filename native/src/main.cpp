@@ -24,6 +24,7 @@
 #include "napi/napi_util.h"
 #include "shims/animation_frame.h"
 #include "shims/audio.h"
+#include "shims/audio_voices.h"
 #include "shims/files.h"
 #include "shims/decompression.h"
 #include "shims/image_decode.h"
@@ -110,6 +111,7 @@ bool pollEvents(napi_env env, SDL_Window* window, HostGpu* gpu) {
   SDL_Event event;
   while (SDL_PollEvent(&event)) {
     if (shims::handleSdlInputEvent(env, event)) continue;
+    if (shims::logAudioDeviceEvent(event)) continue;  // diagnóstico do áudio (SPEC-0730)
     if (!core::handleEvent(event, window, gpu)) return false;
     // Resize: o host já reconfigurou a surface; avisa o JS pra o engine
     // re-dimensionar o renderer (câmeras/targets) na resolução nova.

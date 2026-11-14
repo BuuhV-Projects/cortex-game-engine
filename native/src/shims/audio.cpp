@@ -1,36 +1,24 @@
 #include "audio.h"
 
 #include "audio_decode.h"
+#include "audio_voices.h"
 
-#include <SDL3/SDL.h>
-
-#include <cstdint>
-#include <map>
-#include <vector>
+#include <utility>
 
 #include "../napi/napi_util.h"
 
 namespace shims {
 namespace {
 
-struct Voice {
-  SDL_AudioStream* stream = nullptr;
-  int bufferId = 0;
-  bool loop = false;
-};
+// Valores padrão dos argumentos do play: buffer, laço, ganho, tom e início (s).
+constexpr size_t kPlayArgs = 5;
+constexpr double kDefaultGain = 1;
+constexpr double kDefaultRate = 1;
 
-std::map<int, AudioBufferData> g_buffers;
-std::map<int, Voice> g_voices;
-int g_nextBufferId = 1;
-int g_nextVoiceId = 1;
-
-// Enfileira o buffer a partir da amostra `first` (offset do play só na 1ª vez).
-void feedVoice(Voice& voice, size_t first = 0) {
-  const AudioBufferData& buffer = g_buffers[voice.bufferId];
-  if (first >= buffer.samples.size()) return;
-  SDL_PutAudioStreamData(
-      voice.stream, buffer.samples.data() + first,
-      static_cast<int>((buffer.samples.size() - first) * sizeof(float)));
+double argOr(napi_env env, napi_value value, double fallback) {
+  double out = fallback;
+  napi_get_value_double(env, value, &out);
+  return out;
 }
 
 // __cortexAudio.decode(ArrayBuffer|TypedArray) → {id,duration,sampleRate,channels}|null
@@ -52,19 +40,16 @@ napi_value jsDecode(napi_env env, napi_callback_info info) {
     napi_typedarray_type type;
     napi_value ab = nullptr;
     size_t offset = 0;
-    if (napi_get_typedarray_info(env, args[0], &type, &size, &bytes, &ab,
-                                 &offset) != napi_ok)
-      return nullValue;
+    if (napi_get_typedarray_info(env, args[0], &type, &size, &bytes, &ab, &offset) != napi_ok) return nullValue;
   }
   if (!bytes || size == 0) return nullValue;
 
   AudioBufferData buffer;
   if (!decodeAudio(bytes, size, &buffer)) return nullValue;
-  int id = g_nextBufferId++;
-  double duration = buffer.duration;
-  int sampleRate = buffer.sampleRate;
-  int channels = buffer.channels;
-  g_buffers[id] = std::move(buffer);
+  const double duration = buffer.duration;
+  const int sampleRate = buffer.sampleRate;
+  const int channels = buffer.channels;
+  const int id = audioVoices().addBuffer(std::move(buffer));
 
   napi_value out = njs::makeObject(env);
   napi_value v = nullptr;
@@ -82,71 +67,36 @@ napi_value jsDecode(napi_env env, napi_callback_info info) {
 // __cortexAudio.play(bufferId, loop, gain, rate, offsetSeconds) → voiceId
 // (0 = falhou). offsetSeconds (padrão 0) é o ponto de início (SPEC-0700).
 napi_value jsPlay(napi_env env, napi_callback_info info) {
-  size_t argc = 5;
-  napi_value args[5];
+  size_t argc = kPlayArgs;
+  napi_value args[kPlayArgs];
   napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
-  double values[5] = {0, 0, 1, 1, 0};
-  for (size_t i = 0; i < argc && i < 5; ++i)
-    napi_get_value_double(env, args[i], &values[i]);
+  double values[kPlayArgs] = {0, 0, kDefaultGain, kDefaultRate, 0};
+  for (size_t i = 0; i < argc && i < kPlayArgs; ++i) values[i] = argOr(env, args[i], values[i]);
 
+  const int voiceId = audioVoices().play(static_cast<int>(values[0]), values[1] != 0, static_cast<float>(values[2]),
+                                         static_cast<float>(values[3]), values[4]);
   napi_value out = nullptr;
-  auto it = g_buffers.find(static_cast<int>(values[0]));
-  if (it == g_buffers.end()) {
-    napi_create_int32(env, 0, &out);
-    return out;
-  }
-  const AudioBufferData& buffer = it->second;
-
-  SDL_AudioSpec spec = {SDL_AUDIO_F32, buffer.channels, buffer.sampleRate};
-  SDL_AudioStream* stream = SDL_OpenAudioDeviceStream(
-      SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, nullptr, nullptr);
-  if (!stream) {
-    napi_create_int32(env, 0, &out);
-    return out;
-  }
-  SDL_SetAudioStreamGain(stream, static_cast<float>(values[2]));
-  if (values[3] > 0 && values[3] != 1.0)
-    SDL_SetAudioStreamFrequencyRatio(stream, static_cast<float>(values[3]));
-
-  int voiceId = g_nextVoiceId++;
-  Voice voice{stream, static_cast<int>(values[0]), values[1] != 0};
-  g_voices[voiceId] = voice;
-  feedVoice(g_voices[voiceId],
-            startSampleAt(buffer, values[4], voice.loop));
-  SDL_ResumeAudioStreamDevice(stream);
-
   napi_create_int32(env, voiceId, &out);
   return out;
 }
 
+// __cortexAudio.setGain(voiceId, gain) e .setRate(voiceId, rate) — ao vivo (SPEC-0700).
 napi_value jsSetGain(napi_env env, napi_callback_info info) {
   size_t argc = 2;
   napi_value args[2];
   napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
-  double voiceId = 0, gain = 1;
   if (argc >= 2) {
-    napi_get_value_double(env, args[0], &voiceId);
-    napi_get_value_double(env, args[1], &gain);
-    auto it = g_voices.find(static_cast<int>(voiceId));
-    if (it != g_voices.end())
-      SDL_SetAudioStreamGain(it->second.stream, static_cast<float>(gain));
+    audioVoices().setGain(static_cast<int>(argOr(env, args[0], 0)), static_cast<float>(argOr(env, args[1], kDefaultGain)));
   }
   return njs::undefined(env);
 }
 
-// __cortexAudio.setRate(voiceId, rate) — tom ao vivo (SPEC-0700).
 napi_value jsSetRate(napi_env env, napi_callback_info info) {
   size_t argc = 2;
   napi_value args[2];
   napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
-  double voiceId = 0, rate = 1;
   if (argc >= 2) {
-    napi_get_value_double(env, args[0], &voiceId);
-    napi_get_value_double(env, args[1], &rate);
-    auto it = g_voices.find(static_cast<int>(voiceId));
-    if (it != g_voices.end() && rate > 0)
-      SDL_SetAudioStreamFrequencyRatio(it->second.stream,
-                                       static_cast<float>(rate));
+    audioVoices().setRate(static_cast<int>(argOr(env, args[0], 0)), static_cast<float>(argOr(env, args[1], kDefaultRate)));
   }
   return njs::undefined(env);
 }
@@ -155,38 +105,17 @@ napi_value jsStop(napi_env env, napi_callback_info info) {
   size_t argc = 1;
   napi_value args[1];
   napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
-  double voiceId = 0;
-  if (argc >= 1 && napi_get_value_double(env, args[0], &voiceId) == napi_ok) {
-    auto it = g_voices.find(static_cast<int>(voiceId));
-    if (it != g_voices.end()) {
-      SDL_DestroyAudioStream(it->second.stream);
-      g_voices.erase(it);
-    }
-  }
+  if (argc >= 1) audioVoices().stop(static_cast<int>(argOr(env, args[0], 0)));
   return njs::undefined(env);
 }
 
-// __cortexAudio.free(bufferId) — libera o PCM decodificado (ADR-0153). Sem
-// isto o g_buffers só crescia: cada fase que decodificava áudio somava RAM até
-// o fim do processo. Derruba antes as vozes que ainda tocam o buffer (senão o
-// updateAudio ressuscitaria uma entrada VAZIA via operator[] no loop).
+// __cortexAudio.free(bufferId) — libera o PCM decodificado (ADR-0153), derrubando
+// antes as vozes que ainda tocam o buffer.
 napi_value jsFree(napi_env env, napi_callback_info info) {
   size_t argc = 1;
   napi_value args[1];
   napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
-  double bufferId = 0;
-  if (argc >= 1 && napi_get_value_double(env, args[0], &bufferId) == napi_ok) {
-    const int id = static_cast<int>(bufferId);
-    for (auto it = g_voices.begin(); it != g_voices.end();) {
-      if (it->second.bufferId == id) {
-        SDL_DestroyAudioStream(it->second.stream);
-        it = g_voices.erase(it);
-      } else {
-        ++it;
-      }
-    }
-    g_buffers.erase(id);
-  }
+  if (argc >= 1) audioVoices().freeBuffer(static_cast<int>(argOr(env, args[0], 0)));
   return njs::undefined(env);
 }
 
@@ -205,29 +134,8 @@ void registerAudio(napi_env env) {
   napi_set_named_property(env, global, "__cortexAudio", audio);
 }
 
-void updateAudio() {
-  for (auto it = g_voices.begin(); it != g_voices.end();) {
-    Voice& voice = it->second;
-    int queued = SDL_GetAudioStreamQueued(voice.stream);
-    if (voice.loop) {
-      // Realimenta antes de secar (meio buffer de folga).
-      const AudioBufferData& buffer = g_buffers[voice.bufferId];
-      int total = static_cast<int>(buffer.samples.size() * sizeof(float));
-      if (queued < total / 2) feedVoice(voice);
-      ++it;
-    } else if (queued == 0) {
-      SDL_DestroyAudioStream(voice.stream);
-      it = g_voices.erase(it);
-    } else {
-      ++it;
-    }
-  }
-}
+void updateAudio() { audioVoices().update(); }
 
-void shutdownAudio() {
-  for (auto& [id, voice] : g_voices) SDL_DestroyAudioStream(voice.stream);
-  g_voices.clear();
-  g_buffers.clear();
-}
+void shutdownAudio() { audioVoices().shutdown(); }
 
 }  // namespace shims

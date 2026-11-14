@@ -137,12 +137,14 @@ void testShadowGateRecusaPosicaoForaDeFloat32x3();
 void testShadowGatePosicaoSemConsultaContaComoAusente();
 void testInflate();
 void testAudioDecode();
+void testAudioVoices();
 void testUiFontRegistry();
 }  // namespace tests
 
 int main() {
   tests::testInflate();
   tests::testAudioDecode();
+  tests::testAudioVoices();
   tests::testUiFontRegistry();
   tests::testFormatFromString();
   tests::testWindowSizeParse();

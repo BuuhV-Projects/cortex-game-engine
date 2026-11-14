@@ -1,5 +1,5 @@
-// Áudio nativo: decode (miniaudio: wav/mp3/flac) + playback (streams SDL3,
-// um por voz, com gain/pitch nativos). O JS enxerga __cortexAudio
+// Áudio nativo: decode (miniaudio: wav/mp3/flac) + playback (um stream SDL3
+// por voz, todos num dispositivo lógico só — SPEC-0730 — com gain/pitch nativos). O JS enxerga __cortexAudio
 // (decode/play/setGain/stop); a forma WebAudio que o THREE.Audio espera é
 // reconstruída em js/src/shims/webaudio-lite.js.
 #pragma once
