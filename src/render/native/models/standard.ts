@@ -2,7 +2,7 @@
  * `standard` model (R1.2, SPEC-0535): `MeshStandard(Node)Material`, opaque, lit by the lights block.
  *
  * Math ported from the WGSL the three 0.184 generates for the DDD 61 (R0 reference dump, classes
- * `standard+fog+map`, `+doubleSide+emissiveMap`): geometry roughness
+ * `standard+fog+map`, `+doubleSide+emissiveMap`; doubleSide is no longer a variant, SPEC-0732): geometry roughness
  * `min(max(r, 0.0525) + max(|dpdx n|, |dpdy n|), 1)`, `F0 = mix(0.04, diffuse, metalness)`,
  * diffuse `* (1 - metalness)`, direct specular = `BRDF_GGX_Multiscatter` (Schlick fresnel,
  * `V_GGX_SmithCorrelated`, `D_GGX` and the multiscatter term read from the DFG LUT). The IBL terms

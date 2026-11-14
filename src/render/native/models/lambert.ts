@@ -11,26 +11,32 @@
  * linear fog. Output is linear (the three's output pass applies sRGB to the frame).
  *
  * The parts shared with `standard` (params, vertex stage, surface, fog) are exported from here.
+ *
+ * SPEC-0732: `doubleSide` and `alpha` are not variants. The face sign is always in the code (`1.0` on a FrontSide,
+ * whose back faces are culled), and the opaque alpha 1 is a param (`litFlags.x`), so the module is shared.
  */
 import type { Material, Object3D, Texture } from 'three';
 import type { Classification } from '../RendererClassifier.js';
 import { lightsRefusal } from '../frame/lights.js';
 import { SHADOW_READY } from '../frame/shadow.js';
+import { isOpaqueMaterial } from '../nativeRendererShared.js';
 import type { NativeModelDef, VertexSemantic } from './NativeModel.js';
 
 /** three constants (kept local). */
 const BACK_SIDE = 1;
-const DOUBLE_SIDE = 2;
 
 const ROW_FLOATS = 4;
 const MAT3_COLUMNS = 3;
-/** Params rows: color+opacity, emissive+alphaTest, map uv transform (3), emissiveMap uv transform (3). */
-export const LIT_PARAM_FLOATS = 8 * ROW_FLOATS;
+/** Params rows: color+opacity, emissive+alphaTest, map uv transform (3), emissiveMap uv transform (3), flags. */
+export const LIT_PARAM_FLOATS = 9 * ROW_FLOATS;
 const OPACITY_AT = 3;
 const EMISSIVE_AT = ROW_FLOATS;
 const ALPHA_TEST_AT = ROW_FLOATS + 3;
 const MAP_TRANSFORM_AT = 2 * ROW_FLOATS;
 const EMISSIVE_TRANSFORM_AT = 5 * ROW_FLOATS;
+/** `litFlags` (vec4): x = 1 when the material is opaque (the shader writes alpha 1, SPEC-0732). */
+export const LIT_FLAGS_AT = 8 * ROW_FLOATS;
+export const LIT_OPAQUE_AT = LIT_FLAGS_AT;
 
 /** Lit models draw receiveShadow objects (with `nativeShadow`) only once this is on. */
 const RECEIVE_SHADOW = true;
@@ -39,6 +45,8 @@ const RECEIVE_SHADOW = true;
 const LIT_FEATURES = ['map', 'emissiveMap', 'vertexColors', 'instanceColor', 'fog', 'alpha', 'alphaTest', 'receiveShadow'] as const;
 /** Accepted without a variant of their own (the uv transform is always applied). */
 const NEUTRAL_FEATURES = ['uvTransform', 'noToneMap'];
+/** Accepted, but a param and not a variant (SPEC-0732): the opaque alpha 1 is `litFlags.x`. */
+const PARAM_FEATURES = ['alpha'];
 /** Features that sample a texture with the mesh uv (`standard` adds metalRoughMap/normalMap, SPEC-0659; `splat` is the terrain's, SPEC-0662). */
 const UV_FEATURES = ['map', 'emissiveMap', 'metalRoughMap', 'normalMap', 'splat'];
 const usesUv = (variant: readonly string[]): boolean => UV_FEATURES.some((f) => variant.includes(f));
@@ -53,6 +61,8 @@ export interface LitMaterial {
   alphaTest: number;
   alphaToCoverage?: boolean;
   side: number;
+  transparent?: boolean;
+  blending?: number;
   map: MapLike | null;
   emissiveMap: MapLike | null;
 }
@@ -93,9 +103,8 @@ export function litVariant(c: Classification & { kind: 'covered' }, material: Ma
     litRefusalCounts.set(key, (litRefusalCounts.get(key) ?? 0) + 1);
     return null;
   }
-  const variant: string[] = accepted.filter((f) => c.features.includes(f));
-  if ((material as unknown as LitMaterial).side === DOUBLE_SIDE) variant.push('doubleSide');
-  return variant;
+  // DoubleSide has no variant: the face sign is always in the code (SPEC-0732).
+  return accepted.filter((f) => c.features.includes(f) && !PARAM_FEATURES.includes(f));
 }
 
 export function litAttributes(variant: readonly string[]): VertexSemantic[] {
@@ -144,6 +153,8 @@ export function writeLitParams(material: Material, out: Float32Array): void {
   out[ALPHA_TEST_AT] = m.alphaTest;
   writeUvTransform(out, MAP_TRANSFORM_AT, m.map);
   writeUvTransform(out, EMISSIVE_TRANSFORM_AT, m.emissiveMap);
+  out.fill(0, LIT_FLAGS_AT, LIT_FLAGS_AT + ROW_FLOATS);
+  out[LIT_OPAQUE_AT] = isOpaqueMaterial(m) ? 1 : 0;
 }
 
 /**
@@ -168,6 +179,7 @@ struct Params {
   alphaTest : f32,
   mapTransform : mat3x3<f32>,
   emissiveMapTransform : mat3x3<f32>,
+  litFlags : vec4<f32>,
   ${extraParams}
 };
 @group(2) @binding(0) var<uniform> params : Params;
@@ -200,9 +212,9 @@ fn vs(vin : VIn) -> VOut {
 }
 
 /**
- * Fragment prologue shared by the lit models: `diffuse` (rgb + alpha 1 after the alpha test),
- * `emissive`, `normalGeometry` (before the face flip) and `normal`, `sunColor` (with the sun
- * shadow when the variant receives it).
+ * Fragment prologue shared by the lit models: `diffuse` (rgb + alpha 1 after the alpha test when
+ * opaque), `emissive`, `normalGeometry` (before the face flip) and `normal` (flipped on a back face),
+ * `sunColor` (with the sun shadow when the variant receives it).
  */
 export function litSurfaceWgsl(variant: readonly string[], diffuseWgsl?: string): string {
   const has = (f: string) => variant.includes(f);
@@ -215,13 +227,14 @@ export function litSurfaceWgsl(variant: readonly string[], diffuseWgsl?: string)
   return /* wgsl */ `${base}
   diffuse.w = diffuse.w * params.opacity;
   ${has('alphaTest') ? 'if (diffuse.w <= params.alphaTest) {\n    discard;\n  }' : ''}
-  ${has('alpha') ? '' : 'diffuse.w = 1.0;'}
+  diffuse.w = select(diffuse.w, 1.0, params.litFlags.x != 0.0);
   var emissive = params.emissive;
   ${has('emissiveMap') ? 'emissive = (vec4<f32>(params.emissive, 1.0) * textureSample(emissiveTexture, emissiveSampler, (params.emissiveMapTransform * vec3<f32>(in.uv, 1.0)).xy)).xyz;' : ''}
+  // 1 on a front face, -1 on a back one: a FrontSide only rasterizes front faces (cull back), so it is always 1.
+  let frontSign = (f32(isFront) * 2.0) - 1.0;
   let normalGeometry = normalize(in.normalView);
-  var normal = normalGeometry;
-  ${has('doubleSide') ? 'normal = normalGeometry * vec3<f32>((f32(isFront) * 2.0) - 1.0);' : ''}
-  ${has('normalMap') ? normalMapWgsl(has('doubleSide')) : ''}
+  var normal = normalGeometry * vec3<f32>(frontSign);
+  ${has('normalMap') ? normalMapWgsl() : ''}
   var sunColor = lights.sunColor;
   ${has('receiveShadow') ? 'sunColor = sunColor * nativeShadow(in.positionWorld, normalize((vec4<f32>(normal, 0.0) * view.view).xyz), in.positionView);' : ''}
   let sunDirection = nativeSunDirection();
@@ -233,8 +246,7 @@ export function litSurfaceWgsl(variant: readonly string[], diffuseWgsl?: string)
  * frame from screen derivatives, in the order of its WGSL (WebGPU negates the y derivatives).
  * Only `standard` accepts `normalMap`, so `params.normalMapTransform`/`normalScale` are its fields.
  */
-function normalMapWgsl(doubleSide: boolean): string {
-  const face = doubleSide ? '((f32(isFront) * 2.0) - 1.0)' : '1.0';
+function normalMapWgsl(): string {
   return /* wgsl */ `
   let q1perp = cross(-dpdy(in.positionView), normal);
   let st0 = dpdx(in.uv);
@@ -247,7 +259,7 @@ function normalMapWgsl(doubleSide: boolean): string {
   if (frameDet != 0.0) {
     frameScale = inverseSqrt(frameDet);
   }
-  let faceSign = ${face};
+  let faceSign = frontSign;
   let tbn = mat3x3<f32>((frameT * vec3<f32>(frameScale)) * vec3<f32>(faceSign), (frameB * frameScale) * vec3<f32>(faceSign), normal);
   let normalSample = (textureSample(normalTexture, normalSampler, (params.normalMapTransform * vec3<f32>(in.uv, 1.0)).xy) * vec4<f32>(2.0)) - vec4<f32>(1.0);
   normal = normalize(tbn * vec3<f32>(normalSample.xy * params.normalScale, normalSample.z));`;

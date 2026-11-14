@@ -4,7 +4,7 @@ import { classifyDrawable, type Classification } from '../../../src/render/nativ
 import { dfgTexture, standardModel, standardRefusal } from '../../../src/render/native/models/standard.js';
 import { LightsBlock } from '../../../src/render/native/frame/lights.js';
 import { NativeRenderer } from '../../../src/render/native/NativeRenderer.js';
-import { lambertModel } from '../../../src/render/native/models/lambert.js';
+import { LIT_PARAM_FLOATS, lambertModel } from '../../../src/render/native/models/lambert.js';
 import type { DrawBatchBridge } from '../../../src/render/DrawBatch.js';
 
 type Covered = Classification & { kind: 'covered' };
@@ -12,6 +12,10 @@ type Covered = Classification & { kind: 'covered' };
 const CORE = new Set(['doubleSide']);
 const DFG_TEXELS = 16 * 16;
 const RG = 2;
+/** Offsets of the standard params after the lit rows (metalness/roughness, F0, normal scale, uv transforms). */
+const F0_AT = LIT_PARAM_FLOATS + 4;
+const NORMAL_SCALE_AT = LIT_PARAM_FLOATS + 8;
+const NORMAL_TRANSFORM_AT = LIT_PARAM_FLOATS + 24;
 
 function variant(mesh: Mesh): string[] | null {
   const c = classifyDrawable(mesh, mesh.material as MeshStandardMaterial) as Covered;
@@ -25,7 +29,7 @@ describe('standard model (R1.2, SPEC-0535)', () => {
     cam.updateMatrixWorld();
     lightsBlock.update(new Scene(), cam);
     const map = new Texture();
-    expect(variant(new Mesh(new BoxGeometry(), new MeshStandardMaterial({ map, emissiveMap: map, side: DoubleSide })))).toEqual(['map', 'emissiveMap', 'fog', 'doubleSide']);
+    expect(variant(new Mesh(new BoxGeometry(), new MeshStandardMaterial({ map, emissiveMap: map, side: DoubleSide })))).toEqual(['map', 'emissiveMap', 'fog']);
     expect(variant(new Mesh(new BoxGeometry(), new MeshStandardMaterial({ vertexColors: true })))).toEqual(['vertexColors', 'fog']);
     const gltf = new MeshPhysicalMaterial({ map, metalnessMap: map, roughnessMap: map, normalMap: map, ior: 1.4 });
     expect(variant(new Mesh(new BoxGeometry(), gltf))).toEqual(['map', 'metalRoughMap', 'normalMap', 'fog']);
@@ -52,18 +56,18 @@ describe('standard model (R1.2, SPEC-0535)', () => {
   it('writes the F0 the three uses: 0.04 for Standard, min(((ior-1)/(ior+1))^2 * specularColor, 1) * specularIntensity for Physical', () => {
     const out = new Float32Array(standardModel.paramFloats);
     standardModel.writeParams(new MeshStandardMaterial(), out);
-    expect([...out.slice(36, 39)]).toEqual([0.04, 0.04, 0.04].map(Math.fround));
+    expect([...out.slice(F0_AT, F0_AT + 3)]).toEqual([0.04, 0.04, 0.04].map(Math.fround));
     const physical = new MeshPhysicalMaterial({ ior: 1.4, specularIntensity: 0.6, specularColor: new Color(1, 0.5, 0.25) });
     standardModel.writeParams(physical, out);
     const f0 = ((1.4 - 1) / (1.4 + 1)) ** 2;
-    expect([...out.slice(36, 39)]).toEqual([f0 * 0.6, f0 * 0.5 * 0.6, f0 * 0.25 * 0.6].map(Math.fround));
+    expect([...out.slice(F0_AT, F0_AT + 3)]).toEqual([f0 * 0.6, f0 * 0.5 * 0.6, f0 * 0.25 * 0.6].map(Math.fround));
   });
 
   it('writes metalness and roughness after the lit rows, and binds the DFG LUT last', () => {
     const m = new MeshStandardMaterial({ metalness: 0.9, roughness: 0.3, map: new Texture() });
     const out = new Float32Array(standardModel.paramFloats);
     standardModel.writeParams(m, out);
-    expect([out[32], out[33]]).toEqual([0.9, 0.3].map(Math.fround));
+    expect([out[LIT_PARAM_FLOATS], out[LIT_PARAM_FLOATS + 1]]).toEqual([0.9, 0.3].map(Math.fround));
     const textures = standardModel.textures(m, ['map']);
     expect(textures).toEqual([m.map, dfgTexture()]);
     const lut = dfgTexture();
@@ -84,13 +88,13 @@ describe('standard model (R1.2, SPEC-0535)', () => {
     const normal = new Texture();
     normal.repeat.set(2, 3);
     const m = new MeshStandardMaterial({ map, metalnessMap: map, roughnessMap: map, normalMap: normal, normalScale: new Vector2(1, -1) });
-    const v = ['map', 'metalRoughMap', 'normalMap', 'fog', 'doubleSide'];
+    const v = ['map', 'metalRoughMap', 'normalMap', 'fog'];
     expect(standardModel.textures(m, v)).toEqual([map, map, normal, dfgTexture()]);
     expect(standardModel.attributes(v)).toContain('uv');
     const out = new Float32Array(standardModel.paramFloats);
     standardModel.writeParams(m, out);
-    expect([out[40], out[41]]).toEqual([1, -1]);
-    expect([out[56], out[61]]).toEqual([2, 3]);
+    expect([out[NORMAL_SCALE_AT], out[NORMAL_SCALE_AT + 1]]).toEqual([1, -1]);
+    expect([out[NORMAL_TRANSFORM_AT], out[NORMAL_TRANSFORM_AT + 5]]).toEqual([2, 3]);
     const code = standardModel.wgsl([...v, 'receiveShadow']);
     expect(code).toContain('@group(2) @binding(3) var metalRoughSampler');
     expect(code).toContain('@group(2) @binding(5) var normalSampler');

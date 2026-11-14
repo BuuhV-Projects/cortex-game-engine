@@ -37,7 +37,7 @@ describe('lambert model (R1.2, SPEC-0535)', () => {
     expect(variant(new Mesh(new BoxGeometry(), new MeshLambertMaterial({ map, emissive: new Color(1, 1, 1), emissiveMap: map })))).toEqual(['map', 'emissiveMap', 'fog']);
     expect(variant(new Mesh(new BoxGeometry(), new MeshLambertMaterial({ map, emissiveMap: map })))).toEqual(['map', 'emissiveMap', 'fog']);
     const plain = new Mesh(new BoxGeometry(), new MeshLambertMaterial({ fog: false, side: DoubleSide, alphaTest: 0.5 }));
-    expect(variant(plain)).toEqual(['alphaTest', 'doubleSide']);
+    expect(variant(plain)).toEqual(['alphaTest']);
     expect(lambertModel.attributes(variant(plain)!)).toEqual(['position', 'normal']);
   });
 
@@ -70,16 +70,15 @@ describe('lambert model (R1.2, SPEC-0535)', () => {
   });
 
   it('emits WGSL with the lights loop, the face flip and only the features of the variant', () => {
-    const full = lambertModel.wgsl(['map', 'emissiveMap', 'vertexColors', 'fog', 'alphaTest', 'doubleSide']);
+    const full = lambertModel.wgsl(['map', 'emissiveMap', 'vertexColors', 'fog', 'alphaTest']);
     expect(full).toContain('nativeSpot(i, in.positionView)');
     expect(full).toContain('nativeHemiIrradiance(normal)');
     expect(full).toContain('f32(isFront)');
     expect(full).toContain('discard');
     expect(full).toContain('emissiveTexture');
     expect(full).toContain('view.fogColor');
-    // transparent (the core's `alpha`): the real alpha goes out, like the three's wgsl-0050
-    expect(lambertModel.wgsl(['alpha'])).not.toContain('diffuse.w = 1.0;');
-    expect(lambertModel.wgsl([])).toContain('diffuse.w = 1.0;');
+    // opaque or transparent (the core's `alpha`, the three's wgsl-0050) is the param litFlags.x (SPEC-0732)
+    expect(lambertModel.wgsl([])).toContain('diffuse.w = select(diffuse.w, 1.0, params.litFlags.x != 0.0);');
     const plain = lambertModel.wgsl([]);
     expect(plain).not.toContain('textureSample');
     expect(plain).not.toContain('discard');
