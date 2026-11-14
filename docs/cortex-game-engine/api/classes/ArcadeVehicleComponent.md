@@ -6,7 +6,7 @@
 
 # Class: ArcadeVehicleComponent
 
-Defined in: [src/components/ArcadeVehicleComponent.ts:35](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/ArcadeVehicleComponent.ts#L35)
+Defined in: [src/components/ArcadeVehicleComponent.ts:36](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/ArcadeVehicleComponent.ts#L36)
 
 Um carro da frota do [VehicleArcadeSystem](VehicleArcadeSystem.md) (SPEC-0259).
 
@@ -38,7 +38,7 @@ component.poseOwner = 'external';
 
 > **new ArcadeVehicleComponent**(`vehicle`, `adhesion?`): `ArcadeVehicleComponent`
 
-Defined in: [src/components/ArcadeVehicleComponent.ts:47](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/ArcadeVehicleComponent.ts#L47)
+Defined in: [src/components/ArcadeVehicleComponent.ts:50](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/ArcadeVehicleComponent.ts#L50)
 
 #### Parameters
 
@@ -66,7 +66,7 @@ Aderência arcade. `null` = simulação pura, ainda no passo compartilhado.
 
 > `readonly` **adhesion**: [`GroundAdhesion`](GroundAdhesion.md) \| `null` = `null`
 
-Defined in: [src/components/ArcadeVehicleComponent.ts:50](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/ArcadeVehicleComponent.ts#L50)
+Defined in: [src/components/ArcadeVehicleComponent.ts:53](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/ArcadeVehicleComponent.ts#L53)
 
 Aderência arcade. `null` = simulação pura, ainda no passo compartilhado.
 
@@ -86,11 +86,21 @@ Indica se o componente está ativo. Systems podem ignorar componentes desativado
 
 ***
 
+### lean
+
+> **lean**: [`VehicleLean`](VehicleLean.md) \| `null` = `null`
+
+Defined in: [src/components/ArcadeVehicleComponent.ts:42](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/ArcadeVehicleComponent.ts#L42)
+
+Inclinação visual na curva (motos, SPEC-0735): o sistema atualiza a cada quadro. `null` = sem inclinação.
+
+***
+
 ### restingPoseCopied
 
 > **restingPoseCopied**: `boolean` = `false`
 
-Defined in: [src/components/ArcadeVehicleComponent.ts:39](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/ArcadeVehicleComponent.ts#L39)
+Defined in: [src/components/ArcadeVehicleComponent.ts:40](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/ArcadeVehicleComponent.ts#L40)
 
 Dormindo, a pose final já foi copiada para a malha (SPEC-0655/0687): não copia de novo até acordar.
 
@@ -100,7 +110,7 @@ Dormindo, a pose final já foi copiada para a malha (SPEC-0655/0687): não copia
 
 > **restSteps**: `number` = `0`
 
-Defined in: [src/components/ArcadeVehicleComponent.ts:37](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/ArcadeVehicleComponent.ts#L37)
+Defined in: [src/components/ArcadeVehicleComponent.ts:38](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/ArcadeVehicleComponent.ts#L38)
 
 Subpassos seguidos em repouso; ao chegar em `REST_STEPS` o chassi dorme (SPEC-0655).
 
@@ -110,7 +120,7 @@ Subpassos seguidos em repouso; ao chegar em `REST_STEPS` o chassi dorme (SPEC-06
 
 > `readonly` **vehicle**: [`Vehicle`](Vehicle.md)
 
-Defined in: [src/components/ArcadeVehicleComponent.ts:48](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/ArcadeVehicleComponent.ts#L48)
+Defined in: [src/components/ArcadeVehicleComponent.ts:51](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/ArcadeVehicleComponent.ts#L51)
 
 ## Accessors
 
@@ -120,7 +130,7 @@ Defined in: [src/components/ArcadeVehicleComponent.ts:48](https://github.com/Buu
 
 > **get** **poseOwner**(): [`VehiclePoseOwner`](../type-aliases/VehiclePoseOwner.md)
 
-Defined in: [src/components/ArcadeVehicleComponent.ts:60](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/ArcadeVehicleComponent.ts#L60)
+Defined in: [src/components/ArcadeVehicleComponent.ts:63](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/ArcadeVehicleComponent.ts#L63)
 
 Quem escreve a pose da malha (SPEC-0687; padrão `'physics'`). Voltar para `'physics'` copia a pose do corpo
 já no próximo `update`, mesmo dormindo. Use `'external'` para corpo cinemático ou congelado: dinâmico marcado
@@ -134,7 +144,7 @@ assim continua no Rapier, mas sem controlador e sem a malha seguir.
 
 > **set** **poseOwner**(`owner`): `void`
 
-Defined in: [src/components/ArcadeVehicleComponent.ts:64](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/ArcadeVehicleComponent.ts#L64)
+Defined in: [src/components/ArcadeVehicleComponent.ts:67](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/ArcadeVehicleComponent.ts#L67)
 
 ##### Parameters
 
@@ -176,7 +186,7 @@ Usado por Entity para indexar componentes no Map<string, Component>.
 
 > **get** `static` **poseOwnerVersion**(): `number`
 
-Defined in: [src/components/ArcadeVehicleComponent.ts:43](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/ArcadeVehicleComponent.ts#L43)
+Defined in: [src/components/ArcadeVehicleComponent.ts:46](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/ArcadeVehicleComponent.ts#L46)
 
 Versão das trocas de [ArcadeVehicleComponent.poseOwner](#poseowner) de todos os carros (SPEC-0687).
 

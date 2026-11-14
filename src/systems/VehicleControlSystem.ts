@@ -5,6 +5,8 @@ import type { RapierPhysics, Vehicle } from '../physics/RapierPhysics.js';
 import type { GamepadManager } from '../core/GamepadManager.js';
 import type { InputManager } from '../core/InputManager.js';
 import type { InputActions } from '../input/InputActions.js';
+import { VehicleLean, type VehicleLeanOptions } from '../physics/VehicleLean.js';
+import { debug } from '../core/debug.js';
 
 /** Opções do {@link VehicleControlSystem}. */
 export interface VehicleControlOptions {
@@ -47,6 +49,11 @@ export interface VehicleControlOptions {
    * (suspensão sobe/desce, esterço, rolagem). Devem ser filhas do `car`.
    */
   wheelObjects?: Object3D[];
+  /**
+   * **Inclinação visual** na curva (motos, SPEC-0735/ADR-0734): `object` é um nó FILHO do
+   * `car` (ou o nome dele). Só gira esse nó; o corpo do Rapier fica de pé. Default sem inclinação.
+   */
+  lean?: VehicleLeanOptions & { object: Object3D | string };
   /** Câmera chase: distância e altura. Default 8 / 3.5. */
   camDistance?: number;
   camHeight?: number;
@@ -98,6 +105,8 @@ export interface VehicleControlOptions {
   actions?: InputActions;
 }
 
+/** Raio da roda quando a spec não traz um (m). */
+const DEFAULT_WHEEL_RADIUS = 0.4;
 /** Inclinação inicial padrão da chase cam (rad). */
 const DEFAULT_CAM_PITCH = 0.32;
 const _fwd = new Vector3();
@@ -122,7 +131,11 @@ export class VehicleControlSystem extends System {
 
   private steer = 0;
   private throttle = 0;
-  private wheelRoll = 0; // ângulo de rolagem acumulado (todas as rodas, pela velocidade)
+  /** Ângulo de rolagem acumulado POR RODA (SPEC-0735: cada uma com o seu raio). */
+  private readonly wheelRolls: number[] = [];
+  private readonly lean: VehicleLean | null;
+  private brakingNow = false;
+  private reversingNow = false;
   private camYaw = 0;
   private camPitch = DEFAULT_CAM_PITCH;
   private lookIdle = 999;
@@ -144,6 +157,22 @@ export class VehicleControlSystem extends System {
     // Lida a cada quadro: quem troca `options.pauseWhen` depois (ex.: o menu de
     // pausa do jogo) passa a valer — antes era copiada aqui e a troca se perdia (SPEC-0306).
     this.pauseWhen = () => this.options.pauseWhen?.() ?? false;
+    this.lean = createLean(car, options.lean);
+  }
+
+  /** Acelerador suavizado (0..1) do último quadro dirigido (SPEC-0735). */
+  get throttleLevel(): number {
+    return this.throttle;
+  }
+
+  /** Freio de pedal ou de mão aplicado neste quadro (SPEC-0735). */
+  get braking(): boolean {
+    return this.brakingNow;
+  }
+
+  /** Dando ré neste quadro (SPEC-0735). */
+  get reversing(): boolean {
+    return this.reversingNow;
   }
 
   override update(_entities: Entity[], deltaTime: number): void {
@@ -151,6 +180,8 @@ export class VehicleControlSystem extends System {
     const o = this.options;
     const driving = o.active?.() ?? true;
     const engine = o.engineForce ?? 5000;
+    this.brakingNow = false;
+    this.reversingNow = false;
 
     if (driving) {
       // Gamepad-first; o teclado PREENCHE quando o controle está ocioso — sem controle
@@ -190,6 +221,8 @@ export class VehicleControlSystem extends System {
       // Freio: Espaço/A (handbrake, sempre), ou LT andando pra frente; ao soltar tudo,
       // freio-motor leve (senão não desacelera).
       const coasting = !handbrake && this.throttle < 0.05 && brakeIn < 0.05;
+      this.brakingNow = handbrake || (brakeIn > 0.1 && fwd >= 1);
+      this.reversingNow = reversing;
       this.vehicle.setBrake(
         handbrake
           ? (o.handbrakeForce ?? 120) // freio de mão: trava forte
@@ -233,16 +266,20 @@ export class VehicleControlSystem extends System {
     // acelerando ou não) — o wheelRotation do Rapier não é confiável pra isso.
     const wheels = o.wheelObjects;
     if (wheels) {
-      const radius = this.vehicle.wheels[0]?.radius ?? 0.4;
-      this.wheelRoll += (this.vehicle.forwardSpeed() / radius) * dt; // rad
+      const speed = this.vehicle.forwardSpeed();
       for (let i = 0; i < wheels.length; i++) {
         const w = wheels[i];
         if (!w) continue;
-        this.vehicle.wheelLocalTransform(i, _wp, _wq, this.wheelRoll);
+        const radius = this.vehicle.wheels[i]?.radius ?? DEFAULT_WHEEL_RADIUS;
+        const roll = (this.wheelRolls[i] ?? 0) + (speed / radius) * dt; // rad
+        this.wheelRolls[i] = roll;
+        this.vehicle.wheelLocalTransform(i, _wp, _wq, roll);
         w.position.copy(_wp);
         w.quaternion.copy(_wq);
       }
     }
+
+    this.lean?.update(this.vehicle, dt);
 
     // Em autopilot a câmera SEGUE o carro: um modo atrator ou uma medição
     // precisam da mesma perseguição do jogo (SPEC-0223). O que não roda é a
@@ -310,4 +347,15 @@ export class VehicleControlSystem extends System {
     this.camera.position.copy(_camPos);
     this.camera.lookAt(t.x, t.y + 1, t.z);
   }
+}
+
+/** Monta a inclinação da opção `lean` (SPEC-0735); nó ausente ou a própria raiz desliga. */
+function createLean(car: Object3D, opts: VehicleControlOptions['lean']): VehicleLean | null {
+  if (!opts) return null;
+  const node = typeof opts.object === 'string' ? car.getObjectByName(opts.object) : opts.object;
+  if (!node || node === car) {
+    debug('vehicle', 'lean desligado: o nó tem que ser filho do carro', opts.object);
+    return null;
+  }
+  return new VehicleLean(node, opts);
 }

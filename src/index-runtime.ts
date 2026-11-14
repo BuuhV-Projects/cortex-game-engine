@@ -80,6 +80,7 @@ export * from './scripts/ScriptHotReload.js';
 // ─── Física dinâmica (Rapier — WASM; TDR-0002, fase 2/spike) ───────────────────
 export * from './physics/RapierPhysics.js';
 export * from './physics/GroundAdhesion.js';
+export * from './physics/VehicleLean.js';
 
 // ─── Sistemas genéricos ────────────────────────────────────────────────────────
 export * from './systems/ScriptHostSystem.js';

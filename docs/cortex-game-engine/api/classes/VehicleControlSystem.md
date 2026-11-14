@@ -6,7 +6,7 @@
 
 # Class: VehicleControlSystem
 
-Defined in: [src/systems/VehicleControlSystem.ts:118](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L118)
+Defined in: [src/systems/VehicleControlSystem.ts:127](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L127)
 
 Dirige um [Vehicle](Vehicle.md) do Rapier (ADR-0081), gamepad-first com **fallback
 teclado**: com controle, **RT** acelera, **LT** freia (e dá ré parado), **stick X**
@@ -26,7 +26,7 @@ sobrescreveria a chase cam ao dirigir). As rodas raycastam no WASM (sem custo de
 
 > **new VehicleControlSystem**(`physics`, `vehicle`, `car`, `camera`, `gamepad`, `input?`, `options?`): `VehicleControlSystem`
 
-Defined in: [src/systems/VehicleControlSystem.ts:133](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L133)
+Defined in: [src/systems/VehicleControlSystem.ts:146](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L146)
 
 #### Parameters
 
@@ -112,7 +112,7 @@ a gameplay (física/input) enquanto o editor está ativo
 
 > **priority**: `number` = `30`
 
-Defined in: [src/systems/VehicleControlSystem.ts:121](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L121)
+Defined in: [src/systems/VehicleControlSystem.ts:130](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L130)
 
 Prioridade de execução deste sistema.
 
@@ -129,7 +129,7 @@ Sistemas com valores menores executam antes. Padrão: `0`.
 
 > `readonly` **profileLabel**: `"VehicleControlSystem"` = `'VehicleControlSystem'`
 
-Defined in: [src/systems/VehicleControlSystem.ts:119](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L119)
+Defined in: [src/systems/VehicleControlSystem.ts:128](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L128)
 
 Nome do sistema no perfil por sistema (`World.enableSystemProfile`, SPEC-0236).
 Sem ele o perfil usa `constructor.name`, que no bundle minificado vira `fx`,
@@ -145,7 +145,7 @@ Sem ele o perfil usa `constructor.name`, que no bundle minificado vira `fx`,
 
 > `static` **requiredComponents**: `never`[] = `[]`
 
-Defined in: [src/systems/VehicleControlSystem.ts:120](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L120)
+Defined in: [src/systems/VehicleControlSystem.ts:129](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L129)
 
 Construtores dos componentes que este sistema requer.
 
@@ -164,6 +164,54 @@ static requiredComponents = [TransformComponent, VelocityComponent];
 #### Overrides
 
 [`System`](System.md).[`requiredComponents`](System.md#requiredcomponents)
+
+## Accessors
+
+### braking
+
+#### Get Signature
+
+> **get** **braking**(): `boolean`
+
+Defined in: [src/systems/VehicleControlSystem.ts:169](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L169)
+
+Freio de pedal ou de mão aplicado neste quadro (SPEC-0735).
+
+##### Returns
+
+`boolean`
+
+***
+
+### reversing
+
+#### Get Signature
+
+> **get** **reversing**(): `boolean`
+
+Defined in: [src/systems/VehicleControlSystem.ts:174](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L174)
+
+Dando ré neste quadro (SPEC-0735).
+
+##### Returns
+
+`boolean`
+
+***
+
+### throttleLevel
+
+#### Get Signature
+
+> **get** **throttleLevel**(): `number`
+
+Defined in: [src/systems/VehicleControlSystem.ts:164](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L164)
+
+Acelerador suavizado (0..1) do último quadro dirigido (SPEC-0735).
+
+##### Returns
+
+`number`
 
 ## Methods
 
@@ -192,7 +240,7 @@ handles nativos que o GC não coleta sozinho (ex.: o mundo do Rapier em
 
 > **update**(`_entities`, `deltaTime`): `void`
 
-Defined in: [src/systems/VehicleControlSystem.ts:149](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L149)
+Defined in: [src/systems/VehicleControlSystem.ts:178](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L178)
 
 Executa a lógica do sistema para o frame/passo atual.
 

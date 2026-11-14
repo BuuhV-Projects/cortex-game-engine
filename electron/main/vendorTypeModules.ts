@@ -133,7 +133,7 @@ export const VENDOR_TYPE_MODULES = {
   ],
   io: ['SceneFileWriter', 'HttpSceneFileWriter', 'TauriSceneFileWriter', 'autoDetectSceneFileWriter', 'signedSave'],
   i18n: ['I18n', 'GameConfig'],
-  physics: ['RapierPhysics', 'GroundAdhesion'],
+  physics: ['RapierPhysics', 'GroundAdhesion', 'VehicleLean'],
   scripts: ['ScriptBehavior', 'ScriptRegistry', 'ScriptHotReload'],
   ui: ['Speedometer', 'DebugHud'],
   'ui/runtime': [
