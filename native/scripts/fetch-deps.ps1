@@ -6,6 +6,10 @@ $ErrorActionPreference = 'Stop'
 
 $SDL_VERSION   = '3.4.12'
 $WGPU_VERSION  = 'v29.0.1.1'
+# DXC (compilador de shader DX12, SPEC-0731): o wgpu-native v29 pede v1.8.2502 ou mais nova.
+$DXC_VERSION   = 'v1.9.2609'
+$DXC_ZIP       = 'dxc_2026_09_29.zip'
+$DXC_SHA256    = 'AD31B1FC8443175D204F77A611FDB3EF2EC42759BDC2F1167368DE24A4A7E7F1'
 # (o runtime Hermes agora vem do clone pinado de facebook/hermes — ver o fim
 #  deste script; o NuGet da MS foi aposentado no ADR-0122)
 
@@ -56,6 +60,19 @@ $wgpuZip = Fetch 'wgpu-native' "https://github.com/gfx-rs/wgpu-native/releases/d
 $wgpuDir = Join-Path $tp 'wgpu'
 if (-not (Test-Path $wgpuDir)) {
     Expand-Archive $wgpuZip -DestinationPath $wgpuDir
+}
+
+# ── DXC (DirectX Shader Compiler; o wgpu usa no lugar do FXC, SPEC-0731) ──
+# Release oficial da Microsoft; o sha256 é conferido antes de extrair (recusa se não bater).
+$dxcZip = Fetch 'DXC' "https://github.com/microsoft/DirectXShaderCompiler/releases/download/$DXC_VERSION/$DXC_ZIP" "dxc-$DXC_VERSION.zip"
+$dxcHash = (Get-FileHash $dxcZip -Algorithm SHA256).Hash
+if ($dxcHash -ne $DXC_SHA256) {
+    Remove-Item $dxcZip -Force
+    throw "DXC: sha256 não confere ($dxcHash), download recusado"
+}
+$dxcDir = Join-Path $tp 'dxc'
+if (-not (Test-Path $dxcDir)) {
+    Expand-Archive $dxcZip -DestinationPath $dxcDir
 }
 
 # ── stb_image (decode de PNG/JPG das texturas GLB; header único, pinado) ──
@@ -115,7 +132,11 @@ if (-not (Test-Path (Join-Path $basisuDir 'basisu_transcoder.cpp'))) {
     Write-Host 'baixando basis_universal (transcoder/) ...' -ForegroundColor Cyan
     New-Item -ItemType Directory -Force $basisuDir | Out-Null
     $listUrl = "https://api.github.com/repos/BinomialLLC/basis_universal/contents/transcoder?ref=$BASISU_COMMIT"
-    $entries = Invoke-RestMethod -Uri $listUrl -Headers @{ 'User-Agent' = 'cortex-fetch-deps' }
+    # No CI, o IP do runner é compartilhado e a API sem token estoura o limite (60/h): usa o
+    # token do próprio Actions quando ele existe. Na máquina local, segue sem token.
+    $apiHeaders = @{ 'User-Agent' = 'cortex-fetch-deps' }
+    if ($env:GITHUB_TOKEN) { $apiHeaders['Authorization'] = "Bearer $env:GITHUB_TOKEN" }
+    $entries = Invoke-RestMethod -Uri $listUrl -Headers $apiHeaders
     foreach ($e in $entries) {
         if ($e.type -ne 'file') { continue }
         $raw = "https://raw.githubusercontent.com/BinomialLLC/basis_universal/$BASISU_COMMIT/transcoder/$($e.name)"
