@@ -2,7 +2,10 @@
 
 #include <webgpu/wgpu.h>
 
+#include "dx12_compiler.h"
+
 #include <cstdio>
+#include <string>
 
 namespace core {
 namespace {
@@ -13,6 +16,18 @@ WGPUInstance createInstanceD3D12() {
   WGPUInstanceExtras extras = {};
   extras.chain.sType = (WGPUSType)WGPUSType_InstanceExtras;
   extras.backends = WGPUInstanceBackend_DX12;
+  // DXC ao lado do exe (SPEC-0731), com o caminho absoluto: com o dxcPath vazio o wgpu
+  // procuraria a DLL no PATH do sistema. `choice` vive até o wgpuCreateInstance.
+  const Dx12CompilerChoice choice =
+      chooseDx12Compiler(SDL_GetBasePath(), SDL_getenv(kDx12CompilerEnv));
+  if (choice.compiler == Dx12Compiler::Dxc) {
+    extras.dx12ShaderCompiler = WGPUDx12Compiler_Dxc;
+    extras.dxcPath = {choice.dxcPath.c_str(), choice.dxcPath.size()};
+    std::printf("[gpu] compilador de shader: DXC (%s)\n", choice.dxcPath.c_str());
+  } else {
+    extras.dx12ShaderCompiler = WGPUDx12Compiler_Fxc;
+    std::printf("[gpu] compilador de shader: FXC (%s)\n", choice.reason);
+  }
   WGPUInstanceDescriptor desc = WGPU_INSTANCE_DESCRIPTOR_INIT;
   desc.nextInChain = &extras.chain;
   return wgpuCreateInstance(&desc);

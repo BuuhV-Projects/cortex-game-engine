@@ -202,6 +202,10 @@ const runtimeFiles = [
 // Modo Steam: a steam_api64.dll fica ao lado do exe. O app id está BAKED no host
 // (build) — o steam_appid.txt (dev/480) NÃO vai pro release (a Steam informa o id).
 if (steam) runtimeFiles.push(['steam_api64.dll', 'steam_api64.dll']);
+// DXC (SPEC-0731): o host compila os shaders com ele quando está ao lado do exe; sem ele, FXC.
+if (fs.existsSync(path.join(hostBuild, 'dxcompiler.dll'))) {
+  runtimeFiles.push(['dxcompiler.dll', 'dxcompiler.dll']);
+}
 guardLocks('runtime', () => {
   for (const [from, to] of runtimeFiles) {
     fs.copyFileSync(path.join(hostBuild, from), path.join(dist, to));

@@ -24,6 +24,7 @@ set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
 add_executable(cortex_host
   src/main.cpp
   src/core/app_window.cpp
+  src/core/dx12_compiler.cpp
   src/core/crash_handler.cpp
   src/core/frame_timing.cpp
   src/core/gc_stats.cpp
@@ -321,6 +322,13 @@ add_custom_target(host_runtime_files ALL
   VERBATIM
 )
 add_dependencies(host_runtime_files cortex_host)
+# DXC (SPEC-0731): o fetch-deps baixa; sem ele o host cai no FXC, então a cópia é opcional e
+# decidida na hora do build (um if(EXISTS) aqui valeria só no configure).
+set(DXC_DLL ${TP}/dxc/bin/x64/dxcompiler.dll)
+add_custom_command(TARGET host_runtime_files POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -DSRC=${DXC_DLL} -DDST_DIR=$<TARGET_FILE_DIR:cortex_host>
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/scripts/copy-if-exists.cmake
+  VERBATIM)
 
 # ── Testes unitários do host (TDR-0004) ──────────────────────────────────────
 # Só unidades PURAS (enums, matemática BC7, logging em arquivo) — sem device
@@ -362,6 +370,7 @@ add_executable(cortex_host_tests
   tests/audio_voices_test.cpp
   tests/font_registry_test.cpp
   tests/relaunch_test.cpp
+  tests/dx12_compiler_test.cpp
   src/shims/font_registry.cpp
   src/shims/inflate.cpp
   src/shims/audio_decode.cpp
@@ -374,6 +383,7 @@ add_executable(cortex_host_tests
   src/webgpu/underwater_params.cpp
   src/core/crash_handler.cpp
   src/core/relaunch.cpp
+  src/core/dx12_compiler.cpp
   src/core/gc_stats.cpp
   src/webgpu/napi_frame_stats.cpp
   src/core/game_config.cpp
@@ -403,3 +413,7 @@ target_compile_definitions(cortex_host_tests PRIVATE
   CORTEX_TEST_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures"
   CORTEX_DEFAULT_UI_FONT="${TP}/fonts/Roboto-Medium.ttf"
   CORTEX_UI_FONT_FIXTURE="${CMAKE_CURRENT_SOURCE_DIR}/fixtures/ui-font/assets/ui/fonts/BebasNeue-Regular.ttf")
+# A DLL pinada do DXC (SPEC-0731), quando o fetch-deps já a baixou.
+if(EXISTS ${DXC_DLL})
+  target_compile_definitions(cortex_host_tests PRIVATE CORTEX_TEST_DXC_DLL="${DXC_DLL}")
+endif()

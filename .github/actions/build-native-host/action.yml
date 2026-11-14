@@ -44,6 +44,10 @@ runs:
 
     - name: Fetch deps nativas (pinadas)
       shell: pwsh
+      # A listagem do basis_universal usa a API do GitHub; sem token, o IP compartilhado do
+      # runner estoura o limite e o job falha (SPEC-0731).
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
       run: powershell -ExecutionPolicy Bypass -File native/scripts/fetch-deps.ps1
 
     # 1) crate Rust (cdylib) → target/release/rapier_native.dll(.lib); o CMake
