@@ -1,3 +1,10 @@
+# [0.127.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.126.3...v0.127.0) (2026-11-14)
+
+
+### Features
+
+* **native:** export copia as pastas soltas declaradas em cortex.json.looseDirs (SPEC-0733) ([aae5f7a](https://github.com/BuuhV-Projects/cortex-game-engine/commit/aae5f7a8b33f1c075c89a48e77c8273baf2c81bd))
+
 ## [0.126.3](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.126.2...v0.126.3) (2026-11-14)
 
 
