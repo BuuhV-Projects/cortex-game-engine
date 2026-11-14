@@ -1557,6 +1557,13 @@ Substitui o `three` no desenho do export **por objeto**, a caminho de 0 recusas 
   NativeRenderer o `three` nunca sobe os buffers dos objetos que o nativo desenha, e ler só o
   `backend.get(...).buffer` dava `geometria-ausente` em toda cascata (ADR-0692). Custo medido nas
   seções `shadowBlock`/`csmNative`/`shadowRegistry`/`shadowAlphaClip`/`shadowDraw` do perf-trace.
+- **WGSL da sombra enxuto (SPEC-0732)** `frame/shadowWgsl.ts`: o bloco gera o WGSL só com as cascatas
+  que a CSM usa (`count` do nó, só sobe), com um tap e um PCF por mapa (sem `switch` por leitura) e o
+  `nativeShadowCsm` desenrolado. Quando o número sobe, o bloco muda o `codeKey` e o `version`; o
+  `NativePipelineStore` põe as `codeKey` dos blocos na chave do módulo e do pipeline. ⚠️ Bloco de quadro
+  cujo WGSL muda em tempo de jogo precisa de `codeKey`, senão o pipeline velho é reaproveitado. Nos
+  modelos lit, `doubleSide` e `alpha` não são variante: o sinal da face está sempre no código e o alpha
+  1 do opaco é `params.litFlags.x`.
 - **Luz (R1.2, SPEC-0535)**: modelo `lambert` (`models/lambert.ts` exporta as partes comuns) e
   `standard` (com a LUT DFG do `three`, copiada porque é privada do módulo dele). O `standard`
   cobre o que o GLTFLoader cria de um kit do Blender (SPEC-0659): `MeshPhysical` só com
