@@ -95,7 +95,7 @@ jobs:
         run: yarn electron:build
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: cortex-ide-${{ matrix.os }}
           path: |
