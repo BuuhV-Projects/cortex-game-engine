@@ -8,7 +8,7 @@
 
 > **VehiclePoseOwner** = `"physics"` \| `"external"`
 
-Defined in: [src/components/ArcadeVehicleComponent.ts:12](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/ArcadeVehicleComponent.ts#L12)
+Defined in: [src/components/ArcadeVehicleComponent.ts:13](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/ArcadeVehicleComponent.ts#L13)
 
 Quem escreve a pose da malha do carro (SPEC-0687).
 
