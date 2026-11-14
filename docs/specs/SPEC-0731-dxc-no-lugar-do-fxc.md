@@ -24,7 +24,8 @@ por núcleo que o 5600G, esse passo deve passar de 13 s.
 - O host usa o **DXC** (`dxcompiler.dll`) quando ele está na pasta do executável **e carrega**. Sem a DLL, usa o
   FXC, como hoje. A escolha fica em `native/src/core/dx12_compiler.{h,cpp}`, testada em
   `native/tests/dx12_compiler_test.cpp`.
-  - Antes de escolher, o host carrega a DLL (`LoadLibraryEx`) e confere o `DxcCreateInstance`. O wgpu não volta
+  - Antes de escolher, o host carrega a DLL (`LoadLibraryExW`, com o caminho do `SDL_GetBasePath` convertido de
+    UTF-8 para UTF-16, para valer numa pasta com acento) e confere o `DxcCreateInstance`. O wgpu não volta
     sozinho para o FXC: com o DXC pedido e uma DLL que não carrega (x86, truncada, de outro programa), a instância
     fica sem backend e o erro só apareceria como "sem adapter".
   - `WGPUInstanceExtras.dx12ShaderCompiler = WGPUDx12Compiler_Dxc` e `dxcPath` com o caminho **absoluto** da DLL.
