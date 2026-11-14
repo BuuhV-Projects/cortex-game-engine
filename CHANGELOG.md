@@ -1,3 +1,10 @@
+## [0.126.2](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.126.1...v0.126.2) (2026-11-14)
+
+
+### Bug Fixes
+
+* **native:** áudio num dispositivo lógico só e flush da voz sem laço (SPEC-0730) ([eb13c10](https://github.com/BuuhV-Projects/cortex-game-engine/commit/eb13c10c50d53a519e3f230fde8f2d6d8362c7ab))
+
 ## [0.126.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.126.0...v0.126.1) (2026-11-13)
 
 
