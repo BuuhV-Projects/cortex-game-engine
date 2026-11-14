@@ -1,6 +1,7 @@
 import { Component } from '../ecs/Component.js';
 import type { Vehicle } from '../physics/RapierPhysics.js';
 import type { GroundAdhesion } from '../physics/GroundAdhesion.js';
+import type { VehicleLean } from '../physics/VehicleLean.js';
 
 /**
  * Quem escreve a pose da malha do carro (SPEC-0687).
@@ -37,6 +38,8 @@ export class ArcadeVehicleComponent extends Component {
   restSteps = 0;
   /** Dormindo, a pose final já foi copiada para a malha (SPEC-0655/0687): não copia de novo até acordar. */
   restingPoseCopied = false;
+  /** Inclinação visual na curva (motos, SPEC-0735): o sistema atualiza a cada quadro. `null` = sem inclinação. */
+  lean: VehicleLean | null = null;
   private owner: VehiclePoseOwner = 'physics';
 
   /** Versão das trocas de {@link ArcadeVehicleComponent.poseOwner} de todos os carros (SPEC-0687). */

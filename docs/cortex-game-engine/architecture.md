@@ -455,6 +455,10 @@ alvo é **Rapier** (WASM) como motor dinâmico único, estilo Unity.
     jogador vai com `stepPhysics: false` (senão o mundo anda duas vezes).
     Carro com `poseOwner = 'external'` (SPEC-0687) sai da lista compacta do
     sistema: quem marcou escreve a malha (trilho cinemático, congelado).
+    **Motos (SPEC-0735, ADR-0734):** `Vehicle` de 4 rodas; cada roda gira com o
+    próprio raio, e a inclinação na curva é SÓ visual (`VehicleLean`, num nó filho,
+    pela guinada do corpo). Vale no `VehicleControlSystem` (`lean`) e na frota
+    (`ArcadeVehicleComponent.lean`, atualizado mesmo dormindo); o corpo nunca inclina.
     **Progresso em rota** (volta, posição, IA): `src/scene/Route.ts`, funções puras
     sobre uma rota fechada — as regras da corrida ficam no jogo.
   - **Piloto no veículo (ADR-0274, SPEC-0275):** `VehicleSeatAttachmentComponent`

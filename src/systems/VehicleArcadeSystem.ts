@@ -71,10 +71,13 @@ export class VehicleArcadeSystem extends System {
 
   override update(entities: Entity[], deltaTime: number): void {
     this.refresh(entities);
-    this.physics.advance(deltaTime / 1000, this.beforeStep);
+    const dt = deltaTime / 1000;
+    this.physics.advance(dt, this.beforeStep);
     const cars = this.cars;
     for (let i = 0; i < cars.length; i++) {
       const car = cars[i]!;
+      // Inclinação visual (SPEC-0735): também dormindo, pra voltar a 0 com o carro parado.
+      car.lean?.update(car.vehicle, dt);
       const body = car.vehicle.body;
       const object = this.holders[i]!.object;
       if (object !== this.objects[i]) {
