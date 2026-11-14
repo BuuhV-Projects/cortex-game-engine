@@ -35,7 +35,7 @@ runs:
     # Cacheado: o clone do Hermes é o item pesado; fetch-deps é idempotente e
     # o `git apply --check` pula os patches se o cache já veio patchado.
     - name: Cache deps nativas
-      uses: actions/cache@v4
+      uses: actions/cache@v6
       with:
         path: |
           native/third_party
@@ -60,7 +60,7 @@ runs:
     # e recompilar do zero leva dezenas de minutos no runner. Key muda quando
     # muda o CMake, os patches ou o commit pinado (via fetch-deps.ps1).
     - name: Cache build do host (Ninja)
-      uses: actions/cache@v4
+      uses: actions/cache@v6
       with:
         path: native/build
         key: native-build-${{ runner.os }}-clang-${{ hashFiles('native/CMakeLists.txt', 'native/scripts/fetch-deps.ps1', 'native/patches/hermes-upstream.patch') }}
@@ -124,7 +124,7 @@ runs:
 
     - name: Cache build do host Steam (Ninja)
       if: inputs.steamworks-sdk-key != ''
-      uses: actions/cache@v4
+      uses: actions/cache@v6
       with:
         path: native/build-steam
         # sdk-version.txt entra na key: trocar de SDK muda o que é linkado, e um
