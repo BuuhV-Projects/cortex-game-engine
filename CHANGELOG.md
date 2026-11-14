@@ -1,3 +1,15 @@
+## [0.126.3](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.126.2...v0.126.3) (2026-11-14)
+
+
+### Bug Fixes
+
+* **native:** DXC carregado com o caminho em UTF-16 (pasta com acento) (SPEC-0731) ([326c10c](https://github.com/BuuhV-Projects/cortex-game-engine/commit/326c10c74e1f625ea7d92c9e3c85032c9821ce2f))
+
+
+### Performance Improvements
+
+* **native:** shaders D3D12 compilados com o DXC pinado em vez do FXC (SPEC-0731) ([41cc93c](https://github.com/BuuhV-Projects/cortex-game-engine/commit/41cc93c41cfab49d37d1a4a1da0f98612a5d45c8))
+
 ## [0.126.2](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.126.1...v0.126.2) (2026-11-14)
 
 
