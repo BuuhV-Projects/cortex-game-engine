@@ -24,7 +24,10 @@ inline constexpr const char* kDxcDllName = "dxcompiler.dll";
 /** Variável de ambiente que força o FXC com o valor "fxc". */
 inline constexpr const char* kDx12CompilerEnv = "CORTEX_DX12_COMPILER";
 
-/** A DLL carrega e exporta o DxcCreateInstance. */
+/** UTF-8 → UTF-16 para as APIs W do Windows (vazio se o texto não for UTF-8 válido). */
+std::wstring utf8ToWide(const std::string& text);
+
+/** A DLL (caminho em UTF-8) carrega e exporta o DxcCreateInstance. */
 bool dxcLoads(const std::string& path);
 
 using DxcProbe = bool (*)(const std::string& path);

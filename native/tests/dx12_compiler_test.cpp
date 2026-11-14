@@ -5,6 +5,10 @@
 
 #include <string>
 
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
+#include <windows.h>
+
 namespace tests {
 
 namespace {
@@ -53,9 +57,24 @@ void testDxcLoadsRejectsInvalidDll() {
   CHECK(!core::dxcLoads("Z:\\nao-existe\\dxcompiler.dll"));
   // Arquivo que não é DLL (a fonte de UI) não carrega.
   CHECK(!core::dxcLoads(CORTEX_DEFAULT_UI_FONT));
+  // Texto que não é UTF-8 válido não vira caminho.
+  CHECK(core::utf8ToWide("\xC3").empty());
 #ifdef CORTEX_TEST_DXC_DLL
   // A DLL pinada do fetch-deps carrega e exporta o DxcCreateInstance.
   CHECK(core::dxcLoads(CORTEX_TEST_DXC_DLL));
+  // Também numa pasta com acento (o caminho do SDL_GetBasePath vem em UTF-8).
+  wchar_t temp[MAX_PATH];
+  CHECK(GetTempPathW(MAX_PATH, temp) > 0);
+  const std::wstring dir = std::wstring(temp) + L"cortex-dxc-ção";
+  CreateDirectoryW(dir.c_str(), nullptr);
+  const std::wstring dll = dir + L"\\dxcompiler.dll";
+  CHECK(CopyFileW(core::utf8ToWide(CORTEX_TEST_DXC_DLL).c_str(), dll.c_str(), FALSE) != 0);
+  char utf8[MAX_PATH * 4];
+  const int n = WideCharToMultiByte(CP_UTF8, 0, dll.c_str(), -1, utf8, sizeof(utf8), nullptr, nullptr);
+  CHECK(n > 0);
+  CHECK(core::dxcLoads(utf8));
+  DeleteFileW(dll.c_str());
+  RemoveDirectoryW(dir.c_str());
 #endif
 }
 

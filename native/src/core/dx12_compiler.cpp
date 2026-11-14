@@ -23,11 +23,25 @@ bool equalsIgnoreCase(const char* a, const char* b) {
 
 }  // namespace
 
+std::wstring utf8ToWide(const std::string& text) {
+  if (text.empty()) return {};
+  const int size = static_cast<int>(text.size());
+  const int wide = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, text.data(), size, nullptr, 0);
+  if (wide <= 0) return {};
+  std::wstring out(static_cast<size_t>(wide), L'\0');
+  MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, text.data(), size, out.data(), wide);
+  return out;
+}
+
 bool dxcLoads(const std::string& path) {
-  // Caminho absoluto + LOAD_WITH_ALTERED_SEARCH_PATH: as dependências da DLL vêm da
-  // pasta dela, como quando o wgpu a carregar. Uma DLL x86, truncada ou de outro
-  // programa falha aqui ou não tem o ponto de entrada.
-  HMODULE module = LoadLibraryExA(path.c_str(), nullptr, LOAD_WITH_ALTERED_SEARCH_PATH);
+  // O caminho vem em UTF-8 (SDL_GetBasePath): a versão W aceita pasta com acento, que a
+  // versão A (página de código ANSI) não abriria. Caminho absoluto +
+  // LOAD_WITH_ALTERED_SEARCH_PATH: as dependências da DLL vêm da pasta dela, como quando
+  // o wgpu a carregar. Uma DLL x86, truncada ou de outro programa falha aqui ou não tem o
+  // ponto de entrada.
+  const std::wstring widePath = utf8ToWide(path);
+  if (widePath.empty()) return false;
+  HMODULE module = LoadLibraryExW(widePath.c_str(), nullptr, LOAD_WITH_ALTERED_SEARCH_PATH);
   if (module == nullptr) return false;
   const bool hasEntry = GetProcAddress(module, kDxcEntryPoint) != nullptr;
   FreeLibrary(module);
