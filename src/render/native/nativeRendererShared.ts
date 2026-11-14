@@ -334,3 +334,11 @@ export function colorTarget(s: DrawState, format: string): Record<string, unknow
 export function nativePrecompileRequested(): boolean {
   return queryFlagRequested(PRECOMPILE_QUERY, gameDefault);
 }
+
+/**
+ * The three's `NodeBuilder.isOpaque()`: not transparent and normal blending. Otherwise the model outputs its real alpha
+ * (the core's `alpha` feature; for the lit models, `litFlags.x` of the params, SPEC-0732).
+ */
+export function isOpaqueMaterial(m: { transparent?: boolean; blending?: number }): boolean {
+  return !m.transparent && m.blending === NORMAL_BLENDING;
+}

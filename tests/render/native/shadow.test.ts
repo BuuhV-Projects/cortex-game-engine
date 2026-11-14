@@ -191,7 +191,8 @@ describe('shadow block (R1.3, SPEC-0545)', () => {
   it('WGSL is the three PCFSoft: 16 compare taps, mixed by the intensity', () => {
     const { device, host } = fakeHost();
     const wgsl = new ShadowBlock(device, host, true, false, null).wgsl;
-    expect(wgsl.match(/nativeShadowTap\(uv/g)!.length).toBe(REFERENCE_TAPS + 1);
+    // SPEC-0732: one tap per map, the map's name in the code (no switch); the declaration is the +1.
+    expect(wgsl.match(/nativeShadowTap0\(uv/g)!.length).toBe(REFERENCE_TAPS + 1);
     expect(wgsl).toContain('1.0 - ndc.y');
     expect(wgsl).toContain('fract(uv * mapSize + vec2<f32>(0.5))');
     expect(wgsl).toContain('mix(1.0, sum * (1.0 / 9.0), nativeShadowParams.intensity)');

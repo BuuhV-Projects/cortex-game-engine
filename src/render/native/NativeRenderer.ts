@@ -39,7 +39,7 @@ import { NativePipelineStore, type NativeLayouts } from './NativePipelineStore.j
 import {
   BUFFER_COPY_DST, BUFFER_UNIFORM, BUILTIN_SEMANTICS, CORE_FEATURES, CORE_SUPPORTED, DEPTH_ONLY_QUERY,
   EARLY_REPORT_FRAME, FLOAT_BYTES, LESS_EQUAL_DEPTH, MAT3_COLUMNS, MAT4_FLOATS, MS_DIGITS, NO_FOG_FAR, NO_FOG_NEAR,
-  NO_RECIPE, NO_TONE_MAPPING, NORMAL_BLENDING, OBJECT_SEMANTICS, OBJECT_SLOTS_PER_CHUNK, REPORT_FRAMES, REPORT_REASONS,
+  NO_RECIPE, NO_TONE_MAPPING, isOpaqueMaterial, OBJECT_SEMANTICS, OBJECT_SLOTS_PER_CHUNK, REPORT_FRAMES, REPORT_REASONS,
   RETRY_REASONS, ROW_FLOATS, SKIN_SEMANTICS, STAGE_FRAGMENT, STAGE_VERTEX, TINT_QUERY,
   TRIANGLE_VERTICES, UNIFORM_ALIGN_BYTES, drawState, nativePrecompileRequested, nativeRendererModels,
   type GeometryLike, type Gpu, type Inst, type RecipeRecord, type NativeRendererHost, type NativeRendererStats, type Refusal,
@@ -103,7 +103,6 @@ export class NativeRenderer implements NativeDrawer {
     const d = (this._device = _host.backend.device);
     const uniformEntry = (binding: number) => ({ binding, visibility: STAGE_VERTEX | STAGE_FRAGMENT, buffer: { type: 'uniform' } });
     this._blocks = frameBlocks.map((create) => create(d, _host));
-    const frameWgsl = this._blocks.map((b) => b.wgsl).join('\n');
     const view = d.createBindGroupLayout({ label: 'native.view', entries: [uniformEntry(0)] });
     const frame = d.createBindGroupLayout({ label: 'native.frame', entries: this._blocks.flatMap((b) => b.layoutEntries()) });
     const object = d.createBindGroupLayout({ label: 'native.object', entries: [uniformEntry(0)] });
@@ -115,7 +114,7 @@ export class NativeRenderer implements NativeDrawer {
     this._geometries = new NativeGeometryStore(d, _host);
     this.shadowSource = new NativeShadowSource(this._geometries, _host);
     this._materials = new NativeMaterialStore(d, _host, this.stats, queryFlagRequested(TINT_QUERY, false));
-    this._pipelines = new NativePipelineStore(d, this._layouts, frameWgsl, this._materials, this.stats);
+    this._pipelines = new NativePipelineStore(d, this._layouts, this._blocks, this._materials, this.stats);
     this._viewBuffer = d.createBuffer({ label: 'native.view', size: VIEW_FLOATS * FLOAT_BYTES, usage: BUFFER_UNIFORM | BUFFER_COPY_DST });
     this._viewGroup = d.createBindGroup({ layout: view, entries: [{ binding: 0, resource: { buffer: this._viewBuffer } }] });
     this._refreshFrameGroup();
@@ -262,7 +261,7 @@ export class NativeRenderer implements NativeDrawer {
     if (this._fog === 'other') return this._refuse(object, material, geometry, 'fog:exp2');
     if (object.matrixWorld.determinant() < 0) return this._refuse(object, material, geometry, 'mirrored');
     // The three's NodeBuilder.isOpaque(): otherwise the model outputs its real alpha (`alpha`).
-    const opaque = !m.transparent && m.blending === NORMAL_BLENDING;
+    const opaque = isOpaqueMaterial(m);
     const features = c.features.filter((f) => !CORE_FEATURES.has(f));
     if (!opaque) features.push('alpha');
     const variant = model.variant({ ...c, features: features.sort() }, object, material);

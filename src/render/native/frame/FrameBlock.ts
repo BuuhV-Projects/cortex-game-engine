@@ -18,6 +18,11 @@ export interface FrameBlock {
   update(scene: unknown, camera: unknown): void;
   /** WGSL of the block: its group-1 declarations and the helper functions models call. */
   readonly wgsl: string;
+  /**
+   * Key of the current `wgsl`, for a block whose code changes at run time (SPEC-0732): it changes with the code, and
+   * the block bumps `version` in the same `update` so the recipes are rebuilt. Absent = the WGSL is fixed.
+   */
+  readonly codeKey?: string;
 }
 
 /** `host` = the three renderer the server draws for (backend, textures); blocks that do not need it ignore it. */

@@ -15,6 +15,7 @@
  * - With a CSM on the sun (SPEC-0690, `shadowCsm.ts`) the block drives it: `updateNative` once per
  *   frame (cascade placement + C++ draw), then one matrix and one map per cascade. The sun itself has
  *   no map then: neither its `updateMatrices` nor `NativeSunShadowPass` run.
+ * - The WGSL (`shadowWgsl.ts`, SPEC-0732) only has the cascades the CSM uses; more cascades recompile it.
  *
  * `?nativeShadow=0` disables the sampling (lit); `?nativeShadowShift=1` shifts the native
  * receivers' sampling by SHIFT_TEXELS — the known-answer case: the parity must FAIL.
@@ -28,13 +29,14 @@ import type { FrameBlockFactory } from './FrameBlock.js';
 import { NativeSunShadowPass, nativeShadowPassRequested, type SunLight } from '../shadow/NativeSunShadowPass.js';
 import { flushCsmReceivers } from './csmReceiverCount.js';
 import {
-  SHADOW_BIAS_AT, SHADOW_ENABLED_AT, SHADOW_FIRST_BINDING, SHADOW_INTENSITY_AT, SHADOW_MAP_SIZE_AT, SHADOW_MATRIX_AT,
-  SHADOW_NORMAL_BIAS_AT, SHADOW_UV_SHIFT_AT,
+  SHADOW_BIAS_AT, SHADOW_ENABLED_AT, SHADOW_INTENSITY_AT, SHADOW_MAP_SIZE_AT, SHADOW_MATRIX_AT, SHADOW_NORMAL_BIAS_AT,
+  SHADOW_UV_SHIFT_AT,
 } from './shadowLayout.js';
 import {
-  CSM_MAX_CASCADES, CSM_STRUCT_WGSL, CSM_WGSL, SHADOW_UBO_FLOATS, csmMapLayoutEntries, csmShadowSource, writeCsmParams,
-  writeSingleMapMode, type CsmShadowSource,
+  CSM_COUNT_AT, CSM_MAX_CASCADES, SHADOW_UBO_FLOATS, csmMapLayoutEntries, csmShadowSource, writeCsmParams, writeSingleMapMode,
+  type CsmShadowSource,
 } from './shadowCsm.js';
+import { SHADOW_MAP_BINDING, SHADOW_PARAMS_BINDING, SHADOW_SAMPLER_BINDING, shadowWgsl } from './shadowWgsl.js';
 
 export {
   SHADOW_BIAS_AT, SHADOW_ENABLED_AT, SHADOW_FIRST_BINDING, SHADOW_INTENSITY_AT, SHADOW_LAST_BINDING, SHADOW_MAP_SIZE_AT,
@@ -44,13 +46,11 @@ export { SHADOW_UBO_FLOATS } from './shadowCsm.js';
 /** `true` once `nativeShadow` samples the real shadow map. */
 export const SHADOW_READY = true;
 
-const PARAMS_BINDING = SHADOW_FIRST_BINDING;
-const SAMPLER_BINDING = SHADOW_FIRST_BINDING + 1;
-const MAP_BINDING = SHADOW_FIRST_BINDING + 2;
+const PARAMS_BINDING = SHADOW_PARAMS_BINDING;
+const SAMPLER_BINDING = SHADOW_SAMPLER_BINDING;
+const MAP_BINDING = SHADOW_MAP_BINDING;
 const MAT4_FLOATS = 16;
 const FLOAT_BYTES = 4;
-/** Taps of the three's PCFSoft (bilinear 3×3); the divisor of the sum. */
-const PCF_SOFT_TAPS = 9;
 /** Frames between scene searches for a shadow-casting sun while none is found. */
 const LIGHT_RESCAN_FRAMES = 120;
 /** Seção do perfil de render (SPEC-0585): o bloco inteiro, com a CSM nativa que ele dirige (SPEC-0690). */
@@ -66,66 +66,6 @@ const STAGE_VERTEX = 0x1;
 const STAGE_FRAGMENT = 0x2;
 /** Bound until the three's map has a GPU texture (the group needs a resource). */
 const EMPTY_MAP_SIDE = 1;
-
-const SHADOW_WGSL = /* wgsl */ `${CSM_STRUCT_WGSL}
-struct NativeShadowParams {
-  matrix : mat4x4<f32>,
-  normalBias : f32,
-  bias : f32,
-  mapSize : vec2<f32>,
-  intensity : f32,
-  enabled : f32,
-  uvShift : vec2<f32>,
-  csm : vec4<f32>,
-  cascades : array<NativeShadowCascade, ${CSM_MAX_CASCADES}>,
-};
-@group(1) @binding(${PARAMS_BINDING}) var<uniform> nativeShadowParams : NativeShadowParams;
-@group(1) @binding(${SAMPLER_BINDING}) var nativeShadowSampler : sampler_comparison;
-@group(1) @binding(${MAP_BINDING}) var nativeShadowMap : texture_depth_2d;
-${CSM_WGSL}
-/** PCFSoft of one map (cascade 0 = the single map), already mixed by the shadow intensity. */
-fn nativeShadowPcf(positionWorld : vec3<f32>, normalWorld : vec3<f32>, matrix : mat4x4<f32>, normalBias : f32, bias : f32, cascade : u32) -> f32 {
-  let clip = matrix * vec4<f32>(positionWorld + normalWorld * normalBias, 1.0);
-  let ndc = clip.xyz / clip.w;
-  var uv = vec2<f32>(ndc.x, 1.0 - ndc.y);
-  let z = ndc.z + bias;
-  if (!(uv.x >= 0.0 && uv.x <= 1.0 && uv.y >= 0.0 && uv.y <= 1.0 && z <= 1.0)) {
-    return 1.0;
-  }
-  let mapSize = nativeShadowParams.mapSize;
-  uv = uv + nativeShadowParams.uvShift;
-  let texel = vec2<f32>(1.0) / mapSize;
-  let f = fract(uv * mapSize + vec2<f32>(0.5));
-  uv = uv - f * texel;
-  let dx = texel.x;
-  let dy = texel.y;
-  let c = cascade;
-  let sum = nativeShadowTap(uv, z, c)
-    + nativeShadowTap(uv + vec2<f32>(dx, 0.0), z, c)
-    + nativeShadowTap(uv + vec2<f32>(0.0, dy), z, c)
-    + nativeShadowTap(uv + texel, z, c)
-    + mix(nativeShadowTap(uv + vec2<f32>(-dx, 0.0), z, c), nativeShadowTap(uv + vec2<f32>(dx * 2.0, 0.0), z, c), f.x)
-    + mix(nativeShadowTap(uv + vec2<f32>(-dx, dy), z, c), nativeShadowTap(uv + vec2<f32>(dx * 2.0, dy), z, c), f.x)
-    + mix(nativeShadowTap(uv + vec2<f32>(0.0, -dy), z, c), nativeShadowTap(uv + vec2<f32>(0.0, dy * 2.0), z, c), f.y)
-    + mix(nativeShadowTap(uv + vec2<f32>(dx, -dy), z, c), nativeShadowTap(uv + vec2<f32>(dx, dy * 2.0), z, c), f.y)
-    + mix(
-        mix(nativeShadowTap(uv + vec2<f32>(-dx, -dy), z, c), nativeShadowTap(uv + vec2<f32>(dx * 2.0, -dy), z, c), f.x),
-        mix(nativeShadowTap(uv + vec2<f32>(-dx, dy * 2.0), z, c), nativeShadowTap(uv + vec2<f32>(dx * 2.0, dy * 2.0), z, c), f.x),
-        f.y);
-  return mix(1.0, sum * (1.0 / ${PCF_SOFT_TAPS}.0), nativeShadowParams.intensity);
-}
-
-/** Sun shadow factor (0 = shadowed, 1 = lit), already mixed by the shadow intensity; multiplies the sun's direct term only. */
-fn nativeShadow(positionWorld : vec3<f32>, normalWorld : vec3<f32>, positionView : vec3<f32>) -> f32 {
-  if (nativeShadowParams.enabled == 0.0) {
-    return 1.0;
-  }
-  if (nativeShadowParams.csm.z > 0.0) {
-    return nativeShadowCsm(positionWorld, normalWorld, positionView);
-  }
-  return nativeShadowPcf(positionWorld, normalWorld, nativeShadowParams.matrix, nativeShadowParams.normalBias, nativeShadowParams.bias, 0u);
-}
-`;
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type Gpu = any;
@@ -150,8 +90,13 @@ function isSun(o: unknown): o is SunLight {
 /** Group-1 shadow block: params UBO + comparison sampler + the sun's depth map (or one per CSM cascade). */
 export class ShadowBlock {
   readonly name = 'shadow';
-  readonly wgsl = SHADOW_WGSL;
   version = 0;
+  /**
+   * Cascades the WGSL reads (SPEC-0732): the CSM node's `count`, only ever raised, so a drop (or a few frames without
+   * the sun) never recompiles; the shader reads `count` from the UBO and skips the cascades past it.
+   */
+  private _cascades = 0;
+  private _wgsl = shadowWgsl(0);
   private readonly _params: Gpu;
   private readonly _sampler: Gpu;
   private readonly _empty: Gpu;
@@ -193,6 +138,16 @@ export class ShadowBlock {
     });
   }
 
+  /** WGSL of the block for the cascades compiled so far (SPEC-0732). */
+  get wgsl(): string {
+    return this._wgsl;
+  }
+
+  /** Changes with `wgsl`: the pipeline store keys its modules by it. */
+  get codeKey(): string {
+    return `shadow:${this._cascades}`;
+  }
+
   layoutEntries(): unknown[] {
     return [
       { binding: PARAMS_BINDING, visibility: STAGE_VERTEX | STAGE_FRAGMENT, buffer: { type: 'uniform' } },
@@ -227,6 +182,7 @@ export class ShadowBlock {
     const why = this._write(scene, camera, d);
     d[SHADOW_ENABLED_AT] = why === null ? 1 : 0;
     flushCsmReceivers(why === null && this._csmSampled);
+    this._compileCascades(d[CSM_COUNT_AT]!);
     this._bindMaps();
     this._report(why ?? 'amostrando');
     const last = this._last;
@@ -237,6 +193,15 @@ export class ShadowBlock {
         return;
       }
     }
+  }
+
+  /** Recompiles the WGSL when the CSM reads more cascades than it has; `version` makes the recipes stale. */
+  private _compileCascades(count: number): void {
+    if (count <= this._cascades) return;
+    this._cascades = count;
+    this._wgsl = shadowWgsl(count);
+    this.version++;
+    debug('perf', `[nativeShadow] wgsl com ${count} cascata(s)`);
   }
 
   /** Swaps in this frame's map textures; any change rebuilds the group. */

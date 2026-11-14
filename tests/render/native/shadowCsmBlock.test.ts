@@ -28,6 +28,7 @@ import {
 } from '../../../src/render/native/frame/shadowCsm.js';
 import { NativeSunShadowPass, type SunLight } from '../../../src/render/native/shadow/NativeSunShadowPass.js';
 import { lambertModel } from '../../../src/render/native/models/lambert.js';
+import { shadowWgsl } from '../../../src/render/native/frame/shadowWgsl.js';
 import type { NativeRendererHost } from '../../../src/render/native/NativeRenderer.js';
 
 const MAP_SIZE = 2048;
@@ -122,14 +123,16 @@ describe('ShadowBlock em modo CSM (SPEC-0690)', () => {
     const block = new ShadowBlock(device, host, true, false, null);
     const before = block.version;
     block.update(scene, null);
-    expect(block.version).toBe(before + 1);
+    // O 1º quadro troca os mapas e também recompila o WGSL com as 2 cascatas (SPEC-0732).
+    const first = block.version;
+    expect(first).toBeGreaterThan(before);
     expect(views(block)).toEqual([{ of: 'cascata-0' }, { of: 'cascata-1' }, ...new Array(CSM_MAX_CASCADES - 2).fill({ of: 'empty' })]);
     block.update(scene, null);
-    expect(block.version).toBe(before + 1);
+    expect(block.version).toBe(first);
     // O three recriou o mapa da cascata 1 (o estado do nó guarda a mesma lista).
     cascades[1]!.texture = { createView: () => ({ of: 'nova' }) };
     block.update(scene, null);
-    expect(block.version).toBe(before + 2);
+    expect(block.version).toBe(first + 1);
     expect(views(block)[1]).toEqual({ of: 'nova' });
   });
 
@@ -203,8 +206,8 @@ describe('layout e WGSL do receptor CSM (SPEC-0690)', () => {
   });
 
   it('o WGSL declara cada mapa uma vez, tem nativeShadowCsm, chaves equilibradas, e o lambert passa positionView', () => {
-    const { device, host } = fakeHost();
-    const wgsl = new ShadowBlock(device, host, true, false, null).wgsl;
+    // Com todas as cascatas (SPEC-0732: o bloco compila só as que a CSM usa).
+    const wgsl = shadowWgsl(CSM_MAX_CASCADES);
     for (let i = 1; i < CSM_MAX_CASCADES; i++) {
       expect(wgsl.match(new RegExp(`var nativeShadowMap${i} : texture_depth_2d;`, 'g'))).toHaveLength(1);
       expect(wgsl).toContain(`@binding(${CSM_FIRST_MAP_BINDING + i}) var nativeShadowMap${i}`);
@@ -216,9 +219,13 @@ describe('layout e WGSL do receptor CSM (SPEC-0690)', () => {
       expect(wgsl.split(open).length).toBe(wgsl.split(close).length);
     }
     // Cada função chamada está declarada.
-    for (const fn of ['nativeShadowTap', 'nativeShadowPcf', 'nativeShadowCascade', 'nativeShadowCsm']) {
-      expect(wgsl).toContain(`fn ${fn}(`);
+    for (let i = 0; i < CSM_MAX_CASCADES; i++) {
+      for (const fn of [`nativeShadowTap${i}`, `nativeShadowPcf${i}`, `nativeShadowCascade${i}`]) {
+        expect(wgsl).toContain(`fn ${fn}(`);
+        expect(wgsl).toContain(`${fn}(`);
+      }
     }
+    expect(wgsl).toContain('fn nativeShadowCsm(');
     expect(lambertModel.wgsl(['receiveShadow'])).toContain('nativeShadow(in.positionWorld, normalize((vec4<f32>(normal, 0.0) * view.view).xyz), in.positionView)');
   });
 });

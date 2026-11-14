@@ -2,6 +2,7 @@
  * CSM mode of the native sun shadow block (SPEC-0690, ADR-0691): the receivers read the cascades the C++ shadow
  * pass draws, one `texture_depth_2d` per cascade (bindings 10–15) and one UBO entry per cascade. `shadow.ts` only
  * picks the mode: `cascadeCount = 0` keeps the single-map path of SPEC-0545 untouched, `> 0` samples the cascades.
+ * The WGSL is generated for the cascades in use by `shadowWgsl.ts` (SPEC-0732).
  *
  * The cascade choice and the fade are the three's `CSMShadowNode._setupFade`/`_setupStandard` (three 0.184), ported
  * as is — the same margin (`0.25 · edge²`), the same curve, the first cascade never fading at its near edge. The
@@ -76,19 +77,6 @@ export function csmShadowSource(shadow: { shadowNode?: unknown }): CsmShadowSour
   return node?.isCSMShadowNode === true && typeof node.updateNative === 'function' ? (node as CsmShadowSource) : null;
 }
 
-/** Cascades 1..5 (cascade 0 is `nativeShadowMap`, binding 10). */
-const MAP_DECLARATIONS = Array.from(
-  { length: CSM_MAX_CASCADES - 1 },
-  (_, i) => `@group(1) @binding(${CSM_FIRST_MAP_BINDING + i + 1}) var nativeShadowMap${i + 1} : texture_depth_2d;`,
-).join('\n');
-
-const TAP_CASES = Array.from(
-  { length: CSM_MAX_CASCADES - 1 },
-  (_, i) => `    case ${i + 1}u: {
-      return textureSampleCompareLevel(nativeShadowMap${i + 1}, nativeShadowSampler, uv, z);
-    }`,
-).join('\n');
-
 /** The cascade struct, declared before `NativeShadowParams`. */
 export const CSM_STRUCT_WGSL = /* wgsl */ `
 struct NativeShadowCascade {
@@ -96,68 +84,6 @@ struct NativeShadowCascade {
   bias : vec4<f32>,
   range : vec2<f32>,
 };`;
-
-/** Bindings 11..15, the per-cascade tap and the CSM sampling (`nativeShadowCsm`). */
-export const CSM_WGSL = /* wgsl */ `
-${MAP_DECLARATIONS}
-
-/** One compare tap of the map of \`cascade\` (no uniformity rule: Level variant). */
-fn nativeShadowTap(uv : vec2<f32>, z : f32, cascade : u32) -> f32 {
-  switch cascade {
-${TAP_CASES}
-    default: {
-      return textureSampleCompareLevel(nativeShadowMap, nativeShadowSampler, uv, z);
-    }
-  }
-}
-
-/** Factor of cascade \`i\` (intensity mixed in); a refused cascade is lit. */
-fn nativeShadowCascade(i : u32, positionWorld : vec3<f32>, normalWorld : vec3<f32>) -> f32 {
-  let c = nativeShadowParams.cascades[i];
-  if (c.bias.z == 0.0) {
-    return 1.0;
-  }
-  return nativeShadowPcf(positionWorld, normalWorld, c.matrix, c.bias.y, c.bias.x, i);
-}
-
-/** The three's CSMShadowNode: _setupFade with fade, _setupStandard without; 1 beyond the last cascade. */
-fn nativeShadowCsm(positionWorld : vec3<f32>, normalWorld : vec3<f32>, positionView : vec3<f32>) -> f32 {
-  let g = nativeShadowParams.csm;
-  let linearDepth = (positionView.z + g.x) / (g.x - g.y);
-  let count = u32(g.z);
-  var ret = 1.0;
-  if (g.w == 0.0) {
-    for (var i = 0u; i < count; i++) {
-      let cascade = nativeShadowParams.cascades[i].range;
-      if (linearDepth >= cascade.x && linearDepth <= cascade.y) {
-        ret = nativeShadowCascade(i, positionWorld, normalWorld);
-      }
-    }
-    return ret;
-  }
-  for (var i = 0u; i < count; i++) {
-    let cascade = nativeShadowParams.cascades[i].range;
-    let cascadeCenter = (cascade.x + cascade.y) / 2.0;
-    let closestEdge = select(cascade.y, cascade.x, linearDepth < cascadeCenter);
-    // three's closestEdge.pow(2.0); the product avoids pow(0, 2), which some drivers return as NaN.
-    let margin = 0.25 * (closestEdge * closestEdge);
-    let csmX = cascade.x - margin / 2.0;
-    var csmY = cascade.y + margin / 2.0;
-    if (i == count - 1u) {
-      csmY = cascade.y;
-    }
-    if (linearDepth >= csmX && linearDepth <= csmY) {
-      let dist = min(linearDepth - csmX, csmY - linearDepth);
-      var ratio = clamp(dist / margin, 0.0, 1.0);
-      if (i == 0u) {
-        ratio = select(1.0, ratio, linearDepth > cascadeCenter);
-      }
-      ret = ret - (1.0 - nativeShadowCascade(i, positionWorld, normalWorld)) * ratio;
-    }
-  }
-  return ret;
-}
-`;
 
 /** Layout entries of cascades 1..5 (cascade 0 is the block's map binding). */
 export function csmMapLayoutEntries(fragmentStage: number): unknown[] {

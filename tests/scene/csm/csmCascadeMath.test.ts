@@ -8,7 +8,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { csmShadowFactor, viewZToOrthographicDepth } from '../../../src/scene/csm/csmCascadeMath.js';
-import { CSM_WGSL } from '../../../src/render/native/frame/shadowCsm.js';
+import { csmWgsl } from '../../../src/render/native/frame/shadowWgsl.js';
 
 const THREE_CSM = resolve(__dirname, '../../../node_modules/three/examples/jsm/csm/CSMShadowNode.js');
 
@@ -125,11 +125,13 @@ describe('csmShadowFactor = CSMShadowNode do three (SPEC-0690)', () => {
     expect(three).toContain('ratio = linearDepth.greaterThan( cascadeCenter ).select( ratio, 1 )');
     expect(three).toContain('ret.subAssign( this._shadowNodes[ i ].oneMinus().mul( ratio ) )');
     expect(three).toContain('viewZToOrthographicDepth( positionView.z, cameraNear, shadowFar )');
+    const CSM_WGSL = csmWgsl(2);
     expect(CSM_WGSL).toContain('let margin = 0.25 * (closestEdge * closestEdge);');
     expect(CSM_WGSL).toContain('let csmX = cascade.x - margin / 2.0;');
     expect(CSM_WGSL).toContain('var csmY = cascade.y + margin / 2.0;');
     expect(CSM_WGSL).toContain('ratio = select(1.0, ratio, linearDepth > cascadeCenter);');
-    expect(CSM_WGSL).toContain('ret = ret - (1.0 - nativeShadowCascade(i, positionWorld, normalWorld)) * ratio;');
+    // SPEC-0732: uma chamada por cascata; o fade escolhe a fórmula (sem fade, a última em alcance vence).
+    expect(CSM_WGSL).toContain('ret = select(factor, ret - (1.0 - factor) * ratio, fade);');
     expect(CSM_WGSL).toContain('let linearDepth = (positionView.z + g.x) / (g.x - g.y);');
   });
 });
