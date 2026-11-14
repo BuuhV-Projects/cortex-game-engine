@@ -1,3 +1,10 @@
+# [0.128.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.127.0...v0.128.0) (2026-11-14)
+
+
+### Features
+
+* **vehicle:** raio por roda, inclinação visual (VehicleLean) e estado do piloto (SPEC-0735) ([ca6945f](https://github.com/BuuhV-Projects/cortex-game-engine/commit/ca6945f1d5c2ca78492a83f768cf60ca4a9166d1))
+
 # [0.127.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.126.3...v0.127.0) (2026-11-14)
 
 
