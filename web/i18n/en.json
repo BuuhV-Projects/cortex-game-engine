@@ -23,11 +23,11 @@
   "features": {
     "code": {
       "title": "AI-powered code",
-      "body": "An AI agent lives inside the IDE: it talks with your project, creates ECS components, writes systems, tweaks scenes. Sandboxed to the active project with per-tool approval."
+      "body": "Claude Code is the AI: open it in your game folder and, through the Studio's cortex MCP server, it sees the engine's asset kits, the scene and the engine API — creates ECS components, writes systems, tweaks scenes."
     },
     "models": {
       "title": "AI 3D models",
-      "body_html": "Describe the asset, the AI writes the Blender script and exports the <code class=\"rounded bg-zinc-800 px-1.5 py-0.5 text-xs\">.glb</code> ready to drop into the scene. No leaving the IDE."
+      "body_html": "Pick and import assets from the engine's kits, measure and preview models, or describe a new one and the AI writes the Blender script that exports the <code class=\"rounded bg-zinc-800 px-1.5 py-0.5 text-xs\">.glb</code>."
     },
     "desktop": {
       "title": "Desktop games",
@@ -36,12 +36,12 @@
   },
   "stack": {
     "title": "All in one place",
-    "body_html": "Monaco editor, embedded terminal, drag-and-drop file tree, hot-reload preview, AI chat in the sidebar and installer generator. Open the IDE, describe what you want and walk out with a playable <code class=\"rounded bg-zinc-800 px-1.5 py-0.5 text-xs\">.exe</code>."
+    "body_html": "Monaco editor, embedded terminal, drag-and-drop file tree, hot-reload preview, AI via Claude Code (cortex MCP) and installer generator. Open the IDE, describe what you want and walk out with a playable <code class=\"rounded bg-zinc-800 px-1.5 py-0.5 text-xs\">.exe</code>."
   },
   "open_source": {
     "eyebrow": "Open source",
     "title": "Built in the open. Pull requests welcome.",
-    "body": "The whole engine, the IDE, the AI agent and this website live in a single open repository. Found a bug, see how to improve a feature, or want to extend the engine with new capability? Open a PR — or an issue, if you want to discuss first.",
+    "body": "The whole engine, the IDE, the cortex MCP server and this website live in a single open repository. Found a bug, see how to improve a feature, or want to extend the engine with new capability? Open a PR — or an issue, if you want to discuss first.",
     "cta_github": "View on GitHub →",
     "cta_pr": "Open a PR"
   },

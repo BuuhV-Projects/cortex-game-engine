@@ -12,7 +12,7 @@ import { fileURLToPath } from 'url'
 import {
   parseEngineApiSections,
   buildEngineApiIndex,
-} from '../../electron/agent/engineApiIndex.js'
+} from '../../mcp/engineApi/engineApiIndex.js'
 
 const SAMPLE = `# Título do doc
 

@@ -3,9 +3,6 @@
 Arquivos binários do jogo: `.glb`/`.gltf` (modelos 3D), texturas
 (`.png`/`.jpg`), sons (`.mp3`/`.wav`). Nada de TypeScript aqui.
 
-Modelos gerados pela tool `generate_blender_model` do chat IA são
-salvos aqui por padrão.
-
 ## Carregar
 
 Use o `AssetLoader` do `cortex-game-engine`:

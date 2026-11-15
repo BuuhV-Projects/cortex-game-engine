@@ -13,12 +13,24 @@ máquina:
 |---|---|---|
 | **Node.js 24+** | [nodejs.org](https://nodejs.org/) ou via [Volta](https://volta.sh) / [nvm](https://github.com/nvm-sh/nvm) | Rodar o `vite` que faz o preview ao vivo do jogo dentro da IDE. |
 | **Yarn classic (1.x)** | `npm install -g yarn` (depois de ter o Node) | Gerenciar dependências dos projetos criados (a IDE roda `yarn install` automaticamente em projeto novo). |
-| **Blender** | [blender.org/download](https://www.blender.org/download/) | Gerar modelos 3D com IA (`.glb`) a partir de descrição em linguagem natural. Detalhes em [Blender](#blender). |
-| **Claude Code** | [claude.com/product/claude-code](https://claude.com/product/claude-code) | Autenticação do chat IA — a IDE usa a sua assinatura Claude Pro/Max detectada via CLI. Detalhes em [Chat IA](#chat-ia). |
+| **Claude Code 2.0+** | [claude.com/product/claude-code](https://claude.com/product/claude-code) | A IA do Studio. Obrigatório só para a parte de IA — o Studio registra nele o MCP `cortex`. Detalhes em [IA com Claude Code](#ia-claude-code). |
+| **Blender 4.0+** (recomendado) | [blender.org/download](https://www.blender.org/download/) | Thumbnails e medidas de modelos (`inspect_assets`), auto-rig e os scripts que a IA escreve para criar ou ajustar `.glb`. Detalhes em [Blender](#blender). |
+| **Git** (recomendado) | [git-scm.com](https://git-scm.com/) | Commit inicial do projeto novo e o Git Bash usado pelo auto-rig. |
 
-Os 4 são **obrigatórios**: a IDE é uma combinação de editor + preview
-ao vivo + chat IA + gerador de assets, e cada peça depende de um
-desses componentes.
+O editor (cena, Inspector, preview e export) funciona sem Claude
+Code, Blender e Git — só a IA e as funções citadas na tabela
+dependem deles.
+
+<div class="callout callout-info">
+
+**Instale o Claude Code antes do Studio.** No fim da instalação, o
+instalador do Studio checa Claude Code, Blender e Git, mostra um
+relatório com o que achou e o que falta (salvo também em
+`<pasta do Studio>\requisitos.txt`) e registra o MCP `cortex` no
+Claude Code sozinho. Se instalar o Claude Code depois, o comando de
+registro manual está em [IA com Claude Code](#ia-claude-code).
+
+</div>
 
 ## Baixar e instalar a IDE
 
@@ -27,7 +39,8 @@ desses componentes.
    - **Windows** — `.exe` (NSIS).
    - **macOS** — `.dmg`.
    - **Linux** — `.AppImage`.
-3. Executar o instalador e seguir o wizard.
+3. Executar o instalador e seguir o wizard. No final, confira o
+   relatório de requisitos que ele mostra.
 
 <div class="callout callout-info">
 

@@ -18,8 +18,7 @@ import { loadPreferences, registerPrefsDialogsIpc } from './main/prefsDialogsIpc
 import { killRunnerForQuit, registerRunIpc } from './main/projectRunner.js'
 import { killTerminalForQuit, registerTerminalIpc } from './main/terminalIpc.js'
 import { killCharacterRigForQuit, registerCharacterRigIpc } from './main/characterRigIpc.js'
-import { registerChatStoreIpc } from './main/chatStore.js'
-import { registerAgentIpc } from './main/agentIpc.js'
+import { registerProjectIpc } from './main/projectIpc.js'
 import { buildAppMenu, registerMenuIpc, setMenuLocale } from './main/appMenu.js'
 
 // ---------------------------------------------------------------------------
@@ -93,8 +92,7 @@ registerPrefsDialogsIpc()
 registerRunIpc()
 registerTerminalIpc()
 registerCharacterRigIpc()
-registerChatStoreIpc()
-registerAgentIpc()
+registerProjectIpc()
 registerMenuIpc()
 
 // ---------------------------------------------------------------------------

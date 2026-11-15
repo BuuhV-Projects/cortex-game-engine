@@ -118,7 +118,7 @@ verdade viva do desenho.
 
 Colisão/corpo é **propriedade do objeto** e tem que ficar **visível e editável no
 Inspector** (seção "Física": Nenhum / Estático / Character). Ao gerar cena (inclui
-o Chat IA), declare física nos **campos do nó** do `level.json` (`collider`, `player`,
+a IA pelo MCP `cortex`), declare física nos **campos do nó** do `level.json` (`collider`, `player`,
 `character`) — o Inspector lê e o usuário pode editar/remover/trocar (o overlay
 `data.physics`/`data.colliders` **vence** o código/JSON). **NUNCA** crave colisão só
 no **código** (`entity.addComponent(new Collider2DComponent/CharacterBodyComponent)`
@@ -137,10 +137,10 @@ com TypeDoc — **não edite à mão** os arquivos em `docs/cortex-game-engine/a
   `src/physics/`, `src/editor/`, `src/scene/`, `src/io/` — rode `yarn docs:engine`
   e **commite a doc regenerada** junto da mudança.
 - `docs/cortex-game-engine/engine-api.md` — guia **curado** (catálogo + receitas),
-  **não** gerado. É a fonte que a IDE empacota (extraResources) e injeta no Chat IA
-  como **ÍNDICE no system prompt** (seções + linhas + símbolos, derivado em runtime
-  por `electron/agent/engineApiIndex.ts`; o agente lê seções completas sob demanda
-  via Read — ADR-0114). Mantenha-o atualizado ao mudar a API pública (adicione
+  **não** gerado. A IDE o empacota (extraResources) e o MCP `cortex` o serve à IA
+  como **índice** (seções + linhas + símbolos, derivado em runtime por
+  `mcp/engineApi/engineApiIndex.ts`) e seções/símbolos sob demanda (`engine_api_*`,
+  SPEC-0737). Mantenha-o atualizado ao mudar a API pública (adicione
   classes/exports novos e receitas relevantes) — o índice deriva dele sozinho.
 
 > Bons comentários TSDoc nas classes/métodos públicos viram boa doc

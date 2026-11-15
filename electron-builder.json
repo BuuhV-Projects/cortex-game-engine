@@ -7,23 +7,16 @@
   "files": [
     "out/**"
   ],
-  "asarUnpack": [
-    "**/node_modules/@anthropic-ai/claude-agent-sdk/**",
-    "**/node_modules/@anthropic-ai/claude-agent-sdk-*/**"
-  ],
   "extraResources": [
     { "from": "templates", "to": "templates" },
     { "from": "kits", "to": "kits" },
     { "from": "dist-engine", "to": "dist-engine" },
     {
-      "from": "docs/cortex-game-engine/engine-api.md",
-      "to": "docs/cortex-game-engine/engine-api.md"
+      "from": "docs/cortex-game-engine",
+      "to": "docs/cortex-game-engine",
+      "filter": ["engine-api.md", "architecture.md", "api/**"]
     },
-    {
-      "from": ".claude",
-      "to": "agent-plugin",
-      "filter": [".claude-plugin/**", "agents/**", "skills/**", "scripts/**"]
-    },
+    { "from": "out/mcp", "to": "mcp" },
     {
       "from": "dist/src",
       "to": "dist/src",
@@ -68,6 +61,9 @@
       { "from": "src", "to": "src" },
       { "from": "native/export-toolchain/node_modules", "to": "node_modules" }
     ]
+  },
+  "nsis": {
+    "include": "build/installer.nsh"
   },
   "mac": {
     "target": [

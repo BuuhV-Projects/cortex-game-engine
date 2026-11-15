@@ -1,7 +1,7 @@
 # 0021 - Agente do Chat IA deve preferir cortex-game-engine sobre three direto
 
 **Data:** 2026-05-26
-**Status:** aceito
+**Status:** substituído por ADR-0736 (Chat IA removido; IA do Studio = Claude Code + MCP `cortex`)
 
 ## Contexto
 

@@ -1,7 +1,7 @@
 # 0130 - Modelo configurável no Chat IA (default Sonnet)
 
 **Data:** 2026-07-19
-**Status:** aceito (modelo do Codificar substituído pelo ADR-0276)
+**Status:** substituído por ADR-0736 (Chat IA removido; IA do Studio = Claude Code + MCP `cortex`)
 
 ## Contexto
 

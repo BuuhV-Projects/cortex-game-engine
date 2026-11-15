@@ -1,7 +1,7 @@
 # 0003 - Integração de IA para geração de scripts via Claude API
 
 **Data:** 2026-05-24
-**Status:** aceito
+**Status:** substituído por ADR-0736 (Chat IA removido; IA do Studio = Claude Code + MCP `cortex`)
 
 ## Contexto
 

@@ -1,7 +1,7 @@
 # 0018 - Confirmação de ações destrutivas no Chat IA
 
 **Data:** 2026-05-25 (atualizada 2026-05-26)
-**Status:** aceito (implementa PRD-0002)
+**Status:** substituído por ADR-0736 (Chat IA removido; IA do Studio = Claude Code + MCP `cortex`)
 
 > **Atualização 2026-05-26 — Modos Ask/Auto:** o usuário agora alterna
 > entre dois modos via toggle no header do chat:

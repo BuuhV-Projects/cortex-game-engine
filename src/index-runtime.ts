@@ -1,9 +1,8 @@
 /**
  * Entry point do runtime do engine usado em projetos criados pelo IDE.
  *
- * Re-exporta apenas core + ECS — AI e CLI ficam de fora porque dependem
- * de SDKs Node-only (@anthropic-ai/sdk, commander) que não fazem sentido
- * no runtime do projeto (são ferramentas de autoria, usadas pelo IDE).
+ * Re-exporta a API pública do runtime. Ferramentas de autoria (o MCP `cortex`,
+ * ADR-0736) ficam fora do engine, em `mcp/`.
  */
 
 // ─── Core ──────────────────────────────────────────────────────────────────────

@@ -1,7 +1,7 @@
 # 0036 - Plan Mode no Chat IA
 
 **Data:** 2026-06-01
-**Status:** aceito
+**Status:** substituído por ADR-0736 (Chat IA removido; IA do Studio = Claude Code + MCP `cortex`)
 
 ## Contexto
 

@@ -101,12 +101,10 @@ describe('template de projeto novo: performance desde o início (SPEC-0268)', ()
     'game.refreshHz',
   ]
 
-  it('o AGENTS.md traz as regras de performance', async () => {
+  it('o AGENTS.md traz as regras de performance', () => {
     const md = read(AGENTS_MD)
-    const { PERFORMANCE_RULES } = await import('../../electron/agent/performanceRules.js')
     for (const conceito of CONCEITOS) {
       expect(md, `AGENTS.md sem "${conceito}"`).toContain(conceito)
-      expect(PERFORMANCE_RULES, `performanceRules.ts sem "${conceito}"`).toContain(conceito)
     }
   })
 

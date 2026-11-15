@@ -1,7 +1,7 @@
 # 0180 - Conhecimento do Chat IA vive em skills empacotadas como plugin local
 
 **Data:** 2026-08-02
-**Status:** aceito
+**Status:** substituído por ADR-0736 na parte do Chat IA (as skills e agentes do `.claude/` continuam valendo para o Claude Code)
 
 ## Contexto
 

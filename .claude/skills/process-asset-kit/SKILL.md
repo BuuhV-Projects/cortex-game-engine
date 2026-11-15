@@ -18,6 +18,7 @@ thumbnails passam por ele. Rode a checagem ANTES de qualquer outra coisa:
 
 ```bash
 PLUGIN="${CORTEX_PLUGIN_DIR:-.claude}"
+[ -f "$PLUGIN/scripts/check-blender.mjs" ] || { echo "Os scripts das skills só existem no repositório da engine (distribuição ao jogo: backlog da SPEC-0737)." >&2; exit 1; }
 BLENDER=$(node "$PLUGIN/scripts/check-blender.mjs") || exit 1
 PK="$PLUGIN/skills/process-asset-kit/scripts"   # triage.sh, convert.py, gen-kit.mjs, lineup.py…
 ```
@@ -37,7 +38,7 @@ São **template** — ajuste as regras de triagem/classificação ao naming do k
 
 - **Repositório da engine** (Claude Code): `kits/<nome>/` — entra no catálogo
   empacotado, disponível a todos os projetos.
-- **Chat IA do Studio**: o catálogo empacotado é somente-leitura. O kit curado vai
+- **Projeto do jogo** (Claude Code com o MCP `cortex`): o catálogo empacotado é somente-leitura. O kit curado vai
   para **`assets/<nome>/` do projeto aberto**, e é só ele que a cena consome. Para
   trazer um kit que JÁ está no catálogo, não processe nada: use `list_kits` +
   `import_kit { kit, only: [...] }`.
@@ -137,8 +138,8 @@ sólido) e âncora `top` (e `edge_left/right` em peças que encaixam lado a lado
 O destino oficial é **`kits/<nome>/`** no repo do engine (`assets/`, `thumbnails/`,
 `kit.json` — e `scripts/` quando o kit traz mecânicas). Nada a registrar em lista
 nenhuma: o `electron-builder.json` empacota `kits/` inteira (`{ from: "kits" }`) e o
-Chat IA descobre por varredura de diretório (`list_kits`/`import_kit` em
-`electron/agent/tools/kits.ts`). Ao consumir num projeto, `import_kit` copia pro
+MCP `cortex` descobre por varredura de diretório (`list_kits`/`import_kit` em
+`mcp/tools/kits.ts`). Ao consumir num projeto, `import_kit` copia pro
 `assets/` do projeto; re-vendorizar conforme ADR-0009.
 
 **Teste de integridade:** `tests/scene/kitsRepo.test.ts` roda sobre TODOS os kits de

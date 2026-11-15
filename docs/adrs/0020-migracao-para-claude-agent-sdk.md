@@ -1,7 +1,7 @@
 # 0020 - Migração para @anthropic-ai/claude-agent-sdk
 
 **Data:** 2026-05-26
-**Status:** aceito (substitui a implementação custom dos ADRs 0017/0019)
+**Status:** substituído por ADR-0736 (Chat IA removido; IA do Studio = Claude Code + MCP `cortex`)
 
 > **Atualização 2026-05-26 (parcial):** a parte da SPEC-0019 sobre
 > `generate_blender_model` foi reativada — não como tool custom no nosso
