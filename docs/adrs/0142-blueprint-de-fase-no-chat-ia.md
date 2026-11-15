@@ -1,7 +1,7 @@
 # 0142 - Blueprint de fase orientado a gameplay no Chat IA
 
 **Data:** 2026-07-23
-**Status:** aceito
+**Status:** substituído por ADR-0736 (Chat IA removido; IA do Studio = Claude Code + MCP `cortex`)
 
 ## Contexto
 

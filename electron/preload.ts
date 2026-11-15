@@ -1,17 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
 
-// Repete a forma de TurnStats do agentLoop — preload é um arquivo compilado
-// separadamente e não importa do main bundle. Mantém em sync manualmente.
-interface TurnStats {
-  durationMs: number
-  costUsd: number
-  inputTokens: number
-  outputTokens: number
-  cacheReadTokens: number
-  cacheCreationTokens: number
-  sessionId: string | null
-}
-
 contextBridge.exposeInMainWorld('electronAPI', {
   // Sistema de arquivos
   readDir: (dirPath: string) =>
@@ -182,40 +170,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   stopTerminalCommand: () =>
     ipcRenderer.invoke('terminal:stop'),
 
-  // Chat IA (SPEC-0014, ADR-0017)
-  chat: (
-    messages: Array<{ role: 'user' | 'assistant'; content: string }>,
-    mode: 'ask' | 'auto' | 'plan',
-    model: 'opus' | 'sonnet' | 'haiku' | 'astra',
-    orchestrate: boolean,
-  ) => ipcRenderer.invoke('ai:chat', messages, mode, model, orchestrate),
-
-  // Define o projeto que o agente do chat vê (sandbox de tools — ADR-0017)
+  // Projeto ativo no main: menu "Projeto" + pacotes do cortex.json (SPEC-0693)
   setActiveProject: (projectDir: string | null) =>
     ipcRenderer.invoke('project:setActive', projectDir),
-
-  // Decisão do usuário sobre uma tool call pendente (ADR-0018)
-  decideToolCall: (id: string, approved: boolean) =>
-    ipcRenderer.invoke('ai:tool_decision', id, approved),
-
-  // Cancela o turno do agente em andamento
-  cancelChat: () => ipcRenderer.invoke('ai:cancel'),
-
-  // Salva imagem do clipboard em .cortex/paste/ e retorna path relativo
-  saveClipboardImage: (dataUrl: string) =>
-    ipcRenderer.invoke('clipboard:saveImage', dataUrl),
-
-  // Apaga uma imagem de .cortex/paste/ (após o turno do agente usar)
-  deleteClipboardImage: (relPath: string) =>
-    ipcRenderer.invoke('clipboard:deleteImage', relPath),
-
-  // Persistência do histórico de chat por projeto (PRD-0001 V2)
-  loadChatHistory: (projectDir: string) =>
-    ipcRenderer.invoke('chat:load', projectDir),
-  saveChatHistory: (projectDir: string, messages: Array<{ role: string; content: string }>) =>
-    ipcRenderer.invoke('chat:save', projectDir, messages),
-  clearChatHistory: (projectDir: string) =>
-    ipcRenderer.invoke('chat:clear', projectDir),
 
   // Eventos do main → renderer. Cada chamada adiciona um listener ao canal;
   // múltiplos componentes (Preview, BottomPanel, etc.) podem se inscrever
@@ -238,41 +195,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   onTerminalDone: (callback: (exitCode: number) => void) => {
     ipcRenderer.on('terminal:done', (_event, payload: { code: number }) => callback(payload.code))
-  },
-
-  onAiChunk: (callback: (text: string) => void) => {
-    ipcRenderer.on('ai:chunk', (_event, payload: { text: string }) => callback(payload.text))
-  },
-
-  onAiDone: (callback: (payload: { stopReason: string | null; stats: TurnStats | null }) => void) => {
-    ipcRenderer.on(
-      'ai:done',
-      (_event, payload: { stopReason: string | null; stats: TurnStats | null }) =>
-        callback(payload),
-    )
-  },
-
-  onAiError: (callback: (message: string) => void) => {
-    ipcRenderer.on('ai:error', (_event, payload: { message: string }) => callback(payload.message))
-  },
-
-  // Tool calls do agente (ADR-0018)
-  onAiToolRequest: (
-    callback: (request: {
-      id: string
-      name: string
-      input: Record<string, unknown>
-      summary: string
-      needsApproval: boolean
-    }) => void,
-  ) => {
-    ipcRenderer.on('ai:tool_request', (_event, request) => callback(request))
-  },
-
-  onAiToolExecuted: (
-    callback: (payload: { id: string; result: { content: string; isError: boolean } }) => void,
-  ) => {
-    ipcRenderer.on('ai:tool_executed', (_event, payload) => callback(payload))
   },
 
   // Item "Projeto > Gerar instalador (debug?)..." do Menu nativo (ADR-0024)

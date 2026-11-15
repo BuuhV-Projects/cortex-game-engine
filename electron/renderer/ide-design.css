@@ -429,20 +429,10 @@
 .ide .hud-row { display: flex; align-items: center; gap: 7px; }
 .ide .hud-row .lab { font-size: 11.5px; color: var(--tx); }
 
-/* ---------- chat ---------- */
-.ide .chat-msg { display: flex; flex-direction: column; gap: 4px; }
-.ide .chat-who { font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--tx-dim); }
-.ide .chat-bubble { font-size: 12.5px; line-height: 1.5; color: var(--tx); }
-.ide .chat-bubble.me { background: var(--bg-2); border: 1px solid var(--line); border-radius: 10px 10px 10px 3px; padding: 9px 11px; align-self: flex-start; }
-.ide .chat-bubble.ai { color: var(--tx); }
+/* ---------- token ---------- */
+
 .ide .tok { font-family: var(--mono); font-size: 11px; background: var(--accent-q); color: var(--accent); padding: 1px 5px; border-radius: 4px; white-space: nowrap; }
 .ide .tok.warnt { background: oklch(0.82 0.13 78 / .16); color: var(--warn); }
-.ide .chat-input {
-  display: flex; align-items: flex-end; gap: 8px; padding: 9px;
-  border: 1px solid var(--line-2); border-radius: 12px; background: var(--bg-2);
-}
-.ide .chat-input textarea { flex: 1; border: none; background: transparent; resize: none; color: var(--tx); font-family: var(--ui); font-size: 12.5px; outline: none; height: 38px; line-height: 1.4; }
-.ide .chat-input textarea::placeholder { color: var(--tx-dim); }
 
 /* ---------- menubar ---------- */
 .ide .menubar { display: flex; align-items: center; height: 30px; padding: 0 6px; gap: 1px; background: var(--bg-0); border-bottom: 1px solid var(--line); user-select: none; -webkit-app-region: drag; }

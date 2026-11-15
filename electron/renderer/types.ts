@@ -12,25 +12,6 @@ export interface FileEntry {
   isDir: boolean
 }
 
-export interface AiToolRequest {
-  id: string
-  name: string
-  input: Record<string, unknown>
-  summary: string
-  needsApproval: boolean
-}
-
-export interface TurnStats {
-  durationMs: number
-  costUsd: number
-  inputTokens: number
-  outputTokens: number
-  cacheReadTokens: number
-  cacheCreationTokens: number
-  /** Session ID do SDK; persistido por projeto pra retomar entre execuções. */
-  sessionId: string | null
-}
-
 export interface PackageListItem {
   id: string
   version: string
@@ -82,26 +63,8 @@ export interface ElectronAPI {
   runTerminalCommand(projectDir: string, command: string): Promise<void>
   stopTerminalCommand(): Promise<void>
 
-  // Chat IA
-  chat(
-    messages: Array<{ role: 'user' | 'assistant'; content: string }>,
-    mode: 'ask' | 'auto' | 'plan',
-    model: 'opus' | 'sonnet' | 'haiku' | 'astra',
-    orchestrate: boolean,
-  ): Promise<void>
+  /** Projeto ativo no main: menu "Projeto" + pacotes do cortex.json (SPEC-0693). */
   setActiveProject(projectDir: string | null): Promise<void>
-  decideToolCall(id: string, approved: boolean): Promise<void>
-  cancelChat(): Promise<void>
-  saveClipboardImage(dataUrl: string): Promise<string>
-  deleteClipboardImage(relPath: string): Promise<void>
-  loadChatHistory(
-    projectDir: string,
-  ): Promise<Array<{ role: 'user' | 'assistant'; content: string }>>
-  saveChatHistory(
-    projectDir: string,
-    messages: Array<{ role: 'user' | 'assistant'; content: string }>,
-  ): Promise<void>
-  clearChatHistory(projectDir: string): Promise<void>
 
   /** Observa o projeto no disco (fs.watch) — dispara `onProjectFilesChanged`. */
   watchProject(projectDir: string): Promise<void>
@@ -144,15 +107,6 @@ export interface ElectronAPI {
   onProjectFilesChanged(callback: () => void): void
   onTerminalOutput(callback: (text: string) => void): void
   onTerminalDone(callback: (exitCode: number) => void): void
-  onAiChunk(callback: (text: string) => void): void
-  onAiDone(
-    callback: (payload: { stopReason: string | null; stats: TurnStats | null }) => void,
-  ): void
-  onAiError(callback: (message: string) => void): void
-  onAiToolRequest(callback: (request: AiToolRequest) => void): void
-  onAiToolExecuted(
-    callback: (payload: { id: string; result: { content: string; isError: boolean } }) => void,
-  ): void
 
   // Itens do Menu nativo (ADR-0024)
   onMenuBuildInstaller(callback: (payload: { debug: boolean }) => void): void

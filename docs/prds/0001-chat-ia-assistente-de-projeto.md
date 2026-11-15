@@ -1,7 +1,7 @@
 # PRD 0001 - Chat IA como assistente do projeto
 
 **Data:** 2026-05-25
-**Status:** aceito (V1 em implementação)
+**Status:** substituído por ADR-0736 (Chat IA removido; IA do Studio = Claude Code + MCP `cortex`)
 
 ## Problema
 

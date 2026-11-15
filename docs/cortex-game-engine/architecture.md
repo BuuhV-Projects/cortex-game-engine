@@ -630,10 +630,10 @@ alvo é **Rapier** (WASM) como motor dinâmico único, estilo Unity.
   **criar** e ao **re-vendorizar**. No fluxo de dev deste repo, re-vendorizamos à
   mão pros projetos de teste (`D:/jogos/*`) após mudar o engine.
 - **Doc da API** é **gerada** (`yarn docs:engine`, TypeDoc → `api/`). `engine-api.md`
-  é curado e alimenta o Chat IA como **ÍNDICE no system prompt** (título + faixa de
-  linhas + símbolos por seção, gerado em runtime por `electron/agent/engineApiIndex.ts`);
-  o agente lê a seção completa sob demanda via Read (ADR-0114). Mantenha o doc ao
-  mudar a API — o índice deriva dele automaticamente, sem passo de build.
+  é curado; o MCP `cortex` serve o índice (`engine_api_index`: título + faixa de linhas
+  + símbolos por seção, derivado em runtime por `mcp/engineApi/engineApiIndex.ts`) e as seções e
+  símbolos sob demanda (SPEC-0737). Mantenha o doc ao mudar a API — o índice deriva dele
+  automaticamente, sem passo de build.
 
 - **Pacotes de textura** (ADR-0640 / SPEC-0641): bibliotecas de material ficam
   FORA da engine e do template — um repo GitHub por pacote, texturas num zip do
@@ -677,150 +677,39 @@ vendorizado em `vendor/.../vite/` como o `sceneSavePlugin`) gera as fronteiras.
   raiz animada ou presa a ECS.
 - O `hotUpdate` descarta mudança sob `.claude/` ou `node_modules/`; fora da raiz segue o fluxo normal do vite.
 
-## 6a-bis. Chat IA tem DUAS cabecas (ADR-0191 → modos por tarefa, ADR-0265 → Orquestrador, ADR-0269)
+## 6b. IA do Studio: Claude Code + MCP `cortex` (ADR-0736, SPEC-0737/0738)
 
-**Padrao desde o ADR-0269: modo Orquestrador.** O botao cicla Orquestrador →
-Modelagem → Codificar. O Orquestrador e a cabeca Claude (mesmo modelo do
-Codificar) com `orchestrate: true` (4o argumento do IPC `ai:chat`): ganha a
-tool `delegate_modeling` (`electron/agent/tools/modeling.ts`, server
-`cortex-modelagem`) e a secao "Modo Orquestrador" no prompt; perde o
-`cortex-blender`. A tool roda `runCodexAgent` POR DENTRO do turno do Claude:
-cards do Astra vao direto ao chat, o texto vira resultado da tool, e o `onDone`
-do Astra so guarda a sessao (Map por projeto, memoria do processo) — se
-chegasse ao renderer, encerraria o turno do Claude no meio.
+O Studio não tem chat próprio (o Chat IA saiu no ADR-0736). A IA é o Claude Code do dev, e o que só o
+Studio sabe fazer vai num servidor MCP stdio, `mcp/`:
 
-**Desde o ADR-0265 o usuario escolhe a TAREFA, nao o modelo:** o botao alterna
-**Modelagem** (manda `astra`) e **Codificar** (manda `sonnet`, ou `opus` com o
-ajuste "Codificar com o modelo mais forte" nas configuracoes do projeto —
-guardado no localStorage, nunca no `cortex.json`). A regra tarefa → modelo vive
-em `electron/renderer/chatTask.ts`. Nenhum texto da UI cita modelo.
-
-**Modo Modelagem = dado, nunca codigo (garantido):** `runModelingTurn`
-(`electron/agent/codex/modelagemTurn.ts`) poe um preambulo (fronteira + regras
-de performance + revisao no fim), fotografa o codigo do projeto antes e o
-RESTAURA depois de cada rodada (`codeGuard.ts`), e julga todo `.glb` novo ou
-alterado (`modelWatch.ts` + `judgeModel`, SPEC-0267): reprovado volta para a
-MESMA sessao do Astra (`exec resume`) com os motivos, ate 3 tentativas.
-Detecta pelo DISCO, nao por `file_change`: o Astra tambem gera modelo rodando
-Blender por shell. **Regras de performance** tem fonte unica em
-`electron/agent/performanceRules.ts`, lida pelo prompt do Claude e pelo
-preambulo do Astra; o Codificar fecha o turno revisando o codigo contra elas.
-
-Por baixo, `astra` NAO e outro modelo do mesmo loop: `runAgent()` roteia `model === 'astra'`
-para o `CodexAgentRunner` (`electron/agent/codex/`), que roda
-`codex exec --json` no projeto em vez do Agent SDK. Traduz os eventos JSONL
-(`agent_message`/`file_change`/`command_execution`/`turn.completed`) para o
-mesmo `AgentEvents`, entao a UI nao sabe qual cabeca respondeu.
-
-Divisao de trabalho: **astra monta cena**, **Claude escreve codigo** (e e quem
-tem as skills do plugin e o subagente `level-builder`). Quem escolhe e o
-usuario (Modelagem/Codificar) ou o proprio Claude no Orquestrador — nunca um
-classificador de texto.
-
-**Saude do turno (ADR-0272 / SPEC-0271):** o "Pensando..." some no primeiro
-texto, entao o sinal de vida do turno e a barra `chat-health` (acima do input,
-regra pura em `electron/renderer/turnHealth.ts`): tempo do turno, card em
-andamento e silencio desde o ultimo evento — quieto em 1 min, "pode ter
-travado" em 5 min (card esperando APROVACAO nao conta como silencio). O portao
-dos `.glb` abre um card `Validação` por modelo (`deps.card` do
-`runModelingTurn`). O `codex exec` tem vigia: 15 min sem linha de saida →
-encerra e o turno termina com erro.
-
-**Armadilhas do runner:**
-- `--ignore-user-config` faz o agente virar read-only de fato ("este ambiente
-  permite apenas leitura") mesmo com `--sandbox workspace-write`. Nao passe
-  essa flag aqui — so na chamada single-shot da modelagem 3D, que e read-only.
-- Sem `--ephemeral`: a sessao precisa persistir pro `exec resume <threadId>` do
-  turno seguinte.
-- **O gate de aprovacao (ADR-0018) nao vale no turno do astra** — `canUseTool` e
-  do Agent SDK. O agente escreve no projeto sem card; o limite e o
-  `workspace-write` no `cwd`. Os cards emitidos sao historico, nao gate.
-
-**Contratos de projeto sairam do prompt** (ADR-0191): cena-e-dado, fisica no no,
-`place` por bounding box, id nao-sequencial, import da engine e comandos
-proibidos agora vivem no `AGENTS.md` de `templates/new-project/` (com um
-`CLAUDE.md` de uma linha apontando pra ele), lido pelas duas cabecas no `cwd`.
-**Divida conhecida:** projetos criados ANTES desta mudanca nao tem esse arquivo —
-e como o prompt tambem nao tem mais as regras, aquele projeto fica sem contrato
-ate receber o `AGENTS.md`.
-
-**Contrato do export nativo no template** (SPEC-0643): `templates/new-project/.claude/`
-traz um hook `Stop` + `SubagentStop` (`settings.json` → `hooks/native-contract.sh` →
-`native-contract.mjs`, Node sem deps) que ao fim de cada implementacao do agente checa,
-sem rodar o host, o que o nativo exige: ERRO (exit 2) sem `nativeRenderer: true` no
-`new Game` ou com `outdoorLighting` sem `csm: true`; DEBITO novo (material fisico,
-normal map, `MASK`, `AmbientLight`, `environment`, `toneMapping`...) tambem bloqueia, e
-a lista fica em `docs/debito-nativo.md` do jogo. O template ja nasce dentro do contrato.
-O `cp` recursivo do `fs:createProject` leva a pasta oculta. ⚠️ e heuristico (asset em
-disco e texto do codigo): quando a engine ganhar a feature, apague a regra do `.mjs`.
-
-## 6b. Chat IA: prompt enxuto, skills do plugin e validação geométrica
-
-- **Anatomia do loop** (`electron/agent/`, ADR-0017/ADR-0180): `agentLoop.ts` só
-  orquestra (monta as `Options` do SDK, registra os MCP servers, roteia aprovação);
-  `prompt.ts` guarda o system prompt **invariante**; `sdkMessages.ts` traduz o
-  stream do SDK em eventos de UI; `agentTypes.ts` tem o contrato do turno;
-  `plugin.ts` resolve o plugin de skills. O prompt NÃO carrega método — quem monta
-  fase/kit/blueprint são as skills.
-- **Skills e subagente vêm de um plugin local** (ADR-0180): `.claude/` do repo tem
-  `.claude-plugin/plugin.json` e é, ao mesmo tempo, o diretório de projeto do
-  Claude Code e o plugin `cortex-studio` carregado pelo Chat IA
-  (`plugins:[{type:'local'}]` + `skills:'all'`). Fonte única: o método refinado
-  trabalhando no repositório é o que o Studio executa. No app empacotado vai em
-  `extraResources` como `agent-plugin/`; `resolvePluginDir()` acha os dois layouts
-  e devolve `null` (turno sem skills) se faltar. As skills acham seus scripts e os
-  kits por `CORTEX_PLUGIN_DIR`/`CORTEX_KITS_DIR`, injetados no env do turno — o
-  `cwd` do Bash é o projeto do jogo, não este repositório.
-- **Modelagem 3D roda em OUTRO provider** (ADR-0189/SPEC-0190): a tool
-  `generate_blender_model` (`electron/agent/tools/blender.ts`) encapsula o
-  `BlenderModelGenerator` (`src/ai/BlenderModelGenerator.ts`), que **nao** usa o
-  Claude — pede o script Python `bpy` ao **GPT-6-Astra** via `codex exec`
-  (`src/ai/CodexClient.ts`, subscription do `codex login`) e roda Blender
-  headless pra exportar o `.glb`. E o unico ponto do Studio fora do Claude; o
-  resto do Chat IA e o `ScriptGenerator` continuam no Agent SDK.
-  **Armadilha:** `codex` no `PATH` pode ser um shim antigo (a 0.151.0 recusa o
-  astra com HTTP 400) enquanto o app instalado esta atualizado — por isso o
-  `CodexClient` resolve o binario (`CODEX_PATH` -> app -> `PATH`) e checa a
-  versao antes de gastar a chamada. Outra armadilha: o modelo as vezes redefine
-  `OUTPUT_PATH` dentro do script, o que venceria a injecao do Studio e mandaria
-  o `.glb` pro lugar errado — redefinicoes em nivel superior sao comentadas
-  antes de executar.
-- **`settingSources: ['project']`**: carrega `CLAUDE.md`/`.claude` do jogo aberto
-  (instruções do usuário) sem herdar as configurações globais da máquina, que
-  trariam skills de outros repositórios como ruído.
-- **`validateScene`** (`src/scene/validateScene.ts`, ADR-0112): validação estática
-  (dados, sem GPU) — interpenetração, flutuação, tombado, vão impulável, attach.
-  Tool `validate_scene` (electron): 0 erros é pré-requisito antes de playtest/critique.
-  Thresholds default vivem no próprio `validateScene`; a chamada sobrescreve por
-  parâmetro. O ciclo de aprendizado por baselines (ADR-0113/0115) foi **removido**
-  no ADR-0180 — não há mais `.cortex/validation-rules.json` nem `scene-learnings.md`;
-  corrigir a IA é editar a skill.
-- **Percepção rápida + playtest determinístico** (ADR-0116): `measure_glb`
-  (server `cortex-assets`) mede bounding box de `.glb` específicos em **Node
-  puro** (`electron/agent/assets/measureGlb.ts`, sem Blender; marca skinned =
-  bbox de bind pose) — leitura pura, roda sem aprovação e no modo plan. O
-  `playtest_game` aceita `wait_for` (expressão JS até truthy, com diagnóstico
-  de recursos pendentes no timeout — em vez de inflar `waitMs` no chute) e
-  `eval_js` (setup pós-boot: teleporte/câmera overview antes da foto).
-- **Câmera de inspeção no playtest** (SPEC-0131): `playtest_game` aceita `camera`
-  (`{orbit:{yaw,pitch,dist,target}} | {pos,lookAt} | {fov}`) pra ver a cena de
-  **qualquer ângulo**, livre da câmera de gameplay (que segue o player). Motor:
-  `Game.inspect` (`src/core/InspectCamera.ts`) — câmera livre que, quando ativa,
-  VENCE a do jogo/editor no render (`Game._tick`), cru (sem PostFX), com a
-  gameplay seguindo. Exposta em `window.__cortexInspect` pelo `attachEditor`
-  (bundle de dev, carregado mesmo em `?play=1`). Antes, com `?play=1` o editor
-  fica inativo → `activeCamera()` devolve `null` → só a câmera do jogo renderizava,
-  e o `eval_js` não tinha alça pra câmera nenhuma. Auto-enquadramento ignora
-  helpers do editor (outra layer) e skybox (>1000u).
-- **Playtest pelo editor + sondas** (SPEC-0277): por padrão (`start: 'editor'`) o
-  `playtest_game` boota SEM `?play`, espera a carga e aperta ▶ Play por
-  `window.__cortexPlaytest.play()` (exposto pelo `attachEditor` junto do `game`) —
-  o caminho do usuário. `play()` recusa enquanto `game.isLoading` ou antes do editor
-  processar o 1º quadro. **Armadilha:** `?play=1` pula a transição edição → jogo,
-  onde jogos reconstroem estado (o `CarSystem` do kart apaga e refaz a colisão
-  estática) — o playtest antigo aprovava um kart que no Studio caía. Ação `probe`
-  devolve números em texto (física se lê em número, não em foto); engine vendorizado
-  sem o gancho cai em `?play=1` com aviso. Codificar roda no Opus 5.5 médio (ADR-0276).
+- **Tools** (`mcp/tools/`, definições neutras `{ name, description, schema, scope, handler }` em
+  `mcp/toolDef.ts`): `list_kits`/`list_kit_assets`/`import_kit` (kits empacotados, ADR-0053),
+  `measure_glb` (bbox em **Node puro**, `mcp/assets/measureGlb.ts`; skinned = bbox da bind pose),
+  `inspect_assets` (thumbnail + medida via Blender headless, `mcp/assets/renderThumbnails.ts`; grava em
+  `.cortex/asset-thumbs/` e NÃO devolve imagem inline), `validate_scene` e `engine_api_*` (índice,
+  seção, símbolo TypeDoc e busca, `mcp/engineApi/`). Tool de escopo `project` ganha `projectDir`
+  opcional; o padrão é o `cwd` em que o Claude Code abriu. Caminho que sai do projeto e kit que não
+  existe voltam `isError`.
+- **Runtime**: `yarn build:mcp` (`vite.mcp.config.ts`) gera `out/mcp/cortex-mcp.mjs` e
+  `out/mcp/cortex-setup.mjs` com as dependências dentro; o `electron-builder` copia para
+  `resources/mcp/`. Rodam com o exe do Studio em modo Node (`ELECTRON_RUN_AS_NODE=1`), sem Node no PATH.
+  Recursos (`kits/`, `docs/cortex-game-engine/`) = `CORTEX_RESOURCES` ou a pasta acima do script.
+  stdout é o protocolo: diagnóstico só em stderr.
+- **Instalador** (`build/installer.nsh`, `mcp/setup/`): no fim da instalação o `cortex-setup` checa
+  Claude Code ≥ 2.0, Blender ≥ 4.0 e Git, registra o MCP (`claude mcp add --scope user cortex`) e mostra
+  o relatório (`$INSTDIR\requisitos.txt`); na desinstalação, remove o registro. **Armadilha:** o
+  `ELECTRON_RUN_AS_NODE` precisa ser desligado depois do `nsExec`, senão o "executar o Studio" do fim do
+  instalador herda o modo Node e a janela não abre.
+- **`validateScene`** (`src/scene/validateScene.ts`, ADR-0112): validação estática (dados, sem GPU) —
+  interpenetração, flutuação, tombado, vão impulável, attach. 0 erros é pré-requisito antes de qualquer
+  validação visual. Thresholds default vivem no próprio `validateScene`; a chamada sobrescreve por
+  parâmetro. O relatório completo vai para `.cortex/validation/`.
+- **Ganchos de inspeção no engine** continuam (para o `playtest` headless do backlog): `Game.inspect`
+  (`src/core/InspectCamera.ts`, câmera livre que vence a do jogo no render) e
+  `window.__cortexPlaytest.play()` (aperta ▶ Play como o usuário faria; o parâmetro `play` da URL pula a transição
+  edição → jogo, onde jogos reconstroem estado — SPEC-0277).
+- **Skills/agentes** do `.claude/` servem ao Claude Code aberto neste repositório; o instalador não os
+  leva mais (backlog da SPEC-0737).
 
 ## 7. Fluxo de ponta a ponta (um nó vira jogo)
 

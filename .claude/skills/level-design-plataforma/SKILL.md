@@ -14,10 +14,11 @@ diz *como construir e validar*; esta diz *como fazer bonito e desafiador*.
 > `dump_blend.py` (estrutura: coleções, instâncias, bbox, histograma) e
 > `dump_creative.py` (critérios: verticalidade, scatter, paleta, cadência).
 > Resolva o caminho por variável — a skill roda no repositório da engine e também
-> no Chat IA do Studio, onde o `cwd` é o projeto do jogo:
+> no projeto do jogo, onde o `cwd` é o projeto:
 >
 > ```bash
 > PLUGIN="${CORTEX_PLUGIN_DIR:-.claude}"
+> [ -f "$PLUGIN/scripts/check-blender.mjs" ] || { echo "Os scripts das skills só existem no repositório da engine (distribuição ao jogo: backlog da SPEC-0737)." >&2; exit 1; }
 > LD="$PLUGIN/skills/level-design-plataforma/scripts"
 > BLENDER=$(node "$PLUGIN/scripts/check-blender.mjs") || exit 1   # obrigatório
 > "$BLENDER" --background <arquivo.blend> --python "$LD/dump_blend.py"

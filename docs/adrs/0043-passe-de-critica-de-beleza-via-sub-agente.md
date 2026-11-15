@@ -1,7 +1,7 @@
 # 0043 - Passe de crítica de beleza via sub-agente (critique_scene)
 
 **Data:** 2026-06-05
-**Status:** aceito
+**Status:** substituído por ADR-0736 (Chat IA removido; IA do Studio = Claude Code + MCP `cortex`)
 
 ## Contexto
 

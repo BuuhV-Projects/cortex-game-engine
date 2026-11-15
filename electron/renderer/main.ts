@@ -3,7 +3,6 @@ import { Editor } from './Editor'
 import { Preview } from './Preview'
 import { BottomPanel } from './BottomPanel'
 import { ProjectManager } from './ProjectManager'
-import { Chat } from './Chat'
 import { Launcher } from './Launcher'
 import { Shell } from './Shell'
 import { LeftDock } from './LeftDock'
@@ -30,7 +29,6 @@ const editorContainer = document.getElementById('editor-container') as HTMLEleme
 const previewContainer = document.getElementById('preview-container') as HTMLElement
 const consoleContainer = document.getElementById('console-container') as HTMLElement
 const inspectorContainer = document.getElementById('inspector-container') as HTMLElement
-const chatContainer = document.getElementById('chat-container') as HTMLElement
 const menubarContainer = document.getElementById('menubar') as HTMLElement
 const toolbarContainer = document.getElementById('toolbar') as HTMLElement
 
@@ -52,7 +50,6 @@ const editor = new Editor(editorContainer)
 const preview = new Preview(previewContainer)
 const bottomPanel = new BottomPanel(consoleContainer)
 const projectManager = new ProjectManager(document.body)
-const chat = new Chat(chatContainer)
 
 // Tela inicial (logo + criar/abrir + recentes). Construída ANTES de fileTree.init()
 // pra o listener de `project-open` já pegar a restauração do último projeto.
@@ -66,7 +63,6 @@ editor.init()
 preview.init()
 bottomPanel.init()
 projectManager.init()
-chat.init()
 // Painel de auto-rig de personagem (SPEC-0349): abre por evento (menu Projeto / árvore).
 installCharacterRig()
 
@@ -97,7 +93,6 @@ function colResizer(handle: HTMLElement, target: HTMLElement, sign: 1 | -1, min 
 }
 colResizer(document.getElementById('resizer-left') as HTMLElement, leftDockEl, 1)
 colResizer(document.getElementById('resizer-inspector') as HTMLElement, inspectorContainer, -1)
-colResizer(document.getElementById('resizer-chat') as HTMLElement, chatContainer, -1)
 
 // Resize vertical entre viewport/editor e console — ajusta a altura do #console-container.
 const bottomHandle = document.getElementById('resizer-bottom') as HTMLElement
@@ -143,22 +138,26 @@ document.addEventListener('editor-doc-change', (e) => {
 })
 applyDoc('scene') // boot: cena ativa
 
-// Chat recolhido → vira um trilho fino (rail).
-document.addEventListener('chat-collapsed-change', (e) => {
-  const { collapsed } = (e as CustomEvent<{ collapsed: boolean }>).detail
-  const w = collapsed ? 46 : 320
-  chatContainer.style.flex = `0 0 ${w}px`
-  chatContainer.style.width = `${w}px`
-})
+// Projeto ativo no main (menu "Projeto" + pacotes do cortex.json, SPEC-0693): avisa só na troca.
+let activeProject: string | null = null
+const setActiveProject = (path: string | null): void => {
+  if (path === activeProject) return
+  activeProject = path
+  void window.electronAPI.setActiveProject(path)
+}
 
 // Ao criar/abrir um projeto, FileTree recarrega apontando para o path.
 document.addEventListener('project-open', (e) => {
   const { path } = (e as CustomEvent<{ path: string }>).detail
+  setActiveProject(path)
   void fileTree.openProject(path)
 })
 
 // Fechar projeto: limpa a árvore (os demais componentes têm seu próprio listener).
-document.addEventListener('project-close', () => fileTree.closeProject())
+document.addEventListener('project-close', () => {
+  setActiveProject(null)
+  fileTree.closeProject()
+})
 
 // Menu nativo "Projeto > Gerar instalador..." (ADR-0024) — também disparado pela
 // menubar custom. O BottomPanel escuta `build-installer-requested`.

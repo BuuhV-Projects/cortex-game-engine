@@ -1,7 +1,7 @@
 # 0114 - Índice do engine-api.md no system prompt do Chat IA (leitura sob demanda)
 
 **Data:** 2026-07-15
-**Status:** aceito
+**Status:** substituído por ADR-0736 (Chat IA removido; IA do Studio = Claude Code + MCP `cortex`)
 
 ## Contexto
 

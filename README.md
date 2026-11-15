@@ -3,30 +3,38 @@
 IDE (Electron) + motor de jogos 3D em TypeScript, com arquitetura
 Entity-Component-System (ECS) e renderização Three.js (WebGPU). Você **cria,
 edita e testa o jogo dentro da própria IDE** (o "Studio"): editor de cena visual,
-Inspector, física data-driven e um **Chat IA** que monta cenário a partir dos
-seus assets. O export de PC é **nativo, sem browser** — o CortexNative
+Inspector, física data-driven e um **MCP para o Claude Code** que dá à IA os
+kits, os assets e a API do engine. O export de PC é **nativo, sem browser** — o CortexNative
 ([ADR-0101](docs/adrs/0101-cortexnative-como-export-pc.md)).
 
 ## Pre-requisitos
 
 - **Node + Yarn** — o gerenciador do repo e o `yarn` (nunca `npm`).
-- **Codex CLI >= 0.154.0, autenticado** — usado pela **modelagem 3D** do Studio,
-  que roda o modelo GPT-6-Astra pela sua subscription do Codex
-  ([ADR-0189](docs/adrs/ADR-0189-modelagem-3d-via-codex-cli-gpt-6-astra.md)):
+- **Claude Code >= 2.0** — a IA do Studio é o Claude Code (CLI, VS Code ou desktop) com o
+  MCP `cortex`, que expõe os kits, a medição/thumbnail de `.glb`, a validação de cena e a API do
+  engine ([ADR-0736](docs/adrs/ADR-0736-mcp-do-cortex-no-lugar-do-chat-ia.md)).
+- **Blender >= 4.0** (`BLENDER_PATH`, instalação padrão ou `PATH`) — thumbnails do
+  `inspect_assets`, auto-rig e os scripts das skills.
+- **Git** — commit inicial do projeto novo e o Git Bash do auto-rig.
 
-  ```bash
-  npm install -g @openai/codex@latest   # instalacao global do CLI, fora do repo
-  codex login
-  ```
+O instalador checa esses três no fim da instalação, mostra o que falta e registra o MCP no
+Claude Code ([SPEC-0738](docs/specs/SPEC-0738-instalador-checa-requisitos-e-registra-mcp.md)). O
+editor roda sem eles; só a IA e as funções citadas dependem.
 
-  Se o `codex` do `PATH` for antigo (shim de gerenciador de versao de Node, por
-  exemplo) e voce tiver uma versao nova em outro caminho, aponte-a com
-  `CODEX_PATH`.
-- **Blender >= 4.x no `PATH`** (ou `BLENDER_PATH`) — executa o script gerado e
-  exporta o `.glb` ([ADR-0004](docs/adrs/0004-geracao-modelos-blender.md)).
+### MCP `cortex`
 
-Os dois ultimos so sao exigidos pela modelagem 3D; o resto do Studio roda sem
-eles.
+Em dev, depois de `yarn build:mcp`:
+
+```bash
+claude mcp add --scope user cortex -- node "<repo>/out/mcp/cortex-mcp.mjs"
+```
+
+No Studio instalado, o registro é automático. Para registrar depois (Claude Code instalado após o
+Studio), no PowerShell:
+
+```powershell
+$env:ELECTRON_RUN_AS_NODE=1; & "<Studio>\TS Cortex Studio.exe" "<Studio>\resources\mcp\cortex-setup.mjs" --register
+```
 
 ## Buildar as dependencias da engine
 
@@ -69,10 +77,10 @@ yarn electron:dev
   ([ADR-0070](docs/adrs/0070-sistema-de-dialogo-e-ui-in-game.md),
   [ADR-0102](docs/adrs/0102-ui-runtime-dois-backends.md)).
 - **Kits de assets semânticos**: vocabulário curado (`kit.json`) que o Studio e
-  o Chat IA usam pra montar cena
+  a IA (MCP `cortex`) usam pra montar cena
   ([ADR-0053](docs/adrs/0053-design-system-de-assets-kit-semantico-sockets-temas.md)).
-- **Chat IA agente**: vê os assets do projeto e monta/edita cenário
-  (PRDs [0001](docs/prds/0001-chat-ia-assistente-de-projeto.md)/[0002](docs/prds/0002-chat-ia-como-agente.md)).
+- **MCP `cortex` para o Claude Code**: kits, medição/thumbnail de `.glb`, validação
+  de cena e a API do engine ([ADR-0736](docs/adrs/ADR-0736-mcp-do-cortex-no-lugar-do-chat-ia.md)).
 - **API pública documentada** — gerada com TypeDoc: `yarn docs:engine`
   (referência em `docs/cortex-game-engine/api/`).
 
@@ -115,7 +123,8 @@ node native/scripts/export-game.mjs <pasta-do-projeto>
 | [templates/](templates/) | Esqueleto copiado em cada projeto novo. |
 | [web/](web/) | Website institucional (workspace independente). |
 | [docs/](docs/) | `adrs/` + `tdrs/` (decisões), `specs/`, `cortex-game-engine/` (arquitetura + API), `cortex-native/`, `prds/`. |
-| [.claude/](.claude/) | Plugin `cortex-studio`: skills + subagente do Chat IA (ADR-0180). |
+| [.claude/](.claude/) | Skills e subagentes do Claude Code para trabalhar no engine (ADR-0180). |
+| [mcp/](mcp/) | Servidor MCP `cortex` e o `cortex-setup` do instalador (SPEC-0737/0738). |
 | [tests/](tests/) | Testes Vitest do engine. |
 
 ## Testes

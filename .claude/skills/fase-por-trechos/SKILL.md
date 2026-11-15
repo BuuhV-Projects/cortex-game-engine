@@ -19,10 +19,11 @@ como TEMPLATE — adapte vocabulário/faixas ao pack em mãos. O compositor é c
 do jogo (usa o courseKit do mundo).
 
 Resolva o caminho dos scripts por variável (a skill roda tanto no repositório da
-engine quanto no Chat IA do Studio, onde o `cwd` é o projeto do jogo):
+engine quanto no projeto do jogo, onde o `cwd` é o projeto):
 
 ```bash
 PLUGIN="${CORTEX_PLUGIN_DIR:-.claude}"
+[ -f "$PLUGIN/scripts/check-blender.mjs" ] || { echo "Os scripts das skills só existem no repositório da engine (distribuição ao jogo: backlog da SPEC-0737)." >&2; exit 1; }
 TRECHOS="$PLUGIN/skills/fase-por-trechos/scripts"
 BLENDER=$(node "$PLUGIN/scripts/check-blender.mjs") || exit 1   # fase 0 exige Blender
 ```

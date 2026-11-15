@@ -5,7 +5,7 @@
  * e erros legíveis pra binário inválido / cena sem geometria.
  */
 import { describe, it, expect } from 'vitest'
-import { measureGlb, parseGlbJson } from '../../electron/agent/assets/measureGlb.js'
+import { measureGlb, parseGlbJson } from '../../mcp/assets/measureGlb.js'
 
 /** Monta um buffer GLB válido (header + chunk JSON) a partir do JSON glTF. */
 function glb(json: object): Buffer {

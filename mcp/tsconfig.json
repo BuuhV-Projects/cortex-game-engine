@@ -1,0 +1,19 @@
+{
+  // Só TYPE-CHECK do servidor MCP (SPEC-0737): o build é do vite (vite.mcp.config.ts).
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "ignoreDeprecations": "6.0",
+    "strict": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "types": ["node"],
+    "noEmit": true
+  },
+  "include": ["**/*.ts"]
+}

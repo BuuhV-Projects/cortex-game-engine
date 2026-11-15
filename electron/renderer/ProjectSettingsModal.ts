@@ -1,5 +1,4 @@
 import { t } from './i18n'
-import { strongCodingStorageKey } from './chatTask'
 import { PackagesModal } from './PackagesModal'
 
 /** App id da Steam cabe em uint32 — 10 dígitos é o teto absoluto. */
@@ -21,7 +20,6 @@ export class ProjectSettingsModal {
   private projectDir: string
   private nameInput!: HTMLInputElement
   private steamInput!: HTMLInputElement
-  private strongCodingInput!: HTMLInputElement
   private previewImg!: HTMLImageElement
   private previewEmpty!: HTMLElement
   private removeBtn!: HTMLButtonElement
@@ -125,22 +123,6 @@ export class ProjectSettingsModal {
     steamHint.textContent = t('gameSettings.steam_hint')
     steamField.append(steamLabel, this.steamInput, steamHint)
 
-    // Chat IA: Codificar com o modelo mais forte (ADR-0265). Preferência do
-    // Studio, por projeto — fica no localStorage, NÃO no cortex.json, que vai
-    // junto no export do jogo.
-    const strongField = document.createElement('label')
-    strongField.className = 'gs-field gs-field--check'
-    this.strongCodingInput = document.createElement('input')
-    this.strongCodingInput.type = 'checkbox'
-    this.strongCodingInput.checked = localStorage.getItem(strongCodingStorageKey(projectDir)) === '1'
-    const strongLabel = document.createElement('span')
-    strongLabel.className = 'gs-field__label'
-    strongLabel.textContent = t('gameSettings.chat_strong_label')
-    const strongHint = document.createElement('div')
-    strongHint.className = 'gs-icon-hint'
-    strongHint.textContent = t('gameSettings.chat_strong_hint')
-    strongField.append(this.strongCodingInput, strongLabel, strongHint)
-
     // Nota: atalho na área de trabalho depende do instalador (ADR-0126/0127).
     const note = document.createElement('div')
     note.className = 'gs-note'
@@ -167,7 +149,7 @@ export class ProjectSettingsModal {
     packagesBtn.addEventListener('click', () => new PackagesModal(projectDir))
     footer.append(packagesBtn, cancelBtn, this.saveBtn)
 
-    this.dialog.append(header, nameField, iconField, steamField, strongField, note, footer)
+    this.dialog.append(header, nameField, iconField, steamField, note, footer)
     document.body.appendChild(this.dialog)
 
     void this.loadPreview()
@@ -238,8 +220,6 @@ export class ProjectSettingsModal {
         icon: this.iconRel ?? undefined,
         steamAppId,
       })
-      if (this.strongCodingInput.checked) localStorage.setItem(strongCodingStorageKey(this.projectDir), '1')
-      else localStorage.removeItem(strongCodingStorageKey(this.projectDir))
       this.saved = true
       // Avisa a Studio (ex.: rótulo do projeto pode refletir o novo nome).
       document.dispatchEvent(new CustomEvent('project-config-saved', { detail: res }))

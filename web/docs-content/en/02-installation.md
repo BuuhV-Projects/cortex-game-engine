@@ -13,12 +13,24 @@ your machine:
 |---|---|---|
 | **Node.js 24+** | [nodejs.org](https://nodejs.org/) or via [Volta](https://volta.sh) / [nvm](https://github.com/nvm-sh/nvm) | Runs the `vite` that powers the live preview inside the IDE. |
 | **Yarn classic (1.x)** | `npm install -g yarn` (after Node) | Manages dependencies of created projects (the IDE auto-runs `yarn install` on new projects). |
-| **Blender** | [blender.org/download](https://www.blender.org/download/) | Generate 3D models with AI (`.glb`) from natural language. Details in [Blender](#blender). |
-| **Claude Code** | [claude.com/product/claude-code](https://claude.com/product/claude-code) | AI chat authentication — the IDE uses your Claude Pro/Max subscription detected via the CLI. Details in [AI Chat](#chat-ia). |
+| **Claude Code 2.0+** | [claude.com/product/claude-code](https://claude.com/product/claude-code) | The Studio's AI. Required only for the AI part — the Studio registers the `cortex` MCP in it. Details in [AI with Claude Code](#ai-claude-code). |
+| **Blender 4.0+** (recommended) | [blender.org/download](https://www.blender.org/download/) | Model thumbnails and measurements (`inspect_assets`), auto-rig, and the scripts the AI writes to create or tweak `.glb` files. Details in [Blender](#blender). |
+| **Git** (recommended) | [git-scm.com](https://git-scm.com/) | Initial commit of a new project and the Git Bash used by auto-rig. |
 
-All 4 are **required**: the IDE combines editor + live preview +
-AI chat + asset generator, and each piece depends on one of these
-components.
+The editor (scene, Inspector, preview and export) works without
+Claude Code, Blender and Git — only the AI and the features listed in
+the table depend on them.
+
+<div class="callout callout-info">
+
+**Install Claude Code before the Studio.** At the end of the
+installation, the Studio installer checks Claude Code, Blender and
+Git, shows a report with what it found and what's missing (also saved
+to `<Studio folder>\requisitos.txt`) and registers the `cortex` MCP
+in Claude Code by itself. If you install Claude Code later, the
+manual registration command is in [AI with Claude Code](#ai-claude-code).
+
+</div>
 
 ## Download and install the IDE
 
@@ -27,7 +39,8 @@ components.
    - **Windows** — `.exe` (NSIS).
    - **macOS** — `.dmg`.
    - **Linux** — `.AppImage`.
-3. Run the installer and follow the wizard.
+3. Run the installer and follow the wizard. At the end, check the
+   prerequisites report it shows.
 
 <div class="callout callout-info">
 

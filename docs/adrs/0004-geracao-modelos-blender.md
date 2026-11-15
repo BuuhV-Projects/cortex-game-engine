@@ -1,7 +1,7 @@
 # 0004 - Geração de modelos 3D via Claude + Blender CLI
 
 **Data:** 2026-05-24
-**Status:** aceito
+**Status:** substituído por ADR-0736 (Chat IA removido; IA do Studio = Claude Code + MCP `cortex`)
 
 ## Contexto
 

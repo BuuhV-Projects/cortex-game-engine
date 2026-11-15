@@ -47,10 +47,12 @@ direto. O alias do Vite resolve pro bundle vendoriado.
 
 ## Conversar com a IA
 
-Abre o chat na sidebar direita e descreve o que quer. O agente lê o
-projeto inteiro (sandbox), e pode escrever arquivos novos, editar
-existentes e rodar comandos no terminal embutido — sempre pedindo
-aprovação antes (modo `ask`) ou agindo direto (modo `auto`).
+Abre o **Claude Code** na pasta do projeto (no terminal, `claude`;
+ou pela extensão do VS Code / app desktop) e descreve o que quer. Ele
+lê o projeto, escreve e edita arquivos e roda comandos, pedindo
+aprovação conforme as suas permissões — e, pelo MCP `cortex`, enxerga
+os kits de assets, a cena e a API do engine. Como instalar e conectar
+em [IA com Claude Code](#ia-claude-code).
 
 Exemplos de pedidos que funcionam bem:
 

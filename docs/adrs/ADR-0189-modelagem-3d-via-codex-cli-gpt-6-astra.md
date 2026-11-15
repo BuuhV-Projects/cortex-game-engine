@@ -1,7 +1,7 @@
 # 0189 - Modelagem 3D passa a usar o Codex CLI (GPT-6-Astra) pela subscription
 
 **Data:** 2026-09-13
-**Status:** aceito
+**Status:** substituído por ADR-0736 (Chat IA removido; IA do Studio = Claude Code + MCP `cortex`)
 
 ## Contexto
 

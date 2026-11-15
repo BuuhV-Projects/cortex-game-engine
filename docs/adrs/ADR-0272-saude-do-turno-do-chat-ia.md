@@ -1,7 +1,7 @@
 # ADR-0272 — Saúde do turno do Chat IA: mostrar sempre, matar só o processo mudo
 
 **Data:** 2026-09-24
-**Status:** aceito
+**Status:** substituído por ADR-0736 (Chat IA removido; IA do Studio = Claude Code + MCP `cortex`)
 
 ## Contexto
 
