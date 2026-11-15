@@ -2,7 +2,7 @@
  * Contexto do MCP `cortex` (SPEC-0737): onde acha os recursos do Studio e o projeto do jogo.
  */
 import { describe, it, expect } from 'vitest'
-import { join } from 'node:path'
+import { join, resolve, sep } from 'node:path'
 import { findResources, isInside, resolveProjectRoot } from '../../mcp/context.js'
 
 const ROOT = join('C:', 'Studio', 'resources')
@@ -37,7 +37,8 @@ describe('findResources', () => {
 })
 
 describe('resolveProjectRoot / isInside', () => {
-  const cwd = join('D:', 'jogos', 'meu-jogo')
+  // `resolve(sep, …)` é absoluto no Windows e no Linux; `join('D:', …)` não é no Linux (CI).
+  const cwd = resolve(sep, 'jogos', 'meu-jogo')
 
   it('sem projectDir usa o cwd; relativo resolve contra o cwd', () => {
     expect(resolveProjectRoot(undefined, cwd)).toBe(cwd)
@@ -47,6 +48,7 @@ describe('resolveProjectRoot / isInside', () => {
   it('isInside barra caminho que sai do projeto', () => {
     expect(isInside(cwd, 'scenes/a.json')).toBe(true)
     expect(isInside(cwd, '../outro/a.json')).toBe(false)
-    expect(isInside(cwd, join('C:', 'Windows', 'x.json'))).toBe(false)
+    expect(isInside(cwd, resolve(sep, 'Windows', 'x.json'))).toBe(false)
+    expect(isInside(cwd, '..arquivo.json')).toBe(true)
   })
 })

@@ -59,6 +59,28 @@ describe('tools de kits', () => {
     expect(Object.keys(kit.assets)).toEqual(['assets/floresta/arvore.glb'])
   })
 
+  it('import_kit com only que não casa (typo, sem extensão) é erro e não grava nada', async () => {
+    const r = await importKit.handler({ kit: 'floresta', only: ['arvore'] }, ctx)
+    expect(r.isError).toBe(true)
+    expect(text(r)).toContain('arvore')
+    expect(existsSync(join(ctx.projectRoot, 'assets'))).toBe(false)
+  })
+
+  it('import_kit com only parcial lista o que falta e não grava nada', async () => {
+    const r = await importKit.handler({ kit: 'floresta', only: ['arvore.glb', 'pedrra.glb'] }, ctx)
+    expect(r.isError).toBe(true)
+    expect(text(r)).toContain('pedrra.glb')
+    expect(text(r)).not.toContain('arvore.glb,')
+    expect(existsSync(join(ctx.projectRoot, 'assets'))).toBe(false)
+  })
+
+  it('import_kit sem only cataloga o kit inteiro', async () => {
+    const r = await importKit.handler({ kit: 'floresta' }, ctx)
+    expect(r.isError).toBeUndefined()
+    const kit = JSON.parse(readFileSync(join(ctx.projectRoot, 'assets', 'floresta', 'kit.json'), 'utf-8'))
+    expect(Object.keys(kit.assets).sort()).toEqual(['assets/floresta/arvore.glb', 'assets/floresta/pedra.glb'])
+  })
+
   it('kit fora do catálogo (../) é recusado sem copiar nada', async () => {
     const r = await importKit.handler({ kit: '../jogo' }, ctx)
     expect(r.isError).toBe(true)

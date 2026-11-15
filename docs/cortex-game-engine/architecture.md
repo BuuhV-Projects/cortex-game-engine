@@ -706,7 +706,7 @@ Studio sabe fazer vai num servidor MCP stdio, `mcp/`:
   parâmetro. O relatório completo vai para `.cortex/validation/`.
 - **Ganchos de inspeção no engine** continuam (para o `playtest` headless do backlog): `Game.inspect`
   (`src/core/InspectCamera.ts`, câmera livre que vence a do jogo no render) e
-  `window.__cortexPlaytest.play()` (aperta ▶ Play pelo caminho do usuário; `?play=1` pula a transição
+  `window.__cortexPlaytest.play()` (aperta ▶ Play como o usuário faria; o parâmetro `play` da URL pula a transição
   edição → jogo, onde jogos reconstroem estado — SPEC-0277).
 - **Skills/agentes** do `.claude/` servem ao Claude Code aberto neste repositório; o instalador não os
   leva mais (backlog da SPEC-0737).

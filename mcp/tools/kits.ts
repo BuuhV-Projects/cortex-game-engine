@@ -162,21 +162,33 @@ export const importKit = defineTool({
     const srcAssets = join(kitsDir, kit, 'assets')
     const destRoot = join(projectRoot, 'assets', kit) // assets do JOGO (vão pro build)
     const thumbRel = `.cortex/kit-thumbs/${kit}` // referência DEV (fora do build)
+    const entries = existsSync(srcAssets) ? await readdir(srcAssets, { withFileTypes: true }) : []
+
+    // `only` com nome que o kit não tem (typo, sem `.glb`): erro antes de gravar qualquer coisa.
+    const want = only ? new Set(only.map((s) => basename(s))) : null
+    if (want) {
+      const available = new Set(entries.filter((f) => !f.isDirectory()).map((f) => f.name))
+      const missing = [...want].filter((n) => !available.has(n))
+      if (missing.length > 0) {
+        return textResult(
+          `O kit "${kit}" não tem: ${missing.join(', ')}. Nada foi importado. ` +
+            `Confira os nomes (com a extensão) em \`list_kit_assets { kit: "${kit}" }\`.`,
+          true,
+        )
+      }
+    }
     await mkdir(destRoot, { recursive: true })
 
     // 1) Assets do jogo (.glb/.jpg + subpastas tipo Textures/) → assets/<kit>/.
-    const want = only ? new Set(only.map((s) => basename(s))) : null
     const copied = new Set<string>()
-    if (existsSync(srcAssets)) {
-      for (const f of await readdir(srcAssets, { withFileTypes: true })) {
-        if (f.isDirectory()) {
-          await cp(join(srcAssets, f.name), join(destRoot, f.name), { recursive: true })
-          continue
-        }
-        if (want && !want.has(f.name)) continue
-        await copyFile(join(srcAssets, f.name), join(destRoot, f.name))
-        copied.add(f.name)
+    for (const f of entries) {
+      if (f.isDirectory()) {
+        await cp(join(srcAssets, f.name), join(destRoot, f.name), { recursive: true })
+        continue
       }
+      if (want && !want.has(f.name)) continue
+      await copyFile(join(srcAssets, f.name), join(destRoot, f.name))
+      copied.add(f.name)
     }
     const copiedStems = new Set([...copied].map((f) => f.replace(/\.[^.]+$/, '')))
 
@@ -192,7 +204,8 @@ export const importKit = defineTool({
     }
 
     // 3) kit.json (catálogo, runtime) → assets/<kit>/, com paths project-relative.
-    await writeImportedKitJson(join(kitsDir, kit, 'kit.json'), destRoot, kit, copied, hasThumbs ? thumbRel : null)
+    const subset = want ? copied : null
+    await writeImportedKitJson(join(kitsDir, kit, 'kit.json'), destRoot, kit, subset, hasThumbs ? thumbRel : null)
 
     return textResult(
       `Importado "${kit}" → assets/${kit}/ (${copied.size} asset(s)${only ? ' do subconjunto' : ''}).\n` +
@@ -203,12 +216,15 @@ export const importKit = defineTool({
   },
 })
 
-/** Reescreve o `kit.json` só com os assets importados; `thumb` aponta para o `.cortex` (ou p/ o asset). */
+/**
+ * Reescreve o `kit.json` com os paths do projeto; `thumb` aponta para o `.cortex` (ou p/ o asset).
+ * `subset` (import com `only`) limita o catálogo aos arquivos copiados; `null` = kit inteiro.
+ */
 async function writeImportedKitJson(
   srcKit: string,
   destRoot: string,
   kit: string,
-  copied: Set<string>,
+  subset: Set<string> | null,
   thumbRel: string | null,
 ): Promise<void> {
   if (!existsSync(srcKit)) return
@@ -221,7 +237,7 @@ async function writeImportedKitJson(
   const outAssets: Record<string, unknown> = {}
   for (const [key, a] of Object.entries(raw.assets ?? {})) {
     const file = basename(key)
-    if (copied.size > 0 && !copied.has(file)) continue // só os importados
+    if (subset && !subset.has(file)) continue // só os importados
     const na = { ...a }
     const thumb = a['thumb']
     if (typeof thumb === 'string') na['thumb'] = thumbRel ? `${thumbRel}/${basename(thumb)}` : `assets/${kit}/${file}`

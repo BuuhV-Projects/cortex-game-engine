@@ -1,5 +1,5 @@
 import { existsSync, readdirSync } from 'node:fs'
-import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
+import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { locateBlender } from '../electron/main/autoRig/blenderLocate.js'
 import type { ToolContext } from './toolDef.js'
 
@@ -68,7 +68,8 @@ export function resolveProjectRoot(projectDir: string | undefined, cwd: string):
 export function isInside(root: string, path: string): boolean {
   const abs = isAbsolute(path) ? path : resolve(root, path)
   const rel = relative(root, abs)
-  return !rel.startsWith('..') && !isAbsolute(rel)
+  const leaves = rel === '..' || rel.startsWith(`..${sep}`)
+  return !leaves && !isAbsolute(rel)
 }
 
 export function buildContext(projectRoot: string, res: Resources, blenderBin: string): ToolContext {
