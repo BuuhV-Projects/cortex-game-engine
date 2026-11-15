@@ -137,4 +137,19 @@ projeto:
 - **[ADR-0053](docs/adrs/0053-design-system-de-assets-kit-semantico-sockets-temas.md)** — Design system de assets (kits).
 - **[ADR-0085](docs/adrs/0085-scripts-anexaveis.md)** — Scripts anexáveis (MonoBehaviour).
 - **[ADR-0100](docs/adrs/0100-cortex-native-stack-do-host-m0.md)/[0101](docs/adrs/0101-cortexnative-como-export-pc.md)** — CortexNative (host nativo, export PC).
-</content>
+
+## Download, releases e merge
+
+O repositório do engine é privado; os instaladores do Studio ficam públicos no
+repo só de releases [`cortex-studio-releases`](https://github.com/BuuhV-Projects/cortex-studio-releases/releases/latest)
+([TDR-0015](docs/tdrs/0015-repo-privado-release-publico-e-auto-merge-proprio.md),
+[SPEC-0740](docs/specs/SPEC-0740-instaladores-no-repo-publico-de-releases.md)). O `release.yml` corta a versão
+aqui e publica a mesma release lá.
+
+O merge de PR na `main` sai do workflow `auto-merge.yml`
+([SPEC-0739](docs/specs/SPEC-0739-auto-merge-do-pr.md)): checks obrigatórios verdes, Claude review 5/5 e
+conversas resolvidas, no head. Resolveu uma conversa sem novo push? Dispare de novo:
+
+```bash
+gh workflow run auto-merge.yml --ref main -f pr=<número>
+```

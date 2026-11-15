@@ -22,7 +22,7 @@ components.
 
 ## Download and install the IDE
 
-1. Go to the [GitHub releases page](https://github.com/BuuhV-Projects/cortex-game-engine/releases).
+1. Go to the [GitHub releases page](https://github.com/BuuhV-Projects/cortex-studio-releases/releases/latest).
 2. Download the installer for your platform from the latest release:
    - **Windows** — `.exe` (NSIS).
    - **macOS** — `.dmg`.

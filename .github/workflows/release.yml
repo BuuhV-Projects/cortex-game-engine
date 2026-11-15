@@ -23,6 +23,12 @@ permissions:
   issues: write
   pull-requests: write
 
+env:
+  # Repo PÚBLICO só de releases (SPEC-0740, TDR-0015): o engine é privado e a release dele também; os instaladores
+  # são publicados de novo lá para download sem login.
+  RELEASES_OWNER: BuuhV-Projects
+  RELEASES_REPO: cortex-studio-releases
+
 jobs:
   test:
     name: Tests
@@ -68,6 +74,7 @@ jobs:
       released: ${{ steps.semantic.outputs.new_release_published }}
       version: ${{ steps.semantic.outputs.new_release_version }}
       tag: ${{ steps.semantic.outputs.new_release_git_tag }}
+      notes: ${{ steps.semantic.outputs.new_release_notes }}
 
     steps:
       # Token de instalação do GitHub App da org (TDR-0006). É ele — e não o
@@ -171,6 +178,32 @@ jobs:
         with:
           tag_name: ${{ needs.release.outputs.tag }}
           token: ${{ github.token }}
+          files: |
+            dist-app/*.exe
+            dist-app/*.dmg
+            dist-app/*.AppImage
+          fail_on_unmatched_files: false
+
+      # SPEC-0740: o mesmo instalador no repo público de releases. Token do App só para esse repo; as três máquinas
+      # da matriz anexam à mesma release (o softprops cria na primeira e atualiza nas outras).
+      - name: Gerar token do App para o repo público de releases
+        id: releases-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.CORTEX_CI_APP_ID }}
+          private-key: ${{ secrets.CORTEX_CI_APP_PRIVATE_KEY }}
+          owner: ${{ env.RELEASES_OWNER }}
+          repositories: ${{ env.RELEASES_REPO }}
+
+      - name: Publicar instaladores no repo público
+        uses: softprops/action-gh-release@v2
+        with:
+          repository: ${{ env.RELEASES_OWNER }}/${{ env.RELEASES_REPO }}
+          token: ${{ steps.releases-token.outputs.token }}
+          tag_name: ${{ needs.release.outputs.tag }}
+          name: TS Cortex Studio ${{ needs.release.outputs.version }}
+          body: ${{ needs.release.outputs.notes }}
+          make_latest: 'true'
           files: |
             dist-app/*.exe
             dist-app/*.dmg
