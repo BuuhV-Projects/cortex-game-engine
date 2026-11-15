@@ -44,10 +44,10 @@ para `resources/mcp/`.
 |---|---|---|
 | `list_kits` | — | tabela: kit, nº de assets, roles, tags |
 | `list_kit_assets` | `kit`, filtros `role`/`gameplayRole`/`tag` | arquivos com role, tamanho, tags |
-| `import_kit` | `kit`, `only?` | copia para `assets/<kit>/` com `kit.json` e thumbnails |
+| `import_kit` | `kit`, `only?` | copia para `assets/<kit>/` com `kit.json` e thumbnails; nome de `only` que o kit não tem é erro, sem copiar nada |
 | `measure_glb` | `paths[]` | L×A×P em metros por arquivo (Node puro) |
 | `inspect_assets` | `dir` | thumbnails (imagens) + tabela de medidas (Blender) |
-| `validate_scene` | `scene?` | erros/avisos geométricos do `scenes/*.json` |
+| `validate_scene` | `scenes?`, `overlay?` | erros/avisos geométricos do `scenes/*.json`; `overlay` informado que não existe, ou overlay ilegível, é erro |
 | `engine_api_index` | — | índice de `engine-api.md` e `architecture.md` (seção, linhas, símbolos) |
 | `engine_api_section` | `doc`, `title` | texto inteiro da seção |
 | `engine_api_symbol` | `name` | referência TypeDoc do export (`api/<tipo>/<Nome>.md`) |

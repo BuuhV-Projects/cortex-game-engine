@@ -19,6 +19,8 @@ import { isInside } from '../context.js'
  */
 
 const MAX_SHOWN = 10
+/** Overlay da fase lido quando a chamada não informa um. */
+const DEFAULT_OVERLAY = 'assets/scene-data.json'
 
 async function readJson<T>(path: string): Promise<T | null> {
   try {
@@ -116,6 +118,18 @@ export const validateSceneTool = defineTool({
     }
     const outside = [...scenePaths, ...(overlay ? [overlay] : [])].filter((p) => !isInside(projectRoot, p))
     if (outside.length) return textResult(`Caminho fora do projeto: ${outside.join(', ')}`, true)
+
+    // Overlay: o informado tem que existir; o default é opcional. Ilegível é erro nos dois casos, senão a
+    // validação roda sem ele e o "0 erros" engana.
+    const overlayRel = overlay ?? DEFAULT_OVERLAY
+    const overlayPath = join(projectRoot, overlayRel)
+    const hasOverlay = existsSync(overlayPath)
+    if (overlay && !hasOverlay) return textResult(`Overlay não encontrado: ${overlay}. Nada foi validado.`, true)
+    const ov = hasOverlay ? await readJson<SceneFileV1>(overlayPath) : null
+    if (hasOverlay && !ov) {
+      return textResult(`Overlay ilegível (JSON inválido): ${overlayRel}. Nada foi validado.`, true)
+    }
+
     const defs: SceneDefinition[] = []
     const invalid: string[] = []
     for (const rel of scenePaths) {
@@ -135,9 +149,6 @@ export const validateSceneTool = defineTool({
 
     // 2) Kits do projeto (assets/*/kit.json) + overlay da fase.
     const kits = await loadKits(projectRoot)
-    const overlayRel = overlay ?? 'assets/scene-data.json'
-    const overlayPath = join(projectRoot, overlayRel)
-    const ov = existsSync(overlayPath) ? await readJson<SceneFileV1>(overlayPath) : null
 
     // 3) Valida e grava o relatório completo em disco (contexto enxuto).
     // Sem parâmetro, cada threshold cai no default do próprio validateScene.
