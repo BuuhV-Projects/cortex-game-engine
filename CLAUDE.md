@@ -11,7 +11,7 @@ branch/worktree e entra por **PR no GitHub** (`BuuhV-Projects/cortex-game-engine
 1. Abra o PR e ligue o **Auto-fix** da sessão: o **Claude review**
    (`claude-review.yml`, TDR-0011) revisa e você corrige os comentários dele (e
    falhas de CI) nas suas próprias modificações.
-2. Resolva as conversas de revisão, respondendo em cada uma. **Só entra com "Claude review: 5/5"**: abaixo
+2. Resolva as conversas de revisão, respondendo em cada uma. **O PR só entra no "Claude review: 5/5"**: abaixo
    disso, corrija o que a revisão apontou (inline e no resumo), faça push e espere a nova nota.
 3. O merge é **automático** pelo workflow `auto-merge.yml` (SPEC-0739, TDR-0015) — não há auto-merge nativo
    (repo privado no plano Free), não ative nada. Ele mergeia quando, no mesmo head, valem: base `main`, checks
