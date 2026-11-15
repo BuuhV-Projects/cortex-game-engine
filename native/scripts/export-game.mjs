@@ -19,6 +19,7 @@ import { readGameConfig, steamAppIdOf } from './game-config.mjs';
 import { embedIcon } from './embed-icon.mjs';
 import { copyLooseDirs, looseDirsOf } from './copy-loose-dirs.mjs';
 import { staleHostBinaries, staleHostMessage } from './host-freshness.mjs';
+import { exitFlushed } from './exit-flushed.mjs';
 
 // Raiz do engine derivada do PRÓPRIO script (roda de qualquer cwd — ex.:
 // spawnado pelo Studio com cwd do projeto).
@@ -342,3 +343,6 @@ step('done');
 const files = fs.readdirSync(dist);
 console.log(`[export] OK → ${dist} (${files.length} itens na raiz)`);
 console.log(`[export] rode: ${path.join(dist, EXE_NAME)}`);
+// Sai explícito: o encerramento natural do Node do Electron às vezes aborta no
+// Windows depois do export pronto (PostQueuedCompletionStatus, SPEC-0741).
+exitFlushed(0);
