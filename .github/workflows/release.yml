@@ -74,6 +74,7 @@ jobs:
       released: ${{ steps.semantic.outputs.new_release_published }}
       version: ${{ steps.semantic.outputs.new_release_version }}
       tag: ${{ steps.semantic.outputs.new_release_git_tag }}
+      notes: ${{ steps.semantic.outputs.new_release_notes }}
 
     steps:
       # Token de instalação do GitHub App da org (TDR-0006). É ele — e não o
@@ -135,9 +136,12 @@ jobs:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
 
       # SPEC-0740: a release pública nasce aqui, uma vez, com nome e notas; os jobs da matriz só anexam os
-      # instaladores a ela (sem três jobs criando a mesma release ao mesmo tempo).
+      # instaladores a ela (sem três jobs criando a mesma release ao mesmo tempo). A tag do engine já saiu: uma falha
+      # aqui não pode pular o `build` (um re-run não refaz a release), então o passo não derruba o job e o `build`
+      # cria a release pública se ela faltar.
       - name: Criar a release no repo público
         if: steps.semantic.outputs.new_release_published == 'true'
+        continue-on-error: true
         uses: softprops/action-gh-release@v2
         with:
           repository: ${{ env.RELEASES_OWNER }}/${{ env.RELEASES_REPO }}
@@ -213,8 +217,8 @@ jobs:
             dist-app/*.AppImage
           fail_on_unmatched_files: false
 
-      # SPEC-0740: o mesmo instalador na release pública que o job `release` já criou. Token do App só para esse
-      # repo (o do job `release` pode ter expirado durante o build).
+      # SPEC-0740: o mesmo instalador na release pública que o job `release` criou (ou cria agora, se lá falhou, com
+      # o mesmo nome e as mesmas notas). Token do App só para esse repo (o do job `release` pode ter expirado).
       - name: Gerar token do App para o repo público de releases
         id: releases-token
         uses: actions/create-github-app-token@v2
@@ -230,6 +234,9 @@ jobs:
           repository: ${{ env.RELEASES_OWNER }}/${{ env.RELEASES_REPO }}
           token: ${{ steps.releases-token.outputs.token }}
           tag_name: ${{ needs.release.outputs.tag }}
+          name: TS Cortex Studio ${{ needs.release.outputs.version }}
+          body: ${{ needs.release.outputs.notes }}
+          make_latest: 'true'
           files: |
             dist-app/*.exe
             dist-app/*.dmg
