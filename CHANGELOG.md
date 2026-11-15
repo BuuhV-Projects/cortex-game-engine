@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v1.0.0...v1.0.1) (2026-11-15)
+
+
+### Bug Fixes
+
+* **export:** crash do Node no encerramento depois do export pronto não reprova o export (SPEC-0741) ([e0e1c53](https://github.com/BuuhV-Projects/cortex-game-engine/commit/e0e1c537a63f9fe466610e3fbb85699af3d4c487))
+
 # [1.0.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.128.0...v1.0.0) (2026-11-15)
 
 
