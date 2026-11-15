@@ -43,6 +43,22 @@ describe('validate_scene / overlay', () => {
     expect(text(r)).toContain('assets/scene-data.json')
   })
 
+  it('overlay com caminho absoluto dentro do projeto é lido (não vira raiz duplicada)', async () => {
+    writeFileSync(join(root, 'assets', 'fase2.json'), '{ quebrado')
+    const r = await validateSceneTool.handler({ overlay: join(root, 'assets', 'fase2.json') }, ctx)
+    // Achou o arquivo (ilegível), em vez de "não encontrado" por `join(root, root/...)`.
+    expect(text(r)).toContain('Overlay ilegível')
+  })
+
+  it('cena com caminho absoluto dentro do projeto é lida', async () => {
+    const abs = join(root, 'scenes', 'fase.json')
+    writeFileSync(abs, JSON.stringify({ version: 1, nodes: [] }))
+    const r = await validateSceneTool.handler({ scenes: [abs] }, ctx)
+    // Com `join(root, abs)` o arquivo não seria achado e cairia em "Nenhuma cena válida".
+    expect(r.isError).toBeFalsy()
+    expect(text(r)).not.toContain('Falha no parse')
+  })
+
   it('sem overlay default, segue para as cenas (sem erro de overlay)', async () => {
     const r = await validateSceneTool.handler({}, ctx)
     expect(text(r)).not.toContain('Overlay')

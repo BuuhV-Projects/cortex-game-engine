@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { join, basename } from 'node:path'
+import { join, basename, resolve } from 'node:path'
 import { existsSync } from 'node:fs'
 import { readdir, readFile, writeFile, mkdir } from 'node:fs/promises'
 import { parseSceneDefinition, type SceneDefinition } from '../../src/scene/SceneDefinition.js'
@@ -122,7 +122,7 @@ export const validateSceneTool = defineTool({
     // Overlay: o informado tem que existir; o default é opcional. Ilegível é erro nos dois casos, senão a
     // validação roda sem ele e o "0 erros" engana.
     const overlayRel = overlay ?? DEFAULT_OVERLAY
-    const overlayPath = join(projectRoot, overlayRel)
+    const overlayPath = resolve(projectRoot, overlayRel) // resolve: aceita absoluto dentro do projeto
     const hasOverlay = existsSync(overlayPath)
     if (overlay && !hasOverlay) return textResult(`Overlay não encontrado: ${overlay}. Nada foi validado.`, true)
     const ov = hasOverlay ? await readJson<SceneFileV1>(overlayPath) : null
@@ -133,7 +133,7 @@ export const validateSceneTool = defineTool({
     const defs: SceneDefinition[] = []
     const invalid: string[] = []
     for (const rel of scenePaths) {
-      const raw = await readJson(join(projectRoot, rel))
+      const raw = await readJson(resolve(projectRoot, rel))
       const def = raw ? parseSceneDefinition(raw) : null
       if (def) defs.push(def)
       else invalid.push(rel)
