@@ -32,6 +32,6 @@ O repo do engine vai ficar privado (plano Free): o ruleset e o auto-merge nativo
 - O check do host nativo vem "skipped" quando o PR não toca o nativo; o auto-merge aceita skipped só nele.
 - Resolver conversa sem novo push não dispara nada: rodar o workflow à mão com o número do PR.
 - O descarte do review em runner self-hosted foi porque o repo era público (um PR poderia rodar código na máquina); com o repo privado esse motivo cai.
-- O repo público e a instalação do App nele são manuais; sem isso o passo de publicar falha depois da release do engine sair.
+- O repo público e a instalação do App nele são manuais. O job `release` confere os dois antes do semantic-release: sem eles, nenhuma release do engine sai (o push na main fica vermelho até arrumar).
 
-In the code: `.github/scripts/auto-merge.mjs` (REQUIRED_CHECKS, SKIPPABLE_CHECKS, MERGE_TOKEN), `.github/workflows/auto-merge.yml`, `.github/workflows/release.yml` (RELEASES_REPO = cortex-studio-releases), `claude-review.yml` (dispatch do auto-merge).
+In the code: `.github/scripts/auto-merge.mjs` (REQUIRED_CHECKS, SKIPPABLE_CHECKS, MERGE_TOKEN), `.github/workflows/auto-merge.yml`, `.github/workflows/release.yml` (RELEASES_REPO = cortex-studio-releases), `claude-review.yml` (job `merge-dispatch`, o único com `actions: write`).

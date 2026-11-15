@@ -11,11 +11,14 @@ TDR-0015: o repo do engine fica privado e os instaladores continuam públicos nu
 
 - Repo: `BuuhV-Projects/cortex-studio-releases` (público, só README e releases). Nome em `env.RELEASES_REPO`
   no topo do `release.yml`.
-- O job `release` expõe as notas do semantic-release (`new_release_notes`).
-- O job `build`, depois de anexar os instaladores à release do engine, gera um token do App restrito ao repo
-  público (`create-github-app-token` com `owner` + `repositories`) e cria ou atualiza nele a release com a
-  mesma tag, o mesmo nome e as notas, anexando `dist-app/*.exe`, `*.dmg` e `*.AppImage`. As três máquinas da
-  matriz anexam à mesma release.
+- O job `release`, antes do semantic-release, gera um token do App restrito ao repo público
+  (`create-github-app-token` com `owner` + `repositories`) e lê o repo com ele (`gh api repos/...`). Faltando o
+  repo ou a instalação do App, o job para ali e nenhuma release do engine sai.
+- Com release nova, o mesmo job cria a release no repo público, uma vez, com a mesma tag, o nome
+  `TS Cortex Studio <versão>`, as notas do semantic-release e `make_latest`.
+- O job `build`, depois de anexar os instaladores à release do engine, gera um token novo (o do `release` pode ter
+  expirado durante o build) e anexa `dist-app/*.exe`, `*.dmg` e `*.AppImage` à release pública que já existe. As
+  três máquinas da matriz só anexam: nenhuma cria a release, então não há corrida de criação.
 - Links de download: `https://github.com/BuuhV-Projects/cortex-studio-releases/releases/latest`.
 
 ## Pré-requisitos (manuais, do dono)
@@ -23,8 +26,8 @@ TDR-0015: o repo do engine fica privado e os instaladores continuam públicos nu
 1. Criar o repo público `BuuhV-Projects/cortex-studio-releases`.
 2. Instalar o App `cortex-ci-release` nele com permissão de escrita em Contents.
 
-Sem isso o passo falha e o job de build fica vermelho; a release do engine e os instaladores anexados a ela
-já terão saído.
+Sem isso a conferência do job `release` falha antes do semantic-release: o push na `main` fica vermelho e nenhuma
+release do engine sai até os dois existirem. Hoje os dois existem.
 
 ## Consequências
 

@@ -74,7 +74,6 @@ jobs:
       released: ${{ steps.semantic.outputs.new_release_published }}
       version: ${{ steps.semantic.outputs.new_release_version }}
       tag: ${{ steps.semantic.outputs.new_release_git_tag }}
-      notes: ${{ steps.semantic.outputs.new_release_notes }}
 
     steps:
       # Token de instalação do GitHub App da org (TDR-0006). É ele — e não o
@@ -88,6 +87,23 @@ jobs:
         with:
           app-id: ${{ secrets.CORTEX_CI_APP_ID }}
           private-key: ${{ secrets.CORTEX_CI_APP_PRIVATE_KEY }}
+
+      # SPEC-0740: confere o repo público e a instalação do App nele ANTES do semantic-release. Sem eles o job para
+      # aqui e nenhuma release do engine sai pela metade (sem a cópia pública).
+      - name: Gerar token do App para o repo público de releases
+        id: releases-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.CORTEX_CI_APP_ID }}
+          private-key: ${{ secrets.CORTEX_CI_APP_PRIVATE_KEY }}
+          owner: ${{ env.RELEASES_OWNER }}
+          repositories: ${{ env.RELEASES_REPO }}
+
+      - name: Conferir o repo público de releases
+        env:
+          GH_TOKEN: ${{ steps.releases-token.outputs.token }}
+        run: |
+          gh api "repos/$RELEASES_OWNER/$RELEASES_REPO" --jq '.full_name + " (privado: " + (.private|tostring) + ")"'
 
       - name: Checkout (full history pra analisar commits)
         uses: actions/checkout@v4
@@ -117,6 +133,19 @@ jobs:
           # o que a tag do GITHUB_TOKEN não faz. O commit de release leva
           # `[skip ci]` na mensagem pra não reentrar neste mesmo workflow.
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+
+      # SPEC-0740: a release pública nasce aqui, uma vez, com nome e notas; os jobs da matriz só anexam os
+      # instaladores a ela (sem três jobs criando a mesma release ao mesmo tempo).
+      - name: Criar a release no repo público
+        if: steps.semantic.outputs.new_release_published == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          repository: ${{ env.RELEASES_OWNER }}/${{ env.RELEASES_REPO }}
+          token: ${{ steps.releases-token.outputs.token }}
+          tag_name: ${{ steps.semantic.outputs.new_release_git_tag }}
+          name: TS Cortex Studio ${{ steps.semantic.outputs.new_release_version }}
+          body: ${{ steps.semantic.outputs.new_release_notes }}
+          make_latest: 'true'
 
   build:
     name: Build (${{ matrix.os }})
@@ -184,8 +213,8 @@ jobs:
             dist-app/*.AppImage
           fail_on_unmatched_files: false
 
-      # SPEC-0740: o mesmo instalador no repo público de releases. Token do App só para esse repo; as três máquinas
-      # da matriz anexam à mesma release (o softprops cria na primeira e atualiza nas outras).
+      # SPEC-0740: o mesmo instalador na release pública que o job `release` já criou. Token do App só para esse
+      # repo (o do job `release` pode ter expirado durante o build).
       - name: Gerar token do App para o repo público de releases
         id: releases-token
         uses: actions/create-github-app-token@v2
@@ -201,9 +230,6 @@ jobs:
           repository: ${{ env.RELEASES_OWNER }}/${{ env.RELEASES_REPO }}
           token: ${{ steps.releases-token.outputs.token }}
           tag_name: ${{ needs.release.outputs.tag }}
-          name: TS Cortex Studio ${{ needs.release.outputs.version }}
-          body: ${{ needs.release.outputs.notes }}
-          make_latest: 'true'
           files: |
             dist-app/*.exe
             dist-app/*.dmg

@@ -22,7 +22,6 @@ on:
 permissions:
   contents: read
   pull-requests: write
-  actions: write # dispara o auto-merge depois da nota (SPEC-0739)
 
 concurrency:
   group: claude-review-${{ github.event.pull_request.number }}
@@ -165,5 +164,20 @@ jobs:
           gh api "repos/$REPO/pulls/$PR/reviews" -f commit_id="$SHA" -f event="$event" \
             -f body="$body" >/dev/null
           echo "PR #$PR: nota $score ($event)"
-          # o auto-merge (SPEC-0739) decide no grupo de concorrência do PR; nota abaixo de 5 só registra o motivo
-          gh workflow run auto-merge.yml -R "$REPO" --ref main -f pr="$PR"
+
+  # Dispara o auto-merge (SPEC-0739) depois da nota, num job à parte: só ele tem `actions: write` (o job do agente
+  # fica sem), e uma falha no disparo não deixa a revisão vermelha. O auto-merge decide no grupo de concorrência do
+  # PR; nota abaixo de 5 só registra o motivo.
+  merge-dispatch:
+    name: Disparar auto-merge
+    needs: review
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - name: gh workflow run auto-merge.yml
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+        run: gh workflow run auto-merge.yml -R "$REPO" --ref main -f pr="$PR"

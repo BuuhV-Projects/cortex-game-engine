@@ -42,5 +42,7 @@ Falha fechada: qualquer erro de consulta lança e nada é mergeado.
 
 ## Consequências
 
-- O `claude-review.yml` ganha `actions: write` para disparar o auto-merge.
+- O `claude-review.yml` ganha o job `merge-dispatch` (depois do `review`), o único com `actions: write`: o job
+  que roda o agente sobre o conteúdo do PR fica sem essa permissão, e uma falha no disparo não deixa a revisão
+  vermelha.
 - Testes em `tests/scripts/autoMerge.test.ts` e `tests/scripts/autoMergeStack.test.ts`.

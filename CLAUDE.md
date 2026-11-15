@@ -11,15 +11,15 @@ branch/worktree e entra por **PR no GitHub** (`BuuhV-Projects/cortex-game-engine
 1. Abra o PR e ligue o **Auto-fix** da sessão: o **Claude review**
    (`claude-review.yml`, TDR-0011) revisa e você corrige os comentários dele (e
    falhas de CI) nas suas próprias modificações.
-2. Repita até o review do PR dizer **"Claude review: 5/5"**.
-3. Só com **5/5** ative o **auto-merge** — ele mergeia sozinho quando o CI passar.
-   Abaixo de 5/5, não ative: corrija e espere nova revisão.
-4. **PR empilhado** (base que não é a `main`): CI e Claude review rodam nele também
-   (TDR-0014), mas **nunca ative o auto-merge enquanto a base não for a `main`** — fora
-   da `main` não há ruleset, e o auto-merge mergearia na hora, sem nota nem CI. A pilha
-   entra em ordem: quando o PR de baixo entra, o GitHub redireciona o de cima para a
-   `main`; atualize-o com a `main` (o ruleset exige a branch em dia), espere o 5/5 do
-   head novo e só então ative o auto-merge.
+2. Resolva as conversas de revisão, respondendo em cada uma. **Só entra com "Claude review: 5/5"**: abaixo
+   disso, corrija o que a revisão apontou (inline e no resumo), faça push e espere a nova nota.
+3. O merge é **automático** pelo workflow `auto-merge.yml` (SPEC-0739, TDR-0015) — não há auto-merge nativo
+   (repo privado no plano Free), não ative nada. Ele mergeia quando, no mesmo head, valem: base `main`, checks
+   verdes, Claude review 5/5 e nenhuma conversa aberta. Se a última conversa foi resolvida sem push novo, dispare à
+   mão: `gh workflow run auto-merge.yml -R BuuhV-Projects/cortex-game-engine -f pr=<n>`.
+4. **PR empilhado** (base que não é a `main`): CI e Claude review rodam nele também (TDR-0014), mas o auto-merge
+   espera a base virar `main`. Quando o PR de baixo entra, o auto-merge redireciona o de cima para a `main` e o
+   avalia de novo; se a branch ficar atrás da `main`, atualize-a e espere o 5/5 do head novo.
 
 PR e commits sem menção ao Claude (sem "Generated with Claude Code", sem
 `Co-Authored-By`).
