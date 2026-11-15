@@ -16,6 +16,7 @@ export interface PrState {
   isCrossRepository: boolean
   failing: string[]
   score: number | null
+  changesRequested: boolean
   openThreads: number
   moreThreads: boolean
 }
@@ -34,7 +35,8 @@ export interface QueueIo {
 export type CheckRun = { status: string; conclusion: string | null }
 export function checksPassed(runs: CheckRun[], allowSkipped?: boolean): boolean
 export function failingChecks(runsOf: (name: string) => CheckRun[]): string[]
-export function approvedAt(reviews: { commit_id: string; state: string }[], sha: string): boolean
+export function approvedAt(reviews: { user: { login: string } | null; commit_id: string; state: string }[], sha: string): boolean
+export function changesRequested(reviews: { user: { login: string } | null; state: string }[]): boolean
 export function reviewScore(reviews: { user: { login: string } | null; commit_id: string; body: string | null }[], sha: string): number | null
 export function evaluate(pr: PrState): { ok: boolean; reason: string }
 export function approveArgs(number: string, repo: string, sha: string): string[]

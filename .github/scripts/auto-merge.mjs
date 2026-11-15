@@ -28,6 +28,9 @@ export const APPROVE_BODY = 'Aprovado pelo auto-merge: checks verdes, Claude rev
 const SCORE_MARK = /\*\*Claude review: (\d)\/5\*\*/
 /** Resposta do GitHub para ref que já não existe (apagada pelo `delete_branch_on_merge`). */
 const MISSING_REF = /HTTP (404|422)/
+/** Estados de revisão que não mudam a posição de quem revisou (só comentário ou rascunho). */
+const NEUTRAL_REVIEW_STATES = ['COMMENTED', 'PENDING']
+const CHANGES_REQUESTED = 'CHANGES_REQUESTED'
 const SUCCESS = 'success'
 const SKIPPED = 'skipped'
 
@@ -62,14 +65,28 @@ export function reviewScore(reviews, sha) {
   return score
 }
 
-/** true se já existe aprovação no commit `sha` (o review aprova sozinho quando dá 5/5). */
+/** true se o bot já aprovou o commit `sha` (o review aprova sozinho quando dá 5/5); aprovação humana não conta. */
 export function approvedAt(reviews, sha) {
-  return reviews.some((r) => r.commit_id === sha && r.state === 'APPROVED')
+  return reviews.some((r) => r.user?.login === REVIEW_BOT && r.commit_id === sha && r.state === 'APPROVED')
+}
+
+/**
+ * true se alguém tem pedido de mudança em aberto: a revisão mais recente dessa pessoa que não é só comentário é
+ * CHANGES_REQUESTED (uma aprovação ou um dismiss depois dela libera). Vale em qualquer commit, como no ruleset.
+ * @param {{ user: { login: string } | null, state: string }[]} reviews em ordem cronológica
+ */
+export function changesRequested(reviews) {
+  const last = new Map()
+  for (const r of reviews) {
+    if (!r.user || NEUTRAL_REVIEW_STATES.includes(r.state)) continue
+    last.set(r.user.login, r.state)
+  }
+  return [...last.values()].includes(CHANGES_REQUESTED)
 }
 
 /**
  * @param {{ state: string, isDraft: boolean, baseRefName: string, isCrossRepository: boolean,
- *           failing: string[], score: number | null,
+ *           failing: string[], score: number | null, changesRequested: boolean,
  *           openThreads: number, moreThreads: boolean }} pr
  * @returns {{ ok: boolean, reason: string }}
  */
@@ -83,6 +100,7 @@ export function evaluate(pr) {
   if (pr.failing.length > 0) return { ok: false, reason: `checks pendentes ou vermelhos no head: ${pr.failing.join(', ')}` }
   if (pr.score === null) return { ok: false, reason: 'Claude review pendente no head' }
   if (pr.score < MIN_SCORE) return { ok: false, reason: `Claude review ${pr.score}/5 no head (precisa de ${MIN_SCORE})` }
+  if (pr.changesRequested) return { ok: false, reason: 'há pedido de mudança (CHANGES_REQUESTED) em aberto' }
   if (pr.moreThreads) return { ok: false, reason: 'mais conversas do que uma página; não dá para confirmar todas' }
   if (pr.openThreads > 0) return { ok: false, reason: `${pr.openThreads} conversa(s) de revisão aberta(s)` }
   return { ok: true, reason: `checks verdes, Claude review ${pr.score}/5, conversas resolvidas` }
@@ -205,6 +223,7 @@ export function gather(repo, number) {
       ...info,
       failing: failingChecks(runsOf),
       score: reviewScore(reviews, sha),
+      changesRequested: changesRequested(reviews),
       openThreads: threads.nodes.filter((t) => !t.isResolved).length,
       moreThreads: threads.pageInfo.hasNextPage,
     },

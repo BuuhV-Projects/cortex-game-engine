@@ -10,7 +10,7 @@ const REPO = 'BuuhV-Projects/cortex-game-engine'
 function pr(head: string, base: string, patch: Partial<PrState> = {}): PrState {
   return {
     state: 'OPEN', isDraft: false, baseRefName: base, headRefName: head, isCrossRepository: false,
-    failing: [], score: 5, openThreads: 0, moreThreads: false, ...patch,
+    failing: [], score: 5, changesRequested: false, openThreads: 0, moreThreads: false, ...patch,
   }
 }
 

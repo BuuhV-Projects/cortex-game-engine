@@ -28,12 +28,14 @@ faz o merge quando o PR cumpre o mesmo gate que o ruleset impunha. Porte do `aut
 | Base | `main`; PR empilhado espera a base entrar |
 | Checks | `Detectar mudanças`, `Regras do repo` e `Tests (Vitest)` em `success`; `Host nativo (Windows) + cortex_host_tests` em `success` ou `skipped` (o job só roda quando o PR toca o nativo) |
 | Review | nota mais recente do `github-actions[bot]` no head, lida de `**Claude review: N/5**`, igual a 5 |
+| Pedido de mudança | ninguém com CHANGES_REQUESTED em aberto: vale a revisão mais recente de cada pessoa que não é só comentário; aprovação ou dismiss depois libera |
 | Conversas | nenhuma aberta (página cheia = não dá para confirmar = não mergeia) |
 
 ### Merge
 
 1. Lista os PRs que miram a branch (pilha, TDR-0014) antes do merge.
-2. Aprova o head se o review ainda não aprovou esse commit (`APPROVE` preso ao `commit_id`).
+2. Aprova o head se o bot ainda não aprovou esse commit (`APPROVE` preso ao `commit_id`; aprovação humana não conta
+   para isso).
 3. Mergeia com `gh pr merge --merge --match-head-commit <sha>` usando o **token do App** (`MERGE_TOKEN`): o
    push resultante dispara o `release.yml`.
 4. Redireciona cada dependente para a `main`, apaga a branch e dispara o auto-merge de cada dependente.

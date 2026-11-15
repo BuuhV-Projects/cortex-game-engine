@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
-  MIN_SCORE, REQUIRED_CHECKS, REVIEW_BOT, SKIPPABLE_CHECKS, approvedAt, checksPassed, evaluate, failingChecks,
-  reviewScore,
+  MIN_SCORE, REQUIRED_CHECKS, REVIEW_BOT, SKIPPABLE_CHECKS, approvedAt, changesRequested, checksPassed, evaluate,
+  failingChecks, reviewScore,
 } from '../../.github/scripts/auto-merge.mjs'
 
 const ready = {
   state: 'OPEN', isDraft: false, baseRefName: 'main', isCrossRepository: false,
-  failing: [] as string[], score: 5,
+  failing: [] as string[], score: 5, changesRequested: false,
   openThreads: 0, moreThreads: false,
 }
 const ok = { status: 'completed', conclusion: 'success' }
@@ -22,6 +22,7 @@ describe('auto-merge (SPEC-0739)', () => {
     ['sem Claude review no head', { score: null }],
     ['Claude review abaixo do mínimo', { score: MIN_SCORE - 1 }],
     ['conversa aberta', { openThreads: 1 }],
+    ['pedido de mudança em aberto', { changesRequested: true }],
     ['conversas além de uma página', { moreThreads: true }],
     ['rascunho', { isDraft: true }],
     ['de fork', { isCrossRepository: true }],
@@ -83,8 +84,21 @@ describe('Claude review no gate (SPEC-0739)', () => {
     ], 'h')).toBe(4)
   })
 
-  it('aprovação só conta no head', () => {
-    expect(approvedAt([{ commit_id: 'velho', state: 'APPROVED' }], 'h')).toBe(false)
-    expect(approvedAt([{ commit_id: 'h', state: 'COMMENTED' }, { commit_id: 'h', state: 'APPROVED' }], 'h')).toBe(true)
+  it('aprovação só conta do bot e no head', () => {
+    expect(approvedAt([{ user: bot, commit_id: 'velho', state: 'APPROVED' }], 'h')).toBe(false)
+    expect(approvedAt([{ user: { login: 'alguem' }, commit_id: 'h', state: 'APPROVED' }], 'h')).toBe(false)
+    expect(approvedAt([
+      { user: bot, commit_id: 'h', state: 'COMMENTED' }, { user: bot, commit_id: 'h', state: 'APPROVED' },
+    ], 'h')).toBe(true)
+  })
+
+  it('pedido de mudança vale até a mesma pessoa aprovar ou o pedido ser descartado', () => {
+    const humano = { login: 'alguem' }
+    expect(changesRequested([])).toBe(false)
+    expect(changesRequested([{ user: humano, state: 'CHANGES_REQUESTED' }])).toBe(true)
+    expect(changesRequested([{ user: humano, state: 'CHANGES_REQUESTED' }, { user: humano, state: 'COMMENTED' }])).toBe(true)
+    expect(changesRequested([{ user: humano, state: 'CHANGES_REQUESTED' }, { user: humano, state: 'APPROVED' }])).toBe(false)
+    expect(changesRequested([{ user: humano, state: 'CHANGES_REQUESTED' }, { user: humano, state: 'DISMISSED' }])).toBe(false)
+    expect(changesRequested([{ user: humano, state: 'CHANGES_REQUESTED' }, { user: bot, state: 'APPROVED' }])).toBe(true)
   })
 })
