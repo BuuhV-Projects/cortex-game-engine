@@ -31,7 +31,7 @@ export const APP_WORDMARK = 'ts cortex'
  * O Electron deriva o `userData` do nome do app, e no build empacotado esse
  * nome vem do `productName` do electron-builder. Sem travar isso, cada rebrand
  * moveria `%APPDATA%\<nome>` e abandonaria o estado do usuário: `preferences.json`
- * (idioma, welcome, último projeto), `chats/` e `sessions/` (histórico do Chat IA).
+ * (idioma, welcome, último projeto), `chats/` e `sessions/` (histórico do antigo Chat IA, removido no ADR-0736).
  *
  * Por isso o `main.ts` fixa o diretório no boot — `app.setPath('userData', …)`
  * com este nome —, ANTES do primeiro `app.getPath('userData')`. O valor é o nome

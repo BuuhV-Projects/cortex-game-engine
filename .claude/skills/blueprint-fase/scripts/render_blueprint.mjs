@@ -1,10 +1,8 @@
 // Renderiza um BLUEPRINT de fase (HTML self-contained) a partir de um layout
 // projetado pela IA (`blueprint.json`) + um kit curado (`kit.json` + thumbnails).
 //
-// SINCRONIA: este script (skill do Claude Code) tem um GÊMEO em TS usado pela tool
-// `generate_blueprint` do Chat IA do Studio —
-// `electron/agent/blueprint/renderBlueprint.ts` (ADR-0142). A lógica de render é a
-// mesma (paridade HTML byte-a-byte); mude os DOIS juntos (BEHAVIORS/CATS/layout).
+// Fonte única do blueprint: o gêmeo em TS da tool `generate_blueprint` saiu com o
+// Chat IA (ADR-0736).
 //
 // Divisão de trabalho (igual ao gen-kit): a IA faz o DESIGN (posiciona as peças,
 // define zonas e passos); ESTE script faz a RENDERIZAÇÃO determinística — embute
@@ -145,7 +143,7 @@ const piecesHTML = (bp.pieces ?? [])
     const isHazard = cat === 'hazard';
     const mark = isHazard ? ' <span class="x">✕</span>' : '';
     const note = p.note ? `<span class="note">${esc(p.note)}</span>` : '';
-    // Linha de COMPORTAMENTO: script + params (o que o dev/Chat IA crava). Só
+    // Linha de COMPORTAMENTO: script + params (o que o dev/a IA crava). Só
     // aparece quando há script real (peça de gameplay), não em decor/ground puro.
     const scriptName = p.script ?? beh?.script ?? null;
     const params = fmtParams(p.params);

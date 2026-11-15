@@ -166,8 +166,7 @@ export class FileTree {
       this.buildShell()
       void this.refresh()
     })
-    // Recarrega a árvore quando o Chat IA executa uma tool que mexe no FS
-    // (Write/Edit/Bash/MCP tools que escrevem arquivos).
+    // Recarrega a árvore sob pedido (menu "Recarregar árvore").
     document.addEventListener('filetree-refresh', () => {
       void this.refresh()
     })

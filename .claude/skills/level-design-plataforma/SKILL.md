@@ -14,7 +14,7 @@ diz *como construir e validar*; esta diz *como fazer bonito e desafiador*.
 > `dump_blend.py` (estrutura: coleções, instâncias, bbox, histograma) e
 > `dump_creative.py` (critérios: verticalidade, scatter, paleta, cadência).
 > Resolva o caminho por variável — a skill roda no repositório da engine e também
-> no Chat IA do Studio, onde o `cwd` é o projeto do jogo:
+> no projeto do jogo, onde o `cwd` é o projeto:
 >
 > ```bash
 > PLUGIN="${CORTEX_PLUGIN_DIR:-.claude}"

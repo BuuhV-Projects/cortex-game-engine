@@ -4,7 +4,7 @@ src-tauri/
 boot.hbc
 dist-native/
 .cortex-cache/
-# .cortex/ é cache/artefato do Chat IA (thumbs, relatórios de validação).
+# .cortex/ é cache/artefato da IA (MCP `cortex`: thumbs, relatórios de validação).
 .cortex/
 # Pacotes de textura (SPEC-0641): reconstruídos pelo Studio a partir do
 # cortex.json + cortex-packages.lock.json (como node_modules).

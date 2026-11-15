@@ -20,7 +20,7 @@ O `subagent_type` muda com o ambiente — use o que aparecer na lista de agentes
 
 | Onde | `subagent_type` |
 |---|---|
-| Chat IA do TS Cortex Studio (agente vem do plugin) | `cortex-studio:level-builder` |
+| Agente carregado como plugin `cortex-studio` | `cortex-studio:level-builder` |
 | Repositório da engine (Claude Code) | `level-builder` |
 
 Para tarefas pequenas (um trecho, um ajuste), siga o pipeline inline sem delegar.

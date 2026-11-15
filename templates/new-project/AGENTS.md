@@ -123,6 +123,17 @@ que fez contra elas antes de encerrar.
       simplifica o `.glb` inteiro, inclusive as peças que já cabiam; o erro
       travado segura a aparência delas, que só perdem o que não se vê.
 
+## Ferramentas do Studio (MCP `cortex`)
+
+O Studio registra no Claude Code o MCP `cortex` (ADR-0736 do engine). Use as tools dele em vez de adivinhar:
+
+- **API do engine:** `engine_api_index` antes de codar feature de cena/render/física/input/UI; depois
+  `engine_api_section` (receita) e `engine_api_symbol` (assinatura). Sem saber o nome: `engine_api_search`.
+- **Arte pronta:** `list_kits` → `list_kit_assets` → `import_kit { kit, only: [...] }` (só o que a cena usa).
+- **Medidas:** `measure_glb` (rápido, sem Blender) para proporção em metros; `inspect_assets` para ver
+  thumbnails de uma pasta (salvos em `.cortex/asset-thumbs/`).
+- **Cena:** `validate_scene` depois de editar `scenes/*.json` — 0 erros antes de qualquer validação visual.
+
 ## Estrutura de pastas
 
 ```

@@ -19,7 +19,7 @@ como TEMPLATE — adapte vocabulário/faixas ao pack em mãos. O compositor é c
 do jogo (usa o courseKit do mundo).
 
 Resolva o caminho dos scripts por variável (a skill roda tanto no repositório da
-engine quanto no Chat IA do Studio, onde o `cwd` é o projeto do jogo):
+engine quanto no projeto do jogo, onde o `cwd` é o projeto):
 
 ```bash
 PLUGIN="${CORTEX_PLUGIN_DIR:-.claude}"

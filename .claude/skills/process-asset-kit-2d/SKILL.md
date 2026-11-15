@@ -23,7 +23,7 @@ no `png.mjs` da skill, RGBA8 sem interlace). Não há bbox/escala/conversão com
 PLUGIN="${CORTEX_PLUGIN_DIR:-.claude}"
 PK2="$PLUGIN/skills/process-asset-kit-2d/scripts"
 OUT="kits"            # repositório da engine (catálogo)
-# no Chat IA do Studio, o catálogo é somente-leitura:
+# no projeto do jogo, o catálogo é somente-leitura:
 OUT="assets"          # o kit curado vai pro projeto aberto
 ```
 

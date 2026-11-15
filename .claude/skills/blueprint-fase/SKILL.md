@@ -18,18 +18,13 @@ cada peça aparece com o **nome de arquivo exato** (`trampoline_1_001`, não "tr
 
 ## Onde ficam os scripts e os kits
 
-Esta skill roda em dois lugares: no repositório da engine (Claude Code) e dentro do
-**Chat IA do TS Cortex Studio**, onde o diretório de trabalho é o projeto do jogo.
+Esta skill roda no Claude Code, no repositório da engine ou no projeto do jogo.
 Resolva os caminhos por variável, com fallback pro layout do repositório:
 
 ```bash
 PLUGIN="${CORTEX_PLUGIN_DIR:-.claude}"   # raiz do plugin (contém skills/)
 KITS="${CORTEX_KITS_DIR:-kits}"          # catálogo de kits empacotados
 ```
-
-> **No Studio, prefira a tool `generate_blueprint`** — ela é a mesma renderização,
-> in-process, e já devolve a imagem. Os scripts abaixo são o caminho pra fora do
-> Studio (ou quando você precisa do HTML intermediário).
 
 ## Princípio: cada objeto tem um PROPÓSITO (não é decoração)
 

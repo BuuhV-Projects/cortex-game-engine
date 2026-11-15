@@ -115,7 +115,7 @@ export class EditorPanels {
 
   /**
    * @param outlinerHost  onde a árvore de hierarquia é montada (aba Hierarquia do LeftDock).
-   * @param inspectorHost onde o inspector é montado (dock direito, antes do chat).
+   * @param inspectorHost onde o inspector é montado (dock direito).
    */
   constructor(
     private outlinerHost: HTMLElement,

@@ -12,14 +12,13 @@ encadeie. Seu valor é a ORQUESTRAÇÃO fim-a-fim e a disciplina de validação.
 
 ## Onde você está rodando (muda as ferramentas, não o método)
 
-- **No Chat IA do TS Cortex Studio** (`cwd` = projeto do jogo): você tem tools
-  in-process que valem mais que os scripts das skills — `list_kits`/
-  `list_kit_assets`/`import_kit` (catálogo), `inspect_assets`/`measure_glb`
-  (dimensões reais), `generate_blueprint` (planta de gameplay), **`validate_scene`**
-  (geometria) e `playtest_game` (roda o jogo e devolve screenshot + console).
-  **Prefira-as.** Os caminhos dos scripts das skills vêm de `$CORTEX_PLUGIN_DIR`.
-- **No repositório da engine** (Claude Code): não há tools MCP; use os scripts das
-  skills, com os caminhos relativos a `.claude/`.
+- **Com o MCP `cortex` conectado** (Claude Code aberto no projeto do jogo, ADR-0736):
+  `list_kits`/`list_kit_assets`/`import_kit` (catálogo), `inspect_assets`/`measure_glb`
+  (dimensões reais), **`validate_scene`** (geometria) e `engine_api_*` (API do engine)
+  valem mais que os scripts equivalentes. **Prefira-as.** Blueprint e playtest seguem
+  pelos scripts das skills.
+- **Sem o MCP** (só o repositório da engine): use os scripts das skills, com os caminhos
+  relativos a `.claude/` (ou `$CORTEX_PLUGIN_DIR` quando definido).
 
 **Nome das skills ao invocar:** no Studio elas vêm qualificadas pelo plugin
 (`cortex-studio:montar-jogo`); no repositório, sem prefixo (`montar-jogo`). Use o
@@ -95,7 +94,7 @@ BP="${CORTEX_PLUGIN_DIR:-.claude}/skills/blueprint-fase/scripts"
 ```
 
 - `$BP/render_blueprint.mjs` + `$BP/shot.mjs` → planta 2D esquemática (blueprint de
-  gameplay). No Studio, a tool `generate_blueprint` faz o mesmo sem sair da conversa.
+  gameplay).
 - `$BP/render_level_iso.mjs <level3d.json> <kitAssetsDir> <out.png>` → maquete iso 3D
   (coords de mundo; backdrop planet/meteor é omitido).
 - `$BP/render_level_views.mjs <level3d.json> <kitAssetsDir> <out.png>` → contact-sheet
