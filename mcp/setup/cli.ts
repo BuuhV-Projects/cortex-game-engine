@@ -101,7 +101,7 @@ export function writeReportFile(path: string, text: string): void {
 
 function systemRun(cmd: string, args: readonly string[], opts?: { shell?: boolean }): RunResult {
   const r = spawnSync(cmd, args, { encoding: 'utf8', shell: opts?.shell ?? false, timeout: RUN_TIMEOUT_MS, windowsHide: true })
-  return { status: r.error ? null : r.status, stdout: r.stdout ?? '' }
+  return { status: r.error ? null : r.status, stdout: r.stdout ?? '', stderr: r.stderr ?? '' }
 }
 
 function listDirs(path: string): string[] {

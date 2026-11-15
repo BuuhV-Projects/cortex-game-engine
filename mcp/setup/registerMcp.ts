@@ -66,7 +66,9 @@ export function registerMcp(deps: SetupDeps, target: McpTarget, claude?: Resolve
   const result = runResolved(deps, resolved, args)
   const command = displayCommand(resolved.path, args)
   if (succeeded(result)) return { status: 'registered', claudePath: resolved.path, command, detail: null }
-  const detail = result.stdout.trim() || `código de saída ${result.status ?? 'desconhecido'}`
+  // o `claude mcp add` escreve o erro no stderr; o stdout fica de reserva
+  const output = result.stderr?.trim() || result.stdout.trim()
+  const detail = output || `código de saída ${result.status ?? 'desconhecido'}`
   return { status: 'failed', claudePath: resolved.path, command, detail }
 }
 

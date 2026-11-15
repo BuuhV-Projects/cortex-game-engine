@@ -7,6 +7,8 @@ export interface RunResult {
   /** Código de saída; `null` quando o processo nem abriu (comando inexistente, timeout). */
   status: number | null
   stdout: string
+  /** Saída de erro; o `claude mcp add` escreve a falha aqui. */
+  stderr?: string
 }
 
 export interface RunOptions {

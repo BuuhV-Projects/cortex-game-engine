@@ -79,6 +79,12 @@ describe('registerMcp', () => {
     const m = fakeMachine({ commands: { 'where claude': CLAUDE_EXE, [key(CLAUDE_EXE, addArgs(TARGET))]: fail('boom') } })
     expect(registerMcp(m, TARGET)).toMatchObject({ status: 'failed', detail: 'boom' })
   })
+
+  it('add falhou com o erro no stderr: o detalhe é o stderr, não o código de saída', () => {
+    const failed = { status: 1, stdout: '', stderr: 'MCP server cortex already exists\n' }
+    const m = fakeMachine({ commands: { 'where claude': CLAUDE_EXE, [key(CLAUDE_EXE, addArgs(TARGET))]: failed } })
+    expect(registerMcp(m, TARGET)).toMatchObject({ status: 'failed', detail: 'MCP server cortex already exists' })
+  })
 })
 
 describe('unregisterMcp', () => {
