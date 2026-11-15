@@ -52,6 +52,8 @@ export interface RenderThumbnailsOptions {
   size?: number
   /** Máximo de .glb a renderizar (proteção contra pacotes enormes). Default 48. */
   max?: number
+  /** Executável do Blender. Default: `BLENDER_PATH` ou `blender` do PATH. */
+  blenderBin?: string
 }
 
 interface ManifestEntry {
@@ -267,7 +269,7 @@ export async function renderAssetThumbnails(
     await mkdir(outDir, { recursive: true })
     await writeFile(scriptPath, buildBlenderScript(glbPaths, outDir, size), 'utf-8')
 
-    const blenderBin = process.env['BLENDER_PATH'] ?? 'blender'
+    const blenderBin = opts.blenderBin ?? process.env['BLENDER_PATH'] ?? 'blender'
     await runBlender(blenderBin, scriptPath)
 
     const manifestPath = join(outDir, 'manifest.json')
