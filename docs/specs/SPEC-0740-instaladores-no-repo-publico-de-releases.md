@@ -20,7 +20,8 @@ TDR-0015: o repo do engine fica privado e os instaladores continuam públicos nu
 - O job `build`, depois de anexar os instaladores à release do engine, gera um token novo (o do `release` pode ter
   expirado durante o build) e anexa `dist-app/*.exe`, `*.dmg` e `*.AppImage` à release pública que já existe. As
   três máquinas da matriz só anexam: nenhuma cria a release, então não há corrida de criação. Se a criação do job
-  `release` falhou, o `build` a cria com o mesmo nome e as mesmas notas (as saídas `version` e `notes` do `release`).
+  `release` falhou, o `build` a cria com o mesmo nome e as mesmas notas (as saídas `version` e `notes` do `release`). Nesse caso raro as três máquinas podem tentar criar a mesma
+  release ao mesmo tempo; o `softprops/action-gh-release` trata a criação que já existe como atualização.
 - Links de download: `https://github.com/BuuhV-Projects/cortex-studio-releases/releases/latest`.
 
 ## Pré-requisitos (manuais, do dono)

@@ -86,7 +86,7 @@ export function changesRequested(reviews) {
 
 /**
  * @param {{ state: string, isDraft: boolean, baseRefName: string, isCrossRepository: boolean,
- *           failing: string[], score: number | null, changesRequested: boolean,
+ *           failing: string[], score: number | null, changesRequested: boolean, behindBy: number,
  *           openThreads: number, moreThreads: boolean }} pr
  * @returns {{ ok: boolean, reason: string }}
  */
@@ -96,6 +96,9 @@ export function evaluate(pr) {
   }
   if (pr.baseRefName !== MERGE_BASE) {
     return { ok: false, reason: `base é ${pr.baseRefName}, não a ${MERGE_BASE}: espera a base entrar (pilha)` }
+  }
+  if (pr.behindBy > 0) {
+    return { ok: false, reason: `${pr.behindBy} commit(s) atrás da ${MERGE_BASE}: atualize a branch e espere a nova nota` }
   }
   if (pr.failing.length > 0) return { ok: false, reason: `checks pendentes ou vermelhos no head: ${pr.failing.join(', ')}` }
   if (pr.score === null) return { ok: false, reason: 'Claude review pendente no head' }
@@ -224,6 +227,7 @@ export function gather(repo, number) {
       failing: failingChecks(runsOf),
       score: reviewScore(reviews, sha),
       changesRequested: changesRequested(reviews),
+      behindBy: JSON.parse(gh(['api', `repos/${repo}/compare/${MERGE_BASE}...${sha}`, '--jq', '{b: .behind_by}'])).b,
       openThreads: threads.nodes.filter((t) => !t.isResolved).length,
       moreThreads: threads.pageInfo.hasNextPage,
     },

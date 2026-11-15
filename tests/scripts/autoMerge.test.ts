@@ -6,7 +6,7 @@ import {
 
 const ready = {
   state: 'OPEN', isDraft: false, baseRefName: 'main', isCrossRepository: false,
-  failing: [] as string[], score: 5, changesRequested: false,
+  failing: [] as string[], score: 5, changesRequested: false, behindBy: 0,
   openThreads: 0, moreThreads: false,
 }
 const ok = { status: 'completed', conclusion: 'success' }
@@ -23,6 +23,7 @@ describe('auto-merge (SPEC-0739)', () => {
     ['Claude review abaixo do mínimo', { score: MIN_SCORE - 1 }],
     ['conversa aberta', { openThreads: 1 }],
     ['pedido de mudança em aberto', { changesRequested: true }],
+    ['branch atrás da main', { behindBy: 1 }],
     ['conversas além de uma página', { moreThreads: true }],
     ['rascunho', { isDraft: true }],
     ['de fork', { isCrossRepository: true }],

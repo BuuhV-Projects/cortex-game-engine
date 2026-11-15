@@ -26,6 +26,7 @@ faz o merge quando o PR cumpre o mesmo gate que o ruleset impunha. Porte do `aut
 |---|---|
 | Estado | aberto, não rascunho, não de fork |
 | Base | `main`; PR empilhado espera a base entrar |
+| Em dia | head sem commit faltando da `main` (`compare main...head`, `behind_by` = 0), como o ruleset exigia: o PR empilhado redirecionado, ou qualquer PR depois de outro merge, é atualizado e passa por CI e nota de novo |
 | Checks | `Detectar mudanças`, `Regras do repo` e `Tests (Vitest)` em `success`; `Host nativo (Windows) + cortex_host_tests` em `success` ou `skipped` (o job só roda quando o PR toca o nativo) |
 | Review | nota mais recente do `github-actions[bot]` no head, lida de `**Claude review: N/5**`, igual a 5 |
 | Pedido de mudança | ninguém com CHANGES_REQUESTED em aberto: vale a revisão mais recente de cada pessoa que não é só comentário; aprovação ou dismiss depois libera |

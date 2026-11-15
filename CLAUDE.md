@@ -11,15 +11,14 @@ branch/worktree e entra por **PR no GitHub** (`BuuhV-Projects/cortex-game-engine
 1. Abra o PR e ligue o **Auto-fix** da sessão: o **Claude review**
    (`claude-review.yml`, TDR-0011) revisa e você corrige os comentários dele (e
    falhas de CI) nas suas próprias modificações.
-2. Resolva as conversas de revisão, respondendo em cada uma. **O PR só entra no "Claude review: 5/5"**: abaixo
-   disso, corrija o que a revisão apontou (inline e no resumo), faça push e espere a nova nota.
-3. O merge é **automático** pelo workflow `auto-merge.yml` (SPEC-0739, TDR-0015) — não há auto-merge nativo
-   (repo privado no plano Free), não ative nada. Ele mergeia quando, no mesmo head, valem: base `main`, checks
-   verdes, Claude review 5/5 e nenhuma conversa aberta. Se a última conversa foi resolvida sem push novo, dispare à
-   mão: `gh workflow run auto-merge.yml -R BuuhV-Projects/cortex-game-engine -f pr=<n>`.
-4. **PR empilhado** (base que não é a `main`): CI e Claude review rodam nele também (TDR-0014), mas o auto-merge
-   espera a base virar `main`. Quando o PR de baixo entra, o auto-merge redireciona o de cima para a `main` e o
-   avalia de novo; se a branch ficar atrás da `main`, atualize-a e espere o 5/5 do head novo.
+2. Repita até o review do PR dizer **"Claude review: 5/5"**.
+3. O merge é **automático**, pelo workflow `auto-merge.yml` (sem auto-merge nativo no repo privado: nada a
+   ativar). Ele exige, no mesmo head: base `main`, branch em dia com a `main`, checks verdes, a nota máxima e
+   nenhuma conversa aberta (responda e resolva cada uma). Se a última conversa foi resolvida sem push novo,
+   dispare à mão: `gh workflow run auto-merge.yml -R BuuhV-Projects/cortex-game-engine -f pr=<n>`.
+4. **PR empilhado** (base que não é a `main`): CI e Claude review rodam nele também
+   (TDR-0014), mas o auto-merge espera a base virar a `main`. Quando o PR de baixo entra, o auto-merge
+   redireciona o de cima; atualize-o com a `main` e espere a nota nova do head novo.
 
 PR e commits sem menção ao Claude (sem "Generated with Claude Code", sem
 `Co-Authored-By`).

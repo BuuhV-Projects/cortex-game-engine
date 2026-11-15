@@ -17,6 +17,8 @@ export interface PrState {
   failing: string[]
   score: number | null
   changesRequested: boolean
+  /** Commits da `main` que faltam no head (o ruleset exigia a branch em dia). */
+  behindBy: number
   openThreads: number
   moreThreads: boolean
 }
