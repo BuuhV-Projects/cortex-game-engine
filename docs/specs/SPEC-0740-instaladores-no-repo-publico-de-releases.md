@@ -15,11 +15,15 @@ TDR-0015: o repo do engine fica privado e os instaladores continuam públicos nu
   (`create-github-app-token` com `owner` + `repositories`) e lê o repo com ele (`gh api repos/...`). Faltando o
   repo ou a instalação do App, o job para ali e nenhuma release do engine sai.
 - O job `build` (matriz Windows/macOS/Linux), depois de anexar os instaladores à release do engine, guarda
-  `dist-app/*.exe`, `*.dmg` e `*.AppImage` como artefato do workflow (`installers-<os>`, 1 dia).
+  `dist-app/*.exe`, `*.dmg` e `*.AppImage` como artefato do workflow (`installers-<os>`, 7 dias).
 - O job `publish-public` (depois do `build`; roda mesmo se uma máquina falhar, só não se o workflow for cancelado)
   baixa os artefatos, gera um token novo do App para o repo público e cria nele, uma vez só, a release com a mesma
   tag, o nome `TS Cortex Studio <versão>`, `make_latest` e todos os instaladores. Um único job escreve no repo
-  público: não há corrida de criação entre as máquinas.
+  público: não há corrida de criação entre as máquinas. Se uma máquina falhar, a release pública sai com os
+  instaladores das outras (parcial, intencional); sem nenhum instalador, o download dos artefatos falha.
+- Recuperação: se o `publish-public` falhar (rede, App, rate limit), a tag do engine já existe e um push novo não
+  refaz a release; re-execute o job falho na mesma execução do workflow enquanto os artefatos existirem (7 dias).
+  Depois disso, rode o `build-ide.yml` na tag e publique à mão.
 - As notas são as do semantic-release sem os links do repo privado (`.github/scripts/public-notes.mjs`): o link de
   commit some (com o hash) e os de comparação, issue e PR viram só o texto. Teste em
   `tests/scripts/publicNotes.test.ts`.
