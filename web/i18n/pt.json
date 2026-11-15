@@ -23,11 +23,11 @@
   "features": {
     "code": {
       "title": "Código com IA",
-      "body": "Um agente IA mora dentro da IDE: conversa com o seu projeto, cria componentes ECS, escreve sistemas, ajusta cenas. Com sandbox no projeto ativo e aprovação por ferramenta."
+      "body": "A IA é o Claude Code: abra na pasta do jogo e, pelo servidor MCP cortex do Studio, ele enxerga os kits de assets, a cena e a API do engine — cria componentes ECS, escreve sistemas, ajusta cenas."
     },
     "models": {
       "title": "Modelos 3D com IA",
-      "body_html": "Descreva o asset, a IA gera o script Blender e exporta o <code class=\"rounded bg-zinc-800 px-1.5 py-0.5 text-xs\">.glb</code> pronto pra usar na cena. Sem sair da IDE."
+      "body_html": "Escolha e importe assets dos kits do engine, meça e veja os modelos, ou descreva um novo e a IA escreve o script Blender que exporta o <code class=\"rounded bg-zinc-800 px-1.5 py-0.5 text-xs\">.glb</code>."
     },
     "desktop": {
       "title": "Jogos para desktop",
@@ -36,12 +36,12 @@
   },
   "stack": {
     "title": "Tudo num lugar só",
-    "body_html": "Editor Monaco, terminal embutido, file tree com drag-and-drop, preview hot-reload, chat IA na sidebar e gerador de instalador. Você abre a IDE, descreve o que quer e sai com um <code class=\"rounded bg-zinc-800 px-1.5 py-0.5 text-xs\">.exe</code> jogável."
+    "body_html": "Editor Monaco, terminal embutido, file tree com drag-and-drop, preview hot-reload, IA via Claude Code (MCP cortex) e gerador de instalador. Você abre a IDE, descreve o que quer e sai com um <code class=\"rounded bg-zinc-800 px-1.5 py-0.5 text-xs\">.exe</code> jogável."
   },
   "open_source": {
     "eyebrow": "Open source",
     "title": "Construído à mostra. Pull requests são bem-vindos.",
-    "body": "Todo o engine, a IDE, o agente IA e este site vivem num único repositório aberto. Achou um bug, viu como melhorar uma feature ou quer estender o engine com uma capacidade nova? Abra um PR — ou um issue, se quiser discutir antes.",
+    "body": "Todo o engine, a IDE, o servidor MCP cortex e este site vivem num único repositório aberto. Achou um bug, viu como melhorar uma feature ou quer estender o engine com uma capacidade nova? Abra um PR — ou um issue, se quiser discutir antes.",
     "cta_github": "Ver no GitHub →",
     "cta_pr": "Abrir um PR"
   },

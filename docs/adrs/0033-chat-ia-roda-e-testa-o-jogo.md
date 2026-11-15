@@ -1,7 +1,7 @@
 # 0033 - Chat IA roda e testa o jogo (screenshot + erros)
 
 **Data:** 2026-05-31
-**Status:** aceito
+**Status:** substituído por ADR-0736 (Chat IA removido; IA do Studio = Claude Code + MCP `cortex`)
 
 > **Atualização (2026-05-31):** a `playtest_game` passou de só *observar* para
 > também *jogar*. Ganhou um parâmetro `actions` — uma timeline de input de teclado

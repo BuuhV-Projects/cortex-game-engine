@@ -49,10 +49,12 @@ Imports always come from `'cortex-game-engine'` — never from
 
 ## Talk to the AI
 
-Open the chat in the right sidebar and describe what you want. The
-agent reads the whole project (sandbox), and can write new files,
-edit existing ones and run commands in the embedded terminal — always
-asking approval before (`ask` mode) or acting directly (`auto` mode).
+Open **Claude Code** in the project folder (in a terminal, `claude`;
+or through the VS Code extension / desktop app) and describe what you
+want. It reads the project, writes and edits files and runs commands,
+asking for approval according to your permissions — and, through the
+`cortex` MCP, it sees the asset kits, the scene and the engine API.
+How to install and connect in [AI with Claude Code](#ai-claude-code).
 
 Examples of requests that work well:
 

@@ -2,20 +2,23 @@
 
 O **cortex-game-engine** é uma IDE focada em criação de jogos 3D
 com TypeScript e IA. Em vez de empilhar Unity + Cursor + Blender +
-ChatGPT, tudo vive num único app: editor, preview ao vivo, terminal,
-chat IA com sandbox no projeto, gerador de modelos 3D via Blender e
-empacotador de instalador Windows.
+ChatGPT, o editor, o preview ao vivo, o terminal e o empacotador de
+instalador Windows vivem num único app — e a IA é o **Claude Code**,
+que se conecta ao Studio por um servidor MCP (`cortex`) e enxerga os
+kits de assets, a cena e a API do engine.
 
 ## O que você ganha
 
 - **Engine ECS** sobre Three.js — entidades, componentes (só dados),
   sistemas (sem estado interno).
 - **IDE Electron** com Monaco, file tree, preview hot-reload, terminal
-  embutido e chat IA na sidebar.
-- **Agente IA** que age dentro do sandbox do projeto: Read/Write/Edit
-  com aprovação por ferramenta.
-- **Gerador Blender** que recebe descrição textual e devolve `.glb`
-  pronto pra usar na cena.
+  embutido.
+- **IA via Claude Code + MCP `cortex`** — você abre o Claude Code na
+  pasta do jogo e ele importa kits, mede modelos, valida a cena e
+  consulta a API do engine. Detalhes em
+  [IA com Claude Code](#ia-claude-code).
+- **Blender integrado** — thumbnails e medidas de modelos, auto-rig
+  e scripts que o Claude Code escreve para criar ou ajustar `.glb`.
 - **Instalador Windows** num clique — empacotamento via Tauri 2.
 
 ## Pra quem é

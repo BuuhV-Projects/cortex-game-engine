@@ -1,7 +1,7 @@
 # ADR-0276 - Codificar roda no Opus 5.5 com esforço médio
 
 **Data:** 2026-09-25
-**Status:** aceito (substitui a escolha de modelo do Codificar no ADR-0130 e no ADR-0265)
+**Status:** substituído por ADR-0736 (Chat IA removido; IA do Studio = Claude Code + MCP `cortex`)
 
 ## Contexto
 O ADR-0130 pôs o Chat IA em **Sonnet por padrão** porque a cota do Opus no plano de

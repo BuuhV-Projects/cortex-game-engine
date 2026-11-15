@@ -1,7 +1,7 @@
 # ADR-0269 — Chat IA: modo Orquestrador (padrão) delega entre Modelagem e Codificar
 
 **Data:** 2026-09-24
-**Status:** aceito
+**Status:** substituído por ADR-0736 (Chat IA removido; IA do Studio = Claude Code + MCP `cortex`)
 **Substitui em parte:** ADR-0265 (a alternativa descartada "roteamento automático")
 
 ## Contexto
