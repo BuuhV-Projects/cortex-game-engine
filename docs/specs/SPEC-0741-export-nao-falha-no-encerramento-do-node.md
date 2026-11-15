@@ -62,7 +62,7 @@ e devolve `ok: true` com o `distDir`. Código `null` (morto por sinal) conta com
 
 ## Testes
 
-- `tests/native/export-outcome.test.ts`: as três linhas da tabela, código `null`, e
+- `tests/electron/exportOutcome.test.ts`: as três linhas da tabela, código `null`, e
   só um dos marcadores presente (falha).
 - `tests/native/exit-flushed.test.ts`: um processo filho que escreve e chama
   `exitFlushed(0)` sai com 0 e com a saída inteira; com código 2 sai com 2.
