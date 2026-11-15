@@ -63,7 +63,8 @@ divergência; quando a assinatura exata importar, a fonte é o `.d.ts` vendoriza
 ### Erros
 
 Erro de entrada (kit inexistente, caminho fora do projeto, cena inválida) volta como resultado com
-`isError: true` e mensagem em pt, nunca como exceção que derruba o servidor.
+`isError: true` e mensagem em pt, nunca como exceção que derruba o servidor. "Fora do projeto" compara os
+caminhos reais: um symlink ou junction dentro do projeto que aponta para fora conta como fora.
 
 ## Consequências
 

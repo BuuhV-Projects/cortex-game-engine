@@ -1,5 +1,5 @@
-import { existsSync, readdirSync } from 'node:fs'
-import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
+import { existsSync, readdirSync, realpathSync } from 'node:fs'
+import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { locateBlender } from '../electron/main/autoRig/blenderLocate.js'
 import type { ToolContext } from './toolDef.js'
 
@@ -64,10 +64,27 @@ export function resolveProjectRoot(projectDir: string | undefined, cwd: string):
   return isAbsolute(projectDir) ? projectDir : resolve(cwd, projectDir)
 }
 
-/** `true` quando `path` (absoluto ou relativo à raiz) fica dentro de `root`. */
+/**
+ * Caminho real (symlink e junction seguidos). O que ainda não existe usa o real da pasta acima mais o nome;
+ * sem nenhuma pasta existente, o próprio caminho.
+ */
+function realPath(p: string): string {
+  try {
+    return realpathSync.native(p)
+  } catch {
+    const parent = dirname(p)
+    return parent === p ? p : join(realPath(parent), basename(p))
+  }
+}
+
+/**
+ * `true` quando `path` (absoluto ou relativo à raiz) fica dentro de `root`. Compara os caminhos reais: um
+ * link dentro do projeto que aponta para fora conta como fora.
+ */
 export function isInside(root: string, path: string): boolean {
-  const abs = isAbsolute(path) ? path : resolve(root, path)
-  const rel = relative(root, abs)
+  const realRoot = realPath(resolve(root))
+  const abs = realPath(isAbsolute(path) ? path : resolve(root, path))
+  const rel = relative(realRoot, abs)
   const leaves = rel === '..' || rel.startsWith(`..${sep}`)
   return !leaves && !isAbsolute(rel)
 }

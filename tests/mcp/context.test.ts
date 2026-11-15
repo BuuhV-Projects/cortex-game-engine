@@ -2,6 +2,8 @@
  * Contexto do MCP `cortex` (SPEC-0737): onde acha os recursos do Studio e o projeto do jogo.
  */
 import { describe, it, expect } from 'vitest'
+import { mkdtempSync, mkdirSync, rmSync, symlinkSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { join, resolve, sep } from 'node:path'
 import { findResources, isInside, resolveProjectRoot } from '../../mcp/context.js'
 
@@ -50,5 +52,24 @@ describe('resolveProjectRoot / isInside', () => {
     expect(isInside(cwd, '../outro/a.json')).toBe(false)
     expect(isInside(cwd, resolve(sep, 'Windows', 'x.json'))).toBe(false)
     expect(isInside(cwd, '..arquivo.json')).toBe(true)
+  })
+})
+
+describe('isInside com link no disco', () => {
+  it('link dentro do projeto que aponta para fora conta como fora; pasta real do projeto, dentro', () => {
+    const tmp = mkdtempSync(join(tmpdir(), 'cortex-mcp-link-'))
+    try {
+      const proj = join(tmp, 'jogo')
+      const fora = join(tmp, 'fora')
+      mkdirSync(join(proj, 'scenes'), { recursive: true })
+      mkdirSync(fora)
+      // `junction` no Windows não pede admin; nos outros sistemas o tipo é ignorado (symlink de pasta).
+      symlinkSync(fora, join(proj, 'atalho'), 'junction')
+      expect(isInside(proj, 'atalho/a.json')).toBe(false)
+      expect(isInside(proj, join(proj, 'atalho', 'a.json'))).toBe(false)
+      expect(isInside(proj, 'scenes/nova.json')).toBe(true)
+    } finally {
+      rmSync(tmp, { recursive: true, force: true })
+    }
   })
 })
