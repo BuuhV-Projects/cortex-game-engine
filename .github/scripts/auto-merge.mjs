@@ -157,7 +157,8 @@ export function dispatchArgs(number, repo) {
  * aqui; os outros e os dependentes ganham execução própria por `workflow_dispatch`, no grupo deles.
  * Se o primeiro passa: lista os dependentes ANTES do merge (o `delete_branch_on_merge` pode redirecioná-los logo
  * depois), aprova o head se ainda não aprovado, mergeia, redireciona cada dependente, apaga a branch e dispara os
- * dependentes. Qualquer erro de `io` lança e para tudo.
+ * dependentes. Qualquer erro de `io` lança e para tudo, menos o redirecionamento: cada dependente é redirecionado à
+ * parte, os que conseguiram são disparados, e só então o job lança (a branch fica, para não fechar o que falhou).
  * @param {string[]} numbers
  * @param {{ gather: (n: string) => { sha: string, approved: boolean, pr: any },
  *           listDependents: (head: string) => string[], approve: (n: string, sha: string) => void,
@@ -188,9 +189,22 @@ function processOwn(number, io, merged) {
   if (!approved) io.approve(number, sha)
   io.merge(number, sha)
   merged.push(number)
+  const moved = []
+  const failed = []
   for (const d of dependents) {
-    io.retarget(d)
-    io.log(`PR #${d}: base redirecionada de ${pr.headRefName} para ${MERGE_BASE}`)
+    try {
+      io.retarget(d)
+      moved.push(d)
+      io.log(`PR #${d}: base redirecionada de ${pr.headRefName} para ${MERGE_BASE}`)
+    } catch (err) {
+      failed.push(d)
+      io.log(`PR #${d}: falha ao redirecionar para ${MERGE_BASE}: ${err?.message ?? err}`)
+    }
+  }
+  if (failed.length > 0) {
+    // sem apagar a branch: apagar a base fecha o PR que continua apontando para ela
+    for (const d of moved) io.dispatch(d)
+    throw new Error(`PR #${number} mergeado, mas o redirecionamento falhou em ${failed.map((d) => `#${d}`).join(', ')}`)
   }
   io.deleteBranch(pr.headRefName)
   return dependents

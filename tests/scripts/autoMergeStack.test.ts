@@ -161,11 +161,12 @@ describe('fila da pilha (SPEC-0739, pilha TDR-0014)', () => {
     expect(calls).toEqual([])
   })
 
-  it('falha no redirecionamento lança: não apaga a branch nem dispara', () => {
-    const { io, calls } = fakeGitHub({ '1': pr('a', 'main'), '2': pr('b', 'a') }, { retarget: 'retarget 2' })
-    expect(() => runQueue(['1'], io)).toThrow()
-    expect(calls).not.toContain('delete a')
-    expect(calls).not.toContain('dispatch 2')
+  it('falha no redirecionamento de um dependente: os outros seguem, a branch fica e o job lança', () => {
+    const { io, calls } = fakeGitHub(
+      { '1': pr('a', 'main'), '2': pr('b', 'a'), '3': pr('c', 'a') }, { retarget: 'retarget 2' },
+    )
+    expect(() => runQueue(['1'], io)).toThrow(/#2/)
+    expect(calls).toEqual(['list a', 'approve 1@sha1', 'merge 1@sha1', 'retarget 2', 'retarget 3', 'dispatch 3'])
   })
 
   it('falha no merge lança antes de redirecionar ou apagar', () => {

@@ -14,14 +14,15 @@ TDR-0015: o repo do engine fica privado e os instaladores continuam públicos nu
 - O job `release`, antes do semantic-release, gera um token do App restrito ao repo público
   (`create-github-app-token` com `owner` + `repositories`) e lê o repo com ele (`gh api repos/...`). Faltando o
   repo ou a instalação do App, o job para ali e nenhuma release do engine sai.
-- Com release nova, o mesmo job cria a release no repo público, uma vez, com a mesma tag, o nome
-  `TS Cortex Studio <versão>`, as notas do semantic-release e `make_latest`. O passo tem `continue-on-error`: a tag
-  do engine já saiu, e uma falha nele não pode pular o `build` (um re-run não refaz a release).
-- O job `build`, depois de anexar os instaladores à release do engine, gera um token novo (o do `release` pode ter
-  expirado durante o build) e anexa `dist-app/*.exe`, `*.dmg` e `*.AppImage` à release pública que já existe. As
-  três máquinas da matriz só anexam: nenhuma cria a release, então não há corrida de criação. Se a criação do job
-  `release` falhou, o `build` a cria com o mesmo nome e as mesmas notas (as saídas `version` e `notes` do `release`). Nesse caso raro as três máquinas podem tentar criar a mesma
-  release ao mesmo tempo; o `softprops/action-gh-release` trata a criação que já existe como atualização.
+- O job `build` (matriz Windows/macOS/Linux), depois de anexar os instaladores à release do engine, guarda
+  `dist-app/*.exe`, `*.dmg` e `*.AppImage` como artefato do workflow (`installers-<os>`, 1 dia).
+- O job `publish-public` (depois do `build`; roda mesmo se uma máquina falhar, só não se o workflow for cancelado)
+  baixa os artefatos, gera um token novo do App para o repo público e cria nele, uma vez só, a release com a mesma
+  tag, o nome `TS Cortex Studio <versão>`, `make_latest` e todos os instaladores. Um único job escreve no repo
+  público: não há corrida de criação entre as máquinas.
+- As notas são as do semantic-release sem os links do repo privado (`.github/scripts/public-notes.mjs`): o link de
+  commit some (com o hash) e os de comparação, issue e PR viram só o texto. Teste em
+  `tests/scripts/publicNotes.test.ts`.
 - Links de download: `https://github.com/BuuhV-Projects/cortex-studio-releases/releases/latest`.
 
 ## Pré-requisitos (manuais, do dono)

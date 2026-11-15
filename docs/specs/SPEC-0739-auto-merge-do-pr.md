@@ -39,7 +39,9 @@ faz o merge quando o PR cumpre o mesmo gate que o ruleset impunha. Porte do `aut
    para isso).
 3. Mergeia com `gh pr merge --merge --match-head-commit <sha>` usando o **token do App** (`MERGE_TOKEN`): o
    push resultante dispara o `release.yml`.
-4. Redireciona cada dependente para a `main`, apaga a branch e dispara o auto-merge de cada dependente.
+4. Redireciona cada dependente para a `main`, apaga a branch e dispara o auto-merge de cada dependente. Cada redirecionamento é
+   tentado à parte: se algum falha, os que conseguiram são disparados, a branch fica (apagá-la fecharia o PR que
+   ainda aponta para ela) e o job lança. Um re-run redireciona o que faltou.
 
 Falha fechada: qualquer erro de consulta lança e nada é mergeado.
 

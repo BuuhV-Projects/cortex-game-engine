@@ -10,6 +10,8 @@ name: Release
 #  3. `build` espera o release, e SÓ roda se houver release nova. Faz
 #     `yarn electron:build` em Windows/macOS/Linux em paralelo e anexa
 #     os instaladores à release recém-criada.
+#  4. `publish-public` junta os instaladores das três máquinas e os publica,
+#     uma vez, no repo público de releases (SPEC-0740).
 #
 # Pra buildar sem cortar release (debug, dry-run em PR), use
 # `build-ide.yml` que tem trigger manual (`workflow_dispatch`).
@@ -135,22 +137,6 @@ jobs:
           # `[skip ci]` na mensagem pra não reentrar neste mesmo workflow.
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
 
-      # SPEC-0740: a release pública nasce aqui, uma vez, com nome e notas; os jobs da matriz só anexam os
-      # instaladores a ela (sem três jobs criando a mesma release ao mesmo tempo). A tag do engine já saiu: uma falha
-      # aqui não pode pular o `build` (um re-run não refaz a release), então o passo não derruba o job e o `build`
-      # cria a release pública se ela faltar.
-      - name: Criar a release no repo público
-        if: steps.semantic.outputs.new_release_published == 'true'
-        continue-on-error: true
-        uses: softprops/action-gh-release@v2
-        with:
-          repository: ${{ env.RELEASES_OWNER }}/${{ env.RELEASES_REPO }}
-          token: ${{ steps.releases-token.outputs.token }}
-          tag_name: ${{ steps.semantic.outputs.new_release_git_tag }}
-          name: TS Cortex Studio ${{ steps.semantic.outputs.new_release_version }}
-          body: ${{ steps.semantic.outputs.new_release_notes }}
-          make_latest: 'true'
-
   build:
     name: Build (${{ matrix.os }})
     needs: [test, release]
@@ -217,8 +203,52 @@ jobs:
             dist-app/*.AppImage
           fail_on_unmatched_files: false
 
-      # SPEC-0740: o mesmo instalador na release pública que o job `release` criou (ou cria agora, se lá falhou, com
-      # o mesmo nome e as mesmas notas). Token do App só para esse repo (o do job `release` pode ter expirado).
+      # SPEC-0740: os instaladores vão para o job `publish-public`, o único que escreve no repo público (sem três
+      # máquinas criando a mesma release ao mesmo tempo).
+      - name: Guardar os instaladores para o repo público
+        uses: actions/upload-artifact@v4
+        with:
+          name: installers-${{ matrix.os }}
+          path: |
+            dist-app/*.exe
+            dist-app/*.dmg
+            dist-app/*.AppImage
+          if-no-files-found: warn
+          retention-days: 1
+
+  # SPEC-0740: a release pública, criada uma vez só, com o que as máquinas da matriz geraram. Roda mesmo se uma das
+  # máquinas falhar (as outras já anexaram à release do engine); só não roda se o workflow foi cancelado.
+  publish-public:
+    name: Publicar no repo público
+    needs: [release, build]
+    if: ${{ !cancelled() && needs.release.outputs.released == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout dos scripts
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.release.outputs.tag }}
+          sparse-checkout: .github/scripts
+
+      - name: Setup Node 24.15.0
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.15.0
+
+      - name: Baixar os instaladores
+        uses: actions/download-artifact@v4
+        with:
+          pattern: installers-*
+          merge-multiple: true
+          path: dist-app
+
+      # As notas do semantic-release apontam para o repo privado (commits, comparação, issues): saem sem esses links.
+      - name: Notas sem os links do repo privado
+        env:
+          NOTES: ${{ needs.release.outputs.notes }}
+          PRIVATE_REPO: ${{ github.repository }}
+        run: node .github/scripts/public-notes.mjs > "$RUNNER_TEMP/public-notes.md"
+
       - name: Gerar token do App para o repo público de releases
         id: releases-token
         uses: actions/create-github-app-token@v2
@@ -235,10 +265,10 @@ jobs:
           token: ${{ steps.releases-token.outputs.token }}
           tag_name: ${{ needs.release.outputs.tag }}
           name: TS Cortex Studio ${{ needs.release.outputs.version }}
-          body: ${{ needs.release.outputs.notes }}
+          body_path: ${{ runner.temp }}/public-notes.md
           make_latest: 'true'
           files: |
             dist-app/*.exe
             dist-app/*.dmg
             dist-app/*.AppImage
-          fail_on_unmatched_files: false
+          fail_on_unmatched_files: true
