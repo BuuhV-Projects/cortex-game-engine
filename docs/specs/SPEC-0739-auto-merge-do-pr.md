@@ -1,0 +1,46 @@
+# SPEC-0739 - Auto-merge do PR (repo privado)
+
+**Data:** 2026-11-14
+**Status:** aceito
+
+## Contexto
+
+TDR-0015: com o repo privado no plano Free, o ruleset e o auto-merge nativo deixam de valer. Este workflow
+faz o merge quando o PR cumpre o mesmo gate que o ruleset impunha. Porte do `auto-merge` do `ddd00-game`.
+
+## Decisão
+
+### Disparo
+
+`.github/workflows/auto-merge.yml`:
+- `workflow_run` do `PR checks` (`completed`): avalia os PRs daquele head.
+- `workflow_dispatch` com `pr`: o `claude-review.yml` dispara depois de publicar a nota, e o próprio auto-merge
+  dispara para cada PR dependente depois de um merge.
+- Um grupo de concorrência por PR. Só roda a versão da `main`; o checkout é só de `.github/`, nada do PR roda.
+
+### Condições (todas no head do PR)
+
+`.github/scripts/auto-merge.mjs`, função `evaluate`:
+
+| Condição | Regra |
+|---|---|
+| Estado | aberto, não rascunho, não de fork |
+| Base | `main`; PR empilhado espera a base entrar |
+| Checks | `Detectar mudanças`, `Regras do repo` e `Tests (Vitest)` em `success`; `Host nativo (Windows) + cortex_host_tests` em `success` ou `skipped` (o job só roda quando o PR toca o nativo) |
+| Review | nota mais recente do `github-actions[bot]` no head, lida de `**Claude review: N/5**`, igual a 5 |
+| Conversas | nenhuma aberta (página cheia = não dá para confirmar = não mergeia) |
+
+### Merge
+
+1. Lista os PRs que miram a branch (pilha, TDR-0014) antes do merge.
+2. Aprova o head se o review ainda não aprovou esse commit (`APPROVE` preso ao `commit_id`).
+3. Mergeia com `gh pr merge --merge --match-head-commit <sha>` usando o **token do App** (`MERGE_TOKEN`): o
+   push resultante dispara o `release.yml`.
+4. Redireciona cada dependente para a `main`, apaga a branch e dispara o auto-merge de cada dependente.
+
+Falha fechada: qualquer erro de consulta lança e nada é mergeado.
+
+## Consequências
+
+- O `claude-review.yml` ganha `actions: write` para disparar o auto-merge.
+- Testes em `tests/scripts/autoMerge.test.ts` e `tests/scripts/autoMergeStack.test.ts`.
