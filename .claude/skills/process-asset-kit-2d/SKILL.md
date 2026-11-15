@@ -21,6 +21,7 @@ no `png.mjs` da skill, RGBA8 sem interlace). Não há bbox/escala/conversão com
 
 ```bash
 PLUGIN="${CORTEX_PLUGIN_DIR:-.claude}"
+[ -f "$PLUGIN/scripts/check-blender.mjs" ] || { echo "Os scripts das skills só existem no repositório da engine (distribuição ao jogo: backlog da SPEC-0737)." >&2; exit 1; }
 PK2="$PLUGIN/skills/process-asset-kit-2d/scripts"
 OUT="kits"            # repositório da engine (catálogo)
 # no projeto do jogo, o catálogo é somente-leitura:

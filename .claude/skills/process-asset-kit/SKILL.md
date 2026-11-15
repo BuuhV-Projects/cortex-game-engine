@@ -18,6 +18,7 @@ thumbnails passam por ele. Rode a checagem ANTES de qualquer outra coisa:
 
 ```bash
 PLUGIN="${CORTEX_PLUGIN_DIR:-.claude}"
+[ -f "$PLUGIN/scripts/check-blender.mjs" ] || { echo "Os scripts das skills só existem no repositório da engine (distribuição ao jogo: backlog da SPEC-0737)." >&2; exit 1; }
 BLENDER=$(node "$PLUGIN/scripts/check-blender.mjs") || exit 1
 PK="$PLUGIN/skills/process-asset-kit/scripts"   # triage.sh, convert.py, gen-kit.mjs, lineup.py…
 ```

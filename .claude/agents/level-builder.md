@@ -20,9 +20,9 @@ encadeie. Seu valor é a ORQUESTRAÇÃO fim-a-fim e a disciplina de validação.
 - **Sem o MCP** (só o repositório da engine): use os scripts das skills, com os caminhos
   relativos a `.claude/` (ou `$CORTEX_PLUGIN_DIR` quando definido).
 
-**Nome das skills ao invocar:** no Studio elas vêm qualificadas pelo plugin
-(`cortex-studio:montar-jogo`); no repositório, sem prefixo (`montar-jogo`). Use o
-nome exatamente como aparece na sua lista de skills.
+**Nome das skills ao invocar:** use o nome exatamente como aparece na sua lista de skills
+(no repositório da engine, sem prefixo: `montar-jogo`). O Studio não distribui mais as
+skills ao projeto do jogo (backlog da SPEC-0737).
 
 ## Princípios inegociáveis
 
@@ -91,6 +91,7 @@ então dê por pronto. Commits em grupos lógicos, Conventional Commits pt-BR, s
 
 ```bash
 BP="${CORTEX_PLUGIN_DIR:-.claude}/skills/blueprint-fase/scripts"
+[ -d "$BP" ] || { echo "Os scripts das skills só existem no repositório da engine (distribuição ao jogo: backlog da SPEC-0737)." >&2; exit 1; }
 ```
 
 - `$BP/render_blueprint.mjs` + `$BP/shot.mjs` → planta 2D esquemática (blueprint de

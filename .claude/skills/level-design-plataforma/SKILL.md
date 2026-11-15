@@ -18,6 +18,7 @@ diz *como construir e validar*; esta diz *como fazer bonito e desafiador*.
 >
 > ```bash
 > PLUGIN="${CORTEX_PLUGIN_DIR:-.claude}"
+> [ -f "$PLUGIN/scripts/check-blender.mjs" ] || { echo "Os scripts das skills só existem no repositório da engine (distribuição ao jogo: backlog da SPEC-0737)." >&2; exit 1; }
 > LD="$PLUGIN/skills/level-design-plataforma/scripts"
 > BLENDER=$(node "$PLUGIN/scripts/check-blender.mjs") || exit 1   # obrigatório
 > "$BLENDER" --background <arquivo.blend> --python "$LD/dump_blend.py"

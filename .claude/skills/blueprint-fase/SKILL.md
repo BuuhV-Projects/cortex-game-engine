@@ -23,6 +23,7 @@ Resolva os caminhos por variável, com fallback pro layout do repositório:
 
 ```bash
 PLUGIN="${CORTEX_PLUGIN_DIR:-.claude}"   # raiz do plugin (contém skills/)
+[ -f "$PLUGIN/scripts/check-blender.mjs" ] || { echo "Os scripts das skills só existem no repositório da engine (distribuição ao jogo: backlog da SPEC-0737)." >&2; exit 1; }
 KITS="${CORTEX_KITS_DIR:-kits}"          # catálogo de kits empacotados
 ```
 

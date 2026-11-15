@@ -29,7 +29,7 @@ Para tarefas pequenas (um trecho, um ajuste), siga o pipeline inline sem delegar
 
 | # | Passo | Dono |
 |---|-------|------|
-| 0 | **Checar Blender** (`$CORTEX_PLUGIN_DIR/scripts/check-blender.mjs`) — falhou, PARA | pré-requisito duro |
+| 0 | **Checar Blender** (`node "${CORTEX_PLUGIN_DIR:-.claude}/scripts/check-blender.mjs"`; só existe no repositório da engine) — falhou, PARA | pré-requisito duro |
 | 0b | Contexto: ADRs/specs; processar kit bruto se preciso | **process-asset-kit** / **process-asset-kit-2d** |
 | 1 | Inventário real do kit (`role`/`gameplayRole`/`size`/**`mechanic`**) | inspect_assets / kit.json |
 | 2 | **Blueprint** orientado a gameplay (cada peça: `behavior`+`script`+`params`) | **blueprint-fase** + **level-design-plataforma** |
