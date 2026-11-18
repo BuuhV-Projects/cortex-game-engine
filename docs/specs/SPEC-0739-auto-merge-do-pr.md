@@ -45,6 +45,13 @@ faz o merge quando o PR cumpre o mesmo gate que o ruleset impunha. Porte do `aut
 
 Falha fechada: qualquer erro de consulta lança e nada é mergeado.
 
+### Pré-requisito do repo
+
+A aprovação (passo 2) sai com o `GITHUB_TOKEN`, como a do `claude-review.yml`: exige "Allow GitHub Actions to create
+and approve pull requests" ligado em Settings → Actions → General (`can_approve_pull_request_reviews: true` em
+`repos/<repo>/actions/permissions/workflow`). Ligado em 2026-11-18. Desligado, o passo de aprovar lança e o PR não é
+mergeado (falha fechada).
+
 ## Consequências
 
 - O `claude-review.yml` ganha o job `merge-dispatch` (depois do `review`), o único com `actions: write`: o job
