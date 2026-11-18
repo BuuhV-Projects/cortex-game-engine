@@ -1,0 +1,63 @@
+# Auto-merge do PR (SPEC-0739, TDR-0015): checks obrigatórios verdes + Claude review 5/5 + conversas resolvidas no
+# head, só para base main. Porte do auto-merge do ddd00-game: com o repo privado no plano Free, o ruleset e o
+# auto-merge nativo somem. Pilha (TDR-0014): depois do merge, redireciona os PRs que miravam a branch mergeada para a
+# main, apaga a branch e dispara este workflow (workflow_dispatch) para cada dependente; cada PR só é mergeado na
+# execução do grupo de concorrência dele.
+# Dispara quando o `PR checks` termina e quando o `claude-review.yml` publica a nota (workflow_dispatch).
+# O merge sai com o token do App (TDR-0006): merge pelo GITHUB_TOKEN não dispara o push que roda o release.yml.
+# Segurança: workflow_run roda sempre a versão da `main`; o job recusa workflow_dispatch fora da `main`. O checkout é
+# só de `.github/` da `main` — nada do PR roda.
+# A decisão fica em .github/scripts/auto-merge.mjs (testada em tests/scripts/autoMerge*.test.ts).
+name: Auto-merge
+
+on:
+  workflow_run:
+    workflows: [PR checks]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: Número do PR
+        required: true
+
+permissions:
+  contents: write
+  pull-requests: write
+  checks: read # check-runs do head
+  actions: write # dispara o auto-merge de cada dependente
+
+# Um grupo por PR: o GitHub guarda só UMA execução pendente por grupo e descarta a anterior; com grupo único, o evento
+# de um PR podia apagar o de outro.
+concurrency:
+  group: auto-merge-${{ github.event.inputs.pr || github.event.workflow_run.pull_requests[0].number || github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  merge:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        timeout-minutes: 2
+        with:
+          ref: main
+          fetch-depth: 1
+          sparse-checkout: .github
+
+      - name: Gerar token do GitHub App
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.CORTEX_CI_APP_ID }}
+          private-key: ${{ secrets.CORTEX_CI_APP_PRIVATE_KEY }}
+
+      - name: Mergear se cumprir as condições
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MERGE_TOKEN: ${{ steps.app-token.outputs.token }}
+          REPO: ${{ github.repository }}
+          PRS: >-
+            ${{ github.event.inputs.pr ||
+                join(github.event.workflow_run.pull_requests.*.number, ' ') }}
+        run: node .github/scripts/auto-merge.mjs
