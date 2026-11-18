@@ -4,6 +4,7 @@
 #include <string>
 
 #include "../core/steam.h"
+#include "../core/steam_cloud.h"
 #include "../core/steam_stats.h"
 #include "../core/steam_user.h"
 #include "../napi/napi_util.h"
@@ -129,6 +130,31 @@ napi_value jsOpenOverlay(napi_env env, napi_callback_info info) {
   return boolResult(env, core::steamOpenOverlay(argString(env, info, 0)));
 }
 
+// ── Nuvem (Remote Storage, SPEC-0743) ──────────────────────────────────────
+
+napi_value jsCloudAvailable(napi_env env, napi_callback_info /*info*/) {
+  return boolResult(env, core::steamCloudAvailable());
+}
+
+// string | null — null = ausente ou sem Steam (o JS cai no arquivo de antes).
+napi_value jsCloudRead(napi_env env, napi_callback_info info) {
+  std::string text;
+  if (!core::steamCloudRead(argString(env, info, 0), &text)) {
+    napi_value nullValue = nullptr;
+    napi_get_null(env, &nullValue);
+    return nullValue;
+  }
+  return stringResult(env, text);
+}
+
+napi_value jsCloudWrite(napi_env env, napi_callback_info info) {
+  return boolResult(env, core::steamCloudWrite(argString(env, info, 0), argString(env, info, 1)));
+}
+
+napi_value jsCloudDelete(napi_env env, napi_callback_info info) {
+  return boolResult(env, core::steamCloudDelete(argString(env, info, 0)));
+}
+
 }  // namespace
 
 void registerSteamApi(napi_env env) {
@@ -149,6 +175,10 @@ void registerSteamApi(napi_env env) {
   njs::setMethod(env, global, "__cortexSteamLanguage", jsLanguage);
   njs::setMethod(env, global, "__cortexSteamOverlayActive", jsOverlayActive);
   njs::setMethod(env, global, "__cortexSteamOpenOverlay", jsOpenOverlay);
+  njs::setMethod(env, global, "__cortexSteamCloudAvailable", jsCloudAvailable);
+  njs::setMethod(env, global, "__cortexSteamCloudRead", jsCloudRead);
+  njs::setMethod(env, global, "__cortexSteamCloudWrite", jsCloudWrite);
+  njs::setMethod(env, global, "__cortexSteamCloudDelete", jsCloudDelete);
 }
 
 }  // namespace shims
