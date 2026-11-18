@@ -3,7 +3,7 @@ description: >-
   Compila o host nativo (cortex_host.exe + rapier_native.dll) e instala o
   toolchain de export auto-contido, pra o Studio empacotado exportar nativo
   sem dev (TDR-0003). Windows-only — quem chama gateia com
-  `if: matrix.os == 'windows-latest'`.
+  `if: matrix.os == 'windows-2025'` (runner pinado, TDR-0015).
   Com `steamworks-sdk-key` compila TAMBÉM o host Steam (ADR-0176).
 
 inputs:
@@ -75,8 +75,8 @@ runs:
     # 2) host C++ (Ninja) → native/build com cortex_host.exe + dlls + fontes.
     # Compilador OFICIAL do host PC é o clang-cl (ADR-0122: interpretador do
     # Hermes ~20% mais rápido que com MSVC — é o host que o instalador embarca
-    # nos exports dos usuários). Os runners windows-latest têm LLVM
-    # pré-instalado; se um dia sumir, cai pro cl.exe (fallback suportado,
+    # nos exports dos usuários). O runner windows-2025 (pinado, TDR-0015) traz
+    # LLVM pré-instalado; se um dia sumir, cai pro cl.exe (fallback suportado,
     # mesmo caminho da toolchain GDKX/console — só mais lento).
     - name: Build host (CMake + Ninja, clang-cl)
       shell: pwsh

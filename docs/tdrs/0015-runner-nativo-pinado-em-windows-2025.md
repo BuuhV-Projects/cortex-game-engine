@@ -23,7 +23,7 @@ yvals_core.h(923): error STL1000: Unexpected compiler version, expected Clang 22
 Não é uma mudança do nosso código: quebrou todo PR que compila o host, sem
 nenhum commit nosso na toolchain. A imagem **`windows-2025`** ainda traz uma
 combinação **consistente** — VS 2022 17.14, MSVC **14.44.35211** (toolset padrão)
-e **LLVM 20.1.8** —, em que a STV do 14.44 aceita o clang 20.
+e **LLVM 20.1.8** —, em que a STL do 14.44 aceita o clang 20.
 
 ## Decisão
 
