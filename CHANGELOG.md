@@ -1,3 +1,15 @@
+# [1.1.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v1.0.1...v1.1.0) (2026-11-18)
+
+
+### Bug Fixes
+
+* **steam:** nome plano recusado, copia velha da nuvem apagada e tipos no Studio (SPEC-0743) ([1a1cbda](https://github.com/BuuhV-Projects/cortex-game-engine/commit/1a1cbda94f1a988f99f668790e811fbde7f4837a))
+
+
+### Features
+
+* **steam:** GameConfig grava no Steam Cloud pelo Remote Storage (SPEC-0743) ([80e0563](https://github.com/BuuhV-Projects/cortex-game-engine/commit/80e05631d3a68300a562110f65425d4bbd4e9d82))
+
 ## [1.0.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v1.0.0...v1.0.1) (2026-11-15)
 
 
