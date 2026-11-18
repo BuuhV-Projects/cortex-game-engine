@@ -112,14 +112,29 @@ $alvos = if ($Alvo -eq 'cortex_host') { 'cortex_host host_runtime_files' } else 
 Write-Output "[build-host] worktree: $Worktree"
 Write-Output "[build-host] alvo: $Alvo ($BuildType)"
 
-# -Limpar apaga TODOS os diretorios do alvo ANTES do laco -- inclusive um
-# build-steam que ficou fora de $saidas por falta do SDK. Se so limpasse os que
-# vai compilar, um host/.obj velho sobreviveria ao --Limpar (a spec promete os
-# dois) e o export de Steam usaria esse host stale.
+# Diretorios de build do alvo: `build` sempre; `build-steam` tambem no cortex_host
+# (mesmo sem SDK -- entra aqui para o -Limpar alcanca-lo, veja abaixo).
+$dirsDoAlvo = @(Join-Path $fontes 'build')
+if ($Alvo -eq 'cortex_host') { $dirsDoAlvo += Join-Path $fontes 'build-steam' }
+
+# Cuidado 4: nenhum diretorio de build pode ser junction -- checado ANTES de
+# limpar ou compilar qualquer um, pelos DOIS motivos: o CMake guardaria o
+# CMAKE_HOME_DIRECTORY de outra worktree no cache (compilando os fontes dela em
+# silencio) E o `Remove-Item -Recurse` do -Limpar seguiria o link apagando o
+# alvo. Lancar aqui impede as duas coisas antes que aconteçam.
+foreach ($dir in $dirsDoAlvo) {
+  $item = Get-Item $dir -ErrorAction SilentlyContinue
+  if ($item -and $item.LinkType) {
+    throw "$dir e um $($item.LinkType) -- o CMake compilaria os fontes de outra worktree em silencio e o -Limpar seguiria o link apagando o alvo. Remova o link e deixe o build ser um diretorio de verdade."
+  }
+}
+
+# -Limpar apaga TODOS os diretorios do alvo -- inclusive um build-steam que ficou
+# fora de $saidas por falta do SDK. Se so limpasse os que vai compilar, um
+# host/.obj velho sobreviveria ao --Limpar (a spec promete os dois) e o export de
+# Steam usaria esse host stale.
 if ($Limpar) {
-  $limpar = @(Join-Path $fontes 'build')
-  if ($Alvo -eq 'cortex_host') { $limpar += Join-Path $fontes 'build-steam' }
-  foreach ($dir in $limpar) {
+  foreach ($dir in $dirsDoAlvo) {
     if (Test-Path $dir) {
       Write-Output "[build-host] limpando $dir"
       Remove-Item $dir -Recurse -Force
@@ -129,12 +144,6 @@ if ($Limpar) {
 
 foreach ($saida in $saidas) {
   $build = $saida.Dir
-
-  # Cuidado 4: build como junction faria o CMake compilar outra worktree.
-  $itemDoBuild = Get-Item $build -ErrorAction SilentlyContinue
-  if ($itemDoBuild -and $itemDoBuild.LinkType) {
-    throw "$build e um $($itemDoBuild.LinkType) -- o CMake guarda o CMAKE_HOME_DIRECTORY no cache e compilaria os fontes de outra worktree em silencio. Remova o link e deixe o build ser um diretorio de verdade."
-  }
 
   $configure = "cmake -G Ninja -S `"$fontes`" -B `"$build`" -DCMAKE_BUILD_TYPE=$BuildType " +
                "-DCMAKE_C_COMPILER=`"$CAMINHO_DO_CLANG`" -DCMAKE_CXX_COMPILER=`"$CAMINHO_DO_CLANG`" " +
