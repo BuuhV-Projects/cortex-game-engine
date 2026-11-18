@@ -45,7 +45,9 @@ limpo. Limpar faria `saves/a.ini` e `savesa.ini` virarem o mesmo arquivo. Nome v
 - `save()`: com a nuvem disponível, grava por `SteamCloud.write(file, text)`. Se falhar, apaga a cópia da nuvem
   (`SteamCloud.remove(file)`), loga (`debug('config', …)`) e cai no caminho de antes (`__cortexWriteBaseFile`, ou
   `localStorage` em dev). Sem apagar, o próximo `load()` acharia a cópia velha na nuvem e ignoraria o arquivo local mais
-  novo.
+  novo. **Limite conhecido:** se a nuvem recusar também o `remove` (o retorno vai no log como `staleRemoved: false`), a
+  cópia velha fica e o próximo `load()` ainda a prefere ao arquivo local. É raro: nuvem desligada ou com a cota cheia
+  costuma recusar a gravação mas aceitar o delete, e uma nuvem que recusa tudo também não tem o que ler.
 - Sem a nuvem, o comportamento é o da SPEC-0124, sem mudança.
 
 ### Fluxo pela Steam
