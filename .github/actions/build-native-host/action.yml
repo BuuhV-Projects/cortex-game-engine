@@ -3,7 +3,7 @@ description: >-
   Compila o host nativo (cortex_host.exe + rapier_native.dll) e instala o
   toolchain de export auto-contido, pra o Studio empacotado exportar nativo
   sem dev (TDR-0003). Windows-only — quem chama gateia com
-  `if: matrix.os == 'windows-latest'`.
+  `if: matrix.os == 'windows-2025'` (runner pinado, TDR-0015).
   Com `steamworks-sdk-key` compila TAMBÉM o host Steam (ADR-0176).
 
 inputs:
@@ -29,6 +29,11 @@ runs:
 
     - name: Setup MSVC (vcvars)
       uses: ilammy/msvc-dev-cmd@v1
+      with:
+        # Toolset pinado: a STL do MSVC 14.52 (VS18) exige Clang 22+, mas a
+        # toolchain usa clang 20. O 14.44 (VS 17.14, presente no windows-2025)
+        # aceita o clang 20 (TDR-0015). Nao deixe o vcvars eleger o default.
+        toolset: '14.44'
 
     # Deps prebuilt PINADAS do host (SDL3, wgpu-native, stb, miniaudio, fonte)
     # + clone pinado do facebook/hermes com os patches locais (ADR-0122).
@@ -63,15 +68,19 @@ runs:
       uses: actions/cache@v4
       with:
         path: native/build
-        key: native-build-${{ runner.os }}-clang-${{ hashFiles('native/CMakeLists.txt', 'native/scripts/fetch-deps.ps1', 'native/patches/hermes-upstream.patch') }}
+        # msvc<VCToolsVersion> na key: os .obj/.lib carregam símbolos da STL do
+        # toolset que os compilou (ex. __std_find_last_not_ch_pos_1). Restaurar um
+        # cache de OUTRO toolset dá `lld-link: undefined symbol` no fim do build
+        # (TDR-0015). O vcvars roda antes deste step e exporta VCToolsVersion.
+        key: native-build-${{ runner.os }}-msvc${{ env.VCToolsVersion }}-clang-${{ hashFiles('native/CMakeLists.txt', 'native/scripts/fetch-deps.ps1', 'native/patches/hermes-upstream.patch') }}
         restore-keys: |
-          native-build-${{ runner.os }}-clang-
+          native-build-${{ runner.os }}-msvc${{ env.VCToolsVersion }}-clang-
 
     # 2) host C++ (Ninja) → native/build com cortex_host.exe + dlls + fontes.
     # Compilador OFICIAL do host PC é o clang-cl (ADR-0122: interpretador do
     # Hermes ~20% mais rápido que com MSVC — é o host que o instalador embarca
-    # nos exports dos usuários). Os runners windows-latest têm LLVM
-    # pré-instalado; se um dia sumir, cai pro cl.exe (fallback suportado,
+    # nos exports dos usuários). O runner windows-2025 (pinado, TDR-0015) traz
+    # LLVM pré-instalado; se um dia sumir, cai pro cl.exe (fallback suportado,
     # mesmo caminho da toolchain GDKX/console — só mais lento).
     - name: Build host (CMake + Ninja, clang-cl)
       shell: pwsh
@@ -129,9 +138,11 @@ runs:
         path: native/build-steam
         # sdk-version.txt entra na key: trocar de SDK muda o que é linkado, e um
         # cache do SDK anterior produziria um host inconsistente com os headers.
-        key: native-build-steam-${{ runner.os }}-clang-${{ hashFiles('native/CMakeLists.txt', 'native/scripts/fetch-deps.ps1', 'native/patches/hermes-upstream.patch', 'native/steam/sdk-version.txt') }}
+        # msvc<VCToolsVersion> na key: ver a nota do cache do host acima — cache de
+        # outro toolset dá `lld-link: undefined symbol` (TDR-0015).
+        key: native-build-steam-${{ runner.os }}-msvc${{ env.VCToolsVersion }}-clang-${{ hashFiles('native/CMakeLists.txt', 'native/scripts/fetch-deps.ps1', 'native/patches/hermes-upstream.patch', 'native/steam/sdk-version.txt') }}
         restore-keys: |
-          native-build-steam-${{ runner.os }}-clang-
+          native-build-steam-${{ runner.os }}-msvc${{ env.VCToolsVersion }}-clang-
 
     # Mesmo host, com CORTEX_STEAM=ON — vira native/build-steam e o
     # electron-builder o embarca ao lado do desktop, pro Studio instalado

@@ -190,7 +190,9 @@ jobs:
     name: Host nativo (Windows) + cortex_host_tests
     needs: changes
     if: needs.changes.outputs.native == 'true'
-    runs-on: windows-latest
+    # Pinado: windows-latest migrou pra VS18/MSVC 14.52, cuja STL exige Clang 22+,
+    # mas o runner traz clang 20 (TDR-0015). windows-2025 e consistente (14.44+clang20).
+    runs-on: windows-2025
     steps:
       - name: Checkout
         uses: actions/checkout@v4
