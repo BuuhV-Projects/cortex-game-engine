@@ -29,6 +29,11 @@ runs:
 
     - name: Setup MSVC (vcvars)
       uses: ilammy/msvc-dev-cmd@v1
+      with:
+        # Toolset pinado: a STL do MSVC 14.52 (VS18) exige Clang 22+, mas a
+        # toolchain usa clang 20. O 14.44 (VS 17.14, presente no windows-2025)
+        # aceita o clang 20 (TDR-0015). Nao deixe o vcvars eleger o default.
+        toolset: '14.44'
 
     # Deps prebuilt PINADAS do host (SDL3, wgpu-native, stb, miniaudio, fonte)
     # + clone pinado do facebook/hermes com os patches locais (ADR-0122).

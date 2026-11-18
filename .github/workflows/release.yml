@@ -119,7 +119,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, macos-latest, ubuntu-latest]
+        # windows-2025 (nao -latest): a toolchain do host nativo precisa de MSVC+clang
+        # compativeis; -latest migrou pra VS18/MSVC 14.52 vs clang 20 (TDR-0015).
+        os: [windows-2025, macos-latest, ubuntu-latest]
 
     runs-on: ${{ matrix.os }}
 
@@ -149,7 +151,7 @@ jobs:
       # Host CortexNative + toolchain de export (só Windows): embarca o host
       # compilado no instalador pra exportar nativo sem dev (TDR-0003).
       - name: Build native host (Windows)
-        if: matrix.os == 'windows-latest'
+        if: matrix.os == 'windows-2025'
         uses: ./.github/actions/build-native-host
         with:
           # Sem a secret (fork/PR de terceiro) o host Steam é pulado e o
