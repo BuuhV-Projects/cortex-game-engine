@@ -31,6 +31,7 @@ add_executable(cortex_host
   src/core/game_config.cpp
   src/core/gdk.cpp
   src/core/steam.cpp
+  src/core/steam_cloud.cpp
   src/core/steam_stats.cpp
   src/core/steam_user.cpp
   src/core/js_runtime.cpp
@@ -341,6 +342,7 @@ add_executable(cortex_host_tests
   tests/ktx2_math_test.cpp
   tests/crash_handler_test.cpp
   tests/game_config_test.cpp
+  tests/steam_cloud_test.cpp
   tests/scene_mirror_test.cpp
   tests/scene_mirror_dirty_test.cpp
   tests/shadow_caster_enumerator_test.cpp
@@ -387,6 +389,7 @@ add_executable(cortex_host_tests
   src/core/gc_stats.cpp
   src/webgpu/napi_frame_stats.cpp
   src/core/game_config.cpp
+  src/core/steam_cloud.cpp
   src/scene/scene_mirror.cpp
   src/scene/shadow_caster_enumerator.cpp
   src/scene/main_pass_culler.cpp

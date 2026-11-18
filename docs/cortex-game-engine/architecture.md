@@ -1053,7 +1053,12 @@ dado, como o diálogo do §8b):
   arquivo mora em `dist-native/config.ini` (ao lado do exe, editável pelo
   usuário); `save()` grava via shim `__cortexWriteBaseFile`. Em dev não há
   arquivo gravável — `save()` vira overlay no `localStorage`
-  (`cortex:config.ini`) que o `load()` aplica por cima. ⚠️ O host nativo ainda
+  (`cortex:config.ini`) que o `load()` aplica por cima. **Pela Steam** (SPEC-0743,
+  ADR-0744) o arquivo vai ao Steam Cloud pela fachada `SteamCloud`
+  (`src/core/steamCloud.ts` → `__cortexSteamCloud*`) e não é criado na pasta do
+  jogo: ausente na nuvem, o arquivo de antes é a semente; nuvem recusando a
+  gravação (Cloud desligado no painel, cota), cai no arquivo. Config por máquina
+  (vídeo) não deve entrar no `GameConfig` sincronizado. ⚠️ O host nativo ainda
   **não lê** `[video]` na criação da janela (env/desktop mandam) — passo futuro.
 - **Export** (`export-game.mjs`): `languages/*.txt` e `config.ini` vão **soltos**
   pro `dist-native/` (fora do `assets.pak`) de propósito — tradução/ajuste sem

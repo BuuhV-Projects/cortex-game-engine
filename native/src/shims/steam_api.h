@@ -13,7 +13,7 @@ namespace shims {
 
 // Registra no global: __cortexSteamAvailable/AppId, Set/Clear/GetAchievement,
 // Set/GetIntStat, Set/GetFloatStat, StoreStats, PlayerName/PlayerId, Language,
-// OverlayActive/OpenOverlay.
+// OverlayActive/OpenOverlay e CloudAvailable/Read/Write/Delete (SPEC-0743).
 void registerSteamApi(napi_env env);
 
 }  // namespace shims
