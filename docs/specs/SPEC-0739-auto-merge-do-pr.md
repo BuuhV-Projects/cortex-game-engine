@@ -49,7 +49,7 @@ Falha fechada: qualquer erro de consulta lança e nada é mergeado.
 
 A aprovação (passo 2) sai com o `GITHUB_TOKEN`, como a do `claude-review.yml`: exige "Allow GitHub Actions to create
 and approve pull requests" ligado em Settings → Actions → General (`can_approve_pull_request_reviews: true` em
-`repos/<repo>/actions/permissions/workflow`). Ligado em 2026-11-18. Desligado, o passo de aprovar lança e o PR não é
+`repos/<repo>/actions/permissions/workflow`). Conferido ligado em 2026-11-18. Desligado, o passo de aprovar lança e o PR não é
 mergeado (falha fechada).
 
 ## Consequências
