@@ -23,7 +23,7 @@ Alternativas consideradas:
 
 `.github/dependabot.yml`, com a política descrita em `.github/DEPENDABOT.md`:
 
-- **npm/yarn**: a raiz, `web/` e `native/export-toolchain/` toda semana. `templates/new-project/`
+- **npm/yarn**: a raiz e `native/export-toolchain/` toda semana (o `web/` saiu com o site, ADR-0742). `templates/new-project/`
   (o que vira jogo novo) todo mês. `versioning-strategy: increase` mantém as versões cravadas.
 - **Cargo**: `native/rapier-native` e o `src-tauri` do template, todo mês. Subir o `rapier3d` exige
   reaplicar o patch de `native/rapier-native/patched/` (ADR-0336).
