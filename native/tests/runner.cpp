@@ -33,6 +33,8 @@ void testDx12CompilerFallsBackToFxc();
 void testDxcLoadsRejectsInvalidDll();
 void testDescribeCurrentException();
 void testGameConfig();
+void testSteamCloudSafeName();
+void testSteamCloudWithoutSteam();
 void testResolveRenderScale();
 void testSceneMirrorPropagaTransformDoPai();
 void testSceneMirrorRecusaArvoreForaDeOrdem();
@@ -161,6 +163,8 @@ int main() {
   tests::testDxcLoadsRejectsInvalidDll();
   tests::testDescribeCurrentException();
   tests::testGameConfig();
+  tests::testSteamCloudSafeName();
+  tests::testSteamCloudWithoutSteam();
   tests::testResolveRenderScale();
   tests::testSceneMirrorPropagaTransformDoPai();
   tests::testSceneMirrorRecusaArvoreForaDeOrdem();

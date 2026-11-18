@@ -426,6 +426,7 @@
 - [SHADOW\_AUTHORED\_KEY](variables/SHADOW_AUTHORED_KEY.md)
 - [SHAPES](variables/SHAPES.md)
 - [Steam](variables/Steam.md)
+- [SteamCloud](variables/SteamCloud.md)
 - [TERRAIN\_MAX\_LAYERS](variables/TERRAIN_MAX_LAYERS.md)
 - [UI\_FONT\_FAMILY](variables/UI_FONT_FAMILY.md)
 - [UI\_REFERENCE\_HEIGHT](variables/UI_REFERENCE_HEIGHT.md)

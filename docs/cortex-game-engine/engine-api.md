@@ -38,6 +38,7 @@ lado).
 | `nextFrame`, `FrameBudget`, `Game.setLoading` | **Boot cooperativo** (ADR-0218/SPEC-0219): no host o `fetch` é síncrono, então uma carga com `await` trava a tela até o fim. `game.setLoading(true)` … `setLoading(false)` (num `finally`) declara a carga — o `Game` desenha cena vazia, a tela de carregamento do jogo aparece e o engine cede o frame sozinho (`buildScene` e `AssetLoader`). Nos seus próprios laços longos: `const b = new FrameBudget(); … await b.maybeYield()`. |
 | `buildScene({ onProgress })` | Progresso da montagem (`{done,total,fraction,phase}`) pra alimentar a tela de carregamento. Devolva a promessa do próximo frame (o `progress` do `runWithLoadingScreen` devolve) pra barra andar no export. |
 | `bootMark`, `bootAcc`, `bootSync`, `bootDump` | **Profiler de boot** (SPEC-0217): mede onde vão os segundos até o primeiro frame. `bootMark('cena montada')` carimba um instante; `bootAcc('loadGLB', () => loader.loadGLTF(url))` acumula por chave; `bootDump('fim')` lista do mais caro pro mais barato. **Silencioso por padrão** — ligue com o escopo `boot` do `debug()` (no host nativo: `CORTEX_LAUNCH_QUERY="?cortexDebug=boot"`). |
+| `SteamCloud` | **Steam Cloud** pelo Remote Storage (SPEC-0743): `.isAvailable()`, `.read(nome)`, `.write(nome, texto)`, `.remove(nome)`. O `GameConfig` já usa sozinho pela Steam; nome plano (sem `/`, `\`, `:`, `..`). **No-op** fora da Steam. |
 | `loadAchievements`, `createAchievements` | **Conquistas multiplataforma** (SPEC-0713): `(await loadAchievements()).unlock(id)` quando o jogador ganha. Steam no export `--steam`, nula (só `debug`) no resto; **a engine garante o envio único** (não precisa de `storeStats` nem de checar antes). |
 | `gamePlatform`, `canRebindInput` | Alvo do export (`pc`/`steam`/`xbox`) lido do `cortex.json`, e se a tela de Controles deve existir. |
 
@@ -520,7 +521,8 @@ await config.save()   // nativo: grava dist-native/config.ini; dev: localStorage
   exportados pra usos avançados.
 - **`GameConfig`**: chaves achatadas `secao.chave` — `get`, `getBool`
   (`true/1/on/yes`), `getNumber`, `has`, `set`, `delete`, `save`. Arquivo ausente
-  = config vazia (getters respondem os fallbacks do jogo).
+  = config vazia (getters respondem os fallbacks do jogo). Pela Steam o arquivo
+  vai ao Steam Cloud e não à pasta do jogo (SPEC-0743).
 - ⚠️ Troca de idioma NÃO re-renderiza a UI sozinha — widgets guardam `text` como
   propriedade; re-aplique no `onChange`.
 

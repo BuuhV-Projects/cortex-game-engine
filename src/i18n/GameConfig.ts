@@ -1,4 +1,5 @@
 import { debug } from '../core/debug.js';
+import { SteamCloud } from '../core/steamCloud.js';
 
 /**
  * **Configurações do jogo em `config.ini`** — arquivo texto na raiz do jogo
@@ -25,6 +26,10 @@ import { debug } from '../core/debug.js';
  * - Browser/Studio (dev): não há arquivo gravável — o texto INI vai pro
  *   `localStorage` (`cortex:config.ini`) e o `load()` aplica esse overlay por
  *   cima do arquivo. Mesmo código de jogo nos dois ambientes.
+ * - Pela Steam (SPEC-0743, ADR-0744): o arquivo vai ao Steam Cloud
+ *   ({@link SteamCloud}) e não é criado na pasta do jogo. Ausente na nuvem, o
+ *   `load()` usa o arquivo de antes como semente; falhando a gravação na nuvem,
+ *   o `save()` cai no arquivo de antes.
  *
  * @example
  * ```ts
@@ -111,6 +116,12 @@ export class GameConfig {
    * uma config vazia (os `get*` respondem com os fallbacks do jogo).
    */
   static async load(file = 'config.ini'): Promise<GameConfig> {
+    // Pela Steam a nuvem é a fonte: achou lá, o arquivo local não entra.
+    if (SteamCloud.isAvailable()) {
+      const cloud = SteamCloud.read(file);
+      if (cloud !== null) return new GameConfig(file, parseIni(cloud));
+      debug('config', 'sem', file, 'no Steam Cloud — semente do arquivo local');
+    }
     let values: IniValues = {};
     try {
       const res = await fetch(file);
@@ -177,6 +188,14 @@ export class GameConfig {
    */
   async save(): Promise<boolean> {
     const text = serializeIni(this.values);
+    if (SteamCloud.isAvailable()) {
+      if (SteamCloud.write(this.file, text)) return true;
+      // Nuvem desligada no painel do app ou cota cheia: perder o save é pior.
+      // Tira a cópia velha da nuvem, senão o próximo load() a preferiria ao
+      // arquivo local mais novo (lá a nuvem é a fonte quando tem o arquivo).
+      const staleRemoved = SteamCloud.remove(this.file);
+      debug('config', 'Steam Cloud recusou', this.file, '— gravando no arquivo local', { staleRemoved });
+    }
     const writer = nativeWriter();
     if (writer) {
       const ok = writer(this.file, text);
