@@ -35,6 +35,23 @@ clang 20 + MSVC 14.44 não depender de qual toolset a imagem elege por padrão.
 Afeta os três pontos que invocam `build-native-host`: `pr.yml`, `build-ide.yml`
 e `release.yml` (matrizes incluídas, com os respectivos `if: matrix.os`).
 
+**Observação (o `windows-2025` também já tem VS 18):** na prática a label
+`windows-2025` passou a trazer o VS 18, mas com o **toolset 14.44 instalado ao
+lado** do 14.52 — então pinar o toolset `14.44` é o que de fato resolve, e o pin
+da imagem garante que o 14.44 exista. Com isso o STL1000 some.
+
+**Segunda causa — cache de build entre toolsets:** com o 14.44 em uso, o build
+passou a quebrar no link com `lld-link: undefined symbol: __std_rotate /
+__std_find_last_not_ch_pos_1 / __std_unique_4`. Esses símbolos são rotinas da STL
+que o MSVC **compila para dentro** do `.obj`/`.lib` conforme a versão do toolset;
+um `.obj` gerado por um toolset e linkado com a import-lib de outro fica com
+símbolo pendente. O cache do Ninja (`native/build`) tinha objetos de um toolset
+diferente — e a `key` não discriminava a versão do MSVC, com `restore-keys` por
+prefixo restaurando qualquer um. A `key` dos dois caches (`native-build` e
+`native-build-steam`) passa a incluir `msvc<VCToolsVersion>`, que o `vcvars`
+exporta antes do passo de cache — cache por-toolset, incompatível invalida
+sozinho.
+
 Alternativas descartadas:
 
 - **Subir o clang do runner para 22+**: alinharia ao MSVC novo, mas o clang 22 é

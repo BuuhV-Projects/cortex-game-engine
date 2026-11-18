@@ -68,9 +68,13 @@ runs:
       uses: actions/cache@v4
       with:
         path: native/build
-        key: native-build-${{ runner.os }}-clang-${{ hashFiles('native/CMakeLists.txt', 'native/scripts/fetch-deps.ps1', 'native/patches/hermes-upstream.patch') }}
+        # msvc<VCToolsVersion> na key: os .obj/.lib carregam símbolos da STL do
+        # toolset que os compilou (ex. __std_find_last_not_ch_pos_1). Restaurar um
+        # cache de OUTRO toolset dá `lld-link: undefined symbol` no fim do build
+        # (TDR-0015). O vcvars roda antes deste step e exporta VCToolsVersion.
+        key: native-build-${{ runner.os }}-msvc${{ env.VCToolsVersion }}-clang-${{ hashFiles('native/CMakeLists.txt', 'native/scripts/fetch-deps.ps1', 'native/patches/hermes-upstream.patch') }}
         restore-keys: |
-          native-build-${{ runner.os }}-clang-
+          native-build-${{ runner.os }}-msvc${{ env.VCToolsVersion }}-clang-
 
     # 2) host C++ (Ninja) → native/build com cortex_host.exe + dlls + fontes.
     # Compilador OFICIAL do host PC é o clang-cl (ADR-0122: interpretador do
@@ -134,9 +138,11 @@ runs:
         path: native/build-steam
         # sdk-version.txt entra na key: trocar de SDK muda o que é linkado, e um
         # cache do SDK anterior produziria um host inconsistente com os headers.
-        key: native-build-steam-${{ runner.os }}-clang-${{ hashFiles('native/CMakeLists.txt', 'native/scripts/fetch-deps.ps1', 'native/patches/hermes-upstream.patch', 'native/steam/sdk-version.txt') }}
+        # msvc<VCToolsVersion> na key: ver a nota do cache do host acima — cache de
+        # outro toolset dá `lld-link: undefined symbol` (TDR-0015).
+        key: native-build-steam-${{ runner.os }}-msvc${{ env.VCToolsVersion }}-clang-${{ hashFiles('native/CMakeLists.txt', 'native/scripts/fetch-deps.ps1', 'native/patches/hermes-upstream.patch', 'native/steam/sdk-version.txt') }}
         restore-keys: |
-          native-build-steam-${{ runner.os }}-clang-
+          native-build-steam-${{ runner.os }}-msvc${{ env.VCToolsVersion }}-clang-
 
     # Mesmo host, com CORTEX_STEAM=ON — vira native/build-steam e o
     # electron-builder o embarca ao lado do desktop, pro Studio instalado
