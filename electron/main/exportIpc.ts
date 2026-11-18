@@ -6,6 +6,7 @@ import { join } from 'path'
 import { existsSync } from 'fs'
 import { spawn } from 'child_process'
 import { resourceBase, validatePath } from './shared.js'
+import { crashAfterDoneNotice, exportOutcome } from './exportOutcome.js'
 
 export function registerExportIpc(): void {
   /**
@@ -71,11 +72,14 @@ export function registerExportIpc(): void {
       // default. Sem isto o "abrir pasta" do modal ia sempre pro dist-native,
       // mesmo com outra pasta escolhida (bug relatado).
       const distDir = typeof outDir === 'string' && outDir ? validatePath(outDir) : join(safeDir, 'dist-native')
+      // Crash no encerramento do Node depois do export pronto não é falha (SPEC-0741).
       child.on('close', (code) => {
+        const outcome = exportOutcome(code, output)
+        if (outcome.crashedAfterDone) output += crashAfterDoneNotice(code)
         resolvePromise({
-          ok: code === 0,
+          ok: outcome.ok,
           output,
-          distDir: code === 0 ? distDir : undefined,
+          distDir: outcome.ok ? distDir : undefined,
         })
       })
       child.on('error', (err) => resolvePromise({ ok: false, output: String(err) }))

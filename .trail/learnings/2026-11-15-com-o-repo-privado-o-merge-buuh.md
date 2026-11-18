@@ -11,8 +11,6 @@ src: agent
 touches:
   - ".github/workflows/release.yml"
   - README.md
-  - web/docs-content/en/02-installation.md
-  - web/docs-content/pt/02-instalacao.md
   - ".github/scripts/auto-merge.d.mts"
   - ".github/scripts/auto-merge.mjs"
   - ".github/workflows/auto-merge.yml"

@@ -6,7 +6,7 @@
 
 # Class: VehicleLean
 
-Defined in: src/physics/VehicleLean.ts:45
+Defined in: [src/physics/VehicleLean.ts:45](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/VehicleLean.ts#L45)
 
 Inclina um nó visual conforme a curva do veículo.
 
@@ -25,7 +25,7 @@ arcadeComponent.lean = new VehicleLean(motoMesh.getObjectByName('Body')!, { maxL
 
 > **new VehicleLean**(`object`, `options?`): `VehicleLean`
 
-Defined in: src/physics/VehicleLean.ts:53
+Defined in: [src/physics/VehicleLean.ts:53](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/VehicleLean.ts#L53)
 
 #### Parameters
 
@@ -49,7 +49,7 @@ Nó FILHO da malha do chassi (a raiz recebe a pose do corpo e perderia a rotaç�
 
 > **angle**: `number` = `0`
 
-Defined in: src/physics/VehicleLean.ts:47
+Defined in: [src/physics/VehicleLean.ts:47](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/VehicleLean.ts#L47)
 
 Inclinação atual (rad, em torno do +Z local; positivo tomba para a direita do piloto).
 
@@ -59,7 +59,7 @@ Inclinação atual (rad, em torno do +Z local; positivo tomba para a direita do 
 
 > `readonly` **object**: `Object3D`
 
-Defined in: src/physics/VehicleLean.ts:55
+Defined in: [src/physics/VehicleLean.ts:55](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/VehicleLean.ts#L55)
 
 Nó FILHO da malha do chassi (a raiz recebe a pose do corpo e perderia a rotação).
 
@@ -69,7 +69,7 @@ Nó FILHO da malha do chassi (a raiz recebe a pose do corpo e perderia a rotaç�
 
 > **update**(`vehicle`, `dt`): `void`
 
-Defined in: src/physics/VehicleLean.ts:65
+Defined in: [src/physics/VehicleLean.ts:65](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/VehicleLean.ts#L65)
 
 Aproxima a inclinação do alvo deste quadro e grava no nó. `dt` em segundos.
 

@@ -121,7 +121,7 @@ node native/scripts/export-game.mjs <pasta-do-projeto>
 | [electron/](electron/) | Studio (IDE): main process, preload, renderer, agente IA. |
 | [kits/](kits/) | Kits de assets curados (ADR-0053), empacotados no Studio. |
 | [templates/](templates/) | Esqueleto copiado em cada projeto novo. |
-| [web/](web/) | Website institucional (workspace independente). |
+| — | Website institucional: repo próprio, [tscortexstudio-website](https://github.com/BuuhV-Projects/tscortexstudio-website) (ADR-0742). |
 | [docs/](docs/) | `adrs/` + `tdrs/` (decisões), `specs/`, `cortex-game-engine/` (arquitetura + API), `cortex-native/`, `prds/`. |
 | [.claude/](.claude/) | Skills e subagentes do Claude Code para trabalhar no engine (ADR-0180). |
 | [mcp/](mcp/) | Servidor MCP `cortex` e o `cortex-setup` do instalador (SPEC-0737/0738). |

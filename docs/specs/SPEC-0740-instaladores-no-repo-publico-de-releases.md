@@ -28,6 +28,8 @@ TDR-0015: o repo do engine fica privado e os instaladores continuam públicos nu
   commit some (com o hash) e os de comparação, issue e PR viram só o texto. Teste em
   `tests/scripts/publicNotes.test.ts`.
 - Links de download: `https://github.com/BuuhV-Projects/cortex-studio-releases/releases/latest`.
+  No engine, o README aponta para lá. O site saiu do engine para o repo `tscortexstudio-website`: o link de
+  download da página de instalação é trocado lá.
 
 ## Pré-requisitos (manuais, do dono)
 

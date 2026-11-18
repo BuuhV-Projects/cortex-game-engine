@@ -1,6 +1,6 @@
 {
   "name": "cortex-game-engine",
-  "version": "0.128.0",
+  "version": "1.0.1",
   "type": "module",
   "main": "out/main/index.js",
   "description": "Motor de jogo 3D com ECS, Three.js e integração com Claude AI",
@@ -27,9 +27,7 @@
     "electron:build": "yarn build:engine && yarn docs:engine && electron-vite build && yarn build:mcp && node native/scripts/ensure-host-dirs.mjs && electron-builder",
     "electron:install": "node --use-system-ca node_modules/electron/install.js",
     "postinstall": "node --use-system-ca node_modules/electron/install.js",
-    "build:web": "cd web && yarn install && yarn build && cd ..",
     "reinstall": "rm -rf node_modules yarn.lock && yarn install",
-    "dev:web": "cd web && yarn install && yarn dev && cd ..",
     "asset:refine": "node native/scripts/refine-asset.mjs"
   },
   "dependencies": {

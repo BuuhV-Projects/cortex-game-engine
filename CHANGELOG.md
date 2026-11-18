@@ -1,3 +1,36 @@
+## [1.0.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v1.0.0...v1.0.1) (2026-11-15)
+
+
+### Bug Fixes
+
+* **export:** crash do Node no encerramento depois do export pronto não reprova o export (SPEC-0741) ([e0e1c53](https://github.com/BuuhV-Projects/cortex-game-engine/commit/e0e1c537a63f9fe466610e3fbb85699af3d4c487))
+
+# [1.0.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.128.0...v1.0.0) (2026-11-15)
+
+
+* refactor(studio)!: remove o Chat IA, o CLI cortex-ai e os SDKs da Anthropic (ADR-0736) ([b780d35](https://github.com/BuuhV-Projects/cortex-game-engine/commit/b780d3589a8c3768de6a92225bf57aa48aa33c8f))
+
+
+### Bug Fixes
+
+* **instalador:** versiona o build/installer.nsh, ignorado pela regra build/ ([92f127d](https://github.com/BuuhV-Projects/cortex-game-engine/commit/92f127db0afb1245582a04ead0a98df727fe5d27))
+* **mcp:** falha do claude mcp add mostra o stderr no relatório (SPEC-0738) ([0551dd5](https://github.com/BuuhV-Projects/cortex-game-engine/commit/0551dd5cafd3e6d820ecaecd394660067989c5be))
+* **mcp:** import_kit recusa only sem casamento e testes de caminho rodam no Linux (SPEC-0737) ([199432d](https://github.com/BuuhV-Projects/cortex-game-engine/commit/199432da9f9ac6678027e11b04cb8612f106d59c))
+* **mcp:** isInside compara caminhos reais, link para fora do projeto conta como fora (SPEC-0737) ([dc62cfc](https://github.com/BuuhV-Projects/cortex-game-engine/commit/dc62cfc2f93aea04aa0e4c5e7659ad932122a58a))
+* **mcp:** validate_scene lê cena e overlay absolutos dentro do projeto com resolve (SPEC-0737) ([be10aa9](https://github.com/BuuhV-Projects/cortex-game-engine/commit/be10aa94f3c22217e7a85b5563ad34c8de4e9596))
+* **mcp:** validate_scene recusa overlay ausente ou ilegível em vez de validar sem ele (SPEC-0737) ([356712d](https://github.com/BuuhV-Projects/cortex-game-engine/commit/356712d9a4353422a5f80bd2b84a8ca91f86cc53))
+
+
+### Features
+
+* **instalador:** checa requisitos e registra o MCP cortex no Claude Code (SPEC-0738) ([47f3ecb](https://github.com/BuuhV-Projects/cortex-game-engine/commit/47f3ecb37e0a44ab5e92c34d2b374097b6e5c0c3))
+* **mcp:** servidor MCP cortex com kits, assets, validacao de cena e API do engine (SPEC-0737) ([420d349](https://github.com/BuuhV-Projects/cortex-game-engine/commit/420d34946753070151f72592aec30f8ce2768d7a))
+
+
+### BREAKING CHANGES
+
+* o Studio nao tem mais painel de IA; use o Claude Code com o MCP cortex.
+
 # [0.128.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.127.0...v0.128.0) (2026-11-14)
 
 
