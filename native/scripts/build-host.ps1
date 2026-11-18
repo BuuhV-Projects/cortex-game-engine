@@ -112,6 +112,21 @@ $alvos = if ($Alvo -eq 'cortex_host') { 'cortex_host host_runtime_files' } else 
 Write-Output "[build-host] worktree: $Worktree"
 Write-Output "[build-host] alvo: $Alvo ($BuildType)"
 
+# -Limpar apaga TODOS os diretorios do alvo ANTES do laco -- inclusive um
+# build-steam que ficou fora de $saidas por falta do SDK. Se so limpasse os que
+# vai compilar, um host/.obj velho sobreviveria ao --Limpar (a spec promete os
+# dois) e o export de Steam usaria esse host stale.
+if ($Limpar) {
+  $limpar = @(Join-Path $fontes 'build')
+  if ($Alvo -eq 'cortex_host') { $limpar += Join-Path $fontes 'build-steam' }
+  foreach ($dir in $limpar) {
+    if (Test-Path $dir) {
+      Write-Output "[build-host] limpando $dir"
+      Remove-Item $dir -Recurse -Force
+    }
+  }
+}
+
 foreach ($saida in $saidas) {
   $build = $saida.Dir
 
@@ -119,10 +134,6 @@ foreach ($saida in $saidas) {
   $itemDoBuild = Get-Item $build -ErrorAction SilentlyContinue
   if ($itemDoBuild -and $itemDoBuild.LinkType) {
     throw "$build e um $($itemDoBuild.LinkType) -- o CMake guarda o CMAKE_HOME_DIRECTORY no cache e compilaria os fontes de outra worktree em silencio. Remova o link e deixe o build ser um diretorio de verdade."
-  }
-  if ($Limpar -and (Test-Path $build)) {
-    Write-Output "[build-host] limpando $build"
-    Remove-Item $build -Recurse -Force
   }
 
   $configure = "cmake -G Ninja -S `"$fontes`" -B `"$build`" -DCMAKE_BUILD_TYPE=$BuildType " +
