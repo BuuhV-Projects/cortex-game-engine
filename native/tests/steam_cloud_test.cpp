@@ -9,10 +9,12 @@ namespace tests {
 
 void testSteamCloudSafeName() {
   CHECK(core::steamCloudSafeName("save.ini") == "save.ini");
-  CHECK(core::steamCloudSafeName("../save.ini") == ".save.ini");
-  CHECK(core::steamCloudSafeName("C:\dados/config.ini") == "Cdadosconfig.ini");
-  CHECK(core::steamCloudSafeName("a..b") == "a.b");
-  CHECK(core::steamCloudSafeName("/\:").empty());
+  // Recusa (vazio) em vez de limpar: "saves/a.ini" não pode virar "savesa.ini".
+  CHECK(core::steamCloudSafeName("saves/a.ini").empty());
+  CHECK(core::steamCloudSafeName("../save.ini").empty());
+  CHECK(core::steamCloudSafeName("C:\\dados\\config.ini").empty());
+  CHECK(core::steamCloudSafeName("a..b").empty());
+  CHECK(core::steamCloudSafeName("").empty());
 }
 
 void testSteamCloudWithoutSteam() {

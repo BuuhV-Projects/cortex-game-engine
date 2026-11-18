@@ -22,8 +22,8 @@ pasta do jogo. A decisão de usar a API de Remote Storage (e não o Auto-Cloud) 
 | `steamCloudWrite(name, data)` | `FileWrite` (síncrono, no cache local da Steam) | `false` |
 | `steamCloudDelete(name)` | `FileDelete` (apaga local e na nuvem) | `false` |
 
-O nome passa pelo mesmo filtro do `__cortexWriteBaseFile`: sem `/`, `\`, `:` nem `..` (só arquivo na raiz do espaço do
-app). Nome vazio depois do filtro é recusado.
+O espaço do app na nuvem é **plano**: nome com `/`, `\`, `:` ou `..` é **recusado** (a função devolve `false`), não
+limpo. Limpar faria `saves/a.ini` e `savesa.ini` virarem o mesmo arquivo. Nome vazio também é recusado.
 
 `native/src/shims/steam_api.cpp` publica:
 
@@ -42,8 +42,10 @@ app). Nome vazio depois do filtro é recusado.
 - `load(file)`: com `SteamCloud.isAvailable()`, lê `SteamCloud.read(file)`. Achou: é a config (o arquivo ao lado do exe
   e o overlay do `localStorage` não entram). Não achou: segue o caminho de antes (`fetch` do arquivo), que vira a
   semente da nuvem.
-- `save()`: com a nuvem disponível, grava por `SteamCloud.write(file, text)`. Se falhar, loga (`debug('config', …)`) e
-  cai no caminho de antes (`__cortexWriteBaseFile`, ou `localStorage` em dev).
+- `save()`: com a nuvem disponível, grava por `SteamCloud.write(file, text)`. Se falhar, apaga a cópia da nuvem
+  (`SteamCloud.remove(file)`), loga (`debug('config', …)`) e cai no caminho de antes (`__cortexWriteBaseFile`, ou
+  `localStorage` em dev). Sem apagar, o próximo `load()` acharia a cópia velha na nuvem e ignoraria o arquivo local mais
+  novo.
 - Sem a nuvem, o comportamento é o da SPEC-0124, sem mudança.
 
 ### Fluxo pela Steam

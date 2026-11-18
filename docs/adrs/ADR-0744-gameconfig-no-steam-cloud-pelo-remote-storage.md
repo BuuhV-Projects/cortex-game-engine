@@ -33,8 +33,9 @@ Nenhuma API do jogo muda: o mesmo `GameConfig.load()`/`save()` serve o PC puro, 
 
 A nuvem é a fonte quando existe. Arquivo ainda ausente nela cai no caminho de antes (o `fetch` do arquivo ao lado do
 exe), o que serve de semente para instalações antigas; o primeiro `save()` já grava na nuvem. Se a gravação na nuvem
-falhar (Steam Cloud desligado no painel do app, cota cheia), o `save()` cai no arquivo ao lado do exe: perder o save é
-pior do que ele aparecer na pasta.
+falhar (Steam Cloud desligado no painel do app, cota cheia), o `save()` apaga a cópia velha da nuvem e cai no arquivo ao
+lado do exe: perder o save é pior do que ele aparecer na pasta, e sem apagar a cópia velha o próximo `load()` a
+preferiria ao arquivo mais novo.
 
 **Configuração por máquina** (resolução, tela cheia, vsync) não deve ir para a nuvem: ela seguiria para outra máquina
 (a resolução do PC no Steam Deck). Quando um jogo tiver opções assim, elas ficam num arquivo próprio fora do

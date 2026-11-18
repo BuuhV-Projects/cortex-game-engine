@@ -191,7 +191,10 @@ export class GameConfig {
     if (SteamCloud.isAvailable()) {
       if (SteamCloud.write(this.file, text)) return true;
       // Nuvem desligada no painel do app ou cota cheia: perder o save é pior.
-      debug('config', 'Steam Cloud recusou', this.file, '— gravando no arquivo local');
+      // Tira a cópia velha da nuvem, senão o próximo load() a preferiria ao
+      // arquivo local mais novo (lá a nuvem é a fonte quando tem o arquivo).
+      const staleRemoved = SteamCloud.remove(this.file);
+      debug('config', 'Steam Cloud recusou', this.file, '— gravando no arquivo local', { staleRemoved });
     }
     const writer = nativeWriter();
     if (writer) {

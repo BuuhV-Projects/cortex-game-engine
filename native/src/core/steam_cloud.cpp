@@ -12,13 +12,12 @@
 namespace core {
 
 std::string steamCloudSafeName(const std::string& name) {
-  std::string out;
-  for (char c : name) {
-    if (c == '/' || c == '\\' || c == ':') continue;  // sem componente de caminho
-    if (c == '.' && !out.empty() && out.back() == '.') continue;  // colapsa ".."
-    out += c;
-  }
-  return out;
+  // O espaço do app na nuvem é plano. Nome com caminho ou ".." é RECUSADO
+  // (vazio), não limpo: limpar faria "saves/a.ini" e "savesa.ini" virarem o
+  // mesmo arquivo e um sobrescrever o outro.
+  if (name.find_first_of("/\\:") != std::string::npos) return "";
+  if (name.find("..") != std::string::npos) return "";
+  return name;
 }
 
 #ifdef CORTEX_STEAM

@@ -29,6 +29,7 @@ function fakeHost(cloud: Record<string, string> = {}, cloudWrites = true) {
     remote.set(name, text);
     return true;
   });
+  vi.stubGlobal('__cortexSteamCloudDelete', (name: string) => remote.delete(name));
   vi.stubGlobal('__cortexWriteBaseFile', (name: string, text: string) => {
     baseFiles.set(name, text);
     return true;
@@ -62,14 +63,17 @@ describe('GameConfig no Steam Cloud', () => {
     expect(baseFiles.size).toBe(0);
   });
 
-  it('nuvem recusa a gravação: cai no arquivo local', async () => {
+  it('nuvem recusa a gravação: cai no arquivo local e o próximo load lê ele, não a cópia velha', async () => {
     mockFetch({});
-    const { remote, baseFiles } = fakeHost({}, false);
+    const { remote, baseFiles } = fakeHost({ 'config.ini': '[game]\nlanguage=en\n' }, false);
     const config = await GameConfig.load();
     config.set('game.language', 'pt-BR');
     expect(await config.save()).toBe(true);
-    expect(remote.size).toBe(0);
+    expect(remote.has('config.ini')).toBe(false);
     expect(baseFiles.get('config.ini')).toBe('[game]\nlanguage=pt-BR\n');
+
+    mockFetch({ 'config.ini': baseFiles.get('config.ini')! });
+    expect((await GameConfig.load()).get('game.language')).toBe('pt-BR');
   });
 
   it('o overlay de dev do localStorage não entra pela Steam', async () => {

@@ -22,8 +22,8 @@ bool steamCloudWrite(const std::string& name, const std::string& data);
 // Apaga o arquivo local e na nuvem.
 bool steamCloudDelete(const std::string& name);
 
-// Nome seguro para o Remote Storage: tira '/', '\\', ':' e colapsa "..". Pode
-// voltar vazio (o chamador recusa). Exposto para o teste nativo.
+// Nome aceito pelo Remote Storage: o próprio nome, ou vazio (recusado) se tem
+// '/', '\\', ':' ou "..". O espaço na nuvem é plano. Exposto para o teste nativo.
 std::string steamCloudSafeName(const std::string& name);
 
 }  // namespace core
