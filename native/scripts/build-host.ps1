@@ -1,5 +1,12 @@
 # build-host.ps1 -- compila o Rapier nativo e o host (SPEC-0247, SPEC-0260).
 #
+# `yarn build:host` compila o host nas DUAS saidas do mesmo codigo: `native/build`
+# (CORTEX_STEAM=OFF, host padrao) e `native/build-steam` (ON, linka o Steamworks
+# SDK). Os dois exports -- comum e Steam -- conferem seu respectivo host (SPEC-0660),
+# entao manter so um em dia deixava o outro desatualizado sem ninguem ver. O
+# build-steam e pulado com aviso quando o SDK nao esta presente (e opt-in). Os
+# alvos de teste geram so o `build`.
+#
 # Uso:
 #   yarn build:host
 #   yarn build:host --Limpar
@@ -34,8 +41,9 @@ param(
   [string]$Alvo = 'cortex_host',
   [ValidateSet('Release', 'Debug', 'RelWithDebInfo')]
   [string]$BuildType = 'Release',
-  # Apaga native/build antes. OBRIGATORIO quando fontes saem do CMakeLists.txt:
-  # o build incremental deixa .obj orfaos e pode religar codigo removido.
+  # Apaga os diretorios de build antes (os dois: build e build-steam). OBRIGATORIO
+  # quando fontes saem do CMakeLists.txt: o build incremental deixa .obj orfaos e
+  # pode religar codigo removido.
   [switch]$Limpar
 )
 
@@ -62,20 +70,8 @@ $vcvars = Join-Path $raizDoVs 'VC\Auxiliary\Build\vcvars64.bat'
 if (-not (Test-Path $vcvars)) { throw "vcvars64.bat nao encontrado em $vcvars" }
 
 $fontes = Join-Path $Worktree 'native'
-$build = Join-Path $fontes 'build'
 if (-not (Test-Path (Join-Path $fontes 'CMakeLists.txt'))) {
   throw "nao achei native/CMakeLists.txt em $Worktree -- o -Worktree aponta para a raiz do repo, nao para native/."
-}
-
-# Cuidado 4: build como junction faria o CMake compilar outra worktree.
-$itemDoBuild = Get-Item $build -ErrorAction SilentlyContinue
-if ($itemDoBuild -and $itemDoBuild.LinkType) {
-  throw "native/build e um $($itemDoBuild.LinkType) -- o CMake guarda o CMAKE_HOME_DIRECTORY no cache e compilaria os fontes de outra worktree em silencio. Remova o link e deixe o build ser um diretorio de verdade."
-}
-
-if ($Limpar -and (Test-Path $build)) {
-  Write-Output "[build-host] limpando $build"
-  Remove-Item $build -Recurse -Force
 }
 
 # Rapier nativo ANTES do CMake (SPEC-0260). O host linka a DLL de
@@ -92,17 +88,72 @@ Write-Output "[build-host] rapier-native: cargo build --release"
 & cargo build --release --manifest-path (Join-Path $crate 'Cargo.toml')
 if ($LASTEXITCODE -ne 0) { throw "cargo build do rapier-native falhou (exit $LASTEXITCODE)" }
 
-$configure = "cmake -G Ninja -S `"$fontes`" -B `"$build`" -DCMAKE_BUILD_TYPE=$BuildType " +
-             "-DCMAKE_C_COMPILER=`"$CAMINHO_DO_CLANG`" -DCMAKE_CXX_COMPILER=`"$CAMINHO_DO_CLANG`""
+# Duas saidas do mesmo codigo-fonte (SPEC-0247): `build` (CORTEX_STEAM=OFF, host
+# padrao) e `build-steam` (ON, linka o Steamworks SDK). O export de Steam confere
+# o `build-steam` (SPEC-0660), o export comum confere o `build` -- compilar os
+# dois aqui evita o host desatualizado de um deles passar despercebido.
+# So `cortex_host` gera os dois: os alvos de teste nao linkam Steam, entao um so.
+$saidas = @( @{ Dir = Join-Path $fontes 'build'; Steam = 'OFF' } )
+if ($Alvo -eq 'cortex_host') {
+  # O SDK e OPT-IN e pre-requisito (nao vem no fetch-deps). Sem ele, CORTEX_STEAM=ON
+  # da FATAL_ERROR no configure (CMakeLists.txt) -- pular com aviso e melhor que
+  # derrubar o build normal de quem nao tem Steam.
+  $sdkSteam = if ($env:STEAMWORKS_SDK) { $env:STEAMWORKS_SDK } else { Join-Path $fontes 'third_party/steamworks' }
+  if (Test-Path (Join-Path $sdkSteam 'public/steam/steam_api.h')) {
+    $saidas += @{ Dir = Join-Path $fontes 'build-steam'; Steam = 'ON' }
+  } else {
+    Write-Warning "[build-host] Steamworks SDK nao encontrado em '$sdkSteam' -- pulando build-steam. O export de Steam precisa dele; baixe em partner.steamgames.com e extraia p/ native/third_party/steamworks (ou defina STEAMWORKS_SDK)."
+  }
+}
+
 # host_runtime_files copia as DLLs e grava o selo que o export confere (SPEC-0660).
 $alvos = if ($Alvo -eq 'cortex_host') { 'cortex_host host_runtime_files' } else { $Alvo }
-$compilar = "cmake --build `"$build`" --target $alvos"
 
 Write-Output "[build-host] worktree: $Worktree"
 Write-Output "[build-host] alvo: $Alvo ($BuildType)"
 
-# Cuidados 1 e 2: vcvars e cmake na MESMA invocacao do cmd.
-& cmd /c "call `"$vcvars`" >nul && $configure && $compilar"
-if ($LASTEXITCODE -ne 0) { throw "build falhou (exit $LASTEXITCODE)" }
+# Diretorios de build do alvo: `build` sempre; `build-steam` tambem no cortex_host
+# (mesmo sem SDK -- entra aqui para o -Limpar alcanca-lo, veja abaixo).
+$dirsDoAlvo = @(Join-Path $fontes 'build')
+if ($Alvo -eq 'cortex_host') { $dirsDoAlvo += Join-Path $fontes 'build-steam' }
+
+# Cuidado 4: nenhum diretorio de build pode ser junction -- checado ANTES de
+# limpar ou compilar qualquer um, pelos DOIS motivos: o CMake guardaria o
+# CMAKE_HOME_DIRECTORY de outra worktree no cache (compilando os fontes dela em
+# silencio) E o `Remove-Item -Recurse` do -Limpar seguiria o link apagando o
+# alvo. Lancar aqui impede as duas coisas antes que aconteçam.
+foreach ($dir in $dirsDoAlvo) {
+  $item = Get-Item $dir -ErrorAction SilentlyContinue
+  if ($item -and $item.LinkType) {
+    throw "$dir e um $($item.LinkType) -- o CMake compilaria os fontes de outra worktree em silencio e o -Limpar seguiria o link apagando o alvo. Remova o link e deixe o build ser um diretorio de verdade."
+  }
+}
+
+# -Limpar apaga TODOS os diretorios do alvo -- inclusive um build-steam que ficou
+# fora de $saidas por falta do SDK. Se so limpasse os que vai compilar, um
+# host/.obj velho sobreviveria ao --Limpar (a spec promete os dois) e o export de
+# Steam usaria esse host stale.
+if ($Limpar) {
+  foreach ($dir in $dirsDoAlvo) {
+    if (Test-Path $dir) {
+      Write-Output "[build-host] limpando $dir"
+      Remove-Item $dir -Recurse -Force
+    }
+  }
+}
+
+foreach ($saida in $saidas) {
+  $build = $saida.Dir
+
+  $configure = "cmake -G Ninja -S `"$fontes`" -B `"$build`" -DCMAKE_BUILD_TYPE=$BuildType " +
+               "-DCMAKE_C_COMPILER=`"$CAMINHO_DO_CLANG`" -DCMAKE_CXX_COMPILER=`"$CAMINHO_DO_CLANG`" " +
+               "-DCORTEX_STEAM=$($saida.Steam)"
+  $compilar = "cmake --build `"$build`" --target $alvos"
+
+  Write-Output "[build-host] compilando $build (CORTEX_STEAM=$($saida.Steam))"
+  # Cuidados 1 e 2: vcvars e cmake na MESMA invocacao do cmd.
+  & cmd /c "call `"$vcvars`" >nul && $configure && $compilar"
+  if ($LASTEXITCODE -ne 0) { throw "build de $build falhou (exit $LASTEXITCODE)" }
+}
 
 Write-Output "[build-host] OK"
