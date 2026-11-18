@@ -35,12 +35,32 @@ Exposto por `yarn` para não exigir que se lembre da invocação:
 
 | script | o que faz |
 | --- | --- |
-| `yarn build:host` | configura e compila o `cortex_host` |
-| `yarn build:host --Limpar` | apaga `native/build` antes — **obrigatório quando fontes saem do `CMakeLists.txt`**, senão sobram `.obj` órfãos |
-| `yarn build:host --Alvo cortex_host_tests` | só o harness de testes |
+| `yarn build:host` | configura e compila o `cortex_host` nas **duas** saídas (`build` e `build-steam`) |
+| `yarn build:host --Limpar` | apaga `native/build` **e** `native/build-steam` antes — **obrigatório quando fontes saem do `CMakeLists.txt`**, senão sobram `.obj` órfãos |
+| `yarn build:host --Alvo cortex_host_tests` | só o harness de testes (uma saída, sem Steam) |
 
 Parâmetros: `-Worktree` (padrão: a raiz do repo), `-Alvo` (padrão:
 `cortex_host`), `-BuildType` (padrão: `Release`), `-Limpar`.
+
+### Duas saídas: `build` e `build-steam`
+
+O mesmo código-fonte gera dois hosts, que diferem **só** no `CORTEX_STEAM`
+(ADR-0174): `native/build` com `OFF` (host padrão) e `native/build-steam` com
+`ON` (linka o Steamworks SDK). O export comum confere o `build` e o export de
+Steam confere o `build-steam` — os dois pela mesma regra de atualidade
+(SPEC-0660). Compilar **um só** deixava o outro para trás sem ninguém ver: um
+host de meses atrás parado no `build-steam` só aparecia quando o export de Steam
+o recusava, já no fim do fluxo.
+
+Por isso `yarn build:host` (alvo `cortex_host`) compila os dois. O `cargo build`
+do Rapier roda **uma vez** — as duas saídas linkam a mesma DLL. Só o alvo
+`cortex_host` gera as duas: os alvos de teste não linkam Steam, então uma só.
+
+O `build-steam` é **pulado com aviso** quando o Steamworks SDK não está presente
+(`native/third_party/steamworks` ou `$STEAMWORKS_SDK`). O SDK é opt-in e
+pré-requisito — não vem no `fetch-deps.ps1` —, e com `CORTEX_STEAM=ON` sem ele o
+configure dá `FATAL_ERROR`. Pular protege quem só quer o host padrão (e a CI sem
+SDK) de ter o build normal derrubado por falta de uma dependência de Steam.
 
 ### O que o script NÃO faz
 
