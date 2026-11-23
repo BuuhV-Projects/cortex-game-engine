@@ -123,7 +123,7 @@ runs:
 
     - name: Checkout Steamworks SDK (privado, na tag)
       if: inputs.steamworks-sdk-key != ''
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
       with:
         repository: BuuhV-Projects/cortex-steamworks-sdk
         ref: ${{ steps.sdk-version.outputs.tag }}
