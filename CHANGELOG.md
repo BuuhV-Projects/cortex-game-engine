@@ -1,3 +1,17 @@
+# [1.2.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v1.1.1...v1.2.0) (2026-11-26)
+
+
+### Bug Fixes
+
+* **studio:** comando que passou do prazo na fila do painel não executa, um save repetido não roda duas vezes (SPEC-0746) ([43ca90d](https://github.com/BuuhV-Projects/cortex-game-engine/commit/43ca90d3b98594b7bc8584eece181324248b0f11))
+* **studio:** comandos da ponte um por vez, arquivo do token só do dono e conexões fechadas ao sair (SPEC-0746) ([cf4bcf4](https://github.com/BuuhV-Projects/cortex-game-engine/commit/cf4bcf4428e286ec57b628f0e5e0d608fda5acc7))
+* **studio:** listener da resposta da ponte só com o servidor no ar e a sobrescrita do save glb na SPEC-0746 ([69a0c98](https://github.com/BuuhV-Projects/cortex-game-engine/commit/69a0c98f070ac8de1738b0027be9257d3071d729))
+
+
+### Features
+
+* **studio:** auto-rig controlável sem mouse — ponte local, ferramentas rig_* no MCP cortex e atalhos da pegada (SPEC-0746, ADR-0747) ([ef6c85c](https://github.com/BuuhV-Projects/cortex-game-engine/commit/ef6c85c9633700397dc6e2b7ecbe8aad1d8ee714))
+
 ## [1.1.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v1.1.0...v1.1.1) (2026-11-26)
 
 
