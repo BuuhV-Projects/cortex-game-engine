@@ -38,6 +38,8 @@ export interface BakeRunInput {
   /** O NPC mostrado (`null` = o player) e o código do player (SPEC-0708). */
   character?: string | null
   player?: string
+  /** Confirma antes de gravar (padrão: o diálogo; o comando da ponte já é a confirmação, SPEC-0746). */
+  confirm?: (message: string) => Promise<boolean>
 }
 
 /** Resultado para a linha de estado. */
@@ -124,7 +126,7 @@ export async function runBake(input: BakeRunInput): Promise<BakeOutcome> {
   const ask = all.length
     ? t('characterRig.bake.confirm', { count: all.length, file }) + (gripCount ? ` ${t('characterRig.bake.grips', { count: gripCount })}` : '')
     : t('characterRig.bake.confirm_grips', { count: gripCount, file })
-  if (!(await window.electronAPI.confirmDialog(ask))) return { kind: 'cancelled' }
+  if (!(await (input.confirm ?? window.electronAPI.confirmDialog)(ask))) return { kind: 'cancelled' }
   const ctx = { sk: pose.skeleton, arm, store, clips: input.gltfClips, limits: pose.limits }
   const baked = jobs.map((j) => bakeJob(ctx, j))
   // sem clipe a assar o GLB vai igual: o par inteiro passa pelo backup e pela troca atômica (ADR-0705)

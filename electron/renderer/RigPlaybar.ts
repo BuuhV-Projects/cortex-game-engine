@@ -74,6 +74,29 @@ export class RigPlaybar {
     return this.action?.getClip() ?? null
   }
 
+  /** Tempo do clipe tocando (s). */
+  get time(): number {
+    const a = this.action
+    return a ? Math.min(a.time, a.getClip().duration) : 0
+  }
+
+  /** O clipe está andando (não pausado). */
+  get playing(): boolean {
+    return !!this.action && !this.paused
+  }
+
+  /** Pula para `time` e pausa (o comando `clip`, SPEC-0746). */
+  seekTo(time: number): void {
+    this.seek(time)
+    this.paused = true
+    this.syncPlayBtn()
+  }
+
+  /** Toca ou pausa. */
+  setPlaying(on: boolean): void {
+    if (on !== this.playing) this.togglePlay()
+  }
+
   /** Toca `clip` do início (`loop` = laço do registro). */
   start(clip: THREE.AnimationClip, loop: boolean): void {
     if (!this.mixer) return

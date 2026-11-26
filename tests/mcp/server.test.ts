@@ -26,10 +26,10 @@ afterAll(async () => {
 })
 
 describe('servidor MCP cortex', () => {
-  it('anuncia as 10 tools da v1', async () => {
+  it('anuncia as 10 tools da v1 e as 9 do auto-rig (SPEC-0746)', async () => {
     const { tools } = await client.listTools()
     expect(tools.map((t) => t.name).sort()).toEqual(ALL_TOOLS.map((t) => t.name).sort())
-    expect(tools).toHaveLength(10)
+    expect(tools).toHaveLength(19)
   })
 
   it('tool de projeto ganha projectDir opcional; tool global não', async () => {

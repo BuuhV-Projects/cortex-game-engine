@@ -15,6 +15,8 @@ import { weaponsGlbOf } from './characterRigWeapon'
 import { charactersOf } from './characterRigCharacters'
 import { RigCharacterSource, loadGlb } from './RigCharacterSource'
 import { RigPoseEditor } from './RigPoseEditor'
+import { RigRemote } from './RigRemote'
+import { disposeTree, stripSlotColors } from './rigDispose'
 import type { JsonObject } from './characterRigSelection'
 
 /**
@@ -89,8 +91,10 @@ export class RigAnimationPreview {
   private readonly arm: RigArmAdjust
   // ── Pose por clipe (adendo 8) ──
   private readonly pose: RigPoseEditor
+  /** Ponte local e atalhos da pegada (SPEC-0746). */
+  private readonly remote: RigRemote
   private readonly onKey = (e: KeyboardEvent): void => {
-    if (this.el.isConnected && this.el.offsetParent !== null && (this.view?.handleKey(e) || this.pose.ui.handleKey(e))) e.preventDefault()
+    if (this.el.isConnected && this.el.offsetParent !== null && (this.view?.handleKey(e) || this.pose.ui.handleKey(e) || this.remote.handleKey(e))) e.preventDefault()
   }
 
   constructor() {
@@ -132,6 +136,15 @@ export class RigAnimationPreview {
 
     this.resizeObserver = new ResizeObserver(() => this.resize())
     this.resizeObserver.observe(this.viewEl)
+    this.remote = new RigRemote({
+      pose: this.pose, bar: this.bar, chars: this.chars,
+      view: () => this.view, canvas: () => this.renderer?.domElement ?? null,
+      isOpen: () => this.active && this.el.isConnected && this.el.offsetParent !== null,
+      currentClip: () => this.current?.name ?? null, currentAnim: () => this.arm.anim,
+      clipNames: () => this.input?.entry.clips.filter((c) => this.gltfClips.has(c.name)).map((c) => c.name) ?? [],
+      play: (name) => this.play(name), frame: () => this.renderFrame(0),
+      bake: (confirm) => this.bake(confirm), status: () => this.statusEl.textContent ?? '',
+    })
   }
 
   // ── three.js ──────────────────────────────────────────────────────────────
@@ -183,16 +196,20 @@ export class RigAnimationPreview {
     const tick = (): void => {
       if (!this.active) return
       this.raf = requestAnimationFrame(tick)
-      const dt = this.clock.getDelta()
-      this.arm.restore()
-      this.bar.update(dt)
-      this.arm.apply()
-      this.pose.apply(this.arm.undoStack)
-      this.controls?.update()
-      this.renderer?.render(this.scene, this.camera)
-      this.bar.sync()
+      this.renderFrame(this.clock.getDelta())
     }
     tick()
+  }
+
+  /** Um quadro: avança `dt`, aplica braços, pose e arma e desenha (o comando da ponte usa `dt` = 0). */
+  private renderFrame(dt: number): void {
+    this.arm.restore()
+    this.bar.update(dt)
+    this.arm.apply()
+    this.pose.apply(this.arm.undoStack)
+    this.controls?.update()
+    this.renderer?.render(this.scene, this.camera)
+    this.bar.sync()
   }
 
   // ── Carga ─────────────────────────────────────────────────────────────────
@@ -280,18 +297,7 @@ export class RigAnimationPreview {
 
   private setModel(gltf: GLTF): void {
     const model = gltf.scene
-    // No GLB do rig o COLOR_0 é o índice de região do jogo (atributo `slot`),
-    // não cor: multiplicado na textura deixaria o boneco vermelho/preto.
-    model.traverse((o) => {
-      const mesh = o as THREE.Mesh
-      const mats = mesh.isMesh ? (Array.isArray(mesh.material) ? mesh.material : [mesh.material]) : []
-      for (const m of mats) {
-        if ((m as THREE.MeshStandardMaterial).vertexColors) {
-          m.vertexColors = false
-          m.needsUpdate = true
-        }
-      }
-    })
+    stripSlotColors(model)
     this.scene.add(model)
     this.model = model
     this.gltfClips = new Map(gltf.animations.map((a) => [a.name, a]))
@@ -329,16 +335,7 @@ export class RigAnimationPreview {
     this.gltfClips.clear()
     if (!this.model) return
     this.scene.remove(this.model)
-    this.model.traverse((o) => {
-      const mesh = o as THREE.SkinnedMesh
-      mesh.geometry?.dispose()
-      if (mesh.isSkinnedMesh) mesh.skeleton?.dispose()
-      const mats = mesh.material ? (Array.isArray(mesh.material) ? mesh.material : [mesh.material]) : []
-      for (const m of mats) {
-        for (const v of Object.values(m)) if (v instanceof THREE.Texture) v.dispose()
-        m.dispose()
-      }
-    })
+    disposeTree(this.model)
     this.model = null
   }
 
@@ -448,19 +445,20 @@ export class RigAnimationPreview {
    * "Gravar no GLB do jogo" (SPEC-0704): salva a config pendente, assa as chaves que diferem do build
    * mostrado e grava o GLB e o JSON do skin dele; depois recarrega o build.
    */
-  private async bake(): Promise<void> {
+  private async bake(confirm?: (message: string) => Promise<boolean>): Promise<{ text: string; warn: boolean } | null> {
     const input = this.input
     const build = input && this.kind ? input.entry[this.kind] : undefined
-    if (!input || !build || !this.kind || this.busy) return
+    if (!input || !build || !this.kind || this.busy) return null
     const kind = this.kind
     this.bakeBtn.disabled = true
     const msg = await bakeFlow(
-      { projectDir: input.projectDir, glb: build.glb, clips: build.clips, pose: this.pose, arm: this.arm, gltfClips: this.gltfClips, skin: this.skin, character: this.chars.character, player: this.chars.player },
+      { projectDir: input.projectDir, glb: build.glb, clips: build.clips, pose: this.pose, arm: this.arm, gltfClips: this.gltfClips, skin: this.skin, character: this.chars.character, player: this.chars.player, confirm },
       async () => (await this.saveArm()) && (await this.savePose()),
       () => this.loadBuild(kind),
     )
     if (msg) this.setStatus(msg.text, msg.warn)
     this.bakeBtn.disabled = this.busy
+    return msg
   }
 
   /** O painel avisa que o pipeline começou/terminou. */
@@ -487,6 +485,7 @@ export class RigAnimationPreview {
   /** Libera tudo (modelo, mixer, controles, renderer). */
   dispose(): void {
     this.loadToken++
+    this.remote.dispose()
     this.setActive(false)
     this.resizeObserver.disconnect()
     this.clearModel()

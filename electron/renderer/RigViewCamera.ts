@@ -46,6 +46,21 @@ export class RigViewCamera {
     return true
   }
 
+  /**
+   * Câmera em perspectiva olhando `target` de `distance` m, na direção da vista (sem vista: a direção atual) — o
+   * foco do F e do comando `camera` (SPEC-0746).
+   */
+  place(target: THREE.Vector3, view: RigView | null, distance: number): void {
+    if (!this.orbit) return
+    if (this.aligned || this.camera.fov !== this.perspFov) this.setFov(this.perspFov, null)
+    const dir = view ? new THREE.Vector3(...VIEW_DIRECTIONS[view]).normalize() : this.offset().normalize()
+    this.orbit.target.copy(target)
+    this.camera.position.copy(target).addScaledVector(dir, distance)
+    ;(this.orbit as unknown as { _sphericalDelta?: THREE.Spherical })._sphericalDelta?.set(0, 0, 0)
+    this.orbit.update()
+    debug(SCOPE, 'câmera no alvo', view ?? 'direção atual', distance)
+  }
+
   /** Câmera nova enquadrada (troca de modelo): volta à perspectiva livre. */
   reset(): void {
     this.aligned = null
