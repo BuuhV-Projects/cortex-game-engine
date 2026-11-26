@@ -7,6 +7,7 @@
 import { copyFileSync, existsSync, mkdirSync, readdirSync, renameSync, rmSync, writeFileSync } from 'fs'
 import { tmpdir } from 'os'
 import { basename, isAbsolute, join, relative, resolve, sep } from 'path'
+import { debug } from '../../src/core/debug.js'
 
 /** Sufixos dos arquivos de passagem e de backup. */
 export const BAKE_TMP_SUFFIX = '.tmp'
@@ -81,8 +82,16 @@ export function writeBakePair(
       }
       throw err
     }
-    // a troca deu certo: fica só o histórico curto de cada arquivo
-    files.forEach((f, i) => had[i] && pruneBackups(backupDir, basename(f.path)))
+    // a troca deu certo: fica só o histórico curto de cada arquivo. A poda é melhor esforço: falhar nela (arquivo
+    // preso, pasta limpa pelo sistema) não desfaz o gravar, que já está no disco.
+    files.forEach((f, i) => {
+      if (!had[i]) return
+      try {
+        pruneBackups(backupDir, basename(f.path))
+      } catch (err) {
+        debug('characterRig', 'poda do backup falhou', backupDir, err)
+      }
+    })
   } finally {
     for (const f of files) rmSync(f.path + BAKE_TMP_SUFFIX, { force: true })
   }

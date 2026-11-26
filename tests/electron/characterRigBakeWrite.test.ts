@@ -51,6 +51,16 @@ describe('writeBakePair', () => {
     expect(left).toContain(`outro.glb.1${BAKE_BACKUP_SUFFIX}`)
   })
 
+  it('poda que falha não desfaz o gravar', () => {
+    writeFileSync(join(dir, GLB), Uint8Array.from([1]))
+    writeFileSync(join(dir, JSON_REL), '{"old":1}')
+    // pastas com nome de backup: o rmSync da poda lança nelas
+    for (let i = 1; i <= BAKE_BACKUP_KEEP + 1; i++) mkdirSync(join(backups, `LUC-01-skinned.glb.${i}${BAKE_BACKUP_SUFFIX}`), { recursive: true })
+    const out = writeBakePair(dir, GLB, JSON_REL, Uint8Array.from([7]), '{"new":1}', renameSync, backups)
+    expect(out.glb).toBe(join(dir, GLB))
+    expect([...readFileSync(join(dir, GLB))]).toEqual([7])
+  })
+
   it('sem par anterior não cria backup', () => {
     writeBakePair(dir, GLB, JSON_REL, Uint8Array.from([9]), '{}', renameSync, backups)
     expect(existsSync(backups)).toBe(false)
