@@ -2,8 +2,10 @@
  * Cirurgia do bloco de animação de um GLB (ADR-0705, SPEC-0704).
  *
  * Mantém o JSON e o BIN de tudo que não é animação (malha, imagem, skin) byte a byte e remonta só as
- * animações no fim do BIN. Puro: só Uint8Array/DataView/TextEncoder/TextDecoder.
+ * animações no fim do BIN. Puro: só Uint8Array/DataView/TextEncoder/TextDecoder. O GLB com acessor fora de
+ * animação depois das animações (o skin no fim, do Blender) é reordenado antes do corte (SPEC-0745).
  */
+import { animationAccessors, normalizeLayout } from './glbLayout'
 
 /** Uma faixa assada: tempos e valores de um canal de um nó (pelo nome). */
 export interface BakedChannel {
@@ -194,18 +196,6 @@ function readRaw(json: Json, bin: Uint8Array): RawClip[] {
   })
 }
 
-/** Índices dos acessores usados por animações. */
-function animationAccessors(json: Json): Set<number> {
-  const set = new Set<number>()
-  for (const anim of json.animations ?? []) {
-    for (const s of anim.samplers ?? []) {
-      set.add(s.input)
-      set.add(s.output)
-    }
-  }
-  return set
-}
-
 /**
  * Valida o layout "animação no fim" e devolve onde cortar: quantos acessores e bufferViews ficam
  * (os primeiros, sem animação) e o byte do BIN em que começa o bloco de animação.
@@ -348,12 +338,13 @@ class AnimationWriter {
  * Reescreve o bloco de animação do GLB: clipe de mesmo nome substitui a animação, nome novo vai no
  * fim e as outras animações são re-emitidas com os mesmos dados. Malha, imagem e skin (JSON e o
  * prefixo do BIN) ficam idênticos; os índices dos acessores fora de animação não mudam.
- * @throws Error se o layout não for "animação no fim", se houver bufferView compartilhado, se um
+ * @throws Error se houver bufferView compartilhado ou extensão que impede reordenar o layout (SPEC-0745), se um
  *   canal citar nó inexistente ou se `clips` repetir um nome.
  * @example const out = replaceAnimations(glb, [{ name: 'pistolIdle@ARM-02', channels }])
  */
 export function replaceAnimations(glb: Uint8Array, clips: readonly BakedClip[]): Uint8Array {
-  const { json, bin } = parseGlb(glb)
+  const parsed = parseGlb(glb)
+  const { json, bin } = normalizeLayout(parsed.json, parsed.bin)
   const cut = findCut(json, bin)
   // nó pelo nome que o three usa nas faixas; dois nós com o mesmo nome não têm como ser escolhidos
   const nodeIndex = new Map<string, number>()

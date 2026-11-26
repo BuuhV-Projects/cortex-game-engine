@@ -132,8 +132,9 @@ describe('glbAnimations — GLB sintético', () => {
     expect(() => replaceAnimations(syntheticGlb(), [spin('idle', 'Nope')])).toThrow(/nó "Nope" não existe/)
   })
 
-  it('recusa layout intercalado', () => {
-    expect(() => replaceAnimations(syntheticGlb({ interleaved: true }), [])).toThrow(/intercalado/)
+  it('aceita layout intercalado, reordenando (SPEC-0745)', () => {
+    const glb = syntheticGlb({ interleaved: true })
+    expect(readAnimations(replaceAnimations(glb, []))).toEqual(readAnimations(glb))
   })
 
   it('recusa bufferView compartilhado', () => {
