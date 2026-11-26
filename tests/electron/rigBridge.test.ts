@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { BRIDGE_HOST, MAX_BODY_BYTES, startBridgeServer, type RigForward } from '../../electron/main/rigBridge/bridgeServer.js'
 import { createForward, REPLY_TIMEOUT_MS, SAVE_TIMEOUT_MS, timeoutFor, type RigCommand } from '../../electron/main/rigBridge/forward.js'
 import { RIG_BRIDGE_TOKEN_HEADER, rigBridgeFile } from '../../electron/main/rigBridge/bridgeFile.js'
+import { serialQueue } from '../../electron/renderer/serialQueue.js'
 
 const TOKEN = 'abc123'
 let server: Server | null = null
@@ -87,5 +88,26 @@ describe('repasse ao painel', () => {
     expect(timeoutFor('save', { target: 'pose' })).toBe(REPLY_TIMEOUT_MS)
     expect(rigBridgeFile({ CORTEX_RIG_BRIDGE_FILE: 'X:/b.json' })).toBe('X:/b.json')
     expect(rigBridgeFile({})).toMatch(/\.cortex-studio[\\/]rig-bridge\.json$/)
+  })
+})
+
+describe('fila do painel', () => {
+  it('roda um comando por vez, na ordem, e a falha não trava os seguintes', async () => {
+    const enqueue = serialQueue()
+    const log: string[] = []
+    let release: () => void = () => undefined
+    const slow = enqueue(() => new Promise<string>((r) => (release = () => (log.push('save'), r('save')))))
+    const bad = enqueue(async () => {
+      log.push('bad')
+      throw new Error('falhou')
+    })
+    const grip = enqueue(async () => (log.push('setGrip'), 'setGrip'))
+    await Promise.resolve()
+    expect(log).toEqual([])
+    release()
+    expect(await slow).toBe('save')
+    await expect(bad).rejects.toThrow('falhou')
+    expect(await grip).toBe('setGrip')
+    expect(log).toEqual(['save', 'bad', 'setGrip'])
   })
 })

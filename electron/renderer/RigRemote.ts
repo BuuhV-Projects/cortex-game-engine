@@ -4,6 +4,7 @@ import { GRIP_BONE, PALM, type Grip } from './characterRigWeapon'
 import { WEAPON_SELECTION } from './RigPosePanel'
 import { gripView, keyNudge, nudgeGrip, patchGrip, readQuat4, readVec3 } from './rigRemoteGrip'
 import { TRI_FLOATS, measureHand, worldTriangles, type HandMeasure } from './rigMeasure'
+import { serialQueue } from './serialQueue'
 import { VIEW_DIRECTIONS, type RigView } from './rigViewKeys'
 import type { RigPoseEditor } from './RigPoseEditor'
 import type { RigPlaybar } from './RigPlaybar'
@@ -64,9 +65,10 @@ export class RigRemote {
   private attach(): () => void {
     const api = window.electronAPI
     if (!api.onRigRemote) return () => undefined
+    const enqueue = serialQueue()
     return api.onRigRemote(async ({ id, cmd, args }) => {
       try {
-        api.rigRemoteReply(id, { ok: true, result: await this.run(cmd, args ?? {}) })
+        api.rigRemoteReply(id, { ok: true, result: await enqueue(() => this.run(cmd, args ?? {})) })
       } catch (err) {
         api.rigRemoteReply(id, { ok: false, error: err instanceof Error ? err.message : String(err) })
       }

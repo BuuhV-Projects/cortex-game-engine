@@ -1,8 +1,9 @@
 import { ipcMain, type BrowserWindow } from 'electron'
 import { randomBytes } from 'node:crypto'
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { chmodSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname } from 'node:path'
-import type { AddressInfo, Server } from 'node:net'
+import type { Server } from 'node:http'
+import type { AddressInfo } from 'node:net'
 import { rigBridgeFile, type RigBridgeInfo } from './bridgeFile.js'
 import { startBridgeServer, type RigReply } from './bridgeServer.js'
 import { createForward } from './forward.js'
@@ -38,6 +39,7 @@ export async function startRigBridge(getWindow: () => BrowserWindow | null): Pro
     const file = rigBridgeFile()
     mkdirSync(dirname(file), { recursive: true })
     writeFileSync(file, JSON.stringify(info), { mode: OWNER_ONLY })
+    chmodSync(file, OWNER_ONLY) // o modo do writeFileSync só vale na criação: um arquivo antigo mais aberto fecha aqui
     debug(SCOPE, 'ponte do auto-rig em 127.0.0.1', info.port)
   } catch (err) {
     debug(SCOPE, 'ponte do auto-rig não subiu', err)
@@ -57,6 +59,7 @@ function ownsFile(file: string): boolean {
 export function stopRigBridge(): void {
   if (!server) return
   server.close()
+  server.closeAllConnections() // keep-alive não segura o fechamento
   server = null
   const file = rigBridgeFile()
   if (ownsFile(file)) rmSync(file, { force: true })

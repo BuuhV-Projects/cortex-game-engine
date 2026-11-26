@@ -17,12 +17,15 @@ comando (outra sessão, pelo MCP `cortex`) e pelo teclado.
 HTTP em `127.0.0.1`, porta livre, token em `~/.cortex-studio/rig-bridge.json` (`{ port, token, pid }`). `POST /rig`
 com `{ cmd, args }` e `x-cortex-token`. O main manda `rigRemote:command { id, cmd, args }` à janela principal e espera
 `rigRemote:reply { id, ok, result | error }` (tempo-limite de 15 s; 180 s no `save` do GLB). Respostas: 200 com
-`{ ok, result | error }`, 403 sem token, 404 fora de `POST /rig`, 413 com corpo acima de 1 MB.
+`{ ok, result | error }`, 403 sem token, 404 fora de `POST /rig`, 413 com corpo acima de 1 MB. O arquivo do token fica só
+para o dono (`chmod 0o600` a cada gravação, também num arquivo que já existia); ao sair, o servidor fecha as conexões
+keep-alive abertas.
 
 ### 2. Comandos do painel (`electron/renderer/RigRemote.ts`)
 
 Respondem só com a aba Animações à mostra e um modelo carregado (senão: "abra o painel Auto-rig de personagem, aba
-Animações"). Cada mudança aparece na vista na hora (o laço de desenho já roda com a aba à mostra; a foto e a medida
+Animações"). Os comandos rodam um por vez, na ordem de chegada (`serialQueue.ts`): um `setGrip` não muda a pegada no
+meio de um `save`, e a falha de um não trava os seguintes. Cada mudança aparece na vista na hora (o laço de desenho já roda com a aba à mostra; a foto e a medida
 desenham um quadro antes).
 
 | cmd | args | faz |
@@ -68,4 +71,4 @@ Ignoradas com foco em campo de texto ou seleção. Cada toque empilha o desfazer
   linhas; `RigViewCamera.place` põe a câmera num alvo; `RigPlaybar` ganha `time`, `playing` e `seekTo`.
 
 Testes: `tests/electron/rigRemoteGrip.test.ts`, `rigMeasure.test.ts`, `rigBridge.test.ts` (token, repasse,
-tempo-limite) e `tests/mcp/rigTools.test.ts` (ferramentas contra uma ponte falsa).
+tempo-limite, a fila) e `tests/mcp/rigTools.test.ts` (ferramentas contra uma ponte falsa).
