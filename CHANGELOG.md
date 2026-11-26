@@ -1,3 +1,12 @@
+## [1.1.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v1.1.0...v1.1.1) (2026-11-26)
+
+
+### Bug Fixes
+
+* **studio:** gravar no GLB aceita o skin depois das animações (layout do Blender) e o backup do par sai do projeto (SPEC-0745) ([3e468c9](https://github.com/BuuhV-Projects/cortex-game-engine/commit/3e468c9c04b951ee8612a152b3311c126a863395))
+* **studio:** poda do backup é melhor esforço, falhar nela não desfaz o gravar (SPEC-0745) ([aa28da5](https://github.com/BuuhV-Projects/cortex-game-engine/commit/aa28da57913c013226e413c4b345450d9bf0f5a1))
+* **studio:** poda os backups do gravar no GLB, ficam os 3 mais novos de cada arquivo (SPEC-0745) ([b0be4f0](https://github.com/BuuhV-Projects/cortex-game-engine/commit/b0be4f0fbedd5ffae0e1aabaf5d8ade5390f0758))
+
 # [1.1.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v1.0.1...v1.1.0) (2026-11-18)
 
 
