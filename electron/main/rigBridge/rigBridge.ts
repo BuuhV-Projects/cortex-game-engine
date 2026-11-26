@@ -20,6 +20,7 @@ const TOKEN_BYTES = 24
 const OWNER_ONLY = 0o600
 
 let server: Server | null = null
+let onReply: ((event: unknown, id: unknown, reply: unknown) => void) | null = null
 
 /** Sobe a ponte; `getWindow` devolve a janela com o painel. Falha vira log, não derruba o Studio. */
 export async function startRigBridge(getWindow: () => BrowserWindow | null): Promise<void> {
@@ -34,7 +35,8 @@ export async function startRigBridge(getWindow: () => BrowserWindow | null): Pro
   try {
     server = await startBridgeServer(token, fwd.forward)
     // só com o servidor no ar: se ele não sobe, nenhum listener fica sem uso
-    ipcMain.on('rigRemote:reply', (_event, id: unknown, reply: unknown) => fwd.reply(id, reply as RigReply))
+    onReply = (_event, id, reply) => fwd.reply(id, reply as RigReply)
+    ipcMain.on('rigRemote:reply', onReply)
     const info: RigBridgeInfo = { port: (server.address() as AddressInfo).port, token, pid: process.pid }
     const file = rigBridgeFile()
     mkdirSync(dirname(file), { recursive: true })
@@ -61,6 +63,8 @@ export function stopRigBridge(): void {
   server.close()
   server.closeAllConnections() // keep-alive não segura o fechamento
   server = null
+  if (onReply) ipcMain.removeListener('rigRemote:reply', onReply)
+  onReply = null
   const file = rigBridgeFile()
   if (ownsFile(file)) rmSync(file, { force: true })
 }

@@ -5,8 +5,8 @@ import { RigViewCamera } from './RigViewCamera.js'
 import { h } from './ui'
 import { getLocale, t } from './i18n'
 import { debug } from '../../src/core/debug'
-import { formatSeconds, resolveProjectPath, type RigBuildKind, type RigClip, type RigEntry } from './characterRigRegistry'
-import { fileLabel, parseConfigObject } from './characterRigSelection'
+import { resolveProjectPath, type RigBuildKind, type RigClip, type RigEntry } from './characterRigRegistry'
+import { parseConfigObject } from './characterRigSelection'
 import { RigArmAdjust } from './RigArmAdjust'
 import { RigPlaybar } from './RigPlaybar'
 import { bakeFlow, readSkinJson } from './RigBakeRun'
@@ -16,6 +16,7 @@ import { charactersOf } from './characterRigCharacters'
 import { RigCharacterSource, loadGlb } from './RigCharacterSource'
 import { RigPoseEditor } from './RigPoseEditor'
 import { RigRemote } from './RigRemote'
+import { clipListRows } from './rigClipList'
 import { disposeTree, stripSlotColors } from './rigDispose'
 import type { JsonObject } from './characterRigSelection'
 
@@ -342,31 +343,12 @@ export class RigAnimationPreview {
   // ── Lista ─────────────────────────────────────────────────────────────────
 
   private renderList(): void {
-    this.listEl.textContent = ''
     const input = this.input
-    if (!input) return
-    const loaded = this.gltfClips.size > 0
-    for (const c of input.entry.clips) {
-      const absent = loaded && !this.gltfClips.has(c.name)
-      const row = h('button', {
-        type: 'button',
-        class: `rig-clip${this.current?.name === c.name ? ' on' : ''}${absent ? ' absent' : ''}`,
-        title: c.file,
-        onClick: () => void this.requestPlay(c.name),
-      },
-      h('span', { class: 'rig-clip__name' }, c.name),
-      h('span', { class: 'rig-clip__meta' }, `${formatSeconds(c.duration)}${c.loop ? ' · ⟳' : ''}`),
-      h('span', { class: 'rig-clip__file' }, absent ? t('characterRig.anim.absent') : fileLabel(c.file)),
-      ...(this.arm.needsRegen(c.name) || this.pose.needsRegen(c.name) ? [h('span', { class: 'rig-clip__adj' }, t('characterRig.arm.regen_short'))] : []))
-      ;(row as HTMLButtonElement).disabled = absent
-      this.listEl.append(row)
-    }
-    for (const p of input.pending) {
-      this.listEl.append(h('div', { class: 'rig-clip pending', title: t('characterRig.anim.pending_hint') },
-        h('span', { class: 'rig-clip__name' }, p.name),
-        h('span', { class: 'rig-clip__meta' }, t('characterRig.anim.pending')),
-        h('span', { class: 'rig-clip__file' }, fileLabel(p.file))))
-    }
+    this.listEl.replaceChildren(...(input ? clipListRows({
+      clips: input.entry.clips, pending: input.pending, loaded: this.gltfClips, current: this.current?.name,
+      needsRegen: (name) => this.arm.needsRegen(name) || this.pose.needsRegen(name),
+      onPick: (name) => void this.requestPlay(name),
+    }) : []))
   }
 
   // ── Reprodução ────────────────────────────────────────────────────────────
