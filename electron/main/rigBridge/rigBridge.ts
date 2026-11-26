@@ -29,10 +29,11 @@ export async function startRigBridge(getWindow: () => BrowserWindow | null): Pro
     win.webContents.send('rigRemote:command', msg)
     return true
   })
-  ipcMain.on('rigRemote:reply', (_event, id: unknown, reply: unknown) => fwd.reply(id, reply as RigReply))
   const token = randomBytes(TOKEN_BYTES).toString('hex')
   try {
     server = await startBridgeServer(token, fwd.forward)
+    // só com o servidor no ar: se ele não sobe, nenhum listener fica sem uso
+    ipcMain.on('rigRemote:reply', (_event, id: unknown, reply: unknown) => fwd.reply(id, reply as RigReply))
     const info: RigBridgeInfo = { port: (server.address() as AddressInfo).port, token, pid: process.pid }
     const file = rigBridgeFile()
     mkdirSync(dirname(file), { recursive: true })

@@ -35,7 +35,7 @@ desenham um quadro antes).
 | `camera` | `view?` (`front`/`back`/`left`/`right`/`top`/`bottom`), `focus?` (osso ou `weapon`), `distance?` (m, padrão 0,6) | põe a câmera em perspectiva no alvo, na direção da vista (sem vista: a direção atual) |
 | `snapshot` | — | desenha um quadro e devolve o PNG da vista (base64, largura e altura) |
 | `measure` | — | para cada mão, a palma (`PALM`, 8 cm no eixo dos dedos) e cada osso de dedo: a distância até a malha da arma (cm) e se está dentro dela (paridade de um raio); o menor de cada mão |
-| `save` | `target`: `pose` ou `glb` | "Salvar pose" ou "Gravar no GLB do jogo" (sem o diálogo de confirmação: o comando já é a confirmação) |
+| `save` | `target`: `pose` ou `glb` | "Salvar pose" ou "Gravar no GLB do jogo". O `glb` sobrescreve o GLB e o JSON do skin **sem perguntar** (o comando já é a confirmação); o par anterior vai para o backup do gravar |
 
 Conta pura em `rigRemoteGrip.ts` (pegada: soma, giro no espaço do osso, cm/graus) e `rigMeasure.ts` (distância de
 ponto a triângulo e dentro/fora).
