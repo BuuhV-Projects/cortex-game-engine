@@ -35,5 +35,5 @@ Alternativas rejeitadas:
 - O que o jogo lê da malha e do material fica idêntico; o teste confere o hash do prefixo do BIN e o
   JSON fora de `animations`/acessores/bufferViews de animação.
 - O módulo só entende o layout "animação no fim" (o do exportador do Blender). Um GLB com animação
-  intercalada é recusado com mensagem, não reescrito.
+  intercalada é recusado com mensagem, não reescrito. Atualizado pela SPEC-0745: o layout com acessor fora de animação depois dos de animação (o skin no fim, do Blender) é normalizado antes do corte, e o backup do par vai para a pasta temporária do sistema.
 - GLB e JSON do skin (`<code>-skinned.json`) são gravados juntos, com backup do par anterior.
