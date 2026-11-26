@@ -10,3 +10,8 @@ export function serialQueue(): <T>(job: () => Promise<T>) => Promise<T> {
     return run
   }
 }
+
+/** O comando esperou na fila além do prazo da ponte (quem pediu já recebeu o erro de tempo): não executa. */
+export function expired(deadline: number | undefined, now: number = Date.now()): boolean {
+  return deadline !== undefined && now > deadline
+}

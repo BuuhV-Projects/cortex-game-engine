@@ -15,6 +15,8 @@ export interface RigCommand {
   id: number
   cmd: string
   args: Record<string, unknown>
+  /** Até quando (`Date.now()`, ms) a ponte espera: passado disso, o painel não executa o comando (a ponte já desistiu). */
+  deadline: number
 }
 
 /** Quanto esperar pelo comando (`save` do GLB: mais). */
@@ -41,7 +43,7 @@ export function createForward(send: (msg: RigCommand) => boolean, timeout: (cmd:
         clearTimeout(timer)
         resolve(reply)
       })
-      if (!send({ id, cmd, args })) {
+      if (!send({ id, cmd, args, deadline: Date.now() + ms })) {
         pending.get(id)?.({ ok: false, error: 'Studio sem janela aberta' })
         pending.delete(id)
       }

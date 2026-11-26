@@ -65,8 +65,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('characterRig:pickBlender') as Promise<{ path: string; source: string } | null>,
 
   /** Ponte local do auto-rig (SPEC-0746): comandos vindos do main e a resposta de cada um. */
-  onRigRemote: (callback: (msg: { id: number; cmd: string; args: Record<string, unknown> }) => void): (() => void) => {
-    const handler = (_event: unknown, msg: { id: number; cmd: string; args: Record<string, unknown> }) => callback(msg)
+  onRigRemote: (callback: (msg: { id: number; cmd: string; args: Record<string, unknown>; deadline?: number }) => void): (() => void) => {
+    const handler = (_event: unknown, msg: { id: number; cmd: string; args: Record<string, unknown>; deadline?: number }) => callback(msg)
     ipcRenderer.on('rigRemote:command', handler)
     return () => ipcRenderer.removeListener('rigRemote:command', handler)
   },

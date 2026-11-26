@@ -4,7 +4,7 @@ import { GRIP_BONE, PALM, type Grip } from './characterRigWeapon'
 import { WEAPON_SELECTION } from './RigPosePanel'
 import { gripView, keyNudge, nudgeGrip, patchGrip, readQuat4, readVec3 } from './rigRemoteGrip'
 import { TRI_FLOATS, measureHand, worldTriangles, type HandMeasure } from './rigMeasure'
-import { serialQueue } from './serialQueue'
+import { expired, serialQueue } from './serialQueue'
 import { VIEW_DIRECTIONS, type RigView } from './rigViewKeys'
 import type { RigPoseEditor } from './RigPoseEditor'
 import type { RigPlaybar } from './RigPlaybar'
@@ -66,9 +66,14 @@ export class RigRemote {
     const api = window.electronAPI
     if (!api.onRigRemote) return () => undefined
     const enqueue = serialQueue()
-    return api.onRigRemote(async ({ id, cmd, args }) => {
+    return api.onRigRemote(async ({ id, cmd, args, deadline }) => {
       try {
-        api.rigRemoteReply(id, { ok: true, result: await enqueue(() => this.run(cmd, args ?? {})) })
+        const job = (): Promise<unknown> => {
+          // a ponte já respondeu "não respondeu": executar agora faria um `save` repetido rodar duas vezes
+          if (expired(deadline)) throw new Error(`${cmd} expirou na fila do painel`)
+          return this.run(cmd, args ?? {})
+        }
+        api.rigRemoteReply(id, { ok: true, result: await enqueue(job) })
       } catch (err) {
         api.rigRemoteReply(id, { ok: false, error: err instanceof Error ? err.message : String(err) })
       }

@@ -15,7 +15,7 @@ comando (outra sessão, pelo MCP `cortex`) e pelo teclado.
 ### 1. Ponte local (`electron/main/rigBridge.ts`, ADR-0747)
 
 HTTP em `127.0.0.1`, porta livre, token em `~/.cortex-studio/rig-bridge.json` (`{ port, token, pid }`). `POST /rig`
-com `{ cmd, args }` e `x-cortex-token`. O main manda `rigRemote:command { id, cmd, args }` à janela principal e espera
+com `{ cmd, args }` e `x-cortex-token`. O main manda `rigRemote:command { id, cmd, args, deadline }` à janela principal e espera
 `rigRemote:reply { id, ok, result | error }` (tempo-limite de 15 s; 180 s no `save` do GLB). Respostas: 200 com
 `{ ok, result | error }`, 403 sem token, 404 fora de `POST /rig`, 413 com corpo acima de 1 MB. O arquivo do token fica só
 para o dono (`chmod 0o600` a cada gravação, também num arquivo que já existia); ao sair, o servidor fecha as conexões
@@ -25,7 +25,9 @@ keep-alive abertas.
 
 Respondem só com a aba Animações à mostra e um modelo carregado (senão: "abra o painel Auto-rig de personagem, aba
 Animações"). Os comandos rodam um por vez, na ordem de chegada (`serialQueue.ts`): um `setGrip` não muda a pegada no
-meio de um `save`, e a falha de um não trava os seguintes. Cada mudança aparece na vista na hora (o laço de desenho já roda com a aba à mostra; a foto e a medida
+meio de um `save`, e a falha de um não trava os seguintes. O comando leva o prazo da ponte (`deadline`); se a vez dele chega depois do prazo
+(a ponte já devolveu o erro de tempo), o painel não o executa: um `save` repetido depois de um tempo esgotado não roda
+duas vezes. Cada mudança aparece na vista na hora (o laço de desenho já roda com a aba à mostra; a foto e a medida
 desenham um quadro antes).
 
 | cmd | args | faz |

@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { BRIDGE_HOST, MAX_BODY_BYTES, startBridgeServer, type RigForward } from '../../electron/main/rigBridge/bridgeServer.js'
 import { createForward, REPLY_TIMEOUT_MS, SAVE_TIMEOUT_MS, timeoutFor, type RigCommand } from '../../electron/main/rigBridge/forward.js'
 import { RIG_BRIDGE_TOKEN_HEADER, rigBridgeFile } from '../../electron/main/rigBridge/bridgeFile.js'
-import { serialQueue } from '../../electron/renderer/serialQueue.js'
+import { expired, serialQueue } from '../../electron/renderer/serialQueue.js'
 
 const TOKEN = 'abc123'
 let server: Server | null = null
@@ -109,5 +109,17 @@ describe('fila do painel', () => {
     await expect(bad).rejects.toThrow('falhou')
     expect(await grip).toBe('setGrip')
     expect(log).toEqual(['save', 'bad', 'setGrip'])
+  })
+
+  it('o comando leva o prazo da ponte; passado dele, o painel não executa', () => {
+    const sent: RigCommand[] = []
+    const before = Date.now()
+    const fwd = createForward((m) => (sent.push(m), true))
+    void fwd.forward('save', { target: 'glb' })
+    fwd.reply(sent[0]!.id, { ok: true }) // fecha o timer
+    expect(sent[0]!.deadline).toBeGreaterThanOrEqual(before + SAVE_TIMEOUT_MS)
+    expect(expired(sent[0]!.deadline, sent[0]!.deadline)).toBe(false)
+    expect(expired(sent[0]!.deadline, sent[0]!.deadline + 1)).toBe(true)
+    expect(expired(undefined)).toBe(false)
   })
 })

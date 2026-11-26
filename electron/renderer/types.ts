@@ -94,7 +94,7 @@ export interface ElectronAPI {
   /** Saída do auto-rig. Retorna a função que remove o listener. */
   onCharacterRigOutput(callback: (text: string) => void): () => void
   /** Ponte local do auto-rig (SPEC-0746): assina os comandos do main. */
-  onRigRemote?(callback: (msg: { id: number; cmd: string; args: Record<string, unknown> }) => void): () => void
+  onRigRemote?(callback: (msg: { id: number; cmd: string; args: Record<string, unknown>; deadline?: number }) => void): () => void
   /** Responde um comando da ponte. */
   rigRemoteReply(id: number, reply: { ok: boolean; result?: unknown; error?: string }): void
   /** Abre uma pasta no explorador do SO (ex.: dist-native após o export). */
