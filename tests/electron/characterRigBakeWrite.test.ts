@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { BAKE_BACKUP_SUFFIX, BAKE_TMP_SUFFIX, insideProject, writeBakePair } from '../../electron/main/characterRigBakeWrite.js'
+import { BAKE_BACKUP_KEEP, BAKE_BACKUP_SUFFIX, BAKE_TMP_SUFFIX, insideProject, pruneBackups, writeBakePair } from '../../electron/main/characterRigBakeWrite.js'
 
 let dir = ''
 let backups = ''
@@ -36,6 +36,19 @@ describe('writeBakePair', () => {
     expect(readFileSync(backupOf('LUC-01-skinned.json'), 'utf8')).toBe('{"old":1}')
     expect(readdirSync(join(dir, 'assets/p')).sort()).toEqual(['LUC-01-skinned.glb', 'LUC-01-skinned.json'])
     expect(existsSync(join(dir, GLB + BAKE_TMP_SUFFIX))).toBe(false)
+  })
+
+  it('guarda só os backups mais novos de cada arquivo', () => {
+    mkdirSync(backups, { recursive: true })
+    const OLD = 5
+    for (let i = 1; i <= OLD; i++) writeFileSync(join(backups, `x.glb.${i}${BAKE_BACKUP_SUFFIX}`), String(i))
+    writeFileSync(join(backups, `outro.glb.1${BAKE_BACKUP_SUFFIX}`), 'o')
+    pruneBackups(backups, 'x.glb')
+    const left = readdirSync(backups).sort()
+    expect(left.filter((f) => f.startsWith('x.glb.'))).toHaveLength(BAKE_BACKUP_KEEP)
+    expect(left).toContain(`x.glb.${OLD}${BAKE_BACKUP_SUFFIX}`)
+    expect(left).not.toContain(`x.glb.1${BAKE_BACKUP_SUFFIX}`)
+    expect(left).toContain(`outro.glb.1${BAKE_BACKUP_SUFFIX}`)
   })
 
   it('sem par anterior não cria backup', () => {

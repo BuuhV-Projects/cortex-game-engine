@@ -38,7 +38,8 @@ compartilhamento (bufferView ou acessor dividido entre animação e malha) conti
 ### 2. Backup fora do projeto (`electron/main/characterRigBakeWrite.ts`)
 
 A cópia do par anterior vai para a pasta temporária do sistema, `<tmp>/cortex-rig-backup/`, como
-`<nome>.<carimbo>.bak`, e não mais ao lado do arquivo. Se a troca falhar no meio, é de lá que o arquivo
+`<nome>.<carimbo>.bak`, e não mais ao lado do arquivo. Depois de cada troca, ficam só os 3 backups mais novos de cada arquivo
+(`BAKE_BACKUP_KEEP`): o GLB do personagem tem megabytes e a pasta temporária não pode crescer sem fim. Se a troca falhar no meio, é de lá que o arquivo
 trocado volta. Nada além do par gravado fica no projeto.
 
 ## Consequências

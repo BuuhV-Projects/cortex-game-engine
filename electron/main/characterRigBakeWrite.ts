@@ -4,7 +4,7 @@
  * para a pasta de backup, fora do projeto (SPEC-0745); depois os `.tmp` trocam de nome. Uma falha antes da
  * troca não toca no par atual.
  */
-import { copyFileSync, existsSync, mkdirSync, renameSync, rmSync, writeFileSync } from 'fs'
+import { copyFileSync, existsSync, mkdirSync, readdirSync, renameSync, rmSync, writeFileSync } from 'fs'
 import { tmpdir } from 'os'
 import { basename, isAbsolute, join, relative, resolve, sep } from 'path'
 
@@ -13,12 +13,23 @@ export const BAKE_TMP_SUFFIX = '.tmp'
 export const BAKE_BACKUP_SUFFIX = '.bak'
 /** Pasta, dentro da temporária do sistema, onde fica o par anterior (nada de `.bak` no checkout do jogo). */
 export const BAKE_BACKUP_DIR = 'cortex-rig-backup'
+/** Quantos backups de cada arquivo ficam (os mais novos); os outros são apagados a cada gravação. */
+export const BAKE_BACKUP_KEEP = 3
 const GLB_EXT = /\.glb$/i
 const JSON_EXT = /\.json$/i
 
 /** Pasta padrão do backup do par anterior. */
 export function defaultBackupDir(): string {
   return join(tmpdir(), BAKE_BACKUP_DIR)
+}
+
+/** Apaga os backups de `name` em `dir` além dos `keep` mais novos (o carimbo no nome ordena). */
+export function pruneBackups(dir: string, name: string, keep = BAKE_BACKUP_KEEP): void {
+  const stampOf = (f: string): number => Number(f.slice(name.length + 1, -BAKE_BACKUP_SUFFIX.length))
+  const mine = readdirSync(dir)
+    .filter((f) => f.startsWith(`${name}.`) && f.endsWith(BAKE_BACKUP_SUFFIX) && Number.isFinite(stampOf(f)))
+    .sort((a, b) => stampOf(b) - stampOf(a))
+  for (const f of mine.slice(keep)) rmSync(join(dir, f), { force: true })
 }
 
 /** Caminho absoluto de `rel` dentro de `projectDir`; lança se sair do projeto. */
@@ -70,6 +81,8 @@ export function writeBakePair(
       }
       throw err
     }
+    // a troca deu certo: fica só o histórico curto de cada arquivo
+    files.forEach((f, i) => had[i] && pruneBackups(backupDir, basename(f.path)))
   } finally {
     for (const f of files) rmSync(f.path + BAKE_TMP_SUFFIX, { force: true })
   }
