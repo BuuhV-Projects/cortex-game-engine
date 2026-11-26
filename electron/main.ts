@@ -8,6 +8,7 @@ import { join } from 'path'
 import { recoverCacheIfUnclean, markSessionEnd } from './cacheHygiene.js'
 import { APP_DATA_NAME } from './appIdentity.js'
 import { getMainWindow } from './main/shared.js'
+import { startRigBridge, stopRigBridge } from './main/rigBridge/rigBridge.js'
 import { createSplash, createWindow } from './main/window.js'
 import { registerFsIpc } from './main/fsIpc.js'
 import { registerEngineIpc } from './main/engineVendor.js'
@@ -108,6 +109,8 @@ app.whenReady().then(async () => {
   Menu.setApplicationMenu(buildAppMenu())
   createSplash()
   createWindow()
+  // ponte local do auto-rig para o MCP `cortex` (SPEC-0746)
+  void startRigBridge(getMainWindow)
 
   // macOS: recria a janela ao clicar no ícone do dock quando não há janelas abertas
   app.on('activate', () => {
@@ -122,6 +125,7 @@ app.on('before-quit', () => {
   killRunnerForQuit()
   killTerminalForQuit()
   killCharacterRigForQuit()
+  stopRigBridge()
 
   // Sentinela removida = este shutdown foi limpo; o próximo boot não precisa
   // purgar o disk cache. Se o processo morrer à força, a sentinela sobrevive

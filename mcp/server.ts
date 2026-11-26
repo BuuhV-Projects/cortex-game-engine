@@ -8,6 +8,7 @@ import { GUIDES, readGuide, type GuideId } from './engineApi/apiReference.js'
 import { assetTools } from './tools/assets.js'
 import { engineApiTools } from './tools/engineApi.js'
 import { kitTools } from './tools/kits.js'
+import { rigTools } from './tools/rig.js'
 import { validateSceneTool } from './tools/validate.js'
 import type { ToolDef } from './toolDef.js'
 
@@ -20,7 +21,7 @@ import type { ToolDef } from './toolDef.js'
 export const SERVER_NAME = 'cortex'
 const SERVER_VERSION = '1.0.0'
 
-export const ALL_TOOLS: ToolDef[] = [...kitTools, ...assetTools, validateSceneTool, ...engineApiTools] as ToolDef[]
+export const ALL_TOOLS: ToolDef[] = [...kitTools, ...assetTools, validateSceneTool, ...engineApiTools, ...rigTools] as ToolDef[]
 
 const PROJECT_DIR_ARG = {
   projectDir: z
