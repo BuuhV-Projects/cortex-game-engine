@@ -1,7 +1,8 @@
 /**
  * AssetLoader — carregamento e cache de assets 3D (texturas, GLTF, áudio).
  *
- * Mantém um cache interno `Map<url, asset>` para evitar requisições duplicadas.
+ * Mantém um cache interno `Map<url, asset>` para evitar requisições duplicadas, e
+ * divide a carga em andamento da mesma URL entre chamadas paralelas (SPEC-0753).
  * Usa `THREE.TextureLoader`, `THREE.AudioLoader` e `GLTFLoader` conforme
  * definido em ADR-0001.
  *
@@ -34,6 +35,27 @@ type Asset = THREE.Texture | GLTF | AudioBuffer | THREE.Group;
 
 // ─── Dispose de árvore de objetos ─────────────────────────────────────────────
 
+/** Opções de {@link disposeObjectResources}. */
+export interface DisposeObjectResourcesOptions {
+  /**
+   * Fecha também a imagem decodificada de cada textura (`texture.source.data.close?.()`: o `ImageBitmap` do
+   * navegador, o bitmap do shim no host nativo, SPEC-0748), que o `dispose()` do three deixa para o GC
+   * (SPEC-0753). Só peça quando ninguém mais usa as texturas: imagem fechada não sobe para a GPU de novo.
+   */
+  closeImages?: boolean;
+}
+
+/**
+ * Fecha a imagem decodificada da textura, uma vez por imagem (`closed` guarda as já fechadas: texturas
+ * clonadas dividem a mesma `source`). No-op quando a imagem não tem `close()` (canvas, dado cru do KTX2).
+ */
+function closeTextureImage(texture: THREE.Texture, closed: Set<unknown>): void {
+  const data = (texture.source as { data?: { close?: () => void } } | undefined)?.data;
+  if (!data || closed.has(data)) return;
+  closed.add(data);
+  data.close?.();
+}
+
 /**
  * Dispõe os recursos de uma árvore de objetos: geometrias (incluindo a árvore
  * BVH do three-mesh-bvh, se houver), materiais e texturas referenciadas. Usado
@@ -41,14 +63,20 @@ type Asset = THREE.Texture | GLTF | AudioBuffer | THREE.Group;
  * cena; isto cobre o que ficou só em cache (GLTF/FBX carregados).
  *
  * Seguro chamar sobre objetos já dispostos (dispose do three é idempotente).
+ *
+ * @param root - Raiz da árvore (a `scene` do GLTF, o grupo do FBX).
+ * @param options - `closeImages: true` fecha também as imagens decodificadas (SPEC-0753).
  */
-export function disposeObjectResources(root: THREE.Object3D): void {
+export function disposeObjectResources(root: THREE.Object3D, options?: DisposeObjectResourcesOptions): void {
   const seenTex = new Set<THREE.Texture>();
+  const closedImages = new Set<unknown>();
+  const closeImages = options?.closeImages === true;
   const disposeMaterial = (m: THREE.Material): void => {
     for (const value of Object.values(m as unknown as Record<string, unknown>)) {
       if (value instanceof THREE.Texture && !seenTex.has(value)) {
         seenTex.add(value);
         value.dispose();
+        if (closeImages) closeTextureImage(value, closedImages);
       }
     }
     m.dispose();
@@ -82,6 +110,23 @@ export function disposeObjectResources(root: THREE.Object3D): void {
       (obj as THREE.SkinnedMesh).skeleton?.dispose();
     }
   });
+}
+
+/**
+ * Solta um asset do cache conforme o tipo: textura → `dispose()` (e a imagem, com `closeImages`); GLTF/FBX →
+ * {@link disposeObjectResources}; áudio → `free?.()` (o PCM do host nativo, ADR-0153; no browser, no-op).
+ */
+function disposeAsset(asset: Asset, closeImages: boolean): void {
+  if (asset instanceof THREE.Texture) {
+    asset.dispose();
+    if (closeImages) closeTextureImage(asset, new Set());
+  } else if (asset instanceof THREE.Group) {
+    disposeObjectResources(asset, { closeImages });
+  } else if ((asset as GLTF).scene) {
+    disposeObjectResources((asset as GLTF).scene, { closeImages });
+  } else {
+    (asset as { free?: () => void }).free?.();
+  }
 }
 
 /**
@@ -120,6 +165,13 @@ export class AssetLoader {
   /** Cache interno: url → asset já carregado. */
   private readonly _cache = new Map<string, Asset>();
 
+  /**
+   * Cargas em andamento: url → promessa (SPEC-0753). Duas chamadas paralelas da mesma URL recebem a mesma
+   * promessa; a entrada sai ao terminar (com sucesso o asset já está no `_cache`; com falha, a próxima chamada
+   * tenta de novo).
+   */
+  private readonly _inflight = new Map<string, Promise<Asset>>();
+
   /** Instâncias reutilizadas dos loaders do Three.js. */
   private readonly _textureLoader = new THREE.TextureLoader();
   private readonly _gltfLoader = new GLTFLoader();
@@ -150,11 +202,7 @@ export class AssetLoader {
   }
 
   private async _loadTextureInner(url: string, options?: { pixelated?: boolean }): Promise<THREE.Texture> {
-    let texture = this._cache.get(url) as THREE.Texture | undefined;
-    if (texture === undefined) {
-      texture = await this._textureLoader.loadAsync(url);
-      this._cache.set(url, texture);
-    }
+    const texture = await this._shared(url, () => this._textureLoader.loadAsync(url));
     if (options?.pixelated) {
       // Pixel art: amostragem **nearest** (sem borrar) e sem mipmaps.
       texture.magFilter = THREE.NearestFilter;
@@ -181,12 +229,11 @@ export class AssetLoader {
     return gltf;
   }
 
-  private async _loadGLTFInner(url: string): Promise<GLTF> {
-    const cached = this._cache.get(url);
-    if (cached !== undefined) {
-      return cached as GLTF;
-    }
+  private _loadGLTFInner(url: string): Promise<GLTF> {
+    return this._shared(url, () => this._fetchGLTF(url));
+  }
 
+  private async _fetchGLTF(url: string): Promise<GLTF> {
     const gltf = await this._gltfLoader.loadAsync(url);
     // Filtragem anisotrópica nos materiais do modelo (SPEC-0160): sem isto,
     // linhas finas dos decks viram moiré em pente em ângulo rasante.
@@ -196,7 +243,6 @@ export class AssetLoader {
     // memória externa do Hermes — um mapa com LODs estourava o teto de 2 GB.
     Reflect.deleteProperty(gltf, 'parser');
     releaseKtx2DataAfterUpload(gltf.scene);
-    this._cache.set(url, gltf);
     return gltf;
   }
 
@@ -216,16 +262,12 @@ export class AssetLoader {
    * @param url - Caminho ou URL absoluta para o arquivo `.fbx`.
    * @returns Promessa resolvida com `THREE.Group` (com `animations`).
    */
-  async loadFBX(url: string): Promise<THREE.Group> {
-    const cached = this._cache.get(url);
-    if (cached !== undefined) {
-      return cached as THREE.Group;
-    }
-
-    const group = await this._fbxLoader.loadAsync(url);
-    applyModelTextureAnisotropy(group);
-    this._cache.set(url, group);
-    return group;
+  loadFBX(url: string): Promise<THREE.Group> {
+    return this._shared(url, async () => {
+      const group = await this._fbxLoader.loadAsync(url);
+      applyModelTextureAnisotropy(group);
+      return group;
+    });
   }
 
   /**
@@ -235,15 +277,8 @@ export class AssetLoader {
    * @param url - Caminho ou URL absoluta para o arquivo de áudio.
    * @returns Promessa resolvida com `AudioBuffer`.
    */
-  async loadAudio(url: string): Promise<AudioBuffer> {
-    const cached = this._cache.get(url);
-    if (cached !== undefined) {
-      return cached as AudioBuffer;
-    }
-
-    const buffer = await this._audioLoader.loadAsync(url);
-    this._cache.set(url, buffer);
-    return buffer;
+  loadAudio(url: string): Promise<AudioBuffer> {
+    return this._shared(url, () => this._audioLoader.loadAsync(url));
   }
 
   /**
@@ -307,6 +342,24 @@ export class AssetLoader {
   }
 
   /**
+   * **Solta uma** URL já carregada (SPEC-0753): GLTF/FBX → {@link disposeObjectResources} com `closeImages`;
+   * textura → `dispose()` e fecha a imagem decodificada; áudio → `free?.()`. Tira a URL do cache; a próxima
+   * carga vai à rede. Quem chama garante que ninguém mais usa o asset (nem clones dele): a imagem fechada não
+   * sobe para a GPU de novo.
+   *
+   * @param url - A mesma chave usada na carga.
+   * @returns `true` se havia asset pronto e ele foi solto; `false` para URL nunca pedida ou ainda em carga
+   *   (nada é feito).
+   */
+  release(url: string): boolean {
+    const asset = this._cache.get(url);
+    if (asset === undefined) return false;
+    this._cache.delete(url);
+    disposeAsset(asset, true);
+    return true;
+  }
+
+  /**
    * **Despeja** o cache liberando os recursos de cada asset (SPEC-0152):
    * texturas → `dispose()`; GLTF/FBX → {@link disposeObjectResources}
    * (geometria + BVH + materiais/texturas); áudio → `free?.()` (existe no
@@ -315,21 +368,38 @@ export class AssetLoader {
    * custar uma carga completa na próxima requisição.
    */
   disposeCache(): void {
-    for (const asset of this._cache.values()) {
-      if (asset instanceof THREE.Texture) {
-        asset.dispose();
-      } else if (asset instanceof THREE.Group) {
-        disposeObjectResources(asset);
-      } else if ((asset as GLTF).scene) {
-        disposeObjectResources((asset as GLTF).scene);
-      } else {
-        (asset as { free?: () => void }).free?.();
-      }
-    }
+    for (const asset of this._cache.values()) disposeAsset(asset, false);
     this._cache.clear();
   }
 
   // ─── Helpers privados ───────────────────────────────────────────────────────
+
+  /**
+   * Devolve o asset em cache, a carga em andamento da mesma URL ou começa uma (SPEC-0753). O `load` só roda
+   * depois de a promessa estar no mapa (um `throw` síncrono nele não deixa entrada presa). Sucesso grava no
+   * cache; falha tira a URL do mapa e deixa a próxima chamada tentar de novo.
+   */
+  private _shared<T extends Asset>(url: string, load: () => Promise<T>): Promise<T> {
+    const cached = this._cache.get(url);
+    if (cached !== undefined) return Promise.resolve(cached as T);
+    const pending = this._inflight.get(url);
+    if (pending !== undefined) return pending as Promise<T>;
+    const promise = Promise.resolve()
+      .then(load)
+      .then(
+        (asset) => {
+          this._inflight.delete(url);
+          this._cache.set(url, asset);
+          return asset;
+        },
+        (error: unknown) => {
+          this._inflight.delete(url);
+          throw error;
+        },
+      );
+    this._inflight.set(url, promise);
+    return promise;
+  }
 
   /**
    * Despacha para o loader correto com base na extensão da URL.
