@@ -38,6 +38,7 @@ describe('export nativo — win.extraResources (TDR-0003)', () => {
     'src', // bundle.mjs resolve cortex-game-engine → src/index-runtime.ts
     'native/export-toolchain/node_modules', // esbuild/babel/three em runtime
     'native/tools/basis-encoder', // encoder WASM do cook KTX2 (SPEC-0177)
+    'native/tools/basisu', // encoder nativo da textura acima do teto do WASM (SPEC-0750)
   ];
 
   it.each(required)('embarca %s', (from) => {
@@ -56,6 +57,13 @@ describe('export nativo — win.extraResources (TDR-0003)', () => {
       (r: { from: string }) => r.from.replace(/\\/g, '/') === 'native/tools/basis-encoder',
     );
     expect(enc.filter).toEqual(expect.arrayContaining(['basis_encoder.js', 'basis_encoder.wasm']));
+  });
+
+  it('o filtro do basisu nativo inclui o exe (SPEC-0750)', () => {
+    const enc = builder.win.extraResources.find(
+      (r: { from: string }) => r.from.replace(/\\/g, '/') === 'native/tools/basisu',
+    );
+    expect(enc.filter).toEqual(['basisu.exe']);
   });
 
   it('o filtro de native/build inclui exe, dlls e a fonte', () => {

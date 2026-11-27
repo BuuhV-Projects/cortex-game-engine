@@ -188,6 +188,22 @@ Native (que roda milhares de libs sobre Hermes em produção):
 
 ## Armadilhas conhecidas
 
+- **O encoder basis (WASM) recusa fonte acima de 12.582.912 texels, e o JPG
+  precisa do tipo certo** (SPEC-0750, ADR-0751). O 5º argumento do
+  `setSliceSourceImage` é o `ldr_image_type` (`cPNGImage` = 1, `cJPGImage` = 2):
+  passar `true` lia todo JPG como PNG. O teto é o
+  `BASISU_ENCODER_MAX_SOURCE_IMAGE_PIXELS` do `basis_wrappers.cpp`, fixo na
+  compilação (4096² = 16,7 M não cabe; 4096×3072 cabe). Os dois casos devolviam
+  `encode()` = 0 bytes, e o `ktx2-glb.mjs` engolia em silêncio: no Port Hollow só
+  117 de 1.286 texturas de GLB saíam KTX2. Agora o `encode-ktx2.mjs` lê formato e
+  dimensões do header (`image-header.mjs`), usa o WASM até o teto e, acima, o
+  basisu NATIVO (`native/tools/basisu/basisu.exe`, compilado pelo
+  `build-basisu.ps1` do mesmo commit) nas dimensões originais: **o cook nunca
+  reduz textura**. Sem o exe, fonte fora dos blocos 4×4 ou outra falha, a textura
+  fica com o original, com aviso por textura e contagem em `texKept`. O log do
+  emscripten está silenciado (`print`/`printErr` no-op): pra diagnosticar um
+  "0 bytes", ligue o `printErr` — o basis diz o motivo.
+
 - **`arraybuffers: … text=Nx/MB` do perf-log é TOTAL ALOCADO desde o boot,
   não memória viva** (SPEC-0321). Todos os contadores `pak/img/ktx2/io/files/
   text` só somam. Crescer linear não prova vazamento: o R0 do DDD 61 projetou
