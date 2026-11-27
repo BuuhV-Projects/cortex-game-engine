@@ -103,6 +103,8 @@ da SPEC-0177.
 - `native/scripts/fetch-deps.ps1` baixa o zip do fonte no commit fixado
   (`github.com/BinomialLLC/basis_universal/archive/<sha>.zip`, ~160 MB) para `native/third_party/_downloads/basisu-src/`,
   confere o sha256 (`9e7a8c9b…596c9`) e extrai (pula se já extraído).
+- O exe e o build ficam fora do git: o `native/.gitignore` já ignora `tools/` (o `basisu.exe`) e `build*/` (o
+  `build-basisu`).
 - `native/scripts/build-basisu.ps1` compila o alvo `basisu` com clang-cl e vcvars (a receita do `build-host.ps1`, com
   `-msse4.1`, Zstd, sem OpenCL nem exemplos) e copia para `native/tools/basisu/basisu.exe`. O CRT é **estático**
   (`CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded`, política CMP0091; o `BASISU_STATIC` do basis não vale no clang-cl): o
@@ -160,7 +162,8 @@ Nenhuma textura mantida nos dois; as 67 transcodam para BC7.
   `ERR_NOT_BLOCK_ALIGNED`; `ERR_NATIVE_ENCODER_MISSING` com a instrução; os argumentos do basisu contra os parâmetros
   do WASM; buffer pelas dimensões; com o WASM, JPG baseline e progressivo e PNG virando KTX2; com o exe, um PNG
   sintético de 3600² (acima do teto) virando KTX2 de 3600² e o temporário removido, e a cor (padrão, sRGB com RDO)
-  saindo com a transfer function sRGB no DFD e a supercompressão Zstd.
+  saindo com a transfer function sRGB no DFD e a supercompressão Zstd (o host transcoda Zstd com
+  `BASISD_SUPPORT_KTX2_ZSTD`, o mesmo do KTX2 do WASM; o teste roda o exe compilado de ponta a ponta).
 - `tests/native/ktx2-glb-fallback.test.ts`: o aviso por textura com GLB, índice, dimensões e motivo, a contagem em
   `stats`, o piso por texels e o basisu ausente mantendo a textura grande com o motivo enquanto as outras convertem.
 - `tests/native/cook-native-missing.test.ts`: o GLB com o basisu ausente ou que não roda não entra no cache; com
