@@ -72,6 +72,10 @@ reenviada em loop (`needsUpdate`) e é sinal para olhar o jogo. O host C++ não 
   2D) custa um decode novo (stb; ~10 a 40 ms num 1024²). Dentro do prazo, o reenvio reaproveita os pixels. Textura
   que muda todo quadro deve ser `DataTexture`/canvas, não imagem.
 - Os pixels vivem até 3 s depois do último upload: o vale da memória chega alguns segundos depois do carregamento.
+- Imagem decodificada que nunca sobe para a GPU nem é lida (`Image` fake ou bitmap carregado e não usado) não entra
+  na fila e guarda o RGBA, como antes desta SPEC. Não é marcada na carga de propósito: o carregamento leva mais que o
+  prazo de 3 s, e marcar na carga faria as texturas que sobem no primeiro quadro pagarem um redecode cada. Se ninguém
+  segura a imagem, o GC a coleta; textura que o jogo guarda sem desenhar é para o jogo não carregar.
 - O pico do carregamento não muda: o decode continua na hora. O que muda é o vale depois do upload.
 - Testes: `tests/native/image-release.test.ts` (getter, soltura com prazo pelo `submit`, clone dentro do prazo sem
   redecode, contagem única, posse dos pixels, redecode com e sem flip, atribuição, `close`, cache de bytes do `Image`
