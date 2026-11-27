@@ -10,7 +10,7 @@ import { NodeIO } from '@gltf-transform/core';
 import { ALL_EXTENSIONS, KHRTextureBasisu } from '@gltf-transform/extensions';
 import { readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
-import { encodeKtx2, ERR_BASIS_ENCODER_MISSING } from './encode-ktx2.mjs';
+import { encodeKtx2, ERR_BASIS_ENCODER_MISSING, ERR_NATIVE_ENCODER_MISSING } from './encode-ktx2.mjs';
 
 /** Piso da conversão: abaixo de 64×64 texels o KTX2 não compensa (SPEC-0750). */
 const MIN_CONVERT_TEXELS = 64 * 64;
@@ -28,6 +28,18 @@ function countKept(stats, reason) {
 
 /** Avisa UMA vez por processo que o encoder não está instalado (SPEC-0177). */
 let encoderMissingWarned = false;
+/**
+ * O basisu nativo ausente também é problema de instalação: avisa UMA vez por
+ * processo (um GLB pode ter várias texturas de 4096²) e o resumo do cook conta
+ * cada textura mantida em `texKeptReasons`.
+ */
+let nativeMissingWarned = false;
+
+/** Volta os avisos únicos ao estado inicial (só para teste). */
+export function resetKtx2GlbWarnings() {
+  encoderMissingWarned = false;
+  nativeMissingWarned = false;
+}
 
 /** Marca quais texturas são LINEARES (normal/MR/occlusion) — o resto é cor (sRGB). */
 function classifyLinear(doc) {
@@ -89,9 +101,13 @@ export async function convertGlbTextures(doc, onTexture, { label = 'glb', stats 
       // Esta textura falhou (formato incomum, JPG CMYK, fora dos blocos 4×4, basisu
       // nativo ausente pra fonte acima do teto do WASM…): avisa e mantém o original.
       const reason = err?.code ?? REASON_OTHER;
-      console.warn(
-        `[ktx2-glb] ${label} textura #${i} (${w}×${h}, ${texture.getMimeType()}): ${err?.message ?? err} — mantém o original`,
-      );
+      const repeated = reason === ERR_NATIVE_ENCODER_MISSING && nativeMissingWarned;
+      if (reason === ERR_NATIVE_ENCODER_MISSING) nativeMissingWarned = true;
+      if (!repeated) {
+        console.warn(
+          `[ktx2-glb] ${label} textura #${i} (${w}×${h}, ${texture.getMimeType()}): ${err?.message ?? err} — mantém o original`,
+        );
+      }
       countKept(stats, reason);
       continue;
     }

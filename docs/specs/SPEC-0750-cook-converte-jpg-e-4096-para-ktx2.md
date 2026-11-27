@@ -82,7 +82,7 @@ legíveis, vale o piso antigo por bytes.
 
 ### 3. Falha não é mais silenciosa (`native/scripts/ktx2-glb.mjs`)
 
-Cada textura que não converte gera um aviso com o GLB, o índice, as dimensões e o motivo
+Cada textura que não converte gera um aviso com o GLB, o índice, as dimensões e o motivo (o basisu nativo ausente avisa uma vez por processo, como o encoder WASM ausente, e cada textura mantida conta no resumo)
 (`[ktx2-glb] <glb> textura #i (L×A, mime): <motivo> — mantém o original`). O `stats` do cook ganha `texKept` (texturas
 mantidas sem KTX2) e `texKeptReasons` (contagem por `code` do erro: `ERR_IMAGE_FORMAT_UNKNOWN`, `ERR_IMAGE_DECODE`,
 `ERR_NOT_BLOCK_ALIGNED`, `ERR_NATIVE_ENCODER_MISSING`, `ERR_ENCODE_FAILED`, `outro`), e o `export-game.mjs` imprime a
@@ -124,7 +124,7 @@ da SPEC-0177.
 - O basisu é **compilado na máquina**, não baixado pronto (o basis_universal não publica o CLI no commit fixado). O CI
   que gera o instalador do Studio ainda não roda o `build-basisu.ps1`: até isso entrar, o Studio do CI sai sem o exe e
   o cook dele mantém as texturas acima do teto como estão (com aviso).
-- O `build-basisu.ps1` é só Windows (o export nativo também é). Em outra plataforma o nome procurado é `basisu`, sem
+- **Só Windows:** o `build-basisu.ps1` compila só no Windows e o Studio empacota só o `basisu.exe` (o export nativo também é só Windows). Em outra plataforma o nome procurado é `basisu`, sem
   receita de build.
 - PNG/JPG **soltos** (fora de GLB) continuam copiados como estão (o jogo os pede por URL). Fica para outra SPEC.
 - Sem dependência nova de JavaScript: o `jpeg-js` da primeira versão desta SPEC saiu (o WASM lê JPG).

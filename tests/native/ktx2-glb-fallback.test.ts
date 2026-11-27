@@ -17,7 +17,7 @@ vi.mock('../../native/scripts/encode-ktx2.mjs', async (importOriginal) => ({
   encodeKtx2,
 }));
 
-const { convertGlbTextures } = await import('../../native/scripts/ktx2-glb.mjs');
+const { convertGlbTextures, resetKtx2GlbWarnings } = await import('../../native/scripts/ktx2-glb.mjs');
 
 /** Acima do piso de 16 KB do cook — abaixo dele a textura seria pulada. */
 const ABOVE_MIN_SOURCE_BYTES = 32 * 1024;
@@ -47,6 +47,7 @@ describe('convertGlbTextures — encoder ausente', () => {
 
   beforeEach(() => {
     encodeKtx2.mockReset();
+    resetKtx2GlbWarnings();
     warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
   });
 
@@ -111,6 +112,23 @@ describe('convertGlbTextures — encoder ausente', () => {
     expect(other.getMimeType()).toBe('image/ktx2');
     expect(stats).toEqual({ texKept: 1, texKeptReasons: { ERR_NATIVE_ENCODER_MISSING: 1 } });
     expect(warn.mock.calls[0][0]).toMatch(/npc\.glb textura #0 \(256×256, image\/jpeg\): .*build-basisu\.ps1\) — mantém o original/);
+  });
+
+  it('o basisu nativo ausente avisa uma vez por processo e conta cada textura', async () => {
+    resetKtx2GlbWarnings();
+    const missing = Object.assign(new Error('basisu ausente (rode native/scripts/build-basisu.ps1)'), {
+      code: ERR_NATIVE_ENCODER_MISSING,
+    });
+    encodeKtx2.mockRejectedValue(missing);
+    const doc = new Document();
+    for (const name of ['a', 'b', 'c']) doc.createTexture(name).setImage(await jpegOf(256)).setMimeType('image/jpeg');
+    const stats: Record<string, unknown> = {};
+
+    await convertGlbTextures(doc, undefined, { label: 'npc.glb', stats });
+    await convertGlbTextures(doc, undefined, { label: 'npc2.glb', stats });
+
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(stats).toEqual({ texKept: 6, texKeptReasons: { ERR_NATIVE_ENCODER_MISSING: 6 } });
   });
 
   it('avisa cada textura ANTES do encode, pro modal do export (SPEC-0699)', async () => {
