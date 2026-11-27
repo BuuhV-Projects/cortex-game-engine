@@ -8,6 +8,8 @@
 // perf-log.txt.
 #pragma once
 
+#include <node_api.h>
+
 #include <cstddef>
 
 namespace shims {
@@ -28,5 +30,10 @@ void trackArrayBufferBytes(ArrayBufferSource source, size_t bytes);
 // Formata todas as fontes em `buf` (uma linha, "pak=12x/3.4MB img=...").
 // Devolve o nº de bytes escritos (sem terminador).
 int dumpArrayBufferStats(char* buf, size_t bufSize);
+
+// Pixels de imagem soltos depois do upload (SPEC-0748): lê o objeto
+// `globalThis.__cortexImageReleaseStats` que o shim JS (image-pixels.js) mantém
+// e formata "img-solto=N/X.XMB img-redecode=N". Precisa de handle scope aberto.
+int dumpImageReleaseStats(napi_env env, char* buf, size_t bufSize);
 
 }  // namespace shims

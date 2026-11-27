@@ -198,6 +198,17 @@ Native (que roda milhares de libs sobre Hermes em produção):
   origem) e o **vale** do `heap-js`/`external` depois de cada coleta — vale
   subindo de ciclo em ciclo é vazamento; pico subindo com vale parado, não.
 
+- **O `rgba` de imagem PNG/JPG some depois do upload** (SPEC-0748 / ADR-0749).
+  O bitmap do `createImageBitmap` e o `Image` fake (`shims/image.js`,
+  `shims/image-pixels.js`) têm `rgba` como getter: a fila embrulhada no
+  `requestDevice` (`webgpu-extras.js`) chama `__cortexReleasePixels()` da
+  fonte depois do `copyExternalImageToTexture`, e ler `rgba` de novo
+  redecodifica dos bytes comprimidos (com o mesmo `flipY`). Não guarde
+  `bitmap.rgba` esperando que continue o mesmo buffer; atribuir `rgba` à mão
+  tira o bitmap do esquema. `img-solto=N/MB img-redecode=N` vêm na linha
+  `arraybuffers:` do perf-log (o host lê `__cortexImageReleaseStats`);
+  `img-redecode` subindo no jogo = textura de imagem reenviada em loop.
+
 - **Canvas 2D custa no UPLOAD, não na chamada** (ADR-0312 / SPEC-0313). Com a
   rasterização adiada, `fillRect`/`fillText` só gravam; o trabalho aparece
   quando o three sobe a textura (`texture.needsUpdate = true` → `canvas.rgba`)
