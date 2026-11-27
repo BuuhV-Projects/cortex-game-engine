@@ -14,9 +14,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createRequire } from 'node:module';
 import { readImageHeader } from './image-header.mjs';
 import { DEFAULT_BASISU_PATH, encodeKtx2Native } from './encode-ktx2-native.mjs';
-export { ERR_NATIVE_ENCODER_FAILED } from './encode-ktx2-native.mjs';
-
-export { ERR_NATIVE_ENCODER_MISSING } from './encode-ktx2-native.mjs';
+export { ERR_NATIVE_ENCODER_FAILED, ERR_NATIVE_ENCODER_MISSING } from './encode-ktx2-native.mjs';
 
 const require = createRequire(import.meta.url);
 const encoderDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'tools', 'basis-encoder');
