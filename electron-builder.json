@@ -54,6 +54,11 @@
         "filter": ["basis_encoder.js", "basis_encoder.wasm"]
       },
       {
+        "from": "native/tools/basisu",
+        "to": "native/tools/basisu",
+        "filter": ["basisu.exe"]
+      },
+      {
         "from": "native/third_party/hermes/tools/native/release/x86",
         "to": "native/third_party/hermes/tools/native/release/x86",
         "filter": ["hermes.exe"]

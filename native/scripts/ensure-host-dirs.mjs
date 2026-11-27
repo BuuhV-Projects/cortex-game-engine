@@ -41,3 +41,19 @@ try {
   console.warn(`[hosts] ${ENCODER_DIR}: download falhou (${err.message}) — Studio sai SEM cook KTX2`);
 }
 fs.mkdirSync(path.join(engineRoot, ENCODER_DIR), { recursive: true });
+
+// Encoder NATIVO do cook (basisu, SPEC-0750): a textura acima do teto do WASM
+// passa por ele nas dimensões originais. Compilado do fonte pinado
+// (fetch-deps.ps1 baixa, build-basisu.ps1 compila) — não dá pra baixar pronto.
+// Sem o exe, a pasta vazia deixa o electron-builder seguir; o export avisa por
+// textura grande e mantém o original (nunca reduz).
+const NATIVE_ENCODER_DIR = 'native/tools/basisu';
+const nativeEncoderDir = path.join(engineRoot, NATIVE_ENCODER_DIR);
+if (fs.existsSync(path.join(nativeEncoderDir, 'basisu.exe'))) {
+  console.log(`[hosts] ${NATIVE_ENCODER_DIR}: presente`);
+} else {
+  fs.mkdirSync(nativeEncoderDir, { recursive: true });
+  console.warn(
+    `[hosts] ${NATIVE_ENCODER_DIR}: basisu.exe ausente (rode native/scripts/build-basisu.ps1) — o cook do Studio mantém as texturas acima do teto do WASM sem KTX2`,
+  );
+}

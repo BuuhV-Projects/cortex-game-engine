@@ -164,6 +164,32 @@ if (-not (Test-Path (Join-Path $zstdDir 'zstddeclib.c'))) {
 node (Join-Path $root 'scripts/fetch-basis-encoder.mjs')
 if ($LASTEXITCODE -ne 0) { throw 'fetch-basis-encoder.mjs falhou' }
 
+# ── basis_universal ENCODER NATIVO (fonte) — o CLI `basisu` em C++ que o cook usa
+# na textura acima do teto do WASM (12.582.912 texels; SPEC-0750, ADR-0751): o
+# cook nunca reduz textura. Aqui só baixa e extrai o fonte do MESMO commit do
+# transcoder e do WASM (o zip inteiro: o CLI precisa de encoder/, transcoder/ e
+# zstd/); quem compila é o native/scripts/build-basisu.ps1, que grava
+# native/tools/basisu/basisu.exe (fora do git). Sem o exe o export segue e
+# avisa por textura grande (mantém o original). sha256 do zip conferido antes de extrair. ──
+$BASISU_SRC_SHA256 = '9E7A8C9BE151445459CED3EF3FA26D98B781EB86E945E85B24D46ADF3AD596C9'
+$basisuSrcDl = Join-Path $dl 'basisu-src'
+$basisuSrcDir = Join-Path $basisuSrcDl "basis_universal-$BASISU_COMMIT"
+if (-not (Test-Path (Join-Path $basisuSrcDir 'basisu_tool.cpp'))) {
+    New-Item -ItemType Directory -Force $basisuSrcDl | Out-Null
+    $basisuSrcZip = Join-Path $basisuSrcDl "basis_universal-$($BASISU_COMMIT.Substring(0, 8)).zip"
+    if (-not (Test-Path $basisuSrcZip)) {
+        Write-Host 'baixando basis_universal (fonte do encoder nativo, ~160 MB) ...' -ForegroundColor Cyan
+        Invoke-WebRequest -Uri "https://github.com/BinomialLLC/basis_universal/archive/$BASISU_COMMIT.zip" -OutFile $basisuSrcZip -UserAgent $FETCH_USER_AGENT
+    }
+    $basisuSrcHash = (Get-FileHash $basisuSrcZip -Algorithm SHA256).Hash
+    if ($basisuSrcHash -ne $BASISU_SRC_SHA256) {
+        Remove-Item $basisuSrcZip -Force
+        throw "basis_universal (fonte): sha256 não confere ($basisuSrcHash), download recusado"
+    }
+    Expand-Archive $basisuSrcZip -DestinationPath $basisuSrcDl -Force
+}
+Write-Host 'fonte do basisu pronto (compile com native/scripts/build-basisu.ps1)' -ForegroundColor DarkGray
+
 # ── NSIS (portable) — gera o instalador do export PC (make-installer.mjs).
 # Build tool; fica em tools/ (gitignorado). ──
 $NSIS_VERSION = '3.10'
