@@ -76,3 +76,19 @@ reenviada em loop (`needsUpdate`) e é sinal para olhar o jogo. O host C++ não 
 - Testes: `tests/native/image-release.test.ts` (getter, soltura com prazo pelo `submit`, clone dentro do prazo sem
   redecode, contagem única, posse dos pixels, redecode com e sem flip, atribuição, `close`, cache de bytes do `Image`
   fake).
+
+## Medição (Port Hollow, export nativo, 2026-11-27)
+
+Mesmo export do jogo (`main` 0eb6eae3), save no começo do Ato 2, 180 s de autopiloto, 1920×1080
+(`measure.sh --seed seed-ato2`). Linha de base: a engine da `main` (d5d2cb72).
+
+| | base | SPEC-0748 |
+|---|---|---|
+| `ws` (memória do processo) | 8.415 MB | 7.461 MB |
+| `external` do Hermes (vale depois do GC) | 3.608 MB | 2.118 MB |
+| pixels soltos (`img-solto`) | — | 924 imagens, 2.109 MB |
+| `img-redecode` | — | 57 (todos no carregamento) |
+
+O que sobra no `external` não é cópia de textura: o jogo decodifica imagens novas durante o jogo (~12 MB/s no
+contador acumulado `img=`), que agora se soltam 3 s depois do upload e esperam o GC. A VRAM (4,3 GB) não muda aqui:
+ela cai com o cook em BC7 (SPEC-0750).
