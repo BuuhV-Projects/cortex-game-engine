@@ -243,6 +243,17 @@ describe('soltura com prazo (SPEC-0748, ADR-0749)', () => {
     expect(imageReleaseStats.pending).toBe(0);
   });
 
+  it('o redecode pelo getter, sem upload, também se solta depois do prazo', async () => {
+    const queue = wrapQueueRelease(fakeQueue()) as Queue;
+    const bitmap = await createBitmap()(compressed());
+    upload(queue, bitmap);
+    expect(rows(bitmap.rgba, WIDTH, HEIGHT)).toEqual([0, 1, 2]);
+    expect(pixelsOf(bitmap)).not.toBeNull();
+    clock += RELEASE_DELAY_MS + SWEEP_INTERVAL_MS;
+    queue.submit();
+    expect(pixelsOf(bitmap)).toBeNull();
+  });
+
   it('cada objeto conta uma vez em img-solto, mesmo soltando de novo', async () => {
     const queue = wrapQueueRelease(fakeQueue()) as Queue;
     const bitmap = await createBitmap()(compressed());

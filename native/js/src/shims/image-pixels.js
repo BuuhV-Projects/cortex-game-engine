@@ -82,8 +82,11 @@ export function definePixelAccessors(proto) {
         return null;
       }
       imageReleaseStats.redecodes++;
-      // Fica até o próximo upload, que solta de novo.
       this.__pixels = decoded.rgba;
+      // Volta para a fila de soltura: uma leitura fora do upload (drawImage do
+      // canvas 2D) também se solta depois do prazo; um upload logo em seguida
+      // só renova o prazo.
+      markUploaded(this);
       return this.__pixels;
     },
     // Pixels atribuídos à mão viram a fonte da verdade: não há bytes
