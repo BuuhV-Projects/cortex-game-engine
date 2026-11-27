@@ -281,6 +281,8 @@ if (fs.existsSync(assetsDir)) {
       `[export] cook: ${cs.glbConverted} GLB convertidos (+${cs.glbCached} do cache, ${cs.glbNoTex} sem textura) · ` +
         `assets ${(cs.before / 1e6).toFixed(1)} → ${(cs.after / 1e6).toFixed(1)} MB`,
     );
+    // SPEC-0750: textura que não virou KTX2 chega à GPU em RGBA8 — o resumo conta.
+    if (cs.texKept) console.log(`[export] cook: ${cs.texKept} textura(s) mantida(s) sem KTX2 ${JSON.stringify(cs.texKeptReasons)}`);
   }
   progress({ phase: 'pack' });
   guardLocks('assets', () => {

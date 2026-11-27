@@ -11,6 +11,7 @@ import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { convertGlbTextures } from './ktx2-glb.mjs';
+import { ERR_NATIVE_ENCODER_FAILED, ERR_NATIVE_ENCODER_MISSING } from './encode-ktx2-native.mjs';
 
 const io = new NodeIO().registerExtensions(ALL_EXTENSIONS);
 
@@ -21,7 +22,17 @@ const io = new NodeIO().registerExtensions(ALL_EXTENSIONS);
  */
 // v4: converte por VRAM (BC7, SPEC-0155) — a regra "só se encolher em disco"
 // deixava as texturas do kit fora do KTX2/BC7.
-const COOK_VERSION = 'cook-v4';
+// v5: JPG e fonte acima do limite do encoder WASM convertem (a grande pelo
+// basisu nativo, sem reduzir), piso por texels (SPEC-0750) — o cache v4 tem GLB
+// cozido com os JPG e os 4096² de fora.
+const COOK_VERSION = 'cook-v5';
+
+/**
+ * Texturas mantidas até agora porque o basisu nativo faltou ou não rodou
+ * (SPEC-0750): problema da instalação, não da textura, então o GLB não vai pro cache.
+ */
+const nativeMissing = (stats) =>
+  (stats.texKeptReasons[ERR_NATIVE_ENCODER_MISSING] ?? 0) + (stats.texKeptReasons[ERR_NATIVE_ENCODER_FAILED] ?? 0);
 
 function walk(dir, out = []) {
   for (const name of fs.readdirSync(dir)) {
@@ -44,7 +55,20 @@ function walk(dir, out = []) {
  */
 export async function cookAssets(assetsDir, cookedDir, cacheDir, onProgress, include) {
   fs.mkdirSync(cacheDir, { recursive: true });
-  const stats = { glbConverted: 0, glbCached: 0, glbNoTex: 0, copied: 0, skipped: 0, before: 0, after: 0 };
+  // texKept/texKeptReasons: texturas dos GLB convertidos NESTE export que
+  // ficaram com o original, por motivo (SPEC-0750; o cook nunca reduz textura).
+  // GLB vindo do cache não reconta.
+  const stats = {
+    glbConverted: 0,
+    glbCached: 0,
+    glbNoTex: 0,
+    copied: 0,
+    skipped: 0,
+    before: 0,
+    after: 0,
+    texKept: 0,
+    texKeptReasons: {},
+  };
 
   const every = walk(assetsDir);
   const all = include ? every.filter((f) => include(path.relative(assetsDir, f))) : every;
@@ -84,7 +108,8 @@ export async function cookAssets(assetsDir, cookedDir, cacheDir, onProgress, inc
     } else {
       try {
         const doc = await io.read(full); // por caminho (readBinary rejeita alguns GLB)
-        const n = await convertGlbTextures(doc, (i, count) => report(rel, [i, count]));
+        const missingBefore = nativeMissing(stats);
+        const n = await convertGlbTextures(doc, (i, count) => report(rel, [i, count]), { label: rel, stats });
         if (n > 0) {
           await io.write(out, doc);
           stats.glbConverted++;
@@ -92,7 +117,10 @@ export async function cookAssets(assetsDir, cookedDir, cacheDir, onProgress, inc
           fs.copyFileSync(full, out); // GLB só-geometria
           stats.glbNoTex++;
         }
-        fs.copyFileSync(out, cached); // cacheia o resultado (convertido ou não)
+        // Cacheia o resultado (convertido ou não) — menos quando faltou o basisu
+        // nativo: é problema de instalação, e o próximo export com o exe tem que
+        // converter a textura grande em vez de reusar o GLB com o original.
+        if (nativeMissing(stats) === missingBefore) fs.copyFileSync(out, cached);
       } catch (e) {
         console.warn(`[cook] ${rel}: falhou (${e.message}) — copiando original`);
         fs.copyFileSync(full, out);

@@ -1,15 +1,22 @@
 // Encoder PNG/JPG → KTX2 (Basis) via basis_encoder WASM (ADR-0108, pipeline M2).
-// Roda no Node, sem instalar nada — o .wasm fica em native/tools/basis-encoder/
-// (baixado pelo fetch-deps). É ferramenta de BUILD (converter assets), não vai
-// pro runtime.
+// O WASM lê PNG e JPG; a fonte acima do teto dele vai pro basisu NATIVO
+// (encode-ktx2-native.mjs, SPEC-0750/ADR-0751) nas dimensões originais — o cook
+// nunca reduz textura. Roda no Node: o .wasm fica em native/tools/basis-encoder/
+// (fetch-deps) e o exe em native/tools/basisu/ (build-basisu.ps1). É ferramenta
+// de BUILD (converter assets), não vai pro runtime.
 //
-// Uso: node native/scripts/encode-ktx2.mjs <in.png> <out.ktx2> [--uastc] [--linear] [-q N]
-//   ETC1S (default) = menor; --uastc = maior qualidade/tamanho.
-//   --linear pra normal maps / dados (sem sRGB). -q 1..255 (qualidade ETC1S).
+// Uso: node native/scripts/encode-ktx2.mjs <in.png|in.jpg> <out.ktx2> [--etc1s] [--linear] [-q N]
+//   UASTC+RDO+Zstd (default) · --etc1s = menor; --linear pra normal maps / dados
+//   (sem sRGB). -q 1..255 (qualidade ETC1S).
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createRequire } from 'node:module';
+import { readImageHeader } from './image-header.mjs';
+import { DEFAULT_BASISU_PATH, encodeKtx2Native } from './encode-ktx2-native.mjs';
+export { ERR_NATIVE_ENCODER_FAILED } from './encode-ktx2-native.mjs';
+
+export { ERR_NATIVE_ENCODER_MISSING } from './encode-ktx2-native.mjs';
 
 const require = createRequire(import.meta.url);
 const encoderDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'tools', 'basis-encoder');
@@ -20,6 +27,52 @@ const encoderDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '.
  * engolir por textura e entregar um export silenciosamente sem KTX2.
  */
 export const ERR_BASIS_ENCODER_MISSING = 'ERR_BASIS_ENCODER_MISSING';
+/** O basis devolveu 0 bytes ou recusou a fonte (o log dele está silenciado; o motivo vai na mensagem). */
+export const ERR_ENCODE_FAILED = 'ERR_ENCODE_FAILED';
+/** Dimensão fora dos blocos 4×4: o host monta o BC7 pelas dimensões do KTX2 e o WebGPU exige o nível 0 em blocos. */
+export const ERR_NOT_BLOCK_ALIGNED = 'ERR_NOT_BLOCK_ALIGNED';
+
+/**
+ * Teto de texels da FONTE no encoder WASM: BASISU_ENCODER_MAX_SOURCE_IMAGE_PIXELS
+ * do basis_wrappers.cpp (tag v2_1_0r), fixo na compilação. Acima disto o
+ * `encode()` devolve 0 — era a falha do PNG de 4096² (16.777.216 texels). A fonte
+ * maior vai pro basisu nativo (SPEC-0750 §2).
+ */
+export const ENCODER_MAX_SOURCE_TEXELS = 12_582_912;
+
+/** Lado do bloco 4×4 do UASTC/BC7. */
+const BLOCK_DIM = 4;
+// Buffer de saída pelas dimensões: o UASTC grava 16 bytes por bloco 4×4 (1 byte
+// por texel) sem supercompressão; os mips somam até 1/3; a folga cobre header,
+// DFD e índice de níveis do KTX2. ETC1S é menor que isso.
+const UASTC_BLOCK_BYTES = 16;
+const MIP_CHAIN_FACTOR = 4 / 3;
+const OUTPUT_HEADROOM_BYTES = 1024 * 1024;
+/** Nível "faster" do UASTC no WASM: 6× mais rápido, mesma qualidade medida (ADR-0119). */
+const UASTC_PACK_FLAGS = 1;
+/** Dicionário do RDO: encode 1024² cai de ~15s pra ~2,6s mantendo 52 dB (o default 4096 só valia no nativo). */
+const RDO_DICT_BYTES = 1024;
+const DEFAULT_ETC1S_QUALITY = 128;
+
+/** Bytes de saída que cabem o KTX2 de uma fonte `width`×`height` com mips. */
+export function outputBufferBytes(width, height) {
+  const blocks = Math.ceil(width / BLOCK_DIM) * Math.ceil(height / BLOCK_DIM);
+  return Math.ceil(blocks * UASTC_BLOCK_BYTES * MIP_CHAIN_FACTOR) + OUTPUT_HEADROOM_BYTES;
+}
+
+/**
+ * Formato, dimensões e qual encoder (`'wasm'` dentro do teto, `'native'` acima).
+ * Formato desconhecido e dimensão fora dos blocos 4×4 lançam com o motivo.
+ */
+export function planEncode(bytes) {
+  const { format, width, height } = readImageHeader(bytes);
+  if (width % BLOCK_DIM || height % BLOCK_DIM) {
+    throw Object.assign(new Error(`dimensões ${width}×${height} fora dos blocos 4×4 (o BC7 do host exige múltiplo de 4)`), {
+      code: ERR_NOT_BLOCK_ALIGNED,
+    });
+  }
+  return { format, width, height, encoder: width * height > ENCODER_MAX_SOURCE_TEXELS ? 'native' : 'wasm' };
+}
 
 /** O encoder WASM existe neste checkout/instalação? (não vem no git nem no asar) */
 export function hasEncoder() {
@@ -41,18 +94,6 @@ function loadEncoderFactory() {
   return m.exports;
 }
 
-/**
- * Encoda os bytes de uma imagem (PNG/JPG) num KTX2 (Uint8Array).
- *
- * Modos (ADR-0119):
- * - `uastc: true` (DEFAULT pra COR) — UASTC + RDO + supercompressão Zstd.
- *   ETC1S quantiza gradiente suave em bandas visíveis ("camadas" nos atlas de
- *   paleta+degradê dos kits estilizados — PSNR ~37 dB vs ~53 dB do UASTC); o
- *   RDO + Zstd segura o tamanho (rock 1024²: 1,37 MB cru → 383 KB).
- *   Requer o host com BASISD_SUPPORT_KTX2_ZSTD=1.
- * - `uastc: false` — ETC1S (menor; ok pra textura sem gradiente suave).
- * - `rdoScalar` — força do RDO no UASTC (padrão 1.0; maior = menor/pior).
- */
 // Módulo WASM memoizado — inicializar a cada chamada custava ~2s por textura
 // (o cook converte centenas em lote).
 let modulePromise = null;
@@ -70,37 +111,69 @@ function getModule() {
   return modulePromise;
 }
 
-export async function encodeKtx2(imageBytes, { uastc = true, srgb = true, quality = 128, rdoScalar = 1.0 } = {}) {
+const encodeFailed = (msg) => Object.assign(new Error(msg), { code: ERR_ENCODE_FAILED });
+
+async function encodeWasm(bytes, plan, { uastc, srgb, quality, rdoScalar }) {
   const Module = await getModule();
   const enc = new Module.BasisEncoder();
   try {
     enc.setCreateKTX2File(true);
-    enc.setSliceSourceImage(0, imageBytes, 0, 0, true); // true = imagem PNG (decodifica interno)
+    // O 5º argumento é o ldr_image_type: o basis decodifica o PNG/JPG (largura e altura 0).
+    const type = plan.format === 'jpeg' ? Module.ldr_image_type.cJPGImage : Module.ldr_image_type.cPNGImage;
+    if (!enc.setSliceSourceImage(0, bytes, 0, 0, type.value)) {
+      throw encodeFailed(`basis recusou a fonte ${plan.format} ${plan.width}×${plan.height}`);
+    }
     enc.setPerceptual(srgb); // sRGB p/ cor
     enc.setMipSRGB(srgb);
     enc.setMipGen(true); // mipmaps
     enc.setUASTC(uastc);
     if (uastc) {
       enc.setKTX2UASTCSupercompression(true); // Zstd no arquivo (o pak não comprime)
-      enc.setPackUASTCFlags(1); // nível "faster": 6× mais rápido, mesma qualidade medida
+      enc.setPackUASTCFlags(UASTC_PACK_FLAGS);
       if (rdoScalar > 0) {
         enc.setRDOUASTC(true); // torna o UASTC compressível sem perda visível
         enc.setRDOUASTCQualityScalar(rdoScalar);
-        // Dicionário menor: encode 1024² cai de ~15s pra ~2,6s mantendo 52 dB
-        // (medido no atlas do kit) — o default 4096 só valia no encoder nativo.
-        enc.setRDOUASTCDictSize(1024);
+        enc.setRDOUASTCDictSize(RDO_DICT_BYTES);
       }
     } else {
       enc.setQualityLevel(quality);
     }
-    // Buffer de saída generoso (o encode devolve o tamanho real usado).
-    const out = new Uint8Array(1024 * 1024 * 24);
+    // Buffer pelas dimensões (o encode devolve o tamanho real usado).
+    const out = new Uint8Array(outputBufferBytes(plan.width, plan.height));
     const len = enc.encode(out);
-    if (!len) throw new Error('encode: falhou (0 bytes)');
+    if (!len) throw encodeFailed(`encode: o basis devolveu 0 bytes (${plan.format} ${plan.width}×${plan.height})`);
     return out.slice(0, len);
   } finally {
     enc.delete();
   }
+}
+
+/**
+ * Encoda os bytes de uma imagem (PNG/JPG) num KTX2 (Uint8Array), nas dimensões
+ * da fonte: dentro do teto pelo WASM, acima dele pelo basisu nativo com os
+ * mesmos parâmetros. Sem o exe nativo lança ERR_NATIVE_ENCODER_MISSING (o cook
+ * mantém o original); nunca reduz.
+ *
+ * Modos (ADR-0119):
+ * - `uastc: true` (DEFAULT pra COR) — UASTC + RDO + supercompressão Zstd.
+ *   ETC1S quantiza gradiente suave em bandas visíveis ("camadas" nos atlas de
+ *   paleta+degradê dos kits estilizados — PSNR ~37 dB vs ~53 dB do UASTC); o
+ *   RDO + Zstd segura o tamanho (rock 1024²: 1,37 MB cru → 383 KB).
+ *   Requer o host com BASISD_SUPPORT_KTX2_ZSTD=1.
+ * - `uastc: false` — ETC1S (menor; ok pra textura sem gradiente suave).
+ * - `rdoScalar` — força do RDO no UASTC (padrão 1.0; maior = menor/pior; 0 = sem RDO).
+ * - `basisuPath` — caminho do basisu nativo (padrão native/tools/basisu/).
+ */
+export async function encodeKtx2(
+  imageBytes,
+  { uastc = true, srgb = true, quality = DEFAULT_ETC1S_QUALITY, rdoScalar = 1.0, basisuPath = DEFAULT_BASISU_PATH } = {},
+) {
+  const plan = planEncode(imageBytes);
+  const opts = { uastc, srgb, quality, rdoScalar };
+  if (plan.encoder === 'native') {
+    return encodeKtx2Native(imageBytes, plan.format, opts, { exePath: basisuPath });
+  }
+  return encodeWasm(imageBytes, plan, opts);
 }
 
 // CLI (só quando executado direto, não quando importado)
@@ -111,11 +184,11 @@ if (invokedDirectly) {
   const flags = new Set(args.filter((a) => a.startsWith('-')));
   const [input, output] = args.filter((a) => !a.startsWith('-'));
   if (!input || !output) {
-    console.error('uso: node encode-ktx2.mjs <in.png> <out.ktx2> [--etc1s] [--linear] [-q N]');
+    console.error('uso: node encode-ktx2.mjs <in.png|in.jpg> <out.ktx2> [--etc1s] [--linear] [-q N]');
     process.exit(1);
   }
   const qi = args.indexOf('-q');
-  const quality = qi >= 0 ? Number(args[qi + 1]) : 128;
+  const quality = qi >= 0 ? Number(args[qi + 1]) : DEFAULT_ETC1S_QUALITY;
   const bytes = new Uint8Array(readFileSync(input));
   // Default = UASTC+RDO+Zstd (ADR-0119); --etc1s opta pelo formato antigo (menor).
   const ktx2 = await encodeKtx2(bytes, { uastc: !flags.has('--etc1s'), srgb: !flags.has('--linear'), quality });
