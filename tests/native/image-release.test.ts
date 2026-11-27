@@ -12,6 +12,9 @@ import { installWebGpuExtras } from '../../native/js/src/shims/webgpu-extras.js'
 import {
   formatImageReleaseStats,
   imageReleaseStats,
+  RELEASE_DELAY_MS,
+  SWEEP_INTERVAL_MS,
+  sweepPendingReleases,
   wrapQueueRelease,
   // @ts-expect-error — shim JS do host, sem d.ts
 } from '../../native/js/src/shims/image-pixels.js';
@@ -27,7 +30,10 @@ type Bitmap = {
   close(): void;
   __cortexReleasePixels?: () => void;
 };
-type Queue = { copyExternalImageToTexture(src: { source: unknown }, dst: unknown, size: unknown): void };
+type Queue = {
+  copyExternalImageToTexture(src: { source: unknown }, dst: unknown, size: unknown): void;
+  submit(): void;
+};
 type CreateBitmap = (source: unknown, options?: { imageOrientation?: string }) => Promise<Bitmap>;
 
 const SAVED = ['createImageBitmap', 'ImageBitmap', 'Image', 'HTMLImageElement', '__cortexImageReleaseStats'];
@@ -35,6 +41,9 @@ const saved: Record<string, unknown> = {};
 const g = globalThis as Record<string, unknown>;
 let decodeCalls: number[] = [];
 let uploads: Array<number[] | null> = [];
+/** Relógio falso do performance.now: só cresce, entre testes também (a varredura guarda a última hora). */
+let clock = 0;
+const TEST_CLOCK_STEP_MS = 100_000;
 
 function fakeDecode(bytes: ArrayBuffer) {
   const head = new Uint8Array(bytes);
@@ -60,8 +69,17 @@ function fakeQueue(): Queue {
       const image = src.source as Bitmap;
       uploads.push(rows(image.rgba, image.width, image.height));
     },
+    submit() {},
   };
 }
+
+/** Upload e soltura na hora (sem esperar o prazo). */
+function upload(queue: Queue, source: unknown): void {
+  queue.copyExternalImageToTexture({ source }, {}, {});
+  sweepPendingReleases(true);
+}
+
+const pixelsOf = (o: unknown): unknown => (o as { __pixels: unknown }).__pixels;
 
 function compressed(width = WIDTH, height = HEIGHT): ArrayBuffer {
   return new Uint8Array([width, height]).buffer;
@@ -75,10 +93,13 @@ beforeEach(() => {
   uploads = [];
   vi.stubGlobal('__cortexDecodeImage', fakeDecode);
   vi.stubGlobal('print', () => {});
+  clock += TEST_CLOCK_STEP_MS;
+  vi.stubGlobal('performance', { now: () => clock });
   installImageShims();
 });
 
 afterEach(() => {
+  sweepPendingReleases(true);
   for (const name of SAVED) g[name] = saved[name];
   vi.unstubAllGlobals();
 });
@@ -96,9 +117,9 @@ describe('bitmap soltável (SPEC-0748)', () => {
     const queue = wrapQueueRelease(fakeQueue()) as Queue;
     const bitmap = await createBitmap()(compressed());
     const before = { ...imageReleaseStats };
-    queue.copyExternalImageToTexture({ source: bitmap }, {}, {});
+    upload(queue, bitmap);
     expect(uploads).toEqual([[0, 1, 2]]);
-    expect((bitmap as unknown as { __pixels: unknown }).__pixels).toBeNull();
+    expect(pixelsOf(bitmap)).toBeNull();
     expect(imageReleaseStats.released - before.released).toBe(1);
     expect(imageReleaseStats.releasedBytes - before.releasedBytes).toBe(WIDTH * HEIGHT * BYTES_PER_PIXEL);
   });
@@ -106,9 +127,9 @@ describe('bitmap soltável (SPEC-0748)', () => {
   it('ler rgba depois de solto decodifica de novo e conta o redecode', async () => {
     const queue = wrapQueueRelease(fakeQueue()) as Queue;
     const bitmap = await createBitmap()(compressed());
-    queue.copyExternalImageToTexture({ source: bitmap }, {}, {});
+    upload(queue, bitmap);
     const before = imageReleaseStats.redecodes;
-    queue.copyExternalImageToTexture({ source: bitmap }, {}, {});
+    upload(queue, bitmap);
     expect(uploads).toEqual([[0, 1, 2], [0, 1, 2]]);
     expect(decodeCalls).toHaveLength(2);
     expect(imageReleaseStats.redecodes - before).toBe(1);
@@ -118,7 +139,7 @@ describe('bitmap soltável (SPEC-0748)', () => {
     const queue = wrapQueueRelease(fakeQueue()) as Queue;
     const bitmap = await createBitmap()(compressed(), { imageOrientation: 'flipY' });
     expect(rows(bitmap.rgba, WIDTH, HEIGHT)).toEqual([2, 1, 0]);
-    queue.copyExternalImageToTexture({ source: bitmap }, {}, {});
+    upload(queue, bitmap);
     expect(rows(bitmap.rgba, WIDTH, HEIGHT)).toEqual([2, 1, 0]);
     expect(decodeCalls).toHaveLength(2);
   });
@@ -128,7 +149,7 @@ describe('bitmap soltável (SPEC-0748)', () => {
     const bitmap = await createBitmap()(compressed());
     const own = new Uint8Array(WIDTH * HEIGHT * BYTES_PER_PIXEL).fill(7).buffer;
     bitmap.rgba = own;
-    queue.copyExternalImageToTexture({ source: bitmap }, {}, {});
+    upload(queue, bitmap);
     expect(bitmap.rgba).toBe(own);
     expect(decodeCalls).toHaveLength(1);
   });
@@ -151,7 +172,7 @@ describe('bitmap soltável (SPEC-0748)', () => {
   it('createImageBitmap de outro bitmap solto passa direto sem decodificar', async () => {
     const queue = wrapQueueRelease(fakeQueue()) as Queue;
     const first = await createBitmap()(compressed());
-    queue.copyExternalImageToTexture({ source: first }, {}, {});
+    upload(queue, first);
     const second = await createBitmap()(first);
     expect(decodeCalls).toHaveLength(1);
     expect(rows(second.rgba, WIDTH, HEIGHT)).toEqual([0, 1, 2]);
@@ -164,7 +185,7 @@ describe('fila embrulhada (SPEC-0748)', () => {
     const queue = wrapQueueRelease(fakeQueue()) as Queue;
     const canvas = { width: WIDTH, height: HEIGHT, rgba: fakeDecode(compressed()).rgba };
     const pixels = canvas.rgba;
-    queue.copyExternalImageToTexture({ source: canvas }, {}, {});
+    upload(queue, canvas);
     expect(canvas.rgba).toBe(pixels);
   });
 
@@ -172,7 +193,7 @@ describe('fila embrulhada (SPEC-0748)', () => {
     const queue = wrapQueueRelease(wrapQueueRelease(fakeQueue())) as Queue;
     const bitmap = await createBitmap()(compressed());
     const before = imageReleaseStats.released;
-    queue.copyExternalImageToTexture({ source: bitmap }, {}, {});
+    upload(queue, bitmap);
     expect(imageReleaseStats.released - before).toBe(1);
   });
 
@@ -185,13 +206,61 @@ describe('fila embrulhada (SPEC-0748)', () => {
     const nav = g['navigator'] as { gpu: { requestAdapter(): Promise<{ requestDevice(): Promise<{ queue: Queue }> }> } };
     const device = await (await nav.gpu.requestAdapter()).requestDevice();
     const bitmap = await createBitmap()(compressed());
-    device.queue.copyExternalImageToTexture({ source: bitmap }, {}, {});
-    expect((bitmap as unknown as { __pixels: unknown }).__pixels).toBeNull();
+    upload(device.queue, bitmap);
+    expect(pixelsOf(bitmap)).toBeNull();
   });
 
-  it('formata os contadores como no perf-log', () => {
-    expect(formatImageReleaseStats()).toMatch(/^img-solto=\d+\/\d+\.\dMB img-redecode=\d+$/);
+  it('formata os contadores', () => {
+    expect(formatImageReleaseStats()).toMatch(/^img-solto=\d+\/\d+\.\dMB img-redecode=\d+ pendentes=\d+$/);
     expect(g['__cortexImageReleaseStats']).toBe(imageReleaseStats);
+  });
+});
+
+describe('soltura com prazo (SPEC-0748, ADR-0749)', () => {
+  it('um clone que sobe dentro do prazo reaproveita os pixels, sem redecode', async () => {
+    const queue = wrapQueueRelease(fakeQueue()) as Queue;
+    const bitmap = await createBitmap()(compressed());
+    queue.copyExternalImageToTexture({ source: bitmap }, {}, {});
+    clock += RELEASE_DELAY_MS / 2;
+    queue.submit();
+    queue.copyExternalImageToTexture({ source: bitmap }, {}, {});
+    expect(uploads).toEqual([[0, 1, 2], [0, 1, 2]]);
+    expect(decodeCalls).toHaveLength(1);
+    expect(pixelsOf(bitmap)).not.toBeNull();
+  });
+
+  it('o submit solta só depois do prazo sem upload novo', async () => {
+    const queue = wrapQueueRelease(fakeQueue()) as Queue;
+    const bitmap = await createBitmap()(compressed());
+    queue.copyExternalImageToTexture({ source: bitmap }, {}, {});
+    expect(imageReleaseStats.pending).toBeGreaterThan(0);
+    clock += SWEEP_INTERVAL_MS;
+    queue.submit();
+    expect(pixelsOf(bitmap)).not.toBeNull();
+    clock += RELEASE_DELAY_MS;
+    queue.submit();
+    expect(pixelsOf(bitmap)).toBeNull();
+    expect(imageReleaseStats.pending).toBe(0);
+  });
+
+  it('cada objeto conta uma vez em img-solto, mesmo soltando de novo', async () => {
+    const queue = wrapQueueRelease(fakeQueue()) as Queue;
+    const bitmap = await createBitmap()(compressed());
+    const before = { ...imageReleaseStats };
+    upload(queue, bitmap);
+    upload(queue, bitmap);
+    expect(imageReleaseStats.released - before.released).toBe(1);
+    expect(imageReleaseStats.releasedBytes - before.releasedBytes).toBe(WIDTH * HEIGHT * BYTES_PER_PIXEL);
+    expect(imageReleaseStats.redecodes - before.redecodes).toBe(1);
+  });
+
+  it('createImageBitmap de fonte soltável leva a posse dos pixels', async () => {
+    const first = await createBitmap()(compressed());
+    const pixels = pixelsOf(first);
+    const second = await createBitmap()(first);
+    expect(pixelsOf(second)).toBe(pixels);
+    expect(pixelsOf(first)).toBeNull();
+    expect(decodeCalls).toHaveLength(1);
   });
 });
 
@@ -224,8 +293,8 @@ describe('Image fake com cache de bytes (SPEC-0748)', () => {
     vi.stubGlobal('fetch', async () => ({ ok: true, arrayBuffer: async () => compressed() }));
     const queue = wrapQueueRelease(fakeQueue()) as Queue;
     const image = await load('img-' + Math.random() + '.png');
-    queue.copyExternalImageToTexture({ source: image }, {}, {});
-    expect((image as unknown as { __pixels: unknown }).__pixels).toBeNull();
+    upload(queue, image);
+    expect(pixelsOf(image)).toBeNull();
     expect(rows(image.rgba, WIDTH, HEIGHT)).toEqual([0, 1, 2]);
   });
 });

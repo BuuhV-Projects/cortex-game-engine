@@ -8,20 +8,37 @@
 const BYTES_PER_PIXEL = 4;
 const BYTES_PER_MB = 1024 * 1024;
 
-// Contadores lidos pelo host na linha `heap-js=…` do perf-log.txt (SPEC-0188):
-// o objeto é mutado no lugar, nunca trocado.
-export const imageReleaseStats = { released: 0, releasedBytes: 0, redecodes: 0 };
+// Contadores da soltura (SPEC-0748), em globalThis.__cortexImageReleaseStats
+// e na linha `[image] img-solto=…` da saída do host: o objeto é mutado no
+// lugar, nunca trocado. `released`/`releasedBytes` contam cada
+// objeto uma vez só (a 1ª soltura); `pending` é quantos esperam o prazo.
+export const imageReleaseStats = { released: 0, releasedBytes: 0, redecodes: 0, pending: 0 };
 
 export function installImageReleaseStats() {
   globalThis.__cortexImageReleaseStats = imageReleaseStats;
 }
 
-// Resumo legível dos contadores (`img-solto=N/MB img-redecode=N`), o mesmo
-// formato que o host escreve no perf-log.
+// Resumo legível dos contadores (`img-solto=N/MB img-redecode=N pendentes=N`).
 export function formatImageReleaseStats() {
   const mb = imageReleaseStats.releasedBytes / BYTES_PER_MB;
   return 'img-solto=' + imageReleaseStats.released + '/' + mb.toFixed(1) + 'MB' +
-    ' img-redecode=' + imageReleaseStats.redecodes;
+    ' img-redecode=' + imageReleaseStats.redecodes + ' pendentes=' + imageReleaseStats.pending;
+}
+
+// Intervalo mínimo entre duas linhas `[image]` na saída do host. A linha só
+// sai quando um contador mudou: depois do carregamento ela fica quieta, e um
+// `img-redecode` que não para de subir aponta textura reenviada em loop.
+export const STATS_PRINT_INTERVAL_MS = 10000;
+let lastPrint = -Infinity;
+let lastPrinted = '';
+
+function printStatsIfChanged(now) {
+  if (now - lastPrint < STATS_PRINT_INTERVAL_MS) return;
+  const line = formatImageReleaseStats();
+  if (line === lastPrinted) return;
+  lastPrint = now;
+  lastPrinted = line;
+  if (typeof print === 'function') print('[image] ' + line);
 }
 
 function flipRows(rgba, width, height) {
@@ -78,24 +95,73 @@ export function definePixelAccessors(proto) {
   });
   proto.__cortexReleasePixels = function () {
     if (!this.__cortexCompressed || !this.__pixels) return;
-    imageReleaseStats.released++;
-    imageReleaseStats.releasedBytes += this.__pixels.byteLength;
+    if (!this.__cortexCounted) {
+      this.__cortexCounted = true;
+      imageReleaseStats.released++;
+      imageReleaseStats.releasedBytes += this.__pixels.byteLength;
+    }
     this.__pixels = null;
   };
 }
 
-// Embrulha o copyExternalImageToTexture de uma GPUQueue: depois do upload
-// nativo (os pixels já foram copiados pela fila) solta os da fonte. Fila já
-// embrulhada não muda.
+// Prazo sem upload antes de soltar os pixels. O three cria uma textura de GPU
+// por objeto Texture, e os clones de uma imagem (GLTFLoader por material,
+// estradas, sprites) sobem logo depois da primeira: dentro do prazo eles
+// reaproveitam o RGBA em vez de pagar um decode cada (ADR-0749). Cada upload
+// renova o prazo.
+export const RELEASE_DELAY_MS = 3000;
+// De quanto em quanto tempo a fila de pendentes é varrida (no queue.submit).
+export const SWEEP_INTERVAL_MS = 500;
+
+const pendingRelease = new Set();
+let lastSweep = 0;
+
+function nowMs() {
+  return globalThis.performance ? globalThis.performance.now() : Date.now();
+}
+
+// Marca o upload de `image` e põe na fila de soltura.
+export function markUploaded(image) {
+  image.__cortexUploadedAt = nowMs();
+  pendingRelease.add(image);
+  imageReleaseStats.pending = pendingRelease.size;
+}
+
+// Solta os pixels de quem passou do prazo sem upload novo. `force` solta
+// todos na hora (teste, troca de fase).
+export function sweepPendingReleases(force) {
+  const now = nowMs();
+  if (!force && now - lastSweep < SWEEP_INTERVAL_MS) return;
+  lastSweep = now;
+  for (const image of pendingRelease) {
+    if (!force && now - image.__cortexUploadedAt < RELEASE_DELAY_MS) continue;
+    image.__cortexReleasePixels();
+    pendingRelease.delete(image);
+  }
+  imageReleaseStats.pending = pendingRelease.size;
+  printStatsIfChanged(now);
+}
+
+// Embrulha a GPUQueue: o copyExternalImageToTexture marca a fonte para soltar
+// (o nativo já copiou os pixels pela fila) e o submit varre os vencidos. Fila
+// já embrulhada não muda.
 export function wrapQueueRelease(queue) {
   if (!queue || queue.__cortexReleaseWrapped || !queue.copyExternalImageToTexture) return queue;
   const nativeCopy = queue.copyExternalImageToTexture;
   queue.copyExternalImageToTexture = function (source, destination, size) {
     const result = nativeCopy.call(this, source, destination, size);
     const image = source && source.source;
-    if (image && typeof image.__cortexReleasePixels === 'function') image.__cortexReleasePixels();
+    if (image && typeof image.__cortexReleasePixels === 'function') markUploaded(image);
     return result;
   };
+  const nativeSubmit = queue.submit;
+  if (typeof nativeSubmit === 'function') {
+    queue.submit = function () {
+      const result = nativeSubmit.apply(this, arguments);
+      sweepPendingReleases(false);
+      return result;
+    };
+  }
   queue.__cortexReleaseWrapped = true;
   return queue;
 }

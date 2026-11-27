@@ -43,11 +43,15 @@ function makeBitmap(width, height, pixels, compressed, flipY) {
 export function installImageShims() {
   installImageReleaseStats();
   globalThis.createImageBitmap = function (source, options) {
-    // Fonte soltável (Image fake / outro bitmap): passa direto, dividindo os
-    // pixels e os bytes comprimidos, sem forçar um redecode.
+    // Fonte soltável (Image fake / outro bitmap): passa direto, sem forçar um
+    // redecode. A posse dos pixels vai para o bitmap (a fonte fica só com os
+    // bytes comprimidos): dois donos do mesmo buffer o prenderiam depois de o
+    // bitmap soltar.
     if (source && source.__cortexCompressed && source.width > 0) {
-      return Promise.resolve(makeBitmap(source.width, source.height, source.__pixels,
-        source.__cortexCompressed, source.__cortexFlipY));
+      const bitmap = makeBitmap(source.width, source.height, source.__pixels,
+        source.__cortexCompressed, source.__cortexFlipY);
+      source.__pixels = null;
+      return Promise.resolve(bitmap);
     }
     // Fonte JÁ decodificada sem bytes comprimidos (pixels à mão): como antes.
     if (source && source.rgba && source.width > 0) {

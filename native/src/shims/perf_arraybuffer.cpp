@@ -4,8 +4,6 @@
 #include <atomic>
 #include <cstdio>
 
-#include "../napi/napi_util.h"
-
 namespace shims {
 namespace {
 
@@ -50,24 +48,6 @@ int dumpArrayBufferStats(char* buf, size_t bufSize) {
     if (n > 0) written += n;
   }
   return written;
-}
-
-int dumpImageReleaseStats(napi_env env, char* buf, size_t bufSize) {
-  constexpr double kBytesPerMB = 1024.0 * 1024.0;
-  napi_value global = nullptr;
-  napi_value stats = nullptr;
-  double released = 0;
-  double releasedBytes = 0;
-  double redecodes = 0;
-  if (napi_get_global(env, &global) == napi_ok &&
-      njs::getNamed(env, global, "__cortexImageReleaseStats", &stats)) {
-    released = njs::getNamedNumber(env, stats, "released", 0);
-    releasedBytes = njs::getNamedNumber(env, stats, "releasedBytes", 0);
-    redecodes = njs::getNamedNumber(env, stats, "redecodes", 0);
-  }
-  const int n = std::snprintf(buf, bufSize, "img-solto=%.0f/%.1fMB img-redecode=%.0f",
-                              released, releasedBytes / kBytesPerMB, redecodes);
-  return n > 0 ? n : 0;
 }
 
 }  // namespace shims

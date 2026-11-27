@@ -13,9 +13,10 @@ depois; `needsUpdate` reenvia; o canvas 2D lê `rgba` no `drawImage`. Se os pixe
 
 ## Decisão
 
-Soltar os pixels logo depois de cada upload e, se alguém pedir de novo, **decodificar de novo a partir dos bytes
-comprimidos** que o bitmap guarda (PNG/JPG, 10 a 20 vezes menores). Tudo no shim JS (`image.js` e `image-pixels.js`),
-sem mexer no upload do host C++ (`textures.cpp`); o host só lê os contadores para o `perf-log` (`perf_arraybuffer.cpp`).
+Soltar os pixels **3 s depois do último upload** da imagem e, se alguém pedir de novo, **decodificar de novo a partir
+dos bytes comprimidos** que o bitmap guarda (PNG/JPG, 10 a 20 vezes menores). O prazo cobre os clones que sobem logo
+depois da primeira textura (GLTFLoader por material, estradas, sprites). Tudo no shim JS (`image.js` e
+`image-pixels.js`), sem mexer no host C++.
 
 Alternativas pesadas:
 
@@ -27,11 +28,14 @@ Alternativas pesadas:
   ora: tiraria também o pico do carregamento e o decode de texturas nunca desenhadas, mas leva o custo do decode
   para o primeiro quadro em que a textura aparece, no meio do jogo (travadas no streaming). Fica como passo
   seguinte, se o pico do carregamento continuar alto depois desta mudança.
+- **Soltar na hora, logo depois de cada cópia.** Rejeitada na revisão: cada clone da mesma imagem pagaria um decode
+  inteiro no quadro em que sobe (50 trechos de estrada com a mesma textura = 50 decodes no mesmo quadro).
 - **Soltar no host C++** (o `copyExternalImageToTexture` zera o buffer). Rejeitada: exige recompilar o host e não
   resolve a referência que o JS mantém (o `ArrayBuffer` continua vivo enquanto o bitmap aponta para ele).
 
 ## Consequências
 
 - A RAM guarda só os bytes comprimidos de cada imagem.
-- Reenvio de textura solta custa um decode (contado em `img-redecode` no `perf-log`).
+- Reenvio de textura solta (mais de 3 s depois do último upload) custa um decode, contado em `img-redecode` na
+  linha `[image]` da saída do host.
 - Quem atribui `bitmap.rgba` à mão tira o bitmap do esquema (não há bytes que reproduzam os pixels novos).

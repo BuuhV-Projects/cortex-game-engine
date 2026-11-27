@@ -35,11 +35,19 @@ fonte foi invertida (`imageOrientation: 'flipY'`).
 - Vista parcial de um buffer maior (`Uint8Array` sobre o GLB, por exemplo) vira cópia só do trecho, para o bitmap
   não prender o buffer inteiro.
 
-### 2. Soltar no upload (`queue.copyExternalImageToTexture`)
+### 2. Soltar depois do upload, com prazo (`queue.copyExternalImageToTexture` e `queue.submit`)
 
-No `requestDevice` (`webgpu-extras.js`), uma vez por device, o shim embrulha o `copyExternalImageToTexture` da `GPUQueue` nativa: chama o nativo e, quando ele volta (os pixels
-já foram copiados pela fila), chama o `__cortexReleasePixels()` da fonte, se ela tiver. Fonte sem esse método
-(canvas, bitmap montado à mão) não muda.
+No `requestDevice` (`webgpu-extras.js`), uma vez por device, o shim embrulha a `GPUQueue` nativa:
+
+- o `copyExternalImageToTexture` chama o nativo e, quando ele volta (os pixels já foram copiados pela fila), marca a
+  hora do upload na fonte e a põe na fila de soltura, se ela tiver `__cortexReleasePixels()`. Fonte sem esse método
+  (canvas, bitmap montado à mão) não muda;
+- o `submit` chama o nativo e, no máximo a cada 500 ms (`SWEEP_INTERVAL_MS`), solta os pixels de quem está há
+  **3 s sem upload** (`RELEASE_DELAY_MS`). Cada upload novo renova o prazo.
+
+O prazo existe porque o three cria uma textura de GPU por objeto `Texture`, e os clones de uma imagem sobem logo
+depois da primeira: o `GLTFLoader` clona por material (`sourceCache`, `extendTexture`), o `RoadBuild` por trecho de
+estrada, o `Spritesheet` por sprite. Soltar na hora faria cada clone pagar um decode inteiro no quadro em que sobe.
 
 ### 3. `Image` fake com cache de bytes comprimidos
 
@@ -47,20 +55,24 @@ O cache por URL do `Image` fake guarda `{ width, height, bytes }` (os bytes comp
 fake é ele mesmo soltável, com o mesmo getter `rgba`. Na primeira carga de uma URL decodifica na hora (como hoje);
 numa URL já em cache, só preenche largura, altura e os bytes, e decodifica quando alguém ler `rgba`.
 
-### 4. Contadores no `perf-log.txt`
+### 4. Contadores
 
-A linha `heap-js=… external=… | arraybuffers: …` (SPEC-0188) ganha `img-solto=N/MB` (pixels soltos depois do
-upload, acumulado) e `img-redecode=N` (quantas vezes um bitmap solto foi decodificado de novo). O shim mantém os
-contadores em `globalThis.__cortexImageReleaseStats` (`image-pixels.js`) e o host os lê na hora de escrever a linha
-(`shims::dumpImageReleaseStats`, `perf_arraybuffer.cpp`), logo depois do `arraybuffers:`. `img-redecode` alto
-num quadro de jogo aponta textura reenviada todo quadro (`needsUpdate` em loop) e é sinal para olhar o jogo.
+O shim mantém `globalThis.__cortexImageReleaseStats` (`image-pixels.js`): `released` e `releasedBytes` (cada objeto
+conta uma vez, na primeira soltura), `redecodes` (quantas vezes um objeto solto foi decodificado de novo) e
+`pending` (quantos esperam o prazo). Na saída do host (o `run.log` das medições) sai a linha
+`[image] img-solto=N/MB img-redecode=N pendentes=N`, no máximo a cada 10 s (`STATS_PRINT_INTERVAL_MS`) e só quando
+um contador mudou: depois do carregamento ela fica quieta. `img-redecode` que não para de subir aponta textura
+reenviada em loop (`needsUpdate`) e é sinal para olhar o jogo. O host C++ não muda (a linha `arraybuffers:` do
+`perf-log.txt` é montada no `main.cpp`, e pôr os contadores nela exigiria recompilar o host).
 
 ## Consequências
 
 - A memória externa do Hermes cai do tamanho de todas as texturas RGBA para o tamanho dos PNG/JPG comprimidos.
-- Reenviar uma textura já solta (`needsUpdate`, clone que sobe depois, `drawImage` no canvas 2D) custa um decode
-  novo (stb; ~10 a 40 ms num 1024²). É raro em textura de modelo; textura que muda todo quadro deve ser
-  `DataTexture`/canvas, não imagem.
+- Reenviar uma textura solta (`needsUpdate`, clone que sobe mais de 3 s depois da primeira, `drawImage` no canvas
+  2D) custa um decode novo (stb; ~10 a 40 ms num 1024²). Dentro do prazo, o reenvio reaproveita os pixels. Textura
+  que muda todo quadro deve ser `DataTexture`/canvas, não imagem.
+- Os pixels vivem até 3 s depois do último upload: o vale da memória chega alguns segundos depois do carregamento.
 - O pico do carregamento não muda: o decode continua na hora. O que muda é o vale depois do upload.
-- Testes: `tests/native/image-release.test.ts` (getter, solta no upload, redecode com e sem flip, atribuição,
-  `close`, cache de bytes do `Image` fake).
+- Testes: `tests/native/image-release.test.ts` (getter, soltura com prazo pelo `submit`, clone dentro do prazo sem
+  redecode, contagem única, posse dos pixels, redecode com e sem flip, atribuição, `close`, cache de bytes do `Image`
+  fake).

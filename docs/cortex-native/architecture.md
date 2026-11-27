@@ -201,12 +201,12 @@ Native (que roda milhares de libs sobre Hermes em produção):
 - **O `rgba` de imagem PNG/JPG some depois do upload** (SPEC-0748 / ADR-0749).
   O bitmap do `createImageBitmap` e o `Image` fake (`shims/image.js`,
   `shims/image-pixels.js`) têm `rgba` como getter: a fila embrulhada no
-  `requestDevice` (`webgpu-extras.js`) chama `__cortexReleasePixels()` da
-  fonte depois do `copyExternalImageToTexture`, e ler `rgba` de novo
-  redecodifica dos bytes comprimidos (com o mesmo `flipY`). Não guarde
-  `bitmap.rgba` esperando que continue o mesmo buffer; atribuir `rgba` à mão
-  tira o bitmap do esquema. `img-solto=N/MB img-redecode=N` vêm na linha
-  `arraybuffers:` do perf-log (o host lê `__cortexImageReleaseStats`);
+  `requestDevice` (`webgpu-extras.js`) marca a fonte no
+  `copyExternalImageToTexture`, e o `submit` solta os pixels de quem passou
+  3 s sem upload novo; ler `rgba` de novo redecodifica dos bytes comprimidos
+  (com o mesmo `flipY`). Não guarde `bitmap.rgba` esperando que continue o
+  mesmo buffer; atribuir `rgba` à mão tira o bitmap do esquema. A linha
+  `[image] img-solto=N/MB img-redecode=N pendentes=N` sai na saída do host;
   `img-redecode` subindo no jogo = textura de imagem reenviada em loop.
 
 - **Canvas 2D custa no UPLOAD, não na chamada** (ADR-0312 / SPEC-0313). Com a
