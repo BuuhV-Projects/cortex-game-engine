@@ -2,6 +2,7 @@
 // da spec, features/limits que o Three consulta no adapter/device, e a
 // canvas fake que devolve o gpuContext nativo.
 import { createEventBus } from './event-target.js';
+import { wrapQueueRelease } from './image-pixels.js';
 
 const DEFAULT_LIMITS = {
   maxTextureDimension1D: 8192,
@@ -63,6 +64,9 @@ export function installWebGpuExtras() {
       device.limits = DEFAULT_LIMITS;
       device.lost = new Promise(function () {}); // nunca resolve no host
       if (!device.destroy) device.destroy = function () {};
+      // Solta o RGBA da imagem depois do upload (SPEC-0748): é a fila que o
+      // three usa (device.queue), embrulhada uma vez por device.
+      wrapQueueRelease(device.queue);
       return device;
     };
     return adapter;
