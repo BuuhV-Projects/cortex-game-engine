@@ -1,3 +1,10 @@
+# [1.3.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v1.2.0...v1.3.0) (2026-11-27)
+
+
+### Features
+
+* **native:** soltar o RGBA da imagem PNG/JPG depois do upload (SPEC-0748) ([#113](https://github.com/BuuhV-Projects/cortex-game-engine/issues/113)) ([f3d2da5](https://github.com/BuuhV-Projects/cortex-game-engine/commit/f3d2da540d2f2de53375fb4677177bd15783d10f))
+
 # [1.2.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v1.1.1...v1.2.0) (2026-11-26)
 
 
