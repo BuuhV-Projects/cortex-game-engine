@@ -1,3 +1,10 @@
+## [1.3.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v1.3.0...v1.3.1) (2026-11-27)
+
+
+### Bug Fixes
+
+* **template:** o hook de contrato do export só checa pasta de jogo, com cortex.json (SPEC-0752) ([#115](https://github.com/BuuhV-Projects/cortex-game-engine/issues/115)) ([410ecda](https://github.com/BuuhV-Projects/cortex-game-engine/commit/410ecdafb04f888abd5f6ced12cccc657b6a330a))
+
 # [1.3.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v1.2.0...v1.3.0) (2026-11-27)
 
 
