@@ -24,7 +24,8 @@ lado).
 | `Camera`, `PerspectiveCamera`, `OrthographicCamera` | Câmeras (re-exportadas via Renderer). Perspectiva p/ 3D; ortográfica p/ 2.5D/2D. |
 | `InspectCamera` | Câmera de inspeção livre (SPEC-0131). `game.inspect.orbit({yaw,pitch,dist,target})` orbita um alvo, `.pose(pos,lookAt)` pose explícita, `.frame()` enquadra a cena, `.clear()` volta. Quando ativa o `Game` renderiza por ela (cru, sem PostFX) com a gameplay seguindo — pra cutscene/foto/replay de ângulo livre. Era o motor do parâmetro `camera` do playtest do antigo Chat IA (o playtest headless do MCP está no backlog, SPEC-0737). |
 | `Scene` | Wrapper de `THREE.Scene`. `.add(...objs)`, `.remove(...)`, `.clear()`, `.getThreeScene()`. |
-| `AssetLoader` | Carrega e cacheia assets. `.loadGLTF(url)→GLTF`, `.loadFBX(url)→Group`, `.loadTexture(url)`, `.loadAudio(url)`. |
+| `AssetLoader` | Carrega e cacheia assets. `.loadGLTF(url)→GLTF`, `.loadFBX(url)→Group`, `.loadTexture(url)`, `.loadAudio(url)`. Cargas paralelas da mesma URL dividem a promessa (SPEC-0753). `.release(url)→boolean` solta **uma** URL pronta (dispõe e fecha a imagem decodificada); `.evict(url)` só tira do cache; `.disposeCache()` solta tudo. `disposeObjectResources(root, { closeImages })`. |
+| `AssetResidency`, `estimateGltfBytes` | **GLBs sob demanda com orçamento em bytes** (SPEC-0753/ADR-0754, o `CStreaming` do GTA SA): `new AssetResidency({ budgetBytes, onEvict? })`, `.request(url)`, `.get(url)` (síncrono), `.acquire/unref(url)` por clone vivo, `.hold(dono, urls)`/`.unhold(dono)` para o elenco de um trecho; acima do orçamento sai o usado há mais tempo sem uso nem dono. Ver a receita. |
 | `GLTF` (tipo) | Retorno de `loadGLTF` (`.scene`, `.animations`). |
 | `AudioManager` | Áudio. `.setMasterVolume(v)`, sons via `SoundOptions`. |
 | `InputManager` | Teclado/mouse. `.attach(document.body)`, `.isKeyDown('ArrowLeft')`, `.isButtonDown(0)`, `.getMousePosition()`, `.getMouseDelta()`. |
@@ -1915,6 +1916,25 @@ const gltf = await new AssetLoader().loadGLTF('assets/hero.glb')
 const inst = clone(gltf.scene)   // clone seguro p/ SkinnedMesh
 scene.add(inst)
 ```
+
+### Modelos sob demanda com orçamento (`AssetResidency`) — SPEC-0753 / ADR-0754
+```ts
+import { AssetResidency, clone } from 'cortex-game-engine'
+const skins = new AssetResidency({
+  budgetBytes: 512 * 2 ** 20,                 // teto de DESCARTE (bytes estimados de textura + geometria)
+  onEvict: (url) => templates.delete(url),    // largue o que o jogo derivou do GLTF
+})
+await skins.hold('mission-3', urlsDaMissao)   // carrega e segura o elenco da missão
+const gltf = skins.get(url)!                  // síncrono: o residente (ou undefined)
+const npc = clone(gltf.scene); skins.acquire(url)   // um clone vivo = um acquire
+// ... o NPC saiu:
+scene.remove(npc); skins.unref(url)
+skins.unhold('mission-3')                     // descartável, NÃO solto: sai só quando faltar espaço
+```
+- O clone compartilha geometria/material/textura com o GLTF: **todo clone vivo tem `acquire`**, senão o descarte
+  pode soltar o modelo de um boneco à mostra; esquecer o `unref` prende o modelo até o fim.
+- O pedido nunca falha por falta de espaço (`stats.overBudget` conta as vezes em que tudo estava em uso); o `trim()`
+  roda no fim de cada `request`, não por quadro. `release(url)` solta na hora uma URL sem uso.
 
 ### Sistema ECS
 ```ts

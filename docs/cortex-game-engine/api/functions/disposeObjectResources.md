@@ -6,9 +6,9 @@
 
 # Function: disposeObjectResources()
 
-> **disposeObjectResources**(`root`): `void`
+> **disposeObjectResources**(`root`, `options?`): `void`
 
-Defined in: [src/core/AssetLoader.ts:45](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetLoader.ts#L45)
+Defined in: [src/core/AssetLoader.ts:70](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetLoader.ts#L70)
 
 Dispõe os recursos de uma árvore de objetos: geometrias (incluindo a árvore
 BVH do three-mesh-bvh, se houver), materiais e texturas referenciadas. Usado
@@ -22,6 +22,14 @@ Seguro chamar sobre objetos já dispostos (dispose do three é idempotente).
 ### root
 
 `Object3D`
+
+Raiz da árvore (a `scene` do GLTF, o grupo do FBX).
+
+### options?
+
+[`DisposeObjectResourcesOptions`](../interfaces/DisposeObjectResourcesOptions.md)
+
+`closeImages: true` fecha também as imagens decodificadas (SPEC-0753).
 
 ## Returns
 

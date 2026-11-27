@@ -753,6 +753,15 @@ level.json (nó)  ──buildScene──▶  Object3D (mesh)  + Entidade ECS (co
   (`needsUpdate`) depois do upload. Ao medir memória, use o `external` do
   `perf-log.txt`; os contadores `arraybuffers:` da mesma linha são ACUMULADOS,
   não memória viva.
+- **Soltar um GLB um por um: `AssetLoader.release(url)` e a `AssetResidency`** (SPEC-0753,
+  ADR-0754). O `dispose()` do three solta a GPU mas não fecha a imagem decodificada
+  (`ImageBitmap`, o bitmap do shim nativo): só o `release(url)` (e o
+  `disposeObjectResources(root, { closeImages: true })`) chama o `close()`. Imagem
+  fechada não sobe de novo: um clone ainda vivo perde a textura. Por isso a
+  `AssetResidency` (GLBs sob demanda, orçamento em bytes, LRU) só solta o que tem
+  contador 0 (`acquire`/`unref` por clone vivo) e nenhum dono (`hold`/`unhold`), e o
+  `trim()` roda no fim de cada carga, não por quadro. O `AssetLoader` divide a carga em
+  andamento da mesma URL (uma promessa por URL até terminar).
 
 - **Glifo exótico na UI aparece no Studio e VIRA CAIXINHA no export.** O
   rasterizador nativo (`text_raster.cpp`) tem UMA fonte (`Roboto-Medium.ttf`, 2772
