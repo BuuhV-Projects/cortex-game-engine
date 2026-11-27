@@ -1930,11 +1930,16 @@ const npc = clone(gltf.scene); skins.acquire(url)   // um clone vivo = um acquir
 // ... o NPC saiu:
 scene.remove(npc); skins.unref(url)
 skins.unhold('mission-3')                     // descartável, NÃO solto: sai só quando faltar espaço
+// fora do elenco seguro (o de gangue que aparece a qualquer hora): o acquire vai NO pedido
+const loose = await skins.request(gangUrl, { acquire: true })   // já contado; desfeito se a carga falhar
 ```
 - O clone compartilha geometria/material/textura com o GLTF: **todo clone vivo tem `acquire`**, senão o descarte
   pode soltar o modelo de um boneco à mostra; esquecer o `unref` prende o modelo até o fim.
 - O pedido nunca falha por falta de espaço (`stats.overBudget` conta as vezes em que tudo estava em uso); o `trim()`
   roda no fim de cada `request`, não por quadro. `release(url)` solta na hora uma URL sem uso.
+- Sem `hold`, pedir para usar é `request(url, { acquire: true })`: um `acquire` depois do `await` perde a corrida
+  para outra carga que chega na mesma rodada (no host nativo o `fetch` é síncrono) e solta o GLTF recém-chegado.
+- O `loader` da residência é exclusivo dela, e o `onEvict` não chama a residência.
 
 ### Sistema ECS
 ```ts

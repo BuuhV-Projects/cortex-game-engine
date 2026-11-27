@@ -50,7 +50,7 @@ skins.unref(url);                             // o boneco saiu
 skins.unhold('mission-3');                    // a missão acabou: descartável, não apagado
 ```
 
-- **`request(url): Promise<GLTF>`** carrega pelo `AssetLoader` (a carga em andamento é dividida), marca como usado
+- **`request(url, { acquire? }): Promise<GLTF>`** carrega pelo `AssetLoader` (a carga em andamento é dividida), marca como usado
   agora e roda o `trim()`.
 - **`get(url)`** devolve o GLTF residente e marca como usado agora; `undefined` se não está pronto.
   **`isResident(url)`** só consulta.
@@ -72,8 +72,16 @@ skins.unhold('mission-3');                    // a missão acabou: descartável,
 
 ### Casos de borda
 
-- **A URL que acabou de chegar** não é solta pelo `trim()` da própria chegada (o `request` nunca devolve um GLTF já
-  solto); nos `trim()` seguintes, só o contador ou um dono a protegem. Quem pede sem `hold` chama o `acquire` logo.
+- **A URL pedida** não é solta pelo `trim()` do próprio `request`, nem quando já era residente (o `request` nunca
+  devolve um GLTF já solto); nos `trim()` seguintes, só o contador ou um dono a protegem.
+- **`request(url, { acquire: true })`:** o contador vale desde o pedido, antes de a carga chegar (como o
+  `REQUEST_MODEL` do GTA SA). É o jeito de pedir para usar: um `acquire` depois do `await` perde a corrida para outra
+  carga que chega na mesma rodada de microtasks (no host nativo o `fetch` é síncrono) e solta o GLTF recém-chegado.
+  Se a carga falha, o `acquire` do pedido é desfeito.
+- **`sizeOf` que lança** conta como falha da carga: a URL não fica residente fora da LRU.
+- **`onEvict`** roda com a URL já fora da residência (da LRU e do orçamento), antes do `loader.release`, e não pode
+  chamar a residência. O `loader` tem de ser exclusivo da residência: o descarte dispõe o GLTF do cache dele.
+- **`estimateGltfBytes`** conta também os alvos de morph (`geometry.morphAttributes`).
 - **Em carga:** o `trim()` só olha os residentes, então nunca solta o que não chegou; `release(url)` de URL em carga
   devolve `false`. `acquire`, `unref`, `hold` e `unhold` valem durante a carga: o que chega sem contador nem dono
   (um `unhold` no meio) fica residente e descartável.
@@ -97,4 +105,6 @@ O que fica no jogo: quais URLs, quando pedir e soltar, o orçamento e o que deri
   síncrono, `release` de cada tipo, `release` em carga, `closeImages` uma vez por imagem, `disposeCache` sem fechar)
   e `tests/core/assetResidency.test.ts` (orçamento, ordem do usado há mais tempo, contador e dono protegem, `unhold`
   não solta na hora, `onEvict` antes do `release`, `overBudget`, a URL recém-chegada, a carga em andamento, o `hold`
-  com falha, a estimativa de bytes).
+  com falha, a estimativa de bytes) e `tests/core/assetResidencyRaces.test.ts` (o `request` de residente acima do
+  orçamento, duas cargas em paralelo com `acquire` no pedido, o `acquire` desfeito na falha, o `sizeOf` que lança, o
+  `onEvict` que pede de novo, o atributo intercalado e o de morph na estimativa).

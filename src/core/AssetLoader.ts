@@ -192,6 +192,10 @@ export class AssetLoader {
    * Chamadas subsequentes com a mesma URL retornam a instância em cache sem
    * nova requisição de rede.
    *
+   * A textura é uma só por URL, também entre chamadas em paralelo (SPEC-0753):
+   * `pixelated` muda a instância compartilhada, e uma chamada sem a opção
+   * recebe a textura em nearest se outra a pediu assim.
+   *
    * @param url - Caminho ou URL absoluta para o arquivo de imagem.
    * @returns Promessa resolvida com `THREE.Texture`.
    */

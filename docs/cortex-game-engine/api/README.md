@@ -208,6 +208,7 @@
 - [RendererOptions](interfaces/RendererOptions.md)
 - [RenderMesh](interfaces/RenderMesh.md)
 - [RenderServerSample](interfaces/RenderServerSample.md)
+- [RequestOptions](interfaces/RequestOptions.md)
 - [ResidencyLoader](interfaces/ResidencyLoader.md)
 - [ResolvedUnderwater](interfaces/ResolvedUnderwater.md)
 - [RoadRibbon](interfaces/RoadRibbon.md)

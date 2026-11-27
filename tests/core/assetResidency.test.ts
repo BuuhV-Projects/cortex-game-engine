@@ -204,15 +204,20 @@ describe('AssetResidency: contador e dono (ADR-0754)', () => {
   it('trim nunca solta o que está em carga; unhold durante a carga deixa descartável na chegada', async () => {
     const fake = fakeLoader(['b.glb']);
     const r = new AssetResidency({ budgetBytes: UNIT, loader: fake.loader, sizeOf: () => UNIT });
+    // dois residentes em uso já estouram o orçamento enquanto o b está em carga: o trim roda de verdade
+    for (const url of ['a.glb', 'c.glb']) await r.request(url, { acquire: true });
     const held = r.hold('m', ['b.glb']);
     r.unhold('m');
     r.trim();
+    expect(r.stats.overBudget).toBeGreaterThan(0);
+    expect(fake.loader.release).not.toHaveBeenCalled();
     expect(r.release('b.glb')).toBe(false);
     await fake.open('b.glb');
     await held;
     expect(r.isResident('b.glb')).toBe(true);
-    await r.request('a.glb');
+    r.trim();
     expect(r.isResident('b.glb')).toBe(false);
+    expect(r.isResident('a.glb') && r.isResident('c.glb')).toBe(true);
   });
 
   it('hold com uma carga que falha rejeita e tira a marca do dono daquela URL', async () => {

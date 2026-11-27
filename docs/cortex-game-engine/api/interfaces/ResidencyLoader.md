@@ -6,7 +6,7 @@
 
 # Interface: ResidencyLoader
 
-Defined in: [src/core/AssetResidency.ts:90](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetResidency.ts#L90)
+Defined in: [src/core/AssetResidency.ts:92](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetResidency.ts#L92)
 
 O que a residência usa do loader: carregar um GLB e soltá-lo. O [AssetLoader](../classes/AssetLoader.md) cumpre.
 
@@ -16,7 +16,7 @@ O que a residência usa do loader: carregar um GLB e soltá-lo. O [AssetLoader](
 
 > **loadGLTF**(`url`): `Promise`\<`GLTF`\>
 
-Defined in: [src/core/AssetResidency.ts:92](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetResidency.ts#L92)
+Defined in: [src/core/AssetResidency.ts:94](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetResidency.ts#L94)
 
 Carrega (ou devolve o já carregado) o GLB da URL.
 
@@ -36,7 +36,7 @@ Carrega (ou devolve o já carregado) o GLB da URL.
 
 > **release**(`url`): `boolean`
 
-Defined in: [src/core/AssetResidency.ts:94](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetResidency.ts#L94)
+Defined in: [src/core/AssetResidency.ts:96](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetResidency.ts#L96)
 
 Solta o GLB da URL (dispõe e fecha as imagens); `false` se não estava pronto.
 

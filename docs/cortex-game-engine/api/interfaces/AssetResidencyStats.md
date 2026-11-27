@@ -6,7 +6,7 @@
 
 # Interface: AssetResidencyStats
 
-Defined in: [src/core/AssetResidency.ts:110](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetResidency.ts#L110)
+Defined in: [src/core/AssetResidency.ts:125](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetResidency.ts#L125)
 
 Contadores da residência ([AssetResidency.stats](../classes/AssetResidency.md#stats)).
 
@@ -16,7 +16,7 @@ Contadores da residência ([AssetResidency.stats](../classes/AssetResidency.md#s
 
 > **budgetBytes**: `number`
 
-Defined in: [src/core/AssetResidency.ts:116](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetResidency.ts#L116)
+Defined in: [src/core/AssetResidency.ts:131](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetResidency.ts#L131)
 
 O orçamento configurado.
 
@@ -26,7 +26,7 @@ O orçamento configurado.
 
 > **bytes**: `number`
 
-Defined in: [src/core/AssetResidency.ts:114](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetResidency.ts#L114)
+Defined in: [src/core/AssetResidency.ts:129](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetResidency.ts#L129)
 
 Bytes estimados dos residentes.
 
@@ -36,7 +36,7 @@ Bytes estimados dos residentes.
 
 > **evictions**: `number`
 
-Defined in: [src/core/AssetResidency.ts:120](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetResidency.ts#L120)
+Defined in: [src/core/AssetResidency.ts:135](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetResidency.ts#L135)
 
 URLs soltas pelo `trim()` ou pelo `release()`.
 
@@ -46,7 +46,7 @@ URLs soltas pelo `trim()` ou pelo `release()`.
 
 > **loads**: `number`
 
-Defined in: [src/core/AssetResidency.ts:118](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetResidency.ts#L118)
+Defined in: [src/core/AssetResidency.ts:133](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetResidency.ts#L133)
 
 Cargas que chegaram (contadas uma vez por chegada; recarga após descarte conta de novo).
 
@@ -56,7 +56,7 @@ Cargas que chegaram (contadas uma vez por chegada; recarga após descarte conta 
 
 > **overBudget**: `number`
 
-Defined in: [src/core/AssetResidency.ts:122](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetResidency.ts#L122)
+Defined in: [src/core/AssetResidency.ts:137](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetResidency.ts#L137)
 
 Vezes que o `trim()` terminou acima do orçamento porque tudo estava em uso ou seguro.
 
@@ -66,6 +66,6 @@ Vezes que o `trim()` terminou acima do orçamento porque tudo estava em uso ou s
 
 > **resident**: `number`
 
-Defined in: [src/core/AssetResidency.ts:112](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetResidency.ts#L112)
+Defined in: [src/core/AssetResidency.ts:127](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetResidency.ts#L127)
 
 URLs residentes agora.

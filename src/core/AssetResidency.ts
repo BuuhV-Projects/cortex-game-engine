@@ -67,7 +67,9 @@ export function estimateGltfBytes(gltf: Pick<GLTF, 'scene'>): number {
     const geometry = mesh.geometry;
     if (geometry && !geometries.has(geometry)) {
       geometries.add(geometry);
-      for (const attr of Object.values(geometry.attributes)) {
+      // os atributos e os alvos de morph (blendshape) de cada um
+      const morphs = Object.values(geometry.morphAttributes).flat();
+      for (const attr of [...Object.values(geometry.attributes), ...morphs]) {
         const data = (attr as Partial<THREE.InterleavedBufferAttribute>).data;
         countArray(data ? data.array : (attr as THREE.BufferAttribute).array);
       }
@@ -98,12 +100,25 @@ export interface ResidencyLoader {
 export interface AssetResidencyOptions {
   /** Teto de bytes residentes estimados; acima dele o `trim()` solta o que está sem uso. */
   budgetBytes: number;
-  /** Loader das cargas e dos descartes. Padrão: um {@link AssetLoader} próprio da residência. */
+  /**
+   * Loader das cargas e dos descartes. Padrão: um {@link AssetLoader} próprio da residência. Tem de ser exclusivo
+   * dela: o descarte chama `release(url)`, que dispõe e fecha as imagens do GLTF que o mesmo cache entregaria a
+   * outros sistemas.
+   */
   loader?: ResidencyLoader;
   /** Estimativa de bytes de cada GLB, na chegada. Padrão: {@link estimateGltfBytes}. */
   sizeOf?: (gltf: GLTF) => number;
-  /** Chamado antes do `release` de cada URL descartada, para o jogo largar o que derivou do GLTF. */
+  /**
+   * Chamado antes do `release` de cada URL descartada, para o jogo largar o que derivou do GLTF. A URL já saiu da
+   * residência; o `onEvict` não pode chamar a residência (pedir, soltar, segurar).
+   */
   onEvict?: (url: string, gltf: GLTF) => void;
+}
+
+/** Opções de {@link AssetResidency.request}. */
+export interface RequestOptions {
+  /** Conta um usuário vivo desde o pedido (o `acquire` atômico; desfeito se a carga falhar). */
+  acquire?: boolean;
 }
 
 /** Contadores da residência ({@link AssetResidency.stats}). */
@@ -181,20 +196,30 @@ export class AssetResidency {
   }
 
   /**
-   * Carrega a URL (a carga em andamento é dividida), marca como usada agora e roda o {@link trim}. A URL que
-   * acabou de chegar não é solta pelo `trim` da própria chegada; nas seguintes, só o `acquire`/`hold` a protege.
+   * Carrega a URL (a carga em andamento é dividida), marca como usada agora e roda o {@link trim}, que nunca solta
+   * a própria URL pedida.
+   *
+   * Sem `acquire`, nada protege o GLTF depois que o `request` devolve: outra carga que chega na mesma rodada de
+   * microtasks (no host nativo o `fetch` é síncrono) pode soltá-lo antes de quem pediu chamar o `acquire`. Quem vai
+   * usar o GLTF passa `{ acquire: true }`: o contador vale desde o pedido, antes de a carga chegar, como o
+   * `REQUEST_MODEL` do GTA SA, que marca o modelo antes de ler. Se a carga falha, esse `acquire` é desfeito.
    *
    * @returns O GLTF residente. Rejeita se a carga falhar (a próxima chamada tenta de novo).
    */
-  request(url: string): Promise<GLTF> {
+  request(url: string, options?: RequestOptions): Promise<GLTF> {
     const entry = this._entry(url);
+    if (options?.acquire) this.acquire(url);
     if (entry.gltf) {
       this._touch(url);
-      this.trim();
+      this._trim(url);
       return Promise.resolve(entry.gltf);
     }
     entry.pending ??= this._load(url, entry);
-    return entry.pending;
+    if (!options?.acquire) return entry.pending;
+    return entry.pending.catch((error: unknown) => {
+      this.unref(url);
+      throw error;
+    });
   }
 
   /** O GLTF residente da URL, marcado como usado agora; `undefined` se não está pronto. */
@@ -306,9 +331,18 @@ export class AssetResidency {
       this._prune(url, entry);
       throw error;
     }
+    let bytes: number;
+    try {
+      // antes de gravar o GLTF: um `sizeOf` que lança não deixa um residente fora da LRU e do orçamento
+      bytes = this._sizeOf(gltf);
+    } catch (error) {
+      entry.pending = undefined;
+      this._prune(url, entry);
+      throw error;
+    }
     entry.pending = undefined;
     entry.gltf = gltf;
-    entry.bytes = this._sizeOf(gltf);
+    entry.bytes = bytes;
     this._bytes += entry.bytes;
     this._loads += 1;
     this._touch(url);
@@ -338,17 +372,18 @@ export class AssetResidency {
   private _evict(url: string, entry: Entry): void {
     const gltf = entry.gltf;
     if (!gltf) return;
+    // sai da LRU e do orçamento antes do `onEvict`: um `trim` aninhado não solta a mesma URL de novo
+    this._bytes -= entry.bytes;
+    entry.gltf = undefined;
+    entry.bytes = 0;
+    this._lru.delete(url);
+    this._evictions += 1;
     try {
       this._onEvict?.(url, gltf);
     } catch (error) {
       debug(DEBUG_SCOPE, `AssetResidency.onEvict falhou em ${url}:`, error);
     }
     this._loader.release(url);
-    this._bytes -= entry.bytes;
-    entry.gltf = undefined;
-    entry.bytes = 0;
-    this._lru.delete(url);
-    this._evictions += 1;
     this._prune(url, entry);
   }
 

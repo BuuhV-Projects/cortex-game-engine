@@ -6,7 +6,7 @@
 
 # Class: AssetResidency
 
-Defined in: [src/core/AssetResidency.ts:158](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetResidency.ts#L158)
+Defined in: [src/core/AssetResidency.ts:173](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetResidency.ts#L173)
 
 Conjunto de GLBs residentes com orçamento em bytes, contador de referências, donos e descarte do usado há mais
 tempo (SPEC-0753, ADR-0754).
@@ -31,7 +31,7 @@ skins.unhold('mission-3');                    // a missão acabou: descartável,
 
 > **new AssetResidency**(`options`): `AssetResidency`
 
-Defined in: [src/core/AssetResidency.ts:176](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetResidency.ts#L176)
+Defined in: [src/core/AssetResidency.ts:191](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetResidency.ts#L191)
 
 #### Parameters
 
@@ -51,7 +51,7 @@ Defined in: [src/core/AssetResidency.ts:176](https://github.com/BuuhV-Projects/c
 
 > **get** **stats**(): [`AssetResidencyStats`](../interfaces/AssetResidencyStats.md)
 
-Defined in: [src/core/AssetResidency.ts:285](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetResidency.ts#L285)
+Defined in: [src/core/AssetResidency.ts:310](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetResidency.ts#L310)
 
 Contadores atuais (cópia).
 
@@ -65,7 +65,7 @@ Contadores atuais (cópia).
 
 > **acquire**(`url`): `void`
 
-Defined in: [src/core/AssetResidency.ts:213](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetResidency.ts#L213)
+Defined in: [src/core/AssetResidency.ts:238](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetResidency.ts#L238)
 
 Mais um usuário vivo da URL (um clone à mostra). Pode vir antes de a carga terminar.
 
@@ -85,7 +85,7 @@ Mais um usuário vivo da URL (um clone à mostra). Pode vir antes de a carga ter
 
 > **get**(`url`): `GLTF` \| `undefined`
 
-Defined in: [src/core/AssetResidency.ts:201](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetResidency.ts#L201)
+Defined in: [src/core/AssetResidency.ts:226](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetResidency.ts#L226)
 
 O GLTF residente da URL, marcado como usado agora; `undefined` se não está pronto.
 
@@ -105,7 +105,7 @@ O GLTF residente da URL, marcado como usado agora; `undefined` se não está pro
 
 > **hold**(`owner`, `urls`): `Promise`\<`GLTF`[]\>
 
-Defined in: [src/core/AssetResidency.ts:236](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetResidency.ts#L236)
+Defined in: [src/core/AssetResidency.ts:261](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetResidency.ts#L261)
 
 Segura as URLs em nome de `owner` e pede todas. A URL fica segura enquanto algum dono a segura. Se uma carga
 falha, a marca do dono sai daquela URL e a promessa rejeita; as outras seguem seguras até o `unhold`.
@@ -132,7 +132,7 @@ Os GLTFs na ordem de `urls`.
 
 > **isResident**(`url`): `boolean`
 
-Defined in: [src/core/AssetResidency.ts:208](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetResidency.ts#L208)
+Defined in: [src/core/AssetResidency.ts:233](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetResidency.ts#L233)
 
 Se a URL está residente (só consulta: não mexe na ordem de uso).
 
@@ -152,7 +152,7 @@ Se a URL está residente (só consulta: não mexe na ordem de uso).
 
 > **release**(`url`): `boolean`
 
-Defined in: [src/core/AssetResidency.ts:277](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetResidency.ts#L277)
+Defined in: [src/core/AssetResidency.ts:302](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetResidency.ts#L302)
 
 Solta na hora uma URL residente sem uso (o jogo que sabe o que faz), com `onEvict` e `loader.release`.
 
@@ -172,18 +172,27 @@ Solta na hora uma URL residente sem uso (o jogo que sabe o que faz), com `onEvic
 
 ### request()
 
-> **request**(`url`): `Promise`\<`GLTF`\>
+> **request**(`url`, `options?`): `Promise`\<`GLTF`\>
 
-Defined in: [src/core/AssetResidency.ts:189](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetResidency.ts#L189)
+Defined in: [src/core/AssetResidency.ts:209](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetResidency.ts#L209)
 
-Carrega a URL (a carga em andamento é dividida), marca como usada agora e roda o [trim](#trim). A URL que
-acabou de chegar não é solta pelo `trim` da própria chegada; nas seguintes, só o `acquire`/`hold` a protege.
+Carrega a URL (a carga em andamento é dividida), marca como usada agora e roda o [trim](#trim), que nunca solta
+a própria URL pedida.
+
+Sem `acquire`, nada protege o GLTF depois que o `request` devolve: outra carga que chega na mesma rodada de
+microtasks (no host nativo o `fetch` é síncrono) pode soltá-lo antes de quem pediu chamar o `acquire`. Quem vai
+usar o GLTF passa `{ acquire: true }`: o contador vale desde o pedido, antes de a carga chegar, como o
+`REQUEST_MODEL` do GTA SA, que marca o modelo antes de ler. Se a carga falha, esse `acquire` é desfeito.
 
 #### Parameters
 
 ##### url
 
 `string`
+
+##### options?
+
+[`RequestOptions`](../interfaces/RequestOptions.md)
 
 #### Returns
 
@@ -197,7 +206,7 @@ O GLTF residente. Rejeita se a carga falhar (a próxima chamada tenta de novo).
 
 > **trim**(): `void`
 
-Defined in: [src/core/AssetResidency.ts:268](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetResidency.ts#L268)
+Defined in: [src/core/AssetResidency.ts:293](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetResidency.ts#L293)
 
 Enquanto os bytes residentes passam do orçamento, solta o residente usado há mais tempo sem contador nem dono
 (`onEvict` antes, `loader.release` depois). Se o resto está em uso ou seguro, para e conta em
@@ -213,7 +222,7 @@ Enquanto os bytes residentes passam do orçamento, solta o residente usado há m
 
 > **unhold**(`owner`): `void`
 
-Defined in: [src/core/AssetResidency.ts:257](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetResidency.ts#L257)
+Defined in: [src/core/AssetResidency.ts:282](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetResidency.ts#L282)
 
 Tira a marca de `owner` das URLs dele: ficam descartáveis (sem contador nem outro dono), não soltas na hora.
 
@@ -233,7 +242,7 @@ Tira a marca de `owner` das URLs dele: ficam descartáveis (sem contador nem out
 
 > **unref**(`url`): `void`
 
-Defined in: [src/core/AssetResidency.ts:220](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetResidency.ts#L220)
+Defined in: [src/core/AssetResidency.ts:245](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetResidency.ts#L245)
 
 Um usuário vivo da URL saiu. Abaixo de zero é erro de quem chama: fica em zero (e loga no `debug`).
 
