@@ -13,8 +13,9 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createRequire } from 'node:module';
 import { readImageHeader } from './image-header.mjs';
-import { DEFAULT_BASISU_PATH, encodeKtx2Native } from './encode-ktx2-native.mjs';
-export { ERR_NATIVE_ENCODER_FAILED, ERR_NATIVE_ENCODER_MISSING } from './encode-ktx2-native.mjs';
+import { DEFAULT_BASISU_PATH, encodeKtx2Native, ERR_ENCODE_FAILED } from './encode-ktx2-native.mjs';
+// O ERR_ENCODE_FAILED (a textura falhou, WASM ou nativo) mora no módulo nativo, que não importa este.
+export { ERR_ENCODE_FAILED, ERR_NATIVE_ENCODER_FAILED, ERR_NATIVE_ENCODER_MISSING } from './encode-ktx2-native.mjs';
 
 const require = createRequire(import.meta.url);
 const encoderDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'tools', 'basis-encoder');
@@ -25,8 +26,6 @@ const encoderDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '.
  * engolir por textura e entregar um export silenciosamente sem KTX2.
  */
 export const ERR_BASIS_ENCODER_MISSING = 'ERR_BASIS_ENCODER_MISSING';
-/** O basis devolveu 0 bytes ou recusou a fonte (o log dele está silenciado; o motivo vai na mensagem). */
-export const ERR_ENCODE_FAILED = 'ERR_ENCODE_FAILED';
 /** Dimensão fora dos blocos 4×4: o host monta o BC7 pelas dimensões do KTX2 e o WebGPU exige o nível 0 em blocos. */
 export const ERR_NOT_BLOCK_ALIGNED = 'ERR_NOT_BLOCK_ALIGNED';
 

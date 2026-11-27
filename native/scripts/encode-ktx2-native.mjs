@@ -19,11 +19,32 @@ const execFileAsync = promisify(execFile);
 /** Code do erro de "basisu nativo não está aqui": o cook avisa e mantém o original. */
 export const ERR_NATIVE_ENCODER_MISSING = 'ERR_NATIVE_ENCODER_MISSING';
 /**
- * O exe existe mas não rodou (não iniciou, saiu com erro, passou do timeout ou
- * não gravou o KTX2): é problema da INSTALAÇÃO (DLL, antivírus), não da textura.
- * Como o MISSING, o cook não cacheia o GLB, para o próximo export tentar de novo.
+ * O exe existe mas não rodou (não iniciou, passou do timeout, morreu com um
+ * status do Windows como DLL ausente, ou não gravou o KTX2): é problema da
+ * INSTALAÇÃO (DLL, antivírus), não da textura. Como o MISSING, o cook não
+ * cacheia o GLB, para o próximo export tentar de novo.
  */
 export const ERR_NATIVE_ENCODER_FAILED = 'ERR_NATIVE_ENCODER_FAILED';
+/**
+ * O exe rodou e recusou a imagem (saída comum diferente de 0: fonte corrompida
+ * ou formato que ele não lê). É problema da TEXTURA: o mesmo code do WASM, e o
+ * GLB entra no cache com o original (sem reencodar a cada export).
+ */
+export const ERR_ENCODE_FAILED = 'ERR_ENCODE_FAILED';
+/** Status do Windows (NTSTATUS de erro, 0xC0000000+) que o processo devolve quando nem chega a rodar (DLL ausente). */
+const WINDOWS_ERROR_STATUS_MIN = 0xc0000000;
+
+/**
+ * O code de uma falha do execFile: problema de instalação (`ERR_NATIVE_ENCODER_FAILED`) quando o processo não
+ * iniciou (o code é texto, como ENOENT e EACCES), passou do timeout (`killed`), morreu por sinal ou saiu com um status
+ * do Windows; senão é a imagem que o exe recusou (`ERR_ENCODE_FAILED`).
+ */
+export function nativeFailureCode(err) {
+  const exit = err?.code;
+  if (typeof exit === 'string' || err?.killed || err?.signal) return ERR_NATIVE_ENCODER_FAILED;
+  if (typeof exit === 'number' && (exit < 0 || exit >= WINDOWS_ERROR_STATUS_MIN)) return ERR_NATIVE_ENCODER_FAILED;
+  return ERR_ENCODE_FAILED;
+}
 /**
  * Teto de tempo de um encode nativo. O 4096² mais lento medido levou ~14 s
  * (SPEC-0750); a folga cobre máquina lenta sem deixar um exe travado parar o
@@ -92,7 +113,7 @@ export async function encodeKtx2Native(bytes, format, opts, { exePath = DEFAULT_
       });
     } catch (err) {
       const why = err?.killed ? `passou de ${timeoutMs} ms` : `${err?.stderr ?? ''}${err?.stdout ?? ''}`.trim().slice(-ERROR_TAIL_CHARS);
-      throw Object.assign(new Error(`basisu nativo falhou: ${why || err?.message}`), { code: ERR_NATIVE_ENCODER_FAILED });
+      throw Object.assign(new Error(`basisu nativo falhou: ${why || err?.message}`), { code: nativeFailureCode(err) });
     }
     if (!existsSync(output)) {
       throw Object.assign(new Error('basisu nativo não gravou o KTX2'), { code: ERR_NATIVE_ENCODER_FAILED });

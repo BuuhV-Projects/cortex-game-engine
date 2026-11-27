@@ -65,9 +65,11 @@ O `planEncode(bytes)` lê o header e escolhe:
 
 O exe fica em `native/tools/basisu/basisu.exe` (fora do git), resolvido relativo ao script, como o WASM. **Sem o
 exe**, a fonte acima do teto lança `ERR_NATIVE_ENCODER_MISSING` com a instrução (`rode
-native/scripts/build-basisu.ps1`): o cook avisa e mantém a textura original. **Exe que não roda** (não inicia, sai
-com erro, não grava o KTX2 ou passa de 5 min, `NATIVE_ENCODE_TIMEOUT_MS`) lança `ERR_NATIVE_ENCODER_FAILED`, com o
-fim da saída dele no motivo. Não há redução em nenhum caminho.
+native/scripts/build-basisu.ps1`): o cook avisa e mantém a textura original. **Exe que não roda** (não inicia, passa de 5
+min (`NATIVE_ENCODE_TIMEOUT_MS`), morre por sinal ou com um status de erro do Windows (0xC…, como DLL ausente) ou não
+grava o KTX2) lança `ERR_NATIVE_ENCODER_FAILED`, problema de instalação. Exe que roda e **recusa a imagem** (saída
+comum diferente de 0: fonte corrompida) lança `ERR_ENCODE_FAILED`, problema da textura, como no WASM. Nos dois, o
+fim da saída do exe vai no motivo (`nativeFailureCode`). Não há redução em nenhum caminho.
 
 ### 2a. Dimensão fora dos blocos 4×4
 
@@ -82,7 +84,7 @@ legíveis, vale o piso antigo por bytes.
 
 ### 3. Falha não é mais silenciosa (`native/scripts/ktx2-glb.mjs`)
 
-Cada textura que não converte gera um aviso com o GLB, o índice, as dimensões e o motivo (o basisu nativo ausente avisa uma vez por processo, como o encoder WASM ausente, e cada textura mantida conta no resumo)
+Cada textura que não converte gera um aviso com o GLB, o índice, as dimensões e o motivo (o basisu nativo ausente e o que não roda avisam uma vez por processo cada, como o encoder WASM ausente, e cada textura mantida conta no resumo)
 (`[ktx2-glb] <glb> textura #i (L×A, mime): <motivo> — mantém o original`). O `stats` do cook ganha `texKept` (texturas
 mantidas sem KTX2) e `texKeptReasons` (contagem por `code` do erro: `ERR_IMAGE_FORMAT_UNKNOWN`, `ERR_IMAGE_DECODE`,
 `ERR_NOT_BLOCK_ALIGNED`, `ERR_NATIVE_ENCODER_MISSING`, `ERR_ENCODE_FAILED`, `outro`), e o `export-game.mjs` imprime a

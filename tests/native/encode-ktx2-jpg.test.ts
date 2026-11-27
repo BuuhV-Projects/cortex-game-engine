@@ -23,6 +23,8 @@ import {
 import {
   encodeKtx2,
   ENCODER_MAX_SOURCE_TEXELS,
+  ERR_NATIVE_ENCODER_FAILED,
+  ERR_ENCODE_FAILED,
   ERR_NATIVE_ENCODER_MISSING,
   ERR_NOT_BLOCK_ALIGNED,
   outputBufferBytes,
@@ -30,7 +32,7 @@ import {
   // @ts-expect-error — módulo .mjs do toolchain do export, sem .d.ts
 } from '../../native/scripts/encode-ktx2.mjs';
 // @ts-expect-error — módulo .mjs do toolchain do export, sem .d.ts
-import { basisuArgs, DEFAULT_BASISU_PATH } from '../../native/scripts/encode-ktx2-native.mjs';
+import { basisuArgs, DEFAULT_BASISU_PATH, nativeFailureCode } from '../../native/scripts/encode-ktx2-native.mjs';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const hasEncoder = fs.existsSync(path.join(repoRoot, 'native', 'tools', 'basis-encoder', 'basis_encoder.js'));
@@ -178,6 +180,16 @@ describe.runIf(hasEncoder)('encodeKtx2 pelo WASM com PNG e JPG (SPEC-0750)', () 
 
   it('formato desconhecido rejeita com o motivo (não "0 bytes")', async () => {
     await expect(encodeKtx2(new Uint8Array(64))).rejects.toMatchObject({ code: ERR_IMAGE_FORMAT_UNKNOWN });
+  });
+});
+
+describe('falha do basisu nativo: instalação × imagem (SPEC-0750)', () => {
+  it('não iniciar, timeout, sinal e status do Windows são instalação; saída comum é a imagem', () => {
+    expect(nativeFailureCode({ code: 'ENOENT' })).toBe(ERR_NATIVE_ENCODER_FAILED);
+    expect(nativeFailureCode({ killed: true, code: null })).toBe(ERR_NATIVE_ENCODER_FAILED);
+    expect(nativeFailureCode({ signal: 'SIGTERM', code: null })).toBe(ERR_NATIVE_ENCODER_FAILED);
+    expect(nativeFailureCode({ code: 0xc0000135 })).toBe(ERR_NATIVE_ENCODER_FAILED);
+    expect(nativeFailureCode({ code: 1 })).toBe(ERR_ENCODE_FAILED);
   });
 });
 

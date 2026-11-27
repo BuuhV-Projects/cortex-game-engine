@@ -9,7 +9,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Document } from '@gltf-transform/core';
 import sharp from 'sharp';
-import { ERR_BASIS_ENCODER_MISSING, ERR_NATIVE_ENCODER_MISSING } from '../../native/scripts/encode-ktx2.mjs';
+import { ERR_BASIS_ENCODER_MISSING, ERR_NATIVE_ENCODER_FAILED, ERR_NATIVE_ENCODER_MISSING } from '../../native/scripts/encode-ktx2.mjs';
 
 const encodeKtx2 = vi.hoisted(() => vi.fn());
 vi.mock('../../native/scripts/encode-ktx2.mjs', async (importOriginal) => ({
@@ -129,6 +129,11 @@ describe('convertGlbTextures — encoder ausente', () => {
 
     expect(warn).toHaveBeenCalledTimes(1);
     expect(stats).toEqual({ texKept: 6, texKeptReasons: { ERR_NATIVE_ENCODER_MISSING: 6 } });
+
+    // o exe que não roda também avisa uma vez (e à parte do ausente)
+    encodeKtx2.mockRejectedValue(Object.assign(new Error('basisu nativo falhou: 0xC0000135'), { code: ERR_NATIVE_ENCODER_FAILED }));
+    await convertGlbTextures(doc, undefined, { label: 'npc3.glb', stats });
+    expect(warn).toHaveBeenCalledTimes(2);
   });
 
   it('avisa cada textura ANTES do encode, pro modal do export (SPEC-0699)', async () => {
