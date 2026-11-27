@@ -17,6 +17,11 @@ const GLB_MAGIC = 0x46546c67;
 const GLB_HEADER = 12;
 const CHUNK_HEAD = 8;
 const DEBT_FILE = join('docs', 'debito-nativo.md');
+/**
+ * Marca de pasta de JOGO: o `cortex.json` na raiz (SPEC-0752 da engine). O hook Stop roda no `cwd` da sessão, que pode ser outro
+ * repositório (a engine, uma ferramenta): sem a marca, ele não acusa nem grava o relatório de débito lá.
+ */
+const GAME_CONFIG = 'cortex.json';
 
 // ── Regras de asset (materiais do glTF) ─────────────────────────────────────
 /**
@@ -164,6 +169,7 @@ if (process.argv.includes('--hook')) {
   let errors, fresh;
   try {
     const root = resolve(input.cwd ?? process.cwd());
+    if (!existsSync(join(root, GAME_CONFIG))) process.exit(0); // não é jogo: nada a checar
     const file = join(root, DEBT_FILE);
     // pares "regra|arquivo" do relatório anterior: só o que não estava lá é débito novo
     const known = new Set();
