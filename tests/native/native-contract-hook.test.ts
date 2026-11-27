@@ -4,7 +4,7 @@
  */
 import { describe, it, expect, afterEach } from 'vitest';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
@@ -45,5 +45,27 @@ describe('hook de contrato do nativo: loader fora do cache (SPEC-0652)', () => {
     const r = run({ 'main.ts': MAIN, 'chao.ts': cached });
     expect(r.status).toBe(0);
     expect(r.out).toContain('ERROS: nenhum');
+  });
+});
+
+describe('hook Stop do contrato: só em pasta de jogo', () => {
+  /** O hook no modo Stop (`--hook`), com o `cwd` da sessão no JSON do stdin. */
+  function runHook(files: Record<string, string>): { status: number | null } {
+    dir = mkdtempSync(join(tmpdir(), 'native-contract-'));
+    for (const [name, text] of Object.entries(files)) writeFileSync(join(dir, name), text);
+    const r = spawnSync(process.execPath, [HOOK, '--hook'], { input: JSON.stringify({ cwd: dir }), encoding: 'utf8' });
+    return { status: r.status };
+  }
+  const LOADER = "import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';\nnew GLTFLoader();\n";
+
+  it('sem cortex.json na raiz (a engine, uma ferramenta) não acusa nem grava o relatório', () => {
+    const r = runHook({ 'main.ts': MAIN, 'loader.ts': LOADER });
+    expect(r.status).toBe(0);
+    expect(existsSync(join(dir, 'docs', 'debito-nativo.md'))).toBe(false);
+  });
+
+  it('com cortex.json na raiz, o loader fora do cache bloqueia como antes', () => {
+    const r = runHook({ 'cortex.json': '{}', 'main.ts': MAIN, 'loader.ts': LOADER });
+    expect(r.status).toBe(2);
   });
 });
