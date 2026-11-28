@@ -172,6 +172,24 @@ export function loadCookedTexture(ktx2Url: string, pixelated: boolean): Promise<
   return load;
 }
 
+/**
+ * Uma imagem solta pelo `loadTexture`: o `.ktx2` cozido quando o manifesto o tem, senão o original (`loadOriginal`).
+ * No host, o original sai do pak quando foi cozido (`replace`): se ele falha e o manifesto não tinha lido (falha
+ * passageira), o manifesto é lido de novo antes de desistir.
+ * @internal
+ */
+export async function loadLooseTexture(url: string, pixelated: boolean, loadOriginal: () => Promise<Texture>): Promise<Texture> {
+  const cooked = await cookedTextureUrl(url);
+  if (cooked) return loadCookedTexture(cooked, pixelated);
+  try {
+    return await loadOriginal();
+  } catch (err) {
+    const again = hasNativeKtx2() ? await cookedTextureUrl(url) : null;
+    if (again) return loadCookedTexture(again, pixelated);
+    throw err;
+  }
+}
+
 /** Esquece o manifesto lido (só para teste). @internal */
 export function resetCookedTextures(): void {
   manifest = null;

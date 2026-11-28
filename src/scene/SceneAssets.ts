@@ -4,7 +4,7 @@ import type { BufferGeometry, Object3D, Mesh, Texture } from 'three';
 import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { AssetLoader, disposeObjectResources, type GLTF } from '../core/AssetLoader.js';
 import { loadKtx2 } from '../core/loadKtx2.js';
-import { cookedTextureUrl, loadCookedTexture } from './cookedTextures.js';
+import { loadLooseTexture } from './cookedTextures.js';
 import { Scene } from '../core/Scene.js';
 import { clearMaterialPresetCache } from './Materials.js';
 import { clearTerrainLayerTextures } from './terrainLayerTextures.js';
@@ -196,8 +196,7 @@ export async function loadTexture(url: string, pixelated = true): Promise<Textur
   if (!tex) {
     tex = await bootAcc('loadTexture (ktx2/png)', async () => {
       if (/\.ktx2$/i.test(url)) return loadKtx2(url);
-      const cooked = await cookedTextureUrl(url);
-      return cooked ? loadCookedTexture(cooked, pixelated) : _loader.loadTexture(url, { pixelated });
+      return loadLooseTexture(url, pixelated, () => _loader.loadTexture(url, { pixelated }));
     });
     tex.userData['cortexCached'] = true; // residente entre fases (ver markCachedResources)
     _texCache.set(url, tex);

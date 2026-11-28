@@ -87,7 +87,8 @@ Para cada arquivo da lista:
 O `loadTexture(url)` público (`src/scene/SceneAssets.ts`), no host nativo:
 
 - lê o manifesto uma vez (ausente ou inválido = vazio, sem erro e sem log repetido); a falha transitória do `fetch`
-  não fica guardada (a próxima chamada tenta de novo); fora do host nem pede o arquivo;
+  não fica guardada (a próxima chamada tenta de novo), e o original que falha (saiu do pak pelo `replace`) lê o
+  manifesto de novo antes de desistir; fora do host nem pede o arquivo;
 - com `url` no manifesto, carrega o `.ktx2` pelo `loadKtx2` e devolve a `CompressedTexture` BC7 (com todos os mips do
   arquivo, `flipY = false`, `generateMipmaps = false`) no lugar da `Texture`. O resto do contrato não muda:
   - o cache por URL;
@@ -139,7 +140,8 @@ na frente. No navegador, sempre `null`. A URL do manifesto sai em `COOKED_TEXTUR
 - `tests/scene/loadTextureCooked.test.ts`:
   - o `loadTexture` com o manifesto devolvendo a `CompressedTexture`;
   - sem o manifesto, o PNG;
-  - a falha transitória do `fetch` (também a síncrona) sem ficar guardada;
+  - a falha transitória do `fetch` (também a síncrona) sem ficar guardada, e o original fora do pak lendo o manifesto
+    de novo;
   - o `cookedTextureUrl`;
   - o cache por URL (também com duas chamadas juntas);
   - o `pixelated` e a liberação dos dados BC7 depois do upload;

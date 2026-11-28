@@ -163,6 +163,19 @@ describe('loadTexture — imagens soltas cozidas (SPEC-0755)', () => {
     expect(await cookedTextureUrl('assets/sky/day.png')).toBe('assets/sky/day.png.ktx2');
   });
 
+  it('o original que saiu do pak (replace) lê o manifesto de novo antes de falhar', async () => {
+    fetchMock.mockRejectedValueOnce(new TypeError('rede')); // a 1ª leitura do manifesto falha de passagem
+    h.loadTexture.mockImplementationOnce(async () => {
+      serveManifest(MANIFEST); // o manifesto volta a responder
+      throw new Error('HTTP 404 assets/sky/day.png'); // o PNG não está mais no pak
+    });
+
+    const tex = await loadTexture('assets/sky/day.png', false);
+
+    expect(h.loadKtx2).toHaveBeenCalledWith('assets/sky/day.png.ktx2');
+    expect((tex as THREE.CompressedTexture).isCompressedTexture).toBe(true);
+  });
+
   it('no navegador nada muda: nem pede o manifesto', async () => {
     h.native.value = false;
     serveManifest(MANIFEST);
