@@ -94,7 +94,8 @@ function loadEncoderFactory() {
 // Módulo WASM memoizado — inicializar a cada chamada custava ~2s por textura
 // (o cook converte centenas em lote).
 let modulePromise = null;
-function getModule() {
+/** O módulo basis WASM inicializado (encoder e o `KTX2File` do transcoder); memoizado. */
+export function getModule() {
   if (!modulePromise) {
     const BASIS = loadEncoderFactory();
     // print/printErr no-op: silencia o log verboso do emscripten (Slice:…, stats).
@@ -110,7 +111,7 @@ function getModule() {
 
 const encodeFailed = (msg) => Object.assign(new Error(msg), { code: ERR_ENCODE_FAILED });
 
-async function encodeWasm(bytes, plan, { uastc, srgb, quality, rdoScalar }) {
+async function encodeWasm(bytes, plan, { uastc, srgb, quality, rdoScalar, flipY }) {
   const Module = await getModule();
   const enc = new Module.BasisEncoder();
   try {
@@ -120,6 +121,9 @@ async function encodeWasm(bytes, plan, { uastc, srgb, quality, rdoScalar }) {
     if (!enc.setSliceSourceImage(0, bytes, 0, 0, type.value)) {
       throw encodeFailed(`basis recusou a fonte ${plan.format} ${plan.width}×${plan.height}`);
     }
+    // Imagem que o jogo usa com `flipY = true` (SPEC-0755): grava as linhas viradas,
+    // porque textura comprimida ignora o flipY no upload.
+    enc.setYFlip(flipY);
     enc.setPerceptual(srgb); // sRGB p/ cor
     enc.setMipSRGB(srgb);
     enc.setMipGen(true); // mipmaps
@@ -159,14 +163,16 @@ async function encodeWasm(bytes, plan, { uastc, srgb, quality, rdoScalar }) {
  *   Requer o host com BASISD_SUPPORT_KTX2_ZSTD=1.
  * - `uastc: false` — ETC1S (menor; ok pra textura sem gradiente suave).
  * - `rdoScalar` — força do RDO no UASTC (padrão 1.0; maior = menor/pior; 0 = sem RDO).
+ * - `flipY` — grava as linhas de baixo para cima (a imagem solta que o jogo usa
+ *   com `flipY = true`, SPEC-0755). Padrão `false` (os GLB já vêm na orientação do glTF).
  * - `basisuPath` — caminho do basisu nativo (padrão native/tools/basisu/).
  */
 export async function encodeKtx2(
   imageBytes,
-  { uastc = true, srgb = true, quality = DEFAULT_ETC1S_QUALITY, rdoScalar = 1.0, basisuPath = DEFAULT_BASISU_PATH } = {},
+  { uastc = true, srgb = true, quality = DEFAULT_ETC1S_QUALITY, rdoScalar = 1.0, flipY = false, basisuPath = DEFAULT_BASISU_PATH } = {},
 ) {
   const plan = planEncode(imageBytes);
-  const opts = { uastc, srgb, quality, rdoScalar };
+  const opts = { uastc, srgb, quality, rdoScalar, flipY };
   if (plan.encoder === 'native') {
     return encodeKtx2Native(imageBytes, plan.format, opts, { exePath: basisuPath });
   }

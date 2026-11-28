@@ -75,10 +75,12 @@ export function hasNativeEncoder(exePath = DEFAULT_BASISU_PATH) {
  * Argumentos do basisu equivalentes às opções do WASM: UASTC nível 1 com RDO só
  * quando `rdoScalar > 0` (dicionário 1024), sRGB ou linear (métrica, transfer
  * function e filtro dos mips), mips e KTX2 (o UASTC no KTX2 já sai com Zstd por
- * padrão). `uastc: false` é ETC1S com `-q quality`.
+ * padrão). `uastc: false` é ETC1S com `-q quality`. `flipY` vira `-y_flip` (o
+ * `setYFlip` do WASM: as linhas da fonte viradas antes do encode, SPEC-0755).
  */
-export function basisuArgs({ uastc, srgb, quality, rdoScalar }, input, output) {
+export function basisuArgs({ uastc, srgb, quality, rdoScalar, flipY = false }, input, output) {
   const args = ['-ktx2', '-quiet', '-mipmap', srgb ? '-srgb' : '-linear'];
+  if (flipY) args.push('-y_flip');
   if (uastc) {
     args.push('-uastc', '-uastc_level', String(UASTC_LEVEL));
     if (rdoScalar > 0) args.push('-uastc_rdo_l', String(rdoScalar), '-uastc_rdo_d', String(UASTC_RDO_DICT_BYTES));

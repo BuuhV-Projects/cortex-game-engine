@@ -130,7 +130,7 @@ da SPEC-0177.
   o cook dele mantém as texturas acima do teto como estão (com aviso).
 - **Só Windows:** o `build-basisu.ps1` compila só no Windows e o Studio empacota só o `basisu.exe` (o export nativo também é só Windows). Em outra plataforma o nome procurado é `basisu`, sem
   receita de build.
-- PNG/JPG **soltos** (fora de GLB) continuam copiados como estão (o jogo os pede por URL). Fica para outra SPEC.
+- PNG/JPG **soltos** (fora de GLB) continuam copiados como estão (o jogo os pede por URL). Fica para outra SPEC (SPEC-0755: por lista do jogo).
 - Sem dependência nova de JavaScript: o `jpeg-js` da primeira versão desta SPEC saiu (o WASM lê JPG).
 
 ### Medições (2026-11-27, Node 22, basis `v2_1_0r`)

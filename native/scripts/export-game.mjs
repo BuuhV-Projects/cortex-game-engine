@@ -12,6 +12,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { packDir } from './pak.mjs';
 import { cookAssets } from './cook-assets.mjs';
+import { cookTexturesOf } from './cook-textures.mjs';
 import { usedPackageMaterials, packageAssetFilter } from './package-usage.mjs';
 import { prepareDist } from './fs-clean.mjs';
 import { whoLocks } from './who-locks.mjs';
@@ -89,9 +90,12 @@ if (steam) {
 }
 // Pastas soltas (SPEC-0733): `languages` + `cortex.json.looseDirs`. Valida
 // AQUI, antes do build: nome inválido reprova o export em vez de sumir em silêncio.
+// A lista de imagens soltas cozidas (SPEC-0755) é validada junto.
 let looseDirs;
+let cookTextures;
 try {
   looseDirs = looseDirsOf(game);
+  cookTextures = cookTexturesOf(game.cookTextures);
 } catch (err) {
   console.error(`[export] ${err.message}`);
   process.exit(1);
@@ -275,7 +279,9 @@ if (fs.existsSync(assetsDir)) {
     // CORTEX_EXPORT_ALL_PACKAGES=1 desliga o filtro (diagnóstico).
     const usedMaterials = usedPackageMaterials(gameDir);
     const include = process.env.CORTEX_EXPORT_ALL_PACKAGES === '1' ? undefined : packageAssetFilter(usedMaterials);
-    const cs = await cookAssets(assetsDir, cookedDir, cacheDir, (p) => progress({ phase: 'cook', ...p }), include);
+    const cs = await cookAssets(assetsDir, cookedDir, cacheDir, (p) => progress({ phase: 'cook', ...p }), include, {
+      cookTextures,
+    });
     if (cs.skipped) console.log(`[export] pacotes: ${usedMaterials.size} materiais usados, ${cs.skipped} arquivos de pacote fora do pak`);
     console.log(
       `[export] cook: ${cs.glbConverted} GLB convertidos (+${cs.glbCached} do cache, ${cs.glbNoTex} sem textura) · ` +
@@ -283,6 +289,14 @@ if (fs.existsSync(assetsDir)) {
     );
     // SPEC-0750: textura que não virou KTX2 chega à GPU em RGBA8 — o resumo conta.
     if (cs.texKept) console.log(`[export] cook: ${cs.texKept} textura(s) mantida(s) sem KTX2 ${JSON.stringify(cs.texKeptReasons)}`);
+    // SPEC-0755: as imagens soltas da lista `cookTextures`.
+    if (cookTextures.length) {
+      const kept = cs.looseKept ? ` · ${cs.looseKept} mantida(s) ${JSON.stringify(cs.looseKeptReasons)}` : '';
+      console.log(
+        `[export] cook: ${cs.looseConverted} imagem(ns) solta(s) em KTX2 (+${cs.looseCached} do cache)${kept} · ` +
+          `${(cs.looseBefore / 1e6).toFixed(1)} → ${(cs.looseAfter / 1e6).toFixed(1)} MB`,
+      );
+    }
   }
   progress({ phase: 'pack' });
   guardLocks('assets', () => {
@@ -314,10 +328,11 @@ guardLocks('assets', () => {
   // sem `id`, e o host cairia no basename do exe (`launcher`) → saves colidindo
   // entre jogos. O `icon` fica fora do runtime (é usado só no export).
   {
-    // `icon` e `looseDirs` só servem ao export — não vão pro runtime.
-    const { icon, looseDirs: _looseDirs, ...rest } = game;
+    // `icon`, `looseDirs` e `cookTextures` só servem ao export — não vão pro runtime.
+    const { icon, looseDirs: _looseDirs, cookTextures: _cookTextures, ...rest } = game;
     void icon;
     void _looseDirs;
+    void _cookTextures;
     // O app id só faz sentido no build Steam: no export PC/Xbox ele viraria
     // ruído (o host loga "app ignorado" a cada boot) e sugeriria uma integração
     // que aquele binário não tem.

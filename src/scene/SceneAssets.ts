@@ -4,6 +4,7 @@ import type { BufferGeometry, Object3D, Mesh, Texture } from 'three';
 import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { AssetLoader, disposeObjectResources, type GLTF } from '../core/AssetLoader.js';
 import { loadKtx2 } from '../core/loadKtx2.js';
+import { loadLooseTexture } from './cookedTextures.js';
 import { Scene } from '../core/Scene.js';
 import { clearMaterialPresetCache } from './Materials.js';
 import { clearTerrainLayerTextures } from './terrainLayerTextures.js';
@@ -177,13 +178,26 @@ function markCachedResources(root: { traverse(cb: (o: unknown) => void): void })
  * (transcoder nativo no host / `KTX2Loader` no browser) — comprimidas e
  * portáveis pro console; o `pixelated` é ignorado (KTX2 usa linear + mipmaps).
  *
+ * No host nativo, uma imagem que o export cozinhou (lista `cookTextures` do
+ * `cortex.json`, SPEC-0755) carrega pelo `.ktx2` do manifesto: volta uma
+ * `CompressedTexture` BC7 com os mips do arquivo (`flipY = false`,
+ * `generateMipmaps = false`), com o `pixelated` valendo e o cache pela `url`
+ * original. Os dados BC7 saem da CPU depois do primeiro upload: depois disso, um
+ * `needsUpdate` é ignorado (a GPU segue com a textura) e um `clone()` sobe
+ * vazio. Por isso a textura que é clonada depois de desenhada (a folha do
+ * {@link createAnimatedSprite}, a textura de estrada) fica fora da lista. No
+ * navegador nada muda.
+ *
  * @param url - Caminho relativo à raiz do projeto (ex.: `'assets/hero.png'`).
  * @param pixelated - Nearest filter (pixel art). Default `true`. Ignorado p/ KTX2.
  */
 export async function loadTexture(url: string, pixelated = true): Promise<Texture> {
   let tex = _texCache.get(url);
   if (!tex) {
-    tex = await bootAcc('loadTexture (ktx2/png)', () => (/\.ktx2$/i.test(url) ? loadKtx2(url) : _loader.loadTexture(url, { pixelated })));
+    tex = await bootAcc('loadTexture (ktx2/png)', async () => {
+      if (/\.ktx2$/i.test(url)) return loadKtx2(url);
+      return loadLooseTexture(url, pixelated, () => _loader.loadTexture(url, { pixelated }));
+    });
     tex.userData['cortexCached'] = true; // residente entre fases (ver markCachedResources)
     _texCache.set(url, tex);
   }

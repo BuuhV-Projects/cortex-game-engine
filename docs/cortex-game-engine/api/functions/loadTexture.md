@@ -8,7 +8,7 @@
 
 > **loadTexture**(`url`, `pixelated?`): `Promise`\<`Texture`\<`unknown`, `TextureEventMap`\>\>
 
-Defined in: [src/scene/SceneAssets.ts:183](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L183)
+Defined in: [src/scene/SceneAssets.ts:194](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L194)
 
 Carrega uma **textura** (png/jpg/webp) com cache por URL — para sprites 2D /
 spritesheets. A textura cacheada é compartilhada; quem precisar animar
@@ -18,6 +18,16 @@ independente (cada sprite com seu recorte UV) deve cloná-la (o
 Texturas **`.ktx2`** (Basis, ADR-0108) são roteadas pro [loadKtx2](loadKtx2.md)
 (transcoder nativo no host / `KTX2Loader` no browser) — comprimidas e
 portáveis pro console; o `pixelated` é ignorado (KTX2 usa linear + mipmaps).
+
+No host nativo, uma imagem que o export cozinhou (lista `cookTextures` do
+`cortex.json`, SPEC-0755) carrega pelo `.ktx2` do manifesto: volta uma
+`CompressedTexture` BC7 com os mips do arquivo (`flipY = false`,
+`generateMipmaps = false`), com o `pixelated` valendo e o cache pela `url`
+original. Os dados BC7 saem da CPU depois do primeiro upload: depois disso, um
+`needsUpdate` é ignorado (a GPU segue com a textura) e um `clone()` sobe
+vazio. Por isso a textura que é clonada depois de desenhada (a folha do
+[createAnimatedSprite](createAnimatedSprite.md), a textura de estrada) fica fora da lista. No
+navegador nada muda.
 
 ## Parameters
 
