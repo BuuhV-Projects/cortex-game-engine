@@ -11,6 +11,7 @@ import {
   UnsignedByteType,
   type ColorRepresentation,
 } from 'three';
+import { debug } from '../core/debug.js';
 import { terrainLayerTexture } from './terrainLayerTextures.js';
 import { gridBoundingSphere, gridIndex, gridNormals } from './terrainGrid.js';
 import { buildTerrainSplatMaterial, type TerrainLayerNode, type TerrainRepeatNode } from './terrainSplatMaterial.js';
@@ -430,11 +431,17 @@ export class Terrain {
     if (!layer || !node) return;
     this.syncRepeat();
     if (typeof document === 'undefined') return; // testes/SSR: sem ImageLoader
-    const texture = terrainLayerTexture(layer.url); // compartilhada por URL (SPEC-0652)
-    if (node.value === texture) return;
-    node.value = texture;
-    // o renderer nativo relê as texturas pela versão do material (SPEC-0662); só quando a camada muda
-    (this.mesh.material as MeshStandardMaterial).needsUpdate = true;
+    const { url } = layer;
+    // compartilhada por URL (SPEC-0652); no host, o .ktx2 cozido (SPEC-0757)
+    void terrainLayerTexture(url)
+      .then((texture) => {
+        // a camada trocou (ou o material foi refeito) antes da carga chegar: a textura velha não entra
+        if (this.layers[index]?.url !== url || this.layerTexNodes[index] !== node || node.value === texture) return;
+        node.value = texture;
+        // o renderer nativo relê as texturas pela versão do material (SPEC-0662); só quando a camada muda
+        (this.mesh.material as MeshStandardMaterial).needsUpdate = true;
+      })
+      .catch((e: unknown) => debug('terrain', 'textura da camada falhou:', url, e));
   }
 
   /** Espelha o `repeat` das camadas nos uniforms (tiling ao vivo, sem rebuild). */

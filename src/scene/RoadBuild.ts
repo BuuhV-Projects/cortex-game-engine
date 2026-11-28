@@ -11,8 +11,6 @@ import {
   DoubleSide,
   Mesh,
   MeshStandardMaterial,
-  RepeatWrapping,
-  SRGBColorSpace,
   Vector3,
   type Object3D,
 } from 'three';
@@ -31,7 +29,7 @@ import { roadOverlaySchema, ROAD_DEFAULT_CLEARANCE, ROAD_DEFAULT_TALUDE, ROAD_DE
 import { RoadCorridor } from '../road/RoadCorridor.js';
 import { buildBridgeParts } from './RoadBridgeParts.js';
 import { FLOATS_PER_INSTANCE, type Vegetation } from './Vegetation.js';
-import { loadTexture } from './SceneAssets.js';
+import { roadTexture } from './roadTextures.js';
 import type { SceneFileV1 } from './SceneFile.js';
 import type { RoadNode } from './SceneDefinition.js';
 import type { Terrain } from './Terrain.js';
@@ -42,8 +40,6 @@ export const ROAD_LIFT = 0.05;
 const ROAD_DEFAULT_COLOR = 0x4a4a4a;
 const ROAD_TEXTURED_COLOR = 0xffffff;
 const ROAD_ROUGHNESS = 0.95;
-/** Nitidez da textura em ângulo rasante. */
-const ROAD_ANISOTROPY = 8;
 /** Folga (em células da grade) no teste de caixa estrada × terreno — cobre o acostamento. */
 const SHOULDER_CELLS_REACH = 2;
 
@@ -160,15 +156,9 @@ function applySurface(mesh: Mesh, node: RoadNode): void {
   });
   if (node.texture) {
     const url = node.texture;
-    void loadTexture(url, false)
-      .then((t) => {
-        // Clona: a textura do cache pode ser usada por outro material com outro wrap.
-        const tex = t.clone();
-        tex.wrapS = RepeatWrapping;
-        tex.wrapT = RepeatWrapping;
-        tex.colorSpace = SRGBColorSpace;
-        tex.anisotropy = ROAD_ANISOTROPY;
-        tex.needsUpdate = true;
+    // uma textura por URL, dividida por todas as estradas e sem clone: a BC7 cozida subiria vazia no clone (ADR-0758)
+    void roadTexture(url)
+      .then((tex) => {
         material.map = tex;
         material.needsUpdate = true;
       })
