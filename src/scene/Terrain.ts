@@ -439,7 +439,7 @@ export class Terrain {
       .catch((e: unknown) => debug('terrain', 'textura da camada falhou:', url, e));
   }
 
-  /** Põe no nó da camada `index` a textura que chegou, se a camada ainda for a mesma (SPEC-0757). */
+  /** Põe no nó da camada `index` a textura que chegou, se a camada ainda for a mesma. */
   private setLayerTexture(index: number, node: TerrainLayerNode, url: string, texture: Texture): void {
     // a camada trocou (ou o material foi refeito) antes da carga chegar: a textura velha não entra
     if (this.layers[index]?.url !== url || this.layerTexNodes[index] !== node) return;
