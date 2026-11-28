@@ -1,3 +1,10 @@
+# [1.6.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v1.5.0...v1.6.0) (2026-11-28)
+
+
+### Features
+
+* **scene:** camada do terreno e textura de estrada pelo KTX2 cozido, sem clone (SPEC-0757) ([#119](https://github.com/BuuhV-Projects/cortex-game-engine/issues/119)) ([126f108](https://github.com/BuuhV-Projects/cortex-game-engine/commit/126f108fd5495e7e94a6bce1ec4da8431b632170))
+
 # [1.5.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v1.4.0...v1.5.0) (2026-11-28)
 
 
