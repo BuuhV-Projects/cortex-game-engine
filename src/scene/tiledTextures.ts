@@ -20,11 +20,18 @@ export interface TiledTextureCache {
 export function tiledTextureCache(configure: (texture: Texture) => void): TiledTextureCache {
   const loads = new Map<string, Promise<Texture>>();
   const live = new Set<Texture>();
+  // sobe a cada `clear()`: a carga que chega depois dele é de antes do despejo e não entra no cache
+  let generation = 0;
   return {
     get(url) {
       let load = loads.get(url);
       if (!load) {
+        const born = generation;
         load = loadLooseTexture(url, false, () => new TextureLoader().loadAsync(url)).then((texture) => {
+          if (born !== generation) {
+            texture.dispose();
+            throw new Error(`${url}: carga descartada pelo clear() do cache`);
+          }
           configure(texture);
           live.add(texture);
           return texture;
@@ -39,6 +46,7 @@ export function tiledTextureCache(configure: (texture: Texture) => void): TiledT
       return load;
     },
     clear() {
+      generation++;
       for (const texture of live) texture.dispose();
       live.clear();
       loads.clear();

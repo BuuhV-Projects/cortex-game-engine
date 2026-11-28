@@ -21,7 +21,9 @@ reduzir nada.
   manifesto (`loadCookedTexture`, os dados BC7 soltos da CPU depois do upload); senão, o original pelo
   `TextureLoader.loadAsync`. O `configure` roda uma vez, na textura nova, antes do primeiro upload;
 - duas chamadas juntas da mesma URL dividem a mesma carga; a carga que falha sai do cache (a próxima tenta de novo);
-- `clear()` descarta as texturas que chegaram e esquece as cargas.
+- `clear()` descarta as texturas que chegaram e esquece as cargas. A carga que ainda estava em curso e chega depois
+  do `clear()` (uma troca de fase no meio do carregamento) é descartada na hora e rejeita: ela não entra no cache, e
+  quem a pediu só registra a falha no `debug`.
 
 A textura é do cache, não do `loadTexture`: as opções de um uso não mudam a textura de outro.
 
@@ -47,7 +49,7 @@ cook grava as linhas viradas (SPEC-0755 §2). Nenhuma das duas usa dado linear: 
 ## Testes
 
 - `tests/scene/tiledTextures.test.ts`: uma carga por URL, o `configure` uma vez, cargas juntas divididas, a falha sai
-  do cache, o `clear` descarta, e no host com o manifesto o `.ktx2` no lugar do original.
+  do cache, o `clear` descarta (também a carga que chega depois dele), e no host com o manifesto o `.ktx2` no lugar do original.
 - `tests/scene/terrainLayerTextures.test.ts`: terrenos com a mesma URL carregam uma vez, com wrap e sRGB; a camada
   trocada antes da carga chegar não recebe a textura antiga.
 - `tests/scene/terrainLayerSwap.test.ts`: segue (o mock passa a devolver promessa).

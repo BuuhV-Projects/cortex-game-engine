@@ -75,6 +75,21 @@ describe('tiledTextureCache (SPEC-0757)', () => {
     expect(await cache.get('assets/a.png')).not.toBe(tex);
   });
 
+  it('a carga que chega depois do clear é descartada e não entra no cache', async () => {
+    let arrive: (t: THREE.Texture) => void = () => {};
+    const late = new THREE.Texture();
+    const dispose = vi.spyOn(late, 'dispose');
+    original.mockImplementationOnce(() => new Promise<THREE.Texture>((r) => { arrive = r; }));
+    const cache = tiledTextureCache(() => {});
+    const pending = cache.get('assets/a.png');
+    cache.clear();
+    await new Promise((r) => setTimeout(r, 0)); // a carga só pede o original depois de ler o manifesto
+    arrive(late);
+    await expect(pending).rejects.toThrow('clear()');
+    expect(dispose).toHaveBeenCalled();
+    expect(await cache.get('assets/a.png')).not.toBe(late);
+  });
+
   it('no host com o manifesto, carrega o .ktx2 cozido no lugar do original', async () => {
     h.native.value = true;
     fetchMock.mockResolvedValue({ ok: true, status: 200, json: async () => ({ 'assets/a.png': 'assets/a.png.ktx2' }) });
