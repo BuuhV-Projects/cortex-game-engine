@@ -8,6 +8,7 @@ import { loadLooseTexture } from './cookedTextures.js';
 import { Scene } from '../core/Scene.js';
 import { clearMaterialPresetCache } from './Materials.js';
 import { clearTerrainLayerTextures } from './terrainLayerTextures.js';
+import { clearRoadTextures } from './roadTextures.js';
 import {
   forgetModelLook,
   isModelHotReloadEnabled,
@@ -104,6 +105,7 @@ export function clearSceneAssetCaches(): void {
   for (const tex of _texCache.values()) tex.dispose();
   _texCache.clear();
   clearTerrainLayerTextures(); // camadas do terreno (SPEC-0652)
+  clearRoadTextures(); // texturas de estrada (SPEC-0757)
   _loader.disposeCache();
   (globalThis as { __cortexClearObjectUrls?: () => void }).__cortexClearObjectUrls?.();
 }
@@ -185,7 +187,8 @@ function markCachedResources(root: { traverse(cb: (o: unknown) => void): void })
  * original. Os dados BC7 saem da CPU depois do primeiro upload: depois disso, um
  * `needsUpdate` é ignorado (a GPU segue com a textura) e um `clone()` sobe
  * vazio. Por isso a textura que é clonada depois de desenhada (a folha do
- * {@link createAnimatedSprite}, a textura de estrada) fica fora da lista. No
+ * {@link createAnimatedSprite}) fica fora da lista; a camada do terreno e a
+ * textura de estrada têm cache próprio, sem clone (SPEC-0757). No
  * navegador nada muda.
  *
  * @param url - Caminho relativo à raiz do projeto (ex.: `'assets/hero.png'`).

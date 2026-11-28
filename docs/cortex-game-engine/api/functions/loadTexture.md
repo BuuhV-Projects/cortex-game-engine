@@ -8,7 +8,7 @@
 
 > **loadTexture**(`url`, `pixelated?`): `Promise`\<`Texture`\<`unknown`, `TextureEventMap`\>\>
 
-Defined in: [src/scene/SceneAssets.ts:194](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L194)
+Defined in: [src/scene/SceneAssets.ts:197](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L197)
 
 Carrega uma **textura** (png/jpg/webp) com cache por URL — para sprites 2D /
 spritesheets. A textura cacheada é compartilhada; quem precisar animar
@@ -26,7 +26,8 @@ No host nativo, uma imagem que o export cozinhou (lista `cookTextures` do
 original. Os dados BC7 saem da CPU depois do primeiro upload: depois disso, um
 `needsUpdate` é ignorado (a GPU segue com a textura) e um `clone()` sobe
 vazio. Por isso a textura que é clonada depois de desenhada (a folha do
-[createAnimatedSprite](createAnimatedSprite.md), a textura de estrada) fica fora da lista. No
+[createAnimatedSprite](createAnimatedSprite.md)) fica fora da lista; a camada do terreno e a
+textura de estrada têm cache próprio, sem clone (SPEC-0757). No
 navegador nada muda.
 
 ## Parameters

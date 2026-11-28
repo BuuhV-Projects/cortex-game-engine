@@ -8,7 +8,7 @@
 
 > **setShadows**(`object`, `options`): `void`
 
-Defined in: [src/scene/SceneAssets.ts:215](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L215)
+Defined in: [src/scene/SceneAssets.ts:218](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L218)
 
 Liga/desliga sombras em todos os meshes de um objeto. Use pra **excluir um
 objeto específico** do shadowMap (ex.: água, decals, props pequenos):

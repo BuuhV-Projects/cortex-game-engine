@@ -8,7 +8,7 @@
 
 > **setMatte**(`object`, `options?`): `void`
 
-Defined in: [src/scene/SceneAssets.ts:304](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L304)
+Defined in: [src/scene/SceneAssets.ts:307](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L307)
 
 ## Parameters
 
