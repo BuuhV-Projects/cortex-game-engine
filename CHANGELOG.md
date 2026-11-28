@@ -1,3 +1,10 @@
+# [1.5.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v1.4.0...v1.5.0) (2026-11-28)
+
+
+### Features
+
+* **cook:** imagens soltas cozidas para KTX2 por uma lista do jogo (SPEC-0755) ([#118](https://github.com/BuuhV-Projects/cortex-game-engine/issues/118)) ([0eecc9c](https://github.com/BuuhV-Projects/cortex-game-engine/commit/0eecc9cb4695ad7d9ffc780a78f8cb5b30e31270))
+
 # [1.4.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v1.3.1...v1.4.0) (2026-11-28)
 
 
