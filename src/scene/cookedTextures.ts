@@ -16,29 +16,47 @@ import { hasNativeKtx2, loadKtx2, releaseKtx2TexturesAfterUpload } from '../core
 export const COOKED_TEXTURES_MANIFEST_URL = 'assets/cooked-textures.json';
 
 let manifest: Promise<ReadonlyMap<string, string>> | null = null;
+/** A leitura do manifesto já falhou uma vez nesta sessão (o aviso sai uma vez só). */
+let manifestWarned = false;
 
 /** A URL como o cook a grava: relativa à pasta do jogo, sem `./` nem `/` na frente. */
 function manifestKey(url: string): string {
   return url.replace(/\\/g, '/').replace(/^(?:\.\/|\/)+/, '');
 }
 
+/** Um aviso por sessão: o manifesto que falta ou não se lê não enche o log. */
+function warnManifest(what: string): void {
+  if (manifestWarned) return;
+  manifestWarned = true;
+  debug('assets', `manifesto de texturas cozidas ${what} — segue com os originais`);
+}
+
 async function fetchManifest(): Promise<ReadonlyMap<string, string>> {
   const empty = new Map<string, string>();
+  let res: Response;
   try {
-    const res = await fetch(COOKED_TEXTURES_MANIFEST_URL);
-    if (!res.ok) return empty;
-    const raw: unknown = await res.json();
-    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return empty;
-    const map = new Map<string, string>();
-    for (const [from, to] of Object.entries(raw as Record<string, unknown>)) {
-      if (typeof to === 'string') map.set(manifestKey(from), to);
-    }
-    return map;
+    res = await fetch(COOKED_TEXTURES_MANIFEST_URL);
   } catch (err) {
-    // Lido uma vez por sessão: o aviso também sai uma vez só.
-    debug('assets', `manifesto de texturas cozidas ilegível (${String(err)}) — segue com os originais`);
+    // Falha transitória (o fetch lançou): não fica guardada, a próxima chamada tenta de novo.
+    manifest = null;
+    warnManifest(`sem leitura (${String(err)}), tenta de novo na próxima textura`);
     return empty;
   }
+  // As respostas definitivas ficam guardadas: 404 (o export sem lista) e o JSON ilegível ou que não é objeto.
+  if (!res.ok) return empty;
+  let raw: unknown;
+  try {
+    raw = await res.json();
+  } catch (err) {
+    warnManifest(`ilegível (${String(err)})`);
+    return empty;
+  }
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return empty;
+  const map = new Map<string, string>();
+  for (const [from, to] of Object.entries(raw as Record<string, unknown>)) {
+    if (typeof to === 'string') map.set(manifestKey(from), to);
+  }
+  return map;
 }
 
 /** O manifesto, lido uma vez (só no host; no navegador é sempre vazio, sem pedir nada). */
@@ -148,5 +166,6 @@ export function loadCookedTexture(ktx2Url: string, pixelated: boolean): Promise<
 /** Esquece o manifesto lido (só para teste). @internal */
 export function resetCookedTextures(): void {
   manifest = null;
+  manifestWarned = false;
   pending.clear();
 }

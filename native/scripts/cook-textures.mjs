@@ -6,7 +6,7 @@
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import { encodeKtx2, ERR_BASIS_ENCODER_MISSING } from './encode-ktx2.mjs';
+import { encodeKtx2, ERR_BASIS_ENCODER_MISSING, planEncode } from './encode-ktx2.mjs';
 import { ERR_NATIVE_ENCODER_FAILED, ERR_NATIVE_ENCODER_MISSING } from './encode-ktx2-native.mjs';
 
 /** Só imagem entra no cook de soltas: um padrão largo (`assets/x/**`) nunca tira o `.glb` do cook dele. */
@@ -127,13 +127,22 @@ export function resetCookTexturesWarnings() {
   installWarned.clear();
 }
 
-/** Chave do cache: a versão do cook, os bytes da fonte e as opções que mudam o KTX2. */
+/** O encoder que a fonte usa (WASM ou basisu nativo, pelo teto de texels); fora de 4×4 ou ilegível, nenhum. */
+function encoderOf(bytes) {
+  try {
+    return planEncode(bytes).encoder;
+  } catch {
+    return 'none';
+  }
+}
+
+/** Chave do cache: a versão do cook, os bytes da fonte, o encoder e as opções que mudam o KTX2. */
 function cacheKey(cookVersion, bytes, entry) {
   return createHash('sha1')
     .update(cookVersion)
     .update(LOOSE_COOK_TAG)
     .update(bytes)
-    .update(`srgb=${entry.srgb};flipY=${entry.flipY}`)
+    .update(`encoder=${encoderOf(bytes)};srgb=${entry.srgb};flipY=${entry.flipY}`)
     .digest('hex');
 }
 

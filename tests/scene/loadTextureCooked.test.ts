@@ -145,8 +145,17 @@ describe('loadTexture — imagens soltas cozidas (SPEC-0755)', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
 
     resetCookedTextures();
-    fetchMock.mockRejectedValue(new SyntaxError('json'));
+    fetchMock.mockResolvedValue({ ok: true, status: 200, json: async () => { throw new SyntaxError('json'); } });
     expect(await cookedTextureUrl('assets/sky/day.png')).toBeNull();
+    expect(await cookedTextureUrl('assets/sky/day.png')).toBeNull();
+    expect(fetchMock).toHaveBeenCalledTimes(2); // o 404 de antes e o JSON ilegível: os dois ficam guardados
+  });
+
+  it('a falha transitória do fetch não fica guardada: a próxima chamada lê o manifesto', async () => {
+    fetchMock.mockRejectedValueOnce(new TypeError('rede'));
+    expect(await cookedTextureUrl('assets/sky/day.png')).toBeNull();
+    serveManifest(MANIFEST);
+    expect(await cookedTextureUrl('assets/sky/day.png')).toBe('assets/sky/day.png.ktx2');
   });
 
   it('no navegador nada muda: nem pede o manifesto', async () => {

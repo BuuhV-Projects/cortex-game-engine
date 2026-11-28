@@ -71,7 +71,7 @@ Para cada arquivo da lista:
   `flipY`, a primeira linha do nível 0 é a última da fonte.
 - **Saída** ao lado do original: `<arquivo>.ktx2` (`paint_02.png` → `paint_02.png.ktx2`). Anexar a extensão evita a
   colisão de `x.png` com `x.jpg`.
-- **Cache** como o do GLB: chave `sha1(COOK_VERSION + "loose-v1" + bytes + srgb + flipY)` em
+- **Cache** como o do GLB: chave `sha1(COOK_VERSION + "loose-v1" + bytes + encoder + srgb + flipY)` (o encoder, WASM ou basisu nativo, sai do teto de texels) em
   `<jogo>/.cortex-cache/ktx2/<chave>.ktx2`. Só a conversão bem-sucedida entra no cache: a que falhou tenta de novo no
   export seguinte (a fonte fora de 4×4 sai pelo header, sem encode). O `COOK_VERSION` não sobe: a política dos GLB não
   mudou, e o `loose-v1` separa a das imagens soltas.
@@ -86,7 +86,8 @@ Para cada arquivo da lista:
 
 O `loadTexture(url)` público (`src/scene/SceneAssets.ts`), no host nativo:
 
-- lê o manifesto uma vez (ausente ou inválido = vazio, sem erro e sem log repetido); fora do host nem pede o arquivo;
+- lê o manifesto uma vez (ausente ou inválido = vazio, sem erro e sem log repetido); a falha transitória do `fetch`
+  não fica guardada (a próxima chamada tenta de novo); fora do host nem pede o arquivo;
 - com `url` no manifesto, carrega o `.ktx2` pelo `loadKtx2` e devolve a `CompressedTexture` BC7 (com todos os mips do
   arquivo, `flipY = false`, `generateMipmaps = false`) no lugar da `Texture`. O resto do contrato não muda:
   - o cache por URL;
