@@ -182,8 +182,10 @@ function markCachedResources(root: { traverse(cb: (o: unknown) => void): void })
  * `cortex.json`, SPEC-0755) carrega pelo `.ktx2` do manifesto: volta uma
  * `CompressedTexture` BC7 com os mips do arquivo (`flipY = false`,
  * `generateMipmaps = false`), com o `pixelated` valendo e o cache pela `url`
- * original. Os dados BC7 saem da CPU depois do primeiro upload: não clone nem
- * reenvie (`needsUpdate`) essa textura depois que ela foi desenhada. No
+ * original. Os dados BC7 saem da CPU depois do primeiro upload: depois disso, um
+ * `needsUpdate` é ignorado (a GPU segue com a textura) e um `clone()` sobe
+ * vazio. Por isso a textura que é clonada depois de desenhada (a folha do
+ * {@link createAnimatedSprite}, a textura de estrada) fica fora da lista. No
  * navegador nada muda.
  *
  * @param url - Caminho relativo à raiz do projeto (ex.: `'assets/hero.png'`).

@@ -95,7 +95,7 @@ O `loadTexture(url)` público (`src/scene/SceneAssets.ts`), no host nativo:
   - o `colorSpace` fica com quem chama, como no PNG;
 - solta os dados BC7 da CPU depois do primeiro upload (`releaseKtx2TexturesAfterUpload`, a versão por lista de texturas
   do `releaseKtx2DataAfterUpload`). Clonar essa textura depois do upload sobe uma cópia vazia: quem clona fica fora da
-  lista. Duas chamadas juntas da mesma URL dividem a mesma carga;
+  lista (a folha do `createAnimatedSprite`, que clona a cada sprite, e a textura de estrada do `RoadBuild`; ADR-0756). Duas chamadas juntas da mesma URL dividem a mesma carga;
 - o `pixelated` põe mag e min em nearest e deixa só o nível 0, como o PNG pixelado (com a cadeia do arquivo, o
   WebGPU amostraria os mips menores);
 - depois do primeiro upload, um `needsUpdate` na textura vira no-op com um aviso no `debug` (os dados já saíram da

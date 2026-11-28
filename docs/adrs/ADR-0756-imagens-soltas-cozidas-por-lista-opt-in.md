@@ -10,6 +10,8 @@ O cook converte as texturas dos GLB para KTX2 sem perguntar nada ao jogo: o mate
 o GLB já guarda a orientação. Uma imagem solta não diz nada disso, e quem a carrega pode:
 
 - ler os pixels na CPU (um canvas 2D, um heightmap, o `new Image()` de pré-carga da UI);
+- clonar a textura depois de ela ser desenhada: `createAnimatedSprite` (`Spritesheet.ts`) clona a folha a cada sprite, e
+  o `RoadBuild` clona a textura de cada estrada. Como os dados BC7 saem da CPU no primeiro upload, o clone sobe vazio;
 - usá-la com `flipY = true`, que uma textura comprimida ignora;
 - ser dado linear (normal, gradiente), que o encode perceptual estraga;
 - ter dimensões fora dos blocos 4×4 do BC7.
@@ -36,5 +38,8 @@ A alternativa 3:
 ## Consequências
 
 - Imagem nova não muda de comportamento sozinha: entra no KTX2 quando o jogo a põe na lista.
+- Fica fora da lista a textura que é clonada depois do uso, como a folha de sprite e a textura de estrada. Ela sobe
+  vazia no clone, e o `clone()` só avisa no `debug`. Recarregar o `.ktx2` no clone exigiria uma textura comprimida
+  vazia até a carga chegar, e manter os dados na CPU custaria a RAM que a conversão quer cortar.
 - Quem põe uma imagem na lista responde pela orientação (`flipY`) e pela cor ou dado (`srgb`). Errar mostra a textura
   virada ou com a cor lavada no export, não no dev. A lista precisa de conferência visual no export.

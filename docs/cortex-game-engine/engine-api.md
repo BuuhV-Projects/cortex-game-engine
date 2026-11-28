@@ -1960,7 +1960,8 @@ para KTX2 (BC7 no host, 4× menos VRAM, mesmas dimensões):
   Fonte fora dos blocos 4×4 ou que falha fica com o original, com aviso.
 - O `loadTexture(url, pixelated)` público troca sozinho no host: devolve a `CompressedTexture` BC7 (cache pela URL
   original, `pixelated` valendo, `flipY = false`) e solta os dados da CPU depois do primeiro upload. Depois disso, um `needsUpdate` é ignorado (com aviso no `debug`; a
-  GPU segue com a textura) e um `clone()` avisa que a cópia sobe vazia: quem clona fica fora da lista. No navegador nada muda (o PNG).
+  GPU segue com a textura) e um `clone()` avisa que a cópia sobe vazia: quem clona fica fora da lista (a folha de sprite do
+  `createAnimatedSprite`, que clona a cada sprite, e a textura de estrada do `RoadBuild`). No navegador nada muda (o PNG).
 - Quem carrega por outro caminho pergunta antes (assíncrono; lê o manifesto uma vez):
 ```ts
 import { cookedTextureUrl, loadKtx2, AssetLoader } from 'cortex-game-engine'
