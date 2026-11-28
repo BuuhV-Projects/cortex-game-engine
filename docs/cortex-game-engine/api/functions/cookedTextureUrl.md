@@ -8,7 +8,7 @@
 
 > **cookedTextureUrl**(`url`): `Promise`\<`string` \| `null`\>
 
-Defined in: [src/scene/cookedTextures.ts:85](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/cookedTextures.ts#L85)
+Defined in: [src/scene/cookedTextures.ts:92](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/cookedTextures.ts#L92)
 
 A URL do `.ktx2` que o export cozinhou para a imagem `url`, ou `null` quando
 ela não está na lista `cookTextures` do jogo, quando o manifesto falta ou fora

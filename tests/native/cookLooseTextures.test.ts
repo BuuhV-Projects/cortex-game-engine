@@ -1,7 +1,6 @@
 /**
- * Cook das imagens soltas por lista do jogo (SPEC-0755, ADR-0756): o glob da
- * lista, o `exclude`, a primeira entrada vencendo, a entrada que não casa
- * avisando, a fonte fora dos blocos 4×4 e a falha ficando com o original, o
+ * Cook das imagens soltas por lista do jogo (SPEC-0755, ADR-0756): a entrada que
+ * não casa avisando, a fonte fora dos blocos 4×4 e a falha ficando com o original, o
  * `replace`, o manifesto e o cache. O encoder é mockado (o encode real está no
  * `encode-ktx2-flip.test.ts`); o mock ainda passa pelo `planEncode` real, que lê
  * o header e reprova a fonte fora de 4×4.
@@ -24,7 +23,7 @@ vi.mock('../../native/scripts/encode-ktx2.mjs', async (importOriginal) => ({
 const { cookAssets } = await import('../../native/scripts/cook-assets.mjs');
 // @ts-expect-error — módulo .mjs do toolchain do export, sem .d.ts
 const textures = await import('../../native/scripts/cook-textures.mjs');
-const { cookTexturesOf, globToRegExp, planCookTextures, resetCookTexturesWarnings } = textures;
+const { cookTexturesOf, resetCookTexturesWarnings } = textures;
 
 const FAKE_KTX2 = new Uint8Array([0xab, 0x4b, 0x54, 0x58]);
 const RGB = 3;
@@ -60,50 +59,6 @@ afterEach(() => {
 
 const cook = (list: unknown) => cookAssets(assets, out, cache, undefined, undefined, { cookTextures: cookTexturesOf(list) });
 const manifest = () => JSON.parse(readFileSync(join(out, 'cooked-textures.json'), 'utf8'));
-
-describe('cookTextures — a lista', () => {
-  it('glob: * fica numa pasta, ** entra nas subpastas, ? é um caractere', () => {
-    expect(globToRegExp('assets/paint/*.png').test('assets/paint/a.png')).toBe(true);
-    expect(globToRegExp('assets/paint/*.png').test('assets/paint/sub/a.png')).toBe(false);
-    expect(globToRegExp('assets/**/*.png').test('assets/paint/sub/a.png')).toBe(true);
-    expect(globToRegExp('assets/**/*.png').test('assets/a.png')).toBe(true);
-    expect(globToRegExp('assets/**').test('assets/x/y.jpg')).toBe(true);
-    expect(globToRegExp('assets/p?.png').test('assets/p1.png')).toBe(true);
-    expect(globToRegExp('assets/a.png').test('assets/aXpng')).toBe(false);
-  });
-
-  it('padrões: o exclude tira do conjunto e a primeira entrada vence', () => {
-    const list = cookTexturesOf([
-      { files: ['assets/paint/*.png'], exclude: 'assets/paint/normal_*.png', srgb: true },
-      { files: 'assets/**/*.png', srgb: false, flipY: true },
-    ]);
-    const { byFile, unmatched } = planCookTextures(list, ['paint/red.png', 'paint/normal_a.png', 'sky/day.png']);
-    expect(byFile.get('paint/red.png').srgb).toBe(true);
-    expect(byFile.get('paint/normal_a.png').srgb).toBe(false); // excluído da 1ª, cai na 2ª
-    expect(byFile.get('sky/day.png').flipY).toBe(true);
-    expect(unmatched).toEqual([]);
-  });
-
-  it('padrões: só imagem entra (o .glb segue no cook dele), sem diferenciar maiúsculas e sem a barra na frente', () => {
-    const list = cookTexturesOf([{ files: '/assets/vehicles/**' }]);
-    const { byFile } = planCookTextures(list, ['vehicles/car.glb', 'vehicles/car.json', 'vehicles/paint/Red.PNG', 'vehicles/paint/b.jpeg']);
-    expect([...byFile.keys()].sort()).toEqual(['vehicles/paint/Red.PNG', 'vehicles/paint/b.jpeg']);
-    expect(planCookTextures(cookTexturesOf([{ files: 'assets/sky/*.png' }]), ['sky/Day.PNG']).byFile.size).toBe(1);
-  });
-
-  it('padrões padrão: srgb true, flipY true (como o loadTexture), replace true; sem a lista, nada', () => {
-    const [entry] = cookTexturesOf([{ files: './assets/a.png' }]);
-    expect(entry).toMatchObject({ files: ['assets/a.png'], exclude: [], srgb: true, flipY: true, replace: true });
-    expect(cookTexturesOf(undefined)).toEqual([]);
-  });
-
-  it('entrada inválida reprova com o índice', () => {
-    expect(() => cookTexturesOf({})).toThrow(/lista/);
-    expect(() => cookTexturesOf([{ srgb: true }])).toThrow(/cookTextures\[0\].*files/);
-    expect(() => cookTexturesOf([{ files: 'a.png', flipY: 'sim' }])).toThrow(/flipY/);
-    expect(() => cookTexturesOf([{ files: [''] }])).toThrow(/vazio/);
-  });
-});
 
 describe('cookAssets — imagens soltas', () => {
   it('converte o que a lista casa, grava o .ktx2 ao lado e o manifesto', async () => {

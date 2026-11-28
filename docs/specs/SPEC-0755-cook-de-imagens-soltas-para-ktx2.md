@@ -125,8 +125,10 @@ na frente. No navegador, sempre `null`. A URL do manifesto sai em `COOKED_TEXTUR
 
 ## Testes
 
+- `tests/native/cookTexturesList.test.ts`: a lista, com glob, `exclude`, a primeira entrada vencendo, só imagem
+  entrando, os valores padrão e a entrada inválida.
 - `tests/native/cookLooseTextures.test.ts` (o encoder mockado, passando pelo `planEncode` real):
-  - a lista, com glob, `exclude`, a primeira entrada vencendo e a entrada vazia avisando;
+  - a entrada que não casa nada avisando;
   - a fonte fora de 4×4 e a falha ficando com o original;
   - o `replace`;
   - o manifesto;
@@ -137,6 +139,7 @@ na frente. No navegador, sempre `null`. A URL do manifesto sai em `COOKED_TEXTUR
 - `tests/scene/loadTextureCooked.test.ts`:
   - o `loadTexture` com o manifesto devolvendo a `CompressedTexture`;
   - sem o manifesto, o PNG;
+  - a falha transitória do `fetch` (também a síncrona) sem ficar guardada;
   - o `cookedTextureUrl`;
   - o cache por URL (também com duas chamadas juntas);
   - o `pixelated` e a liberação dos dados BC7 depois do upload;

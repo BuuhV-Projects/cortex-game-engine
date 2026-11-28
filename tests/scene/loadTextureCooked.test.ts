@@ -154,6 +154,11 @@ describe('loadTexture — imagens soltas cozidas (SPEC-0755)', () => {
   it('a falha transitória do fetch não fica guardada: a próxima chamada lê o manifesto', async () => {
     fetchMock.mockRejectedValueOnce(new TypeError('rede'));
     expect(await cookedTextureUrl('assets/sky/day.png')).toBeNull();
+    // o fetch que lança na hora (síncrono), antes de a promessa ser guardada
+    fetchMock.mockImplementationOnce(() => {
+      throw new TypeError('rede síncrona');
+    });
+    expect(await cookedTextureUrl('assets/sky/day.png')).toBeNull();
     serveManifest(MANIFEST);
     expect(await cookedTextureUrl('assets/sky/day.png')).toBe('assets/sky/day.png.ktx2');
   });

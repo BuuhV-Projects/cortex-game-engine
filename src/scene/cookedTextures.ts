@@ -18,6 +18,8 @@ export const COOKED_TEXTURES_MANIFEST_URL = 'assets/cooked-textures.json';
 let manifest: Promise<ReadonlyMap<string, string>> | null = null;
 /** A leitura do manifesto já falhou uma vez nesta sessão (o aviso sai uma vez só). */
 let manifestWarned = false;
+/** A resposta vazia da falha transitória: quem a recebe não a guarda, e a próxima chamada lê de novo. */
+const RETRY: ReadonlyMap<string, string> = new Map();
 
 /** A URL como o cook a grava: relativa à pasta do jogo, sem `./` nem `/` na frente. */
 function manifestKey(url: string): string {
@@ -37,10 +39,9 @@ async function fetchManifest(): Promise<ReadonlyMap<string, string>> {
   try {
     res = await fetch(COOKED_TEXTURES_MANIFEST_URL);
   } catch (err) {
-    // Falha transitória (o fetch lançou): não fica guardada, a próxima chamada tenta de novo.
-    manifest = null;
+    // Falha transitória (o fetch lançou, também de forma síncrona): `cookedManifest` não guarda esta resposta.
     warnManifest(`sem leitura (${String(err)}), tenta de novo na próxima textura`);
-    return empty;
+    return RETRY;
   }
   // As respostas definitivas ficam guardadas: 404 (o export sem lista) e o JSON ilegível ou que não é objeto.
   if (!res.ok) return empty;
@@ -62,8 +63,14 @@ async function fetchManifest(): Promise<ReadonlyMap<string, string>> {
 /** O manifesto, lido uma vez (só no host; no navegador é sempre vazio, sem pedir nada). */
 function cookedManifest(): Promise<ReadonlyMap<string, string>> {
   if (!hasNativeKtx2()) return Promise.resolve(new Map());
-  manifest ??= fetchManifest();
-  return manifest;
+  if (manifest) return manifest;
+  const load = fetchManifest();
+  manifest = load;
+  // a falha transitória sai da memória quando chega: a próxima chamada lê de novo (só se ninguém trocou no meio)
+  void load.then((m) => {
+    if (m === RETRY && manifest === load) manifest = null;
+  });
+  return load;
 }
 
 /**
