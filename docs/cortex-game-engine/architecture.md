@@ -762,6 +762,13 @@ level.json (nó)  ──buildScene──▶  Object3D (mesh)  + Entidade ECS (co
   contador 0 (`acquire`/`unref` por clone vivo) e nenhum dono (`hold`/`unhold`), e o
   `trim()` roda no fim de cada carga, não por quadro. O `AssetLoader` divide a carga em
   andamento da mesma URL (uma promessa por URL até terminar).
+- **Imagem solta em BC7 só pela lista do jogo** (SPEC-0755, ADR-0756). O cook converte
+  para KTX2 só o PNG/JPG que o `cortex.json.cookTextures` casa, e grava o manifesto
+  `assets/cooked-textures.json`. No host, o `loadTexture` público (`scene/cookedTextures.ts`)
+  troca a URL pela versão BC7 e solta os dados da CPU depois do upload. Depois disso, um
+  `needsUpdate` vira no-op com aviso e um `clone()` sobe vazio. O flip vai gravado no
+  arquivo (`flipY` da lista, padrão `true` como o PNG), porque a textura comprimida ignora
+  o `flipY` no upload. Quem lê os pixels na CPU, ou usa a imagem como dado, fica fora da lista.
 
 - **Glifo exótico na UI aparece no Studio e VIRA CAIXINHA no export.** O
   rasterizador nativo (`text_raster.cpp`) tem UMA fonte (`Roboto-Medium.ttf`, 2772

@@ -86,7 +86,7 @@ export async function cookedTextureUrl(url: string): Promise<string | null> {
   return (await cookedManifest()).get(manifestKey(url)) ?? null;
 }
 
-/** Cargas em curso por URL do `.ktx2`: duas chamadas juntas dividem a mesma textura. */
+/** Cargas em curso por URL do `.ktx2` e `pixelated`: duas chamadas iguais juntas dividem a mesma textura. */
 const pending = new Map<string, Promise<Texture>>();
 
 type Mip = { data: Uint8Array | null };
@@ -141,7 +141,9 @@ function guardAfterRelease(tex: Texture, url: string): void {
  * @internal
  */
 export function loadCookedTexture(ktx2Url: string, pixelated: boolean): Promise<Texture> {
-  let load = pending.get(ktx2Url);
+  // o `pixelated` muda a textura (filtros e níveis): entra na chave, senão a segunda chamada pegaria a da primeira
+  const key = `${ktx2Url}|${pixelated}`;
+  let load = pending.get(key);
   if (!load) {
     load = loadKtx2(ktx2Url)
       .then((tex) => {
@@ -157,8 +159,8 @@ export function loadCookedTexture(ktx2Url: string, pixelated: boolean): Promise<
         guardAfterRelease(tex, ktx2Url);
         return tex;
       })
-      .finally(() => pending.delete(ktx2Url));
-    pending.set(ktx2Url, load);
+      .finally(() => pending.delete(key));
+    pending.set(key, load);
   }
   return load;
 }
