@@ -39,6 +39,9 @@ A textura é do cache, não do `loadTexture`: as opções de um uso não mudam a
 - `roadTexture(url): Promise<Texture>` (`src/scene/roadTextures.ts`), com `RepeatWrapping`, sRGB, anisotropia 8 e
   `userData.cortexCached`.
 - O `RoadBuild.applySurface` usa a textura do cache direto, sem `clone()`: todas as estradas da mesma URL dividem uma.
+- Dividir é seguro porque nada é por estrada na textura: o ladrilhamento vai no UV da fita (`roadRibbon`,
+  `dist / tileMeters`, `src/road/RoadMesh.ts`), e nem o `RoadBuild`, nem as peças da ponte, nem o editor mexem em
+  `repeat`, `offset` ou `rotation` do `map`. O clone antigo também só punha wrap, sRGB e anisotropia, iguais em todas.
 - `clearRoadTextures` entra no `clearSceneAssetCaches`.
 
 ### 4. A orientação

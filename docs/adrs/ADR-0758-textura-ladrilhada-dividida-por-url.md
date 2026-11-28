@@ -43,4 +43,6 @@ A alternativa 4, num módulo só (`tiledTextureCache`, `src/scene/tiledTextures.
 - A camada do terreno e a estrada podem entrar na lista `cookTextures` do jogo.
 - A textura de camada chega um microtask depois no navegador (antes, a `Texture` vinha na hora e a imagem depois).
 - A mesma URL pedida pelo `loadTexture` e por uma estrada tem duas texturas: cada uma com as próprias opções.
+- Nada na textura de estrada é por estrada: o ladrilhamento vai no UV da fita (`roadRibbon`). Quem quiser um
+  `repeat`, `offset` ou `rotation` por estrada no futuro precisa de outra textura, não deste cache.
 - O `clearSceneAssetCaches` descarta os dois caches.
