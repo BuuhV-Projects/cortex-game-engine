@@ -1,3 +1,16 @@
+# [1.4.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v1.3.1...v1.4.0) (2026-11-28)
+
+
+### Bug Fixes
+
+* **assets:** o request protege a URL pedida e conta o uso no pedido (SPEC-0753) ([2e7d568](https://github.com/BuuhV-Projects/cortex-game-engine/commit/2e7d568a29b05f0175e1e321098635f45338b520))
+
+
+### Features
+
+* **assets:** AssetResidency, GLBs sob demanda com contador, dono e LRU por orçamento (SPEC-0753, ADR-0754) ([9f8ca1b](https://github.com/BuuhV-Projects/cortex-game-engine/commit/9f8ca1be8833f9d4e05b029444fc60711c95190a))
+* **assets:** o AssetLoader divide a carga em andamento e solta uma URL (SPEC-0753) ([8965eed](https://github.com/BuuhV-Projects/cortex-game-engine/commit/8965eed492d07b0d427e6f80674b97b790468882))
+
 ## [1.3.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v1.3.0...v1.3.1) (2026-11-27)
 
 
