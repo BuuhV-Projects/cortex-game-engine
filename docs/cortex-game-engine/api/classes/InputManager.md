@@ -18,7 +18,7 @@ Defined in: [src/core/InputManager.ts:76](https://github.com/BuuhV-Projects/cort
 
 > **new InputManager**(): `InputManager`
 
-Defined in: node\_modules/typescript/lib/lib.dom.d.ts:14397
+Defined in: [../../../node\_modules/typescript/lib/lib.dom.d.ts:14397](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/../../../../node_modules/typescript/lib/lib.dom.d.ts#L14397)
 
 #### Returns
 

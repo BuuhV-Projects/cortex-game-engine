@@ -16,6 +16,7 @@ export const VENDOR_TYPE_MODULES = {
     'Renderer',
     'Scene',
     'AssetLoader',
+    'AssetResidency',
     'AudioManager',
     'InputManager',
     'GamepadManager',

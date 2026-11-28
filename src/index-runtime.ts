@@ -17,6 +17,7 @@ export * from './core/frameYield.js';
 export * from './core/Renderer.js';
 export * from './core/Scene.js';
 export * from './core/AssetLoader.js';
+export * from './core/AssetResidency.js';
 export * from './core/AudioManager.js';
 export * from './core/InputManager.js';
 export * from './core/GamepadManager.js';
