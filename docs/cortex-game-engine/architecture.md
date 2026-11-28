@@ -769,6 +769,13 @@ level.json (nó)  ──buildScene──▶  Object3D (mesh)  + Entidade ECS (co
   `needsUpdate` vira no-op com aviso e um `clone()` sobe vazio. O flip vai gravado no
   arquivo (`flipY` da lista, padrão `true` como o PNG), porque a textura comprimida ignora
   o `flipY` no upload. Quem lê os pixels na CPU, ou usa a imagem como dado, fica fora da lista.
+- **Camada do terreno e textura de estrada: uma textura por URL, sem clone** (SPEC-0757,
+  ADR-0758). As duas passam pelo `tiledTextureCache` (`scene/tiledTextures.ts`), que carrega
+  pelo mesmo caminho do `loadTexture` (no host, o `.ktx2` do manifesto) e aplica o wrap, o
+  sRGB e a anisotropia do uso uma vez, antes do upload. A estrada não clona mais (o clone de
+  uma BC7 subiria vazio), e todas as estradas da mesma URL dividem a textura. A camada do
+  terreno chega por promessa: o `Terrain` só a põe no nó se a camada ainda for a mesma. A
+  carga que chega depois de um `clear()` do cache é descartada.
 
 - **Glifo exótico na UI aparece no Studio e VIRA CAIXINHA no export.** O
   rasterizador nativo (`text_raster.cpp`) tem UMA fonte (`Roboto-Medium.ttf`, 2772

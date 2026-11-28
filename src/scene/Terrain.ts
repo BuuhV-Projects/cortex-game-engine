@@ -433,7 +433,7 @@ export class Terrain {
     this.syncRepeat();
     if (typeof document === 'undefined') return; // testes/SSR: sem ImageLoader
     const { url } = layer;
-    // compartilhada por URL (SPEC-0652); no host, o .ktx2 cozido (SPEC-0757)
+    // compartilhada por URL (SPEC-0652)
     void terrainLayerTexture(url)
       .then((texture) => this.setLayerTexture(index, node, url, texture))
       .catch((e: unknown) => debug('terrain', 'textura da camada falhou:', url, e));
