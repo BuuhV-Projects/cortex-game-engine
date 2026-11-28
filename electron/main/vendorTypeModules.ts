@@ -107,6 +107,7 @@ export const VENDOR_TYPE_MODULES = {
     'FirstPerson',
     'TopDown',
     'SceneAssets',
+    'cookedTextures',
     'modelHotRegistry',
     'ModelHotReload',
     'Materials',

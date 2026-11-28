@@ -203,6 +203,15 @@ Native (que roda milhares de libs sobre Hermes em produção):
   fica com o original, com aviso por textura e contagem em `texKept`. O log do
   emscripten está silenciado (`print`/`printErr` no-op): pra diagnosticar um
   "0 bytes", ligue o `printErr` — o basis diz o motivo.
+- **Imagem solta só vira KTX2 pela lista do jogo** (SPEC-0755, ADR-0756). O cook
+  copia PNG/JPG soltos como estão, menos os que `cortex.json.cookTextures` casa
+  (`native/scripts/cook-textures.mjs`): esses ganham `<arquivo>.ktx2` ao lado e o
+  manifesto `assets/cooked-textures.json` no pak, que o `loadTexture` público lê
+  no host (`src/scene/cookedTextures.ts`). O `flipY` da entrada vira o
+  `setYFlip` do WASM e o `-y_flip` do basisu: textura comprimida ignora o flipY
+  no upload, então a orientação tem que sair gravada no arquivo. Só o `loadTexture`
+  público troca: o `AssetLoader.loadTexture` e o `TextureLoader` direto seguem
+  com o PNG.
 
 - **`arraybuffers: … text=Nx/MB` do perf-log é TOTAL ALOCADO desde o boot,
   não memória viva** (SPEC-0321). Todos os contadores `pak/img/ktx2/io/files/

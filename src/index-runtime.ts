@@ -147,6 +147,8 @@ export * from './scene/VehicleSetup.js';
 export * from './scene/VehicleDriver.js';
 export * from './scene/TopDown.js';
 export * from './scene/SceneAssets.js';
+// Imagens soltas cozidas para KTX2 no export (SPEC-0755): o loadTexture já troca sozinho.
+export { cookedTextureUrl, COOKED_TEXTURES_MANIFEST_URL } from './scene/cookedTextures.js';
 // Hot reload de GLB em dev (SPEC-0697 §3): registro desligado por padrão + troca dos filhos.
 export * from './scene/modelHotRegistry.js';
 export * from './scene/ModelHotReload.js';

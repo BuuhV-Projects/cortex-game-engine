@@ -106,22 +106,37 @@ export const NATIVE_KTX2_FLAG = 'cortexNativeKtx2';
  * Depois de liberada, a textura não pode ser reenviada (`needsUpdate`).
  */
 export function releaseKtx2DataAfterUpload(root: Object3D): void {
-  const groups = new Map<object, Set<CompressedTexture>>();
+  const textures: Texture[] = [];
   root.traverse((child) => {
     const materials = (child as Mesh).material;
     if (!materials) return;
     for (const material of Array.isArray(materials) ? materials : [materials]) {
       for (const value of Object.values(material as unknown as Record<string, unknown>)) {
-        const texture = value as CompressedTexture | null;
-        if (!texture?.isCompressedTexture || texture.userData[NATIVE_KTX2_FLAG] !== true) continue;
-        const firstMip = texture.mipmaps[0] as object | undefined;
-        if (!firstMip) continue;
-        let group = groups.get(firstMip);
-        if (!group) groups.set(firstMip, (group = new Set()));
-        group.add(texture);
+        const texture = value as Texture | null;
+        if (texture?.isTexture) textures.push(texture);
       }
     }
   });
+  releaseKtx2TexturesAfterUpload(textures);
+}
+
+/**
+ * O mesmo que {@link releaseKtx2DataAfterUpload}, para uma lista de texturas
+ * soltas (ex.: a imagem cozida que o `loadTexture` devolve no host, SPEC-0755).
+ * Só age nas BC7 montadas por {@link loadKtx2Native}; as demais passam reto.
+ * Clones que dividem os mips contam juntos: os dados saem quando todos subiram.
+ */
+export function releaseKtx2TexturesAfterUpload(textures: Iterable<Texture>): void {
+  const groups = new Map<object, Set<CompressedTexture>>();
+  for (const value of textures) {
+    const texture = value as CompressedTexture;
+    if (!texture.isCompressedTexture || texture.userData[NATIVE_KTX2_FLAG] !== true) continue;
+    const firstMip = texture.mipmaps[0] as object | undefined;
+    if (!firstMip) continue;
+    let group = groups.get(firstMip);
+    if (!group) groups.set(firstMip, (group = new Set()));
+    group.add(texture);
+  }
   for (const group of groups.values()) {
     const pending = new Set(group);
     for (const texture of group) {

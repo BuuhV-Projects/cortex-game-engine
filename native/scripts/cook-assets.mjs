@@ -3,8 +3,9 @@
 // FONTE fica intocada (PNG) — só o pak leva KTX2. Cache por hash do arquivo:
 // re-export só reconverte o GLB que mudou.
 //
-// Standalone PNG/JPG são copiados como estão por ora (a referência é por URL; o
-// grosso do peso está nos GLB). Converter soltas viria com detecção por conteúdo.
+// PNG/JPG soltos (o jogo os pede por URL) são copiados como estão, menos os que
+// o jogo põe na lista `cortex.json.cookTextures` (SPEC-0755, ADR-0756): esses
+// ganham o `<arquivo>.ktx2` ao lado e entram no manifesto `cooked-textures.json`.
 import { NodeIO } from '@gltf-transform/core';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
 import { createHash } from 'node:crypto';
@@ -12,6 +13,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { convertGlbTextures } from './ktx2-glb.mjs';
 import { ERR_NATIVE_ENCODER_FAILED, ERR_NATIVE_ENCODER_MISSING } from './encode-ktx2-native.mjs';
+import { assetUrl, COOKED_TEXTURE_EXT, cookLooseTexture, looseStats, planCookTextures, writeCookedManifest } from './cook-textures.mjs';
 
 const io = new NodeIO().registerExtensions(ALL_EXTENSIONS);
 
@@ -52,8 +54,12 @@ function walk(dir, out = []) {
  * Depois de cada aviso o cook cede o loop, pra linha sair no pipe na hora.
  * `include(rel)` (opcional) deixa arquivos de fora — ex.: material de pacote de
  * textura que o jogo não usa (SPEC-0641 §6). Os ignorados contam em `skipped`.
+ * `options.cookTextures` (a saída do `cookTexturesOf`, SPEC-0755): as imagens
+ * soltas que a lista casa viram `<arquivo>.ktx2` e entram no manifesto; o
+ * original sai do pak quando a entrada tem `replace` (padrão). Uma entrada que
+ * não casa nada avisa. Os contadores `loose*` vão no `stats`.
  */
-export async function cookAssets(assetsDir, cookedDir, cacheDir, onProgress, include) {
+export async function cookAssets(assetsDir, cookedDir, cacheDir, onProgress, include, { cookTextures = [] } = {}) {
   fs.mkdirSync(cacheDir, { recursive: true });
   // texKept/texKeptReasons: texturas dos GLB convertidos NESTE export que
   // ficaram com o original, por motivo (SPEC-0750; o cook nunca reduz textura).
@@ -68,11 +74,16 @@ export async function cookAssets(assetsDir, cookedDir, cacheDir, onProgress, inc
     after: 0,
     texKept: 0,
     texKeptReasons: {},
+    ...looseStats(),
   };
 
   const every = walk(assetsDir);
   const all = include ? every.filter((f) => include(path.relative(assetsDir, f))) : every;
   stats.skipped = every.length - all.length;
+  const posixRel = (f) => path.relative(assetsDir, f).split(path.sep).join('/');
+  const { byFile: looseByFile, unmatched } = planCookTextures(cookTextures, all.map(posixRel));
+  for (const entry of unmatched) console.warn(`[cook] cookTextures: ${JSON.stringify(entry.files)} não casou nenhum arquivo`);
+  const manifest = {};
   const total = all.length;
   let done = 0;
   const report = async (file, tex) => {
@@ -86,6 +97,23 @@ export async function cookAssets(assetsDir, cookedDir, cacheDir, onProgress, inc
     fs.mkdirSync(path.dirname(out), { recursive: true });
     stats.before += fs.statSync(full).size;
 
+    const loose = looseByFile.get(posixRel(full));
+    if (loose) {
+      await report(rel);
+      const ok = await cookLooseTexture(full, out, loose, { cacheDir, cookVersion: COOK_VERSION, stats, label: rel });
+      if (ok) {
+        const url = assetUrl(posixRel(full));
+        manifest[url] = url + COOKED_TEXTURE_EXT;
+        stats.after += fs.statSync(out + COOKED_TEXTURE_EXT).size;
+      }
+      // Fica o original quando a conversão falhou ou a entrada pede (`replace: false`).
+      if (!ok || !loose.replace) {
+        fs.copyFileSync(full, out);
+        stats.after += fs.statSync(out).size;
+      }
+      done++;
+      continue;
+    }
     if (!full.toLowerCase().endsWith('.glb')) {
       fs.copyFileSync(full, out);
       stats.copied++;
@@ -129,6 +157,7 @@ export async function cookAssets(assetsDir, cookedDir, cacheDir, onProgress, inc
     stats.after += fs.statSync(out).size;
     done++;
   }
+  writeCookedManifest(cookedDir, manifest);
   await report();
   return stats;
 }

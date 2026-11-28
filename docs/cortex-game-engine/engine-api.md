@@ -1941,6 +1941,34 @@ const loose = await skins.request(gangUrl, { acquire: true })   // já contado; 
   para outra carga que chega na mesma rodada (no host nativo o `fetch` é síncrono) e solta o GLTF recém-chegado.
 - O `loader` da residência é exclusivo dela, e o `onEvict` não chama a residência.
 
+### Imagens soltas em KTX2 no export (`cookTextures`, `cookedTextureUrl`) — SPEC-0755 / ADR-0756
+PNG/JPG carregados por URL sobem para a GPU em RGBA8 cru. O jogo lista no `cortex.json` os que o export deve cozer
+para KTX2 (BC7 no host, 4× menos VRAM, mesmas dimensões):
+```json
+"cookTextures": [
+  { "files": "assets/vehicles/paint/*.png", "flipY": false },
+  { "files": "assets/sky/Sunny_Day.png" },
+  { "files": ["assets/fx/**/*.png"], "exclude": "assets/fx/debug/*", "srgb": false, "replace": false }
+]
+```
+- `files`/`exclude`: glob relativo à pasta do jogo (`*` numa pasta, `**` em subpastas), sem diferenciar maiúsculas; só
+  `.png`, `.jpg` e `.jpeg` entram; a primeira entrada que casa vence, e a que não casa nada avisa no log do export.
+- `srgb` (padrão `true`): cor; `false` para dado linear (normal, gradiente). `flipY` (padrão `true`, como o PNG do `loadTexture`): a imagem que o
+  jogo usa com `tex.flipY = true` sai com as linhas viradas (a comprimida ignora o flipY). `replace` (padrão `true`):
+  o original sai do pak; `false` para quem também lê o PNG na CPU (canvas, heightmap).
+- O cook grava `<arquivo>.ktx2` ao lado e o manifesto `assets/cooked-textures.json` (`COOKED_TEXTURES_MANIFEST_URL`).
+  Fonte fora dos blocos 4×4 ou que falha fica com o original, com aviso.
+- O `loadTexture(url, pixelated)` público troca sozinho no host: devolve a `CompressedTexture` BC7 (cache pela URL
+  original, `pixelated` valendo, `flipY = false`) e solta os dados da CPU depois do primeiro upload. Depois disso, um `needsUpdate` é ignorado (com aviso no `debug`; a
+  GPU segue com a textura) e um `clone()` avisa que a cópia sobe vazia: quem clona fica fora da lista. No navegador nada muda (o PNG).
+- Quem carrega por outro caminho pergunta antes (assíncrono; lê o manifesto uma vez):
+```ts
+import { cookedTextureUrl, loadKtx2, AssetLoader } from 'cortex-game-engine'
+const ktx2 = await cookedTextureUrl('assets/sky/Sunny_Day.png') // string no host com o cozido; senão null
+const tex = ktx2 ? await loadKtx2(ktx2) : await new AssetLoader().loadTexture('assets/sky/Sunny_Day.png')
+```
+- `releaseKtx2TexturesAfterUpload(textures)`: o `releaseKtx2DataAfterUpload(root)` para uma lista de texturas.
+
 ### Sistema ECS
 ```ts
 import { System, TransformComponent } from 'cortex-game-engine'

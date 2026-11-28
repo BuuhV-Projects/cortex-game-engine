@@ -6,7 +6,7 @@
 
 # Interface: ShadowOptions
 
-Defined in: [src/scene/SceneAssets.ts:55](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L55)
+Defined in: [src/scene/SceneAssets.ts:56](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L56)
 
 Opções de sombra pra [instance](../functions/instance.md) / [setShadows](../functions/setShadows.md).
 
@@ -16,7 +16,7 @@ Opções de sombra pra [instance](../functions/instance.md) / [setShadows](../fu
 
 > `optional` **castShadow?**: `boolean`
 
-Defined in: [src/scene/SceneAssets.ts:57](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L57)
+Defined in: [src/scene/SceneAssets.ts:58](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L58)
 
 O objeto projeta sombra. Default `true`.
 
@@ -26,6 +26,6 @@ O objeto projeta sombra. Default `true`.
 
 > `optional` **receiveShadow?**: `boolean`
 
-Defined in: [src/scene/SceneAssets.ts:59](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L59)
+Defined in: [src/scene/SceneAssets.ts:60](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L60)
 
 O objeto recebe sombra. Default `true`.

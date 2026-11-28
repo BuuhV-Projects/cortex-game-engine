@@ -8,7 +8,7 @@
 
 > **loadTexture**(`url`, `pixelated?`): `Promise`\<`Texture`\<`unknown`, `TextureEventMap`\>\>
 
-Defined in: [src/scene/SceneAssets.ts:183](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L183)
+Defined in: [src/scene/SceneAssets.ts:192](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L192)
 
 Carrega uma **textura** (png/jpg/webp) com cache por URL — para sprites 2D /
 spritesheets. A textura cacheada é compartilhada; quem precisar animar
@@ -18,6 +18,14 @@ independente (cada sprite com seu recorte UV) deve cloná-la (o
 Texturas **`.ktx2`** (Basis, ADR-0108) são roteadas pro [loadKtx2](loadKtx2.md)
 (transcoder nativo no host / `KTX2Loader` no browser) — comprimidas e
 portáveis pro console; o `pixelated` é ignorado (KTX2 usa linear + mipmaps).
+
+No host nativo, uma imagem que o export cozinhou (lista `cookTextures` do
+`cortex.json`, SPEC-0755) carrega pelo `.ktx2` do manifesto: volta uma
+`CompressedTexture` BC7 com os mips do arquivo (`flipY = false`,
+`generateMipmaps = false`), com o `pixelated` valendo e o cache pela `url`
+original. Os dados BC7 saem da CPU depois do primeiro upload: não clone nem
+reenvie (`needsUpdate`) essa textura depois que ela foi desenhada. No
+navegador nada muda.
 
 ## Parameters
 
