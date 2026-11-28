@@ -10,6 +10,8 @@ name: Release
 #  3. `build` espera o release, e SÓ roda se houver release nova. Faz
 #     `yarn electron:build` em Windows/macOS/Linux em paralelo e anexa
 #     os instaladores à release recém-criada.
+#  4. `publish-public` junta os instaladores das três máquinas e os publica,
+#     uma vez, no repo público de releases (SPEC-0740).
 #
 # Pra buildar sem cortar release (debug, dry-run em PR), use
 # `build-ide.yml` que tem trigger manual (`workflow_dispatch`).
@@ -22,6 +24,12 @@ permissions:
   contents: write
   issues: write
   pull-requests: write
+
+env:
+  # Repo PÚBLICO só de releases (SPEC-0740, TDR-0015): o engine é privado e a release dele também; os instaladores
+  # são publicados de novo lá para download sem login.
+  RELEASES_OWNER: BuuhV-Projects
+  RELEASES_REPO: cortex-studio-releases
 
 jobs:
   test:
@@ -68,6 +76,7 @@ jobs:
       released: ${{ steps.semantic.outputs.new_release_published }}
       version: ${{ steps.semantic.outputs.new_release_version }}
       tag: ${{ steps.semantic.outputs.new_release_git_tag }}
+      notes: ${{ steps.semantic.outputs.new_release_notes }}
 
     steps:
       # Token de instalação do GitHub App da org (TDR-0006). É ele — e não o
@@ -81,6 +90,23 @@ jobs:
         with:
           app-id: ${{ secrets.CORTEX_CI_APP_ID }}
           private-key: ${{ secrets.CORTEX_CI_APP_PRIVATE_KEY }}
+
+      # SPEC-0740: confere o repo público e a instalação do App nele ANTES do semantic-release. Sem eles o job para
+      # aqui e nenhuma release do engine sai pela metade (sem a cópia pública).
+      - name: Gerar token do App para o repo público de releases
+        id: releases-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.CORTEX_CI_APP_ID }}
+          private-key: ${{ secrets.CORTEX_CI_APP_PRIVATE_KEY }}
+          owner: ${{ env.RELEASES_OWNER }}
+          repositories: ${{ env.RELEASES_REPO }}
+
+      - name: Conferir o repo público de releases
+        env:
+          GH_TOKEN: ${{ steps.releases-token.outputs.token }}
+        run: |
+          gh api "repos/$RELEASES_OWNER/$RELEASES_REPO" --jq '.full_name + " (privado: " + (.private|tostring) + ")"'
 
       - name: Checkout (full history pra analisar commits)
         uses: actions/checkout@v4
@@ -177,4 +203,77 @@ jobs:
             dist-app/*.exe
             dist-app/*.dmg
             dist-app/*.AppImage
+          fail_on_unmatched_files: false
+
+      # SPEC-0740: os instaladores vão para o job `publish-public`, o único que escreve no repo público (sem três
+      # máquinas criando a mesma release ao mesmo tempo).
+      - name: Guardar os instaladores para o repo público
+        uses: actions/upload-artifact@v4
+        with:
+          name: installers-${{ matrix.os }}
+          path: |
+            dist-app/*.exe
+            dist-app/*.dmg
+            dist-app/*.AppImage
+          if-no-files-found: warn
+          # dá tempo de re-executar o `publish-public` se ele falhar (a tag do engine já saiu)
+          retention-days: 7
+
+  # SPEC-0740: a release pública, criada uma vez só, com o que as máquinas da matriz geraram. Roda mesmo se uma das
+  # máquinas falhar e publica os instaladores que existirem (as outras já anexaram à release do engine); sem nenhum,
+  # o download dos artefatos falha. Só não roda se o workflow foi cancelado.
+  publish-public:
+    name: Publicar no repo público
+    needs: [release, build]
+    if: ${{ !cancelled() && needs.release.outputs.released == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout dos scripts
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.release.outputs.tag }}
+          sparse-checkout: .github/scripts
+
+      - name: Setup Node 24.15.0
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.15.0
+
+      - name: Baixar os instaladores
+        uses: actions/download-artifact@v4
+        with:
+          pattern: installers-*
+          merge-multiple: true
+          path: dist-app
+
+      # As notas do semantic-release apontam para o repo privado (commits, comparação, issues): saem sem esses links.
+      - name: Notas sem os links do repo privado
+        env:
+          NOTES: ${{ needs.release.outputs.notes }}
+          PRIVATE_REPO: ${{ github.repository }}
+        run: node .github/scripts/public-notes.mjs > "$RUNNER_TEMP/public-notes.md"
+
+      - name: Gerar token do App para o repo público de releases
+        id: releases-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.CORTEX_CI_APP_ID }}
+          private-key: ${{ secrets.CORTEX_CI_APP_PRIVATE_KEY }}
+          owner: ${{ env.RELEASES_OWNER }}
+          repositories: ${{ env.RELEASES_REPO }}
+
+      - name: Publicar instaladores no repo público
+        uses: softprops/action-gh-release@v2
+        with:
+          repository: ${{ env.RELEASES_OWNER }}/${{ env.RELEASES_REPO }}
+          token: ${{ steps.releases-token.outputs.token }}
+          tag_name: ${{ needs.release.outputs.tag }}
+          name: TS Cortex Studio ${{ needs.release.outputs.version }}
+          body_path: ${{ runner.temp }}/public-notes.md
+          make_latest: 'true'
+          files: |
+            dist-app/*.exe
+            dist-app/*.dmg
+            dist-app/*.AppImage
+          # release parcial é intencional: uma máquina que falhou não segura as outras
           fail_on_unmatched_files: false
