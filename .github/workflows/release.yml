@@ -29,7 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Node 24.15.0
         uses: actions/setup-node@v4
@@ -83,7 +83,7 @@ jobs:
           private-key: ${{ secrets.CORTEX_CI_APP_PRIVATE_KEY }}
 
       - name: Checkout (full history pra analisar commits)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           # O token é gravado nos credentials pelo checkout — semantic-release
@@ -127,7 +127,7 @@ jobs:
 
     steps:
       - name: Checkout no tag de release
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           # Faz o checkout da tag recém-criada pelo semantic-release — assim
           # o build pega a versão bumpada no package.json + o CHANGELOG.
